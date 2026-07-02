@@ -1,0 +1,26 @@
+{
+  "name": "rewardhub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
+    "axios": "^1.18.1",
+    "cors": "*",
+    "dotenv": "*",
+    "express": "*",
+    "form-data": "*",
+    "qrcode": "*",
+    "resend": "*"
+  }
+}
