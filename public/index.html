@@ -5,19 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Affiliate (AE)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0a0f;--surface:#13131a;--card:#1a1a24;--border:#2a2a3a;
-  --accent:#7c6ef7;--accent2:#e84d8a;--success:#22d47a;--warn:#f59e0b;--info:#38bdf8;--wa:#25d366;
-  --text:#f0f0fa;--muted:#8888aa;--radius:14px;
+  --bg:#eef6ff;--surface:#ffffff;--card:#ffffff;--border:#bfd3ea;
+  --accent:#5546e8;--accent2:#e32972;--success:#07834d;--warn:#b86600;--info:#087db5;--wa:#087f42;
+  --text:#101c2c;--muted:#52657a;--radius:8px;
   --fh:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;font-size:14px}
 
 /* LOGIN */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 80% 60% at 50% -10%,#1e1640 0%,var(--bg) 70%)}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#e6f2ff}
 .login-wrap{width:600px;max-width:95vw}
 .login-logo{font-family:var(--fh);font-size:36px;font-weight:700;text-align:center;margin-bottom:6px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .login-ae{text-align:center;font-size:12px;color:var(--muted);letter-spacing:.18em;font-weight:600;text-transform:uppercase;margin-bottom:44px}
@@ -46,7 +47,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .perm-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 
 /* STATUS BAR */
-#api-status-bar{display:none;align-items:center;gap:10px;padding:7px 28px;background:#0d0d14;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
+#api-status-bar{display:none;align-items:center;gap:10px;padding:7px 28px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
 .status-dot{display:inline-flex;align-items:center;gap:5px}
 .dot{width:6px;height:6px;border-radius:50%}
 .dot-on{background:var(--success);box-shadow:0 0 5px rgba(34,212,122,.5)}
@@ -55,9 +56,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 
 /* APP SHELL */
 #app{display:none}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;background:#ffffff;border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(30,73,118,.08);position:sticky;top:0;z-index:100}
 .topbar-brand{font-family:var(--fh);font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .topbar-right{display:flex;align-items:center;gap:12px}
+.theme-toggle{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:18px;line-height:1;cursor:pointer}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
 .role-badge{padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600}
 .badge-admin{background:rgba(124,110,247,.2);color:var(--accent)}
 .badge-merchant{background:rgba(232,77,138,.2);color:var(--accent2)}
@@ -71,10 +74,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150}
 .sidebar-overlay.open{display:block}
 .layout{display:flex;min-height:calc(100vh - 58px)}
-.sidebar{width:218px;min-width:218px;background:var(--surface);border-right:1px solid var(--border);padding:22px 12px;display:flex;flex-direction:column;gap:3px}
+.sidebar{width:218px;min-width:218px;background:#f8fbff;border-right:1px solid var(--border);padding:22px 12px;display:flex;flex-direction:column;gap:3px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all .2s;user-select:none}
-.nav-item:hover{background:var(--card);color:var(--text)}
-.nav-item.active{background:rgba(124,110,247,.14);color:var(--accent)}
+.nav-item:hover{background:#e7f1ff;color:var(--text)}
+.nav-item.active{background:#dedbff;color:#3827c8}
 .nav-icon{font-size:15px;width:18px;text-align:center}
 .nav-sep{height:1px;background:var(--border);margin:7px 0}
 .main{flex:1;padding:30px 34px;overflow-y:auto}
@@ -83,7 +86,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px;margin-bottom:26px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:0 5px 16px rgba(30,73,118,.08);position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;inset:0;opacity:.04;pointer-events:none}
 .sg-purple::before{background:var(--accent)}.sg-pink::before{background:var(--accent2)}
 .sg-green::before{background:var(--success)}.sg-blue::before{background:var(--info)}.sg-wa::before{background:var(--wa)}
@@ -93,7 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .cp{color:var(--accent)}.cpk{color:var(--accent2)}.cg{color:var(--success)}.cb{color:var(--info)}.cw{color:var(--wa)}
 
 /* PANELS */
-.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:22px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:0 5px 16px rgba(30,73,118,.07);margin-bottom:22px}
 .panel-title{font-family:var(--fh);font-size:15px;font-weight:600;margin-bottom:16px}
 .panel-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
 @media(max-width:920px){.panel-row{grid-template-columns:1fr}}
@@ -105,6 +108,51 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .bar:hover .bar-tip{opacity:1}
 .bar-tip{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#0d0d14;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0;z-index:10;color:var(--text)}
 .bar-label{font-size:9px;color:var(--muted);text-align:center;white-space:nowrap}
+.dashboard-tools{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.period-tabs{display:flex;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:3px;gap:2px}
+.period-tab{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px}
+.period-tab.active{background:var(--accent);color:#fff}
+.report-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.report-heading .panel-title{margin-bottom:0}
+.period-tabs.compact .period-tab{padding:6px 9px;font-size:11px}
+.date-range{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.date-range label{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.date-range input{display:block;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text)}
+.metric-grid{grid-template-columns:repeat(4,minmax(150px,1fr))}
+.scanner-shell{display:grid;grid-template-columns:minmax(260px,1fr) minmax(230px,.7fr);gap:18px}
+.scanner-view{min-height:260px;border:1px dashed #aeb7c2;border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.scanner-actions{display:flex;gap:8px;margin-top:12px}
+.scanner-message{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+.grouped-chart{height:220px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:end;padding-top:24px}
+.group-slot{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px}
+.group-bars{height:170px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:7px;border-bottom:1px solid var(--border)}
+.group-bar{width:min(34%,38px);min-height:4px;border-radius:4px 4px 0 0;position:relative}
+.group-bar:hover .bar-tip{opacity:1}
+.chart-legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:12px}
+.legend-swatch{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px}
+.phone-input{display:flex;align-items:stretch}
+.phone-prefix{display:flex;align-items:center;padding:0 12px;background:#eef1f5;border:1px solid var(--border);border-right:0;border-radius:7px 0 0 7px;font-weight:700;color:var(--text)}
+.phone-input input{border-radius:0 7px 7px 0!important}
+.amount-input{width:100%!important;min-height:58px!important;padding:13px 16px!important;font-size:22px!important;font-weight:800;border:2px solid var(--accent)!important;background:#f7f9ff!important}
+.amount-input:focus{box-shadow:0 0 0 4px rgba(85,70,232,.14)}
+.amount-col{min-width:130px}
+.purchase-reward-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(130px,.55fr);gap:12px;align-items:end}
+.reward-preview{margin-top:8px;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid #b8ddc8;border-radius:7px;background:#effbf4;color:var(--success);font-size:12px;font-weight:700}
+.reward-preview strong{font-size:17px}
+body.dark .reward-preview{background:#14251c;border-color:#285c3d}
+@media(max-width:560px){.purchase-reward-row{grid-template-columns:1fr}}
+body.dark{--bg:#0d0d14;--surface:#15151f;--card:#1b1b27;--border:#303044;--accent:#7c6ef7;--accent2:#e84d8a;--success:#22b96f;--warn:#f0a11d;--info:#38a8d8;--wa:#25b864;--text:#f4f5fa;--muted:#a0a8b8}
+body.dark #login-screen{background:#0d0d14}
+body.dark .topbar{background:#15151f;box-shadow:0 2px 10px rgba(0,0,0,.28)}
+body.dark .sidebar{background:#12121b}
+body.dark .nav-item:hover{background:#222233}
+body.dark .nav-item.active{background:#2a2548;color:#b6adff}
+body.dark .date-range input,body.dark .form-group input,body.dark .form-group select{background:#15151f;color:var(--text)}
+body.dark .scanner-view,body.dark #scan-checkout-panel>div{background:#12121b!important}
+body.dark .phone-prefix{background:#222231}
+body.dark .amount-input{background:#211f35!important}
+@media(max-width:920px){.metric-grid{grid-template-columns:repeat(2,1fr)}.scanner-shell{grid-template-columns:1fr}}
+@media(max-width:560px){.metric-grid{grid-template-columns:1fr 1fr}.date-range{width:100%}.date-range>div{flex:1}.date-range input{width:100%}.grouped-chart{gap:6px}.scanner-view{min-height:220px}}
 
 /* RETENTION RING */
 .ret-wrap{display:flex;align-items:center;gap:18px}
@@ -155,7 +203,7 @@ tbody tr:hover td{background:rgba(255,255,255,.018)}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .form-group input,.form-group select{padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;transition:border .2s}
-.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(85,70,232,.12)}
 .btn-primary{padding:10px 22px;background:linear-gradient(135deg,var(--accent),#5b4de0);border:none;border-radius:9px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:7px}
 .btn-primary:hover{opacity:.85}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .btn-wa{padding:10px 22px;background:linear-gradient(135deg,#25d366,#128c4a);border:none;border-radius:9px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:opacity .2s}
@@ -226,10 +274,6 @@ select option{background:var(--card)}
 /* ── REWARD POINTS ── */
 .reward-badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.08));border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--warn)}
 .reward-badge-lg{font-size:18px;font-weight:800;color:var(--warn);font-family:var(--fh)}
-.scan-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
-.scan-modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:440px;max-width:94vw;position:relative}
-.scan-modal h3{font-family:var(--fh);font-size:20px;font-weight:700;margin-bottom:4px}
-.scan-modal-sub{color:var(--muted);font-size:13px;margin-bottom:22px}
 
 .reward-summary-box{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.04));border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:16px 18px;margin-bottom:16px}
 .reward-pct-control{display:flex;align-items:center;gap:12px}
@@ -397,8 +441,6 @@ select option{background:var(--card)}
   <span style="color:var(--border)">|</span>
   <span class="status-dot"><span class="dot dot-loading" id="dot-wa"></span><span id="label-wa">WhatsApp…</span></span>
   <span style="color:var(--border)">|</span>
-  <span class="status-dot"><span class="dot dot-loading" id="dot-sms"></span><span id="label-sms">SMS…</span></span>
-  <span style="color:var(--border)">|</span>
   <span id="status-detail" style="font-size:11px;color:var(--muted)"></span>
 </div>
 
@@ -412,6 +454,7 @@ select option{background:var(--card)}
       <div class="topbar-brand">Affiliate <span style="font-size:11px;color:var(--muted);font-family:var(--fb);font-weight:400;background:none;-webkit-text-fill-color:var(--muted)">AE</span></div>
     </div>
     <div class="topbar-right">
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle night mode" aria-label="Toggle night mode">◐</button>
       <span class="role-badge" id="role-badge"></span>
       <span id="topbar-user" style="font-size:12px;color:var(--muted)" class="hide-mobile"></span>
       <button class="logout-btn" onclick="logout()">Sign out</button>
@@ -429,31 +472,36 @@ select option{background:var(--card)}
   <div class="modal">
     <button class="modal-close" onclick="closeQRModal()">✕</button>
     <h3>📱 Customer QR Code</h3>
-    <p class="modal-sub">Send via WhatsApp — customer shows this for fast checkout, no typing needed.</p>
+    <p class="modal-sub">Send via WhatsApp — customer shows the QR for fast checkout, no typing needed.</p>
     <div id="qr-modal-body"></div>
   </div>
 </div>
 
 <!-- TOAST -->
 
-<!-- ══ SCAN / REWARD MODAL ══ -->
-<div id="scan-modal-backdrop" style="display:none" class="scan-modal-backdrop" onclick="if(event.target===this)closeScanModal()">
-  <div class="scan-modal">
-    <button style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer" onclick="closeScanModal()">✕</button>
-    <h3>🎁 Issue Reward Points</h3>
-    <p class="scan-modal-sub">Confirm the purchase amount to issue reward points and send an SMS to the customer.</p>
-    <div id="scan-modal-body"></div>
-  </div>
-</div>
 <div id="toast"><span id="toast-msg"></span></div>
 
 <script>
 const API='';
 let currentRole='admin', currentUser=null, currentPage='dashboard';
 let accessToken=localStorage.getItem('ae_access_token')||'';
-let globalRewardPct = 1; // Admin-controlled global reward percentage
+const ALL_REWARD_OPTIONS=[0.5,1,2,3,4,5,6,7,8,9,10];
+let globalRewardPct=1,globalRewardMin=0.5,rewardOptions=[...ALL_REWARD_OPTIONS];
+let dashboardPeriod='today',dashboardData=null;
+let chartPeriod='today',chartData=null,chartCustomFrom='',chartCustomTo='';
+let retentionPeriod='today',retentionData=null,retentionCustomFrom='',retentionCustomTo='';
+let qrScanner=null,scannerRunning=false,scannedCustomer=null;
 const COLORS=['#7c6ef7','#e84d8a','#22d47a','#f59e0b','#38bdf8','#fb7185','#a78bfa','#34d399'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function applyTheme(theme){
+  document.body.classList.toggle('dark',theme==='dark');
+  localStorage.setItem('ae_theme',theme);
+  const button=document.getElementById('theme-toggle');
+  if(button){button.textContent=theme==='dark'?'◑':'◐';button.title=theme==='dark'?'Use light mode':'Use night mode';}
+}
+function toggleTheme(){applyTheme(document.body.classList.contains('dark')?'light':'dark');}
+applyTheme(localStorage.getItem('ae_theme')||'light');
 
 async function apiFetch(path,options={}){
   const headers={...(options.headers||{})};
@@ -461,6 +509,22 @@ async function apiFetch(path,options={}){
   const response=await fetch(API+path,{...options,headers});
   if(response.status===401){logout();throw new Error('Session expired');}
   return response;
+}
+
+function rewardDropdown(id,onchange){
+  return `<select id="${id}" onchange="${onchange}">${
+    rewardOptions.map(value=>`<option value="${value}" ${value===globalRewardPct?'selected':''}>${value}%</option>`).join('')
+  }</select>`;
+}
+function calculateRewardPreview(amountId,percentageId,previewId){
+  const amount=Number(document.getElementById(amountId)?.value||0);
+  const percentage=Number(document.getElementById(percentageId)?.value||globalRewardPct);
+  const points=amount>=100?amount*percentage/100:0;
+  const preview=document.getElementById(previewId);
+  if(!preview)return;
+  preview.innerHTML=amount>=100
+    ? `<span>₹${amount.toLocaleString('en-IN')} × ${percentage}%</span><strong>${points.toFixed(2)} points</strong>`
+    : `<span>Minimum purchase ₹100</span><strong>0.00 points</strong>`;
 }
 
 /* ── SEED DATA ── */
@@ -519,7 +583,7 @@ function today(){return new Date().toISOString()}
 function inits(name){return name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
 function newOrderNo(){return 'AE-'+String(nextOnum++).padStart(4,'0')}
 function newCid(){return 'C'+String(nextCid++).padStart(3,'0')}
-function qrData(c){return JSON.stringify({id:c.id,name:c.name,phone:c.phone,merchant:c.merchant});}
+function qrData(c){return JSON.stringify({id:c.id,name:c.name,phone:c.phone});}
 
 /* ── QR ── */
 function genQR(cid,size=130){
@@ -575,99 +639,11 @@ function closeQRModal(){document.getElementById('qr-modal').classList.remove('op
 async function sendQRWA(cid){
   const c=customers.find(x=>x.id===cid); if(!c)return;
   try{
-    const r=await apiFetch('/api/send-qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,phone:c.phone,cid:c.id,merchant:c.merchant})});
+    const r=await apiFetch('/api/send-qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cid:c.id,merchantId:c.merchantId})});
     const d=await r.json();
     showToast(d.success?`✅ QR sent to ${c.phone} via WhatsApp`:`⚠️ WhatsApp messaging is not configured`,'success');
   }catch{showToast('⚠️ Backend not running — start server first','error');}
 }
-
-function simulateScan(cid){
-  openScanModal(cid);
-}
-
-function openScanModal(cid){
-  const c=customers.find(x=>x.id===cid); if(!c)return;
-  const myO=orders.filter(o=>o.cid===cid);
-  const lastOrder=myO.length?[...myO].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0]:null;
-  const lastAmt=lastOrder?lastOrder.amount:0;
-  const estPts=Math.floor(lastAmt*globalRewardPct/100);
-
-  document.getElementById('scan-modal-body').innerHTML=`
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-      <div style="width:44px;height:44px;border-radius:50%;background:rgba(124,110,247,.2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0">${initials(c.name)}</div>
-      <div>
-        <div style="font-weight:700;font-size:15px">${c.name}</div>
-        <div style="font-size:12px;color:var(--muted)">${c.phone} &nbsp;·&nbsp; ${c.id}</div>
-        <div style="font-size:12px;color:var(--muted)">Current balance: <span style="color:var(--warn);font-weight:700">🏆 ${c.rewardPoints||0} pts</span></div>
-      </div>
-    </div>
-
-    <div class="reward-summary-box">
-      <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Purchase Details</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="color:var(--muted);font-size:13px">Last order amount</span>
-        <span style="font-weight:700;color:var(--success);font-size:15px">₹${lastAmt.toLocaleString()}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="color:var(--muted);font-size:13px">Reward % (global)</span>
-        <span style="font-weight:700;color:var(--warn)">${globalRewardPct}%</span>
-      </div>
-      <div style="border-top:1px solid rgba(245,158,11,.2);margin:10px 0"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="color:var(--muted);font-size:13px">Points to be awarded</span>
-        <span class="reward-badge-lg">+${estPts} pts</span>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn-primary" onclick="confirmReward('${cid}',${lastAmt},${estPts})" style="flex:1;justify-content:center">🏆 Confirm & Send SMS</button>
-      <button class="btn-ghost" onclick="closeScanModal()">Cancel</button>
-    </div>
-  `;
-  document.getElementById('scan-modal-backdrop').style.display='flex';
-  setTimeout(()=>{const f=document.getElementById('otp-0');if(f)f.focus();},100);
-}
-
-function closeScanModal(){
-  document.getElementById('scan-modal-backdrop').style.display='none';
-}
-
-
-async function confirmReward(cid, amount, pts){
-  const c=customers.find(x=>x.id===cid); if(!c)return;
-  const btn=event.target;
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Sending…';
-
-  try{
-    const rewardResponse=await apiFetch('/api/customers/'+encodeURIComponent(cid)+'/reward',{
-      method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({points:pts})
-    });
-    const rewardData=await rewardResponse.json();
-    if(!rewardResponse.ok)throw new Error(rewardData.error||'Could not save reward');
-    c.rewardPoints=rewardData.rewardPoints;c.qrScans=rewardData.qrScans;
-  }catch(error){
-    btn.disabled=false;btn.innerHTML='🏆 Confirm & Send SMS';
-    showToast(error.message,'error');return;
-  }
-
-  // Call backend to send SMS
-  let smsSent=false;
-  try{
-    const r=await apiFetch('/api/send-reward-sms',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:c.name, phone:c.phone, amount, pts, totalPts:c.rewardPoints, merchant:c.merchant, rewardPct:globalRewardPct})
-    });
-    const d=await r.json();
-    smsSent=d.success===true;
-  }catch{ /* backend offline */ }
-
-  btn.disabled=false; btn.innerHTML='🏆 Confirm & Send SMS';
-  closeScanModal();
-
-  showToast(`🏆 ${pts} points added to ${c.name}${smsSent?' · SMS sent':''}`, 'success');
-  renderPage(currentPage);
-}
-
 
 /* ── AUTH ── */
 async function login(event){
@@ -704,6 +680,7 @@ async function enterApp(user){
   checkApiStatus();renderSidebar();navigate('dashboard');
 }
 function logout(){
+  stopQrScanner();
   accessToken='';
   localStorage.removeItem('ae_access_token');
   currentUser=null;
@@ -733,7 +710,11 @@ async function loadServerData(){
   if(customerResponse.ok)customers=customerData.customers;
   if(merchantResponse.ok)merchants=merchantData.merchants;
   if(orderResponse.ok)orders=orderData.orders;
-  if(rewardResponse.ok)globalRewardPct=rewardData.rewardPercentage;
+  if(rewardResponse.ok){
+    globalRewardPct=rewardData.rewardPercentage;
+    globalRewardMin=rewardData.rewardMinimum;
+    rewardOptions=rewardData.rewardOptions;
+  }
   if(currentRole==='merchant'&&merchants[0])currentUser.merchantName=merchants[0].name;
 }
 function toggleSidebar(){
@@ -755,17 +736,11 @@ async function checkApiStatus(){
     document.getElementById('label-email').textContent=d.resend?'Email ✓':'Email ✗';
     document.getElementById('dot-wa').className='dot '+(d.whatsapp?'dot-on':'dot-off');
     document.getElementById('label-wa').textContent=d.whatsapp?'WhatsApp ✓':'WhatsApp ✗';
-    document.getElementById('dot-sms').className='dot '+(d.sms?'dot-on':'dot-off');
-    document.getElementById('label-sms').textContent=d.sms?'SMS ✓':'SMS ✗';
-    document.getElementById('dot-sms').className='dot '+(d.sms?'dot-on':'dot-off');
-    document.getElementById('label-sms').textContent=d.sms?'SMS ✓':'SMS ✗';
-    document.getElementById('status-detail').textContent=(!d.resend||!d.whatsapp||!d.sms)?'Some channels are not configured.':'All channels active';
+    document.getElementById('status-detail').textContent=(!d.resend||!d.whatsapp)?'Some channels are not configured.':'All channels active';
   }catch{
     ['dot-email','dot-wa'].forEach(id=>document.getElementById(id).className='dot dot-off');
     document.getElementById('label-email').textContent='Email (offline)';
     document.getElementById('label-wa').textContent='WhatsApp (offline)';
-    document.getElementById('dot-sms').className='dot dot-off';
-    document.getElementById('label-sms').textContent='SMS (offline)';
     document.getElementById('status-detail').textContent='Backend not running.';
   }
 }
@@ -794,10 +769,16 @@ function renderSidebar(){
       <span class="nav-icon">${n.icon}</span>${n.label}
     </div>`).join('<div class="nav-sep"></div>');
 }
-function navigate(page){currentPage=page;renderSidebar();renderPage(page);closeSidebar();window.scrollTo(0,0);}
+function navigate(page){
+  if(currentPage==='dashboard'&&page!=='dashboard')stopQrScanner();
+  currentPage=page;renderSidebar();renderPage(page);closeSidebar();window.scrollTo(0,0);
+}
 function renderPage(page){
   const el=document.getElementById('main-content');
-  if(page==='dashboard')     el.innerHTML=renderDashboard();
+  if(page==='dashboard'){
+    el.innerHTML=renderDashboard();
+    setTimeout(()=>loadDashboardData(),0);
+  }
   else if(page==='add-customer') el.innerHTML=renderAddCustomer();
   else if(page==='orders')   el.innerHTML=renderOrders();
   else if(page==='customers')el.innerHTML=renderCustomers();
@@ -961,6 +942,287 @@ function renderDashboard(){
   </div>`;
 }
 
+function dashboardRange(period=dashboardPeriod){
+  const now=new Date();
+  let from=new Date(now),to=new Date(now);
+  if(period==='today'){
+    from.setHours(0,0,0,0);to=new Date(from);to.setDate(to.getDate()+1);
+  }else if(period==='week'){
+    from.setHours(0,0,0,0);from.setDate(from.getDate()-((from.getDay()+6)%7));
+    to=new Date(from);to.setDate(to.getDate()+7);
+  }else if(period==='month'){
+    from=new Date(now.getFullYear(),now.getMonth(),1);
+    to=new Date(now.getFullYear(),now.getMonth()+1,1);
+  }else{
+    const fromInput=document.getElementById('dash-from')?.value;
+    const toInput=document.getElementById('dash-to')?.value;
+    if(!fromInput||!toInput)return null;
+    from=new Date(fromInput+'T00:00:00');to=new Date(toInput+'T00:00:00');to.setDate(to.getDate()+1);
+  }
+  return{from:from.toISOString(),to:to.toISOString()};
+}
+
+function reportRange(kind){
+  const period=kind==='chart'?chartPeriod:retentionPeriod;
+  if(period!=='custom')return dashboardRange(period);
+  const fromValue=kind==='chart'?chartCustomFrom:retentionCustomFrom;
+  const toValue=kind==='chart'?chartCustomTo:retentionCustomTo;
+  if(!fromValue||!toValue)return null;
+  const from=new Date(fromValue+'T00:00:00');
+  const to=new Date(toValue+'T00:00:00');to.setDate(to.getDate()+1);
+  return{from:from.toISOString(),to:to.toISOString()};
+}
+
+function renderDashboard(){
+  const data=dashboardData||{
+    summary:{totalOrders:0,totalRevenue:0,rewardPointsIssued:0,totalCustomers:0},
+    intervals:['00–06','06–12','12–18','18–24'].map(label=>({label,orders:0,revenue:0})),
+    retention:{lifetimeCustomers:0,selectedVisits:0,todayVisits:0,weekVisits:0,monthVisits:0}
+  };
+  const chart=chartData||data;
+  const retention=(retentionData||data).retention;
+  const maxOrders=Math.max(...chart.intervals.map(item=>item.orders),1);
+  const maxRevenue=Math.max(...chart.intervals.map(item=>item.revenue),1);
+  const today=new Date().toISOString().slice(0,10);
+  return`
+  <div class="page-title">Dashboard</div>
+  <p class="page-sub">${currentRole==='merchant'?'Store performance and QR checkout':'Business performance across all merchants'}</p>
+
+  <div class="dashboard-tools">
+    <div class="period-tabs">
+      ${[['today','Today'],['week','Weekly'],['month','Monthly'],['custom','Custom']].map(([id,label])=>
+        `<button class="period-tab ${dashboardPeriod===id?'active':''}" onclick="setDashboardPeriod('${id}')">${label}</button>`
+      ).join('')}
+    </div>
+    <div class="date-range" style="${dashboardPeriod==='custom'?'':'display:none'}">
+      <div><label>From<input id="dash-from" type="date" value="${today}"></label></div>
+      <div><label>To<input id="dash-to" type="date" value="${today}"></label></div>
+      <button class="btn-primary" onclick="loadDashboardData()">Apply</button>
+    </div>
+  </div>
+
+  <div class="stats-grid metric-grid">
+    <div class="stat-card sg-purple"><div class="stat-label">Total Orders</div><div class="stat-val cp">${data.summary.totalOrders}</div><div class="stat-sub">Selected period</div></div>
+    <div class="stat-card sg-green"><div class="stat-label">Total Revenue</div><div class="stat-val cg">₹${Number(data.summary.totalRevenue).toLocaleString('en-IN')}</div><div class="stat-sub">Selected period</div></div>
+    <div class="stat-card sg-blue"><div class="stat-label">Reward Points Issued</div><div class="stat-val cb">${data.summary.rewardPointsIssued}</div><div class="stat-sub">Selected period</div></div>
+    <div class="stat-card sg-pink"><div class="stat-label">Total Customers</div><div class="stat-val cpk">${data.summary.totalCustomers}</div><div class="stat-sub">Registered in period</div></div>
+  </div>
+
+  ${currentRole==='merchant'?`
+  <div class="panel">
+    <div class="panel-title">Scan Customer QR</div>
+    <div class="scanner-shell">
+      <div>
+        <div class="scanner-view" id="qr-reader"><span style="color:var(--muted)">Camera is off</span></div>
+        <div class="scanner-actions">
+          <button class="btn-primary" id="scanner-start" onclick="startQrScanner()">Scan QR</button>
+        </div>
+        <div class="scanner-message" id="scanner-message">Camera access requires HTTPS or localhost.</div>
+      </div>
+      <div id="scan-checkout-panel">
+        <div style="padding:20px;border:1px solid var(--border);border-radius:8px;background:#f8fafc;color:var(--muted);line-height:1.6">
+          Scan a customer QR to identify them and begin checkout.
+        </div>
+      </div>
+    </div>
+  </div>`:''}
+
+  <div class="panel-row">
+    <div class="panel">
+      <div class="report-heading">
+        <div class="panel-title">Orders and Revenue by 6-Hour Interval</div>
+        <div class="period-tabs compact">
+          ${[['today','Today'],['week','Weekly'],['month','Monthly'],['custom','Custom']].map(([id,label])=>
+            `<button class="period-tab ${chartPeriod===id?'active':''}" onclick="setReportPeriod('chart','${id}')">${label}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="date-range" style="${chartPeriod==='custom'?'margin-bottom:10px':'display:none'}">
+        <div><label>From<input type="date" value="${chartCustomFrom||today}" onchange="chartCustomFrom=this.value"></label></div>
+        <div><label>To<input type="date" value="${chartCustomTo||today}" onchange="chartCustomTo=this.value"></label></div>
+        <button class="btn-primary" onclick="loadReportData('chart')">Apply</button>
+      </div>
+      <div class="grouped-chart">
+        ${chart.intervals.map(item=>`<div class="group-slot">
+          <div class="group-bars">
+            <div class="group-bar" style="height:${Math.max(item.orders/maxOrders*100,3)}%;background:var(--accent)">
+              <div class="bar-tip">${item.orders} orders</div>
+            </div>
+            <div class="group-bar" style="height:${Math.max(item.revenue/maxRevenue*100,3)}%;background:var(--success)">
+              <div class="bar-tip">₹${Number(item.revenue).toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+          <div class="bar-label">${item.label}</div>
+        </div>`).join('')}
+      </div>
+      <div class="chart-legend">
+        <span><span class="legend-swatch" style="background:var(--accent)"></span>Orders</span>
+        <span><span class="legend-swatch" style="background:var(--success)"></span>Revenue</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="report-heading">
+        <div class="panel-title">Retention</div>
+        <div class="period-tabs compact">
+          ${[['today','Today'],['week','Weekly'],['month','Monthly'],['custom','Custom']].map(([id,label])=>
+            `<button class="period-tab ${retentionPeriod===id?'active':''}" onclick="setReportPeriod('retention','${id}')">${label}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="date-range" style="${retentionPeriod==='custom'?'margin-bottom:10px':'display:none'}">
+        <div><label>From<input type="date" value="${retentionCustomFrom||today}" onchange="retentionCustomFrom=this.value"></label></div>
+        <div><label>To<input type="date" value="${retentionCustomTo||today}" onchange="retentionCustomTo=this.value"></label></div>
+        <button class="btn-primary" onclick="loadReportData('retention')">Apply</button>
+      </div>
+      <div style="font-size:34px;font-weight:800;color:var(--wa);margin-bottom:4px">${retention.selectedVisits||0}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Returning visits in selected period</div>
+      <div style="font-size:12px;color:var(--text);font-weight:700;margin-bottom:20px">${retention.lifetimeCustomers} lifetime retained customers</div>
+      <div class="ret-stats">
+        <div class="ret-row"><span class="ret-dot" style="background:var(--info)"></span><span>Today</span><span class="ret-num">${retention.todayVisits}</span></div>
+        <div class="ret-row"><span class="ret-dot" style="background:var(--accent)"></span><span>Weekly</span><span class="ret-num">${retention.weekVisits}</span></div>
+        <div class="ret-row"><span class="ret-dot" style="background:var(--success)"></span><span>Monthly</span><span class="ret-num">${retention.monthVisits}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Quick Actions</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="navigate('add-customer')">+ ${currentRole==='admin'?'Add Customer':'Register Buyer'}</button>
+      <button class="btn-ghost" onclick="navigate('customers')">View Customers &amp; QR</button>
+      <button class="btn-ghost" onclick="navigate('orders')">View Orders</button>
+    </div>
+  </div>`;
+}
+
+async function setDashboardPeriod(period){
+  await stopQrScanner();
+  dashboardPeriod=period;dashboardData=null;
+  document.getElementById('main-content').innerHTML=renderDashboard();
+  if(period!=='custom')await loadDashboardData();
+}
+
+async function setReportPeriod(kind,period){
+  await stopQrScanner();
+  if(kind==='chart'){chartPeriod=period;chartData=null;}
+  else{retentionPeriod=period;retentionData=null;}
+  document.getElementById('main-content').innerHTML=renderDashboard();
+  if(period!=='custom')await loadReportData(kind);
+}
+
+async function loadReportData(kind){
+  if(kind==='chart'){
+    chartCustomFrom=document.querySelector('.panel-row .panel:first-child input[type="date"]')?.value||chartCustomFrom;
+    const inputs=document.querySelectorAll('.panel-row .panel:first-child input[type="date"]');
+    chartCustomTo=inputs.length>1?inputs[1].value:chartCustomTo;
+  }else{
+    const inputs=document.querySelectorAll('.panel-row .panel:nth-child(2) input[type="date"]');
+    retentionCustomFrom=inputs.length?inputs[0].value:retentionCustomFrom;
+    retentionCustomTo=inputs.length>1?inputs[1].value:retentionCustomTo;
+  }
+  const range=reportRange(kind);if(!range){showToast('Choose both dates','error');return;}
+  try{
+    const response=await apiFetch('/api/dashboard?from='+encodeURIComponent(range.from)+'&to='+encodeURIComponent(range.to));
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Could not load report');
+    if(kind==='chart')chartData=data;else retentionData=data;
+    document.getElementById('main-content').innerHTML=renderDashboard();
+  }catch(error){showToast(error.message,'error');}
+}
+
+async function loadDashboardData(){
+  const range=dashboardRange();if(!range){showToast('Choose both dates','error');return;}
+  try{
+    const response=await apiFetch('/api/dashboard?from='+encodeURIComponent(range.from)+'&to='+encodeURIComponent(range.to));
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Could not load dashboard');
+    dashboardData=data;
+    if(!chartData)chartData=data;
+    if(!retentionData)retentionData=data;
+    document.getElementById('main-content').innerHTML=renderDashboard();
+  }catch(error){showToast(error.message,'error');}
+}
+
+async function startQrScanner(){
+  const message=document.getElementById('scanner-message');
+  if(!window.isSecureContext){message.textContent='Camera scanning needs HTTPS or localhost.';return;}
+  if(typeof Html5Qrcode==='undefined'){message.textContent='QR scanner could not load.';return;}
+  if(scannerRunning)return;
+  const scanButton=document.getElementById('scanner-start');
+  if(scanButton){scanButton.disabled=true;scanButton.textContent='Scanning...';}
+  try{
+    document.getElementById('qr-reader').innerHTML='';
+    qrScanner=new Html5Qrcode('qr-reader');
+    await qrScanner.start(
+      {facingMode:'environment'},
+      {fps:10,qrbox:{width:220,height:220}},
+      decoded=>handleQrDecoded(decoded),
+      ()=>{}
+    );
+    scannerRunning=true;message.textContent='Point the camera at a RewardHub customer QR.';
+  }catch(error){
+    message.textContent='Camera access was denied or no camera is available.';
+    if(scanButton){scanButton.disabled=false;scanButton.textContent='Scan QR';}
+  }
+}
+
+async function stopQrScanner(){
+  if(qrScanner&&scannerRunning){try{await qrScanner.stop();}catch{}}
+  scannerRunning=false;qrScanner=null;
+  const scanButton=document.getElementById('scanner-start');
+  if(scanButton){scanButton.disabled=false;scanButton.textContent='Scan QR';}
+}
+
+async function handleQrDecoded(decoded){
+  if(scannedCustomer)return;
+  let payload;
+  try{payload=JSON.parse(decoded);}catch{document.getElementById('scanner-message').textContent='Invalid RewardHub QR.';return;}
+  if(!payload?.id){document.getElementById('scanner-message').textContent='Customer ID is missing from the QR.';return;}
+  try{
+    const response=await apiFetch('/api/customers/scan/'+encodeURIComponent(payload.id));
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Customer not found');
+    scannedCustomer=data.customer;await stopQrScanner();
+    document.getElementById('scanner-message').textContent='Customer verified.';
+    document.getElementById('scan-checkout-panel').innerHTML=`
+      <div class="panel" style="margin:0">
+        <div class="panel-title">${scannedCustomer.name}</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:14px">${formatIndianPhone(scannedCustomer.phone)} · ${scannedCustomer.id}</div>
+        ${scannedCustomer.isNewToMerchant?'<div class="tag tb" style="margin-bottom:12px">New merchant connection</div>':''}
+        <div style="font-size:12px;margin-bottom:16px">Current balance: <strong>${scannedCustomer.rewardPoints} points</strong></div>
+        <div class="purchase-reward-row">
+          <div class="form-group"><label>Purchase Amount (₹)</label><input class="amount-input" id="scan-amount" type="number" min="100" step="0.01" placeholder="00" oninput="calculateRewardPreview('scan-amount','scan-reward-pct','scan-reward-preview')"></div>
+          <div class="form-group"><label>Reward Percentage</label>${rewardDropdown('scan-reward-pct',"calculateRewardPreview('scan-amount','scan-reward-pct','scan-reward-preview')")}</div>
+        </div>
+        <div class="reward-preview" id="scan-reward-preview"><span>Minimum purchase ₹100</span><strong>0.00 points</strong></div>
+        <button class="btn-primary" onclick="completeScannedCheckout(this)" style="width:100%;justify-content:center">Complete checkout</button>
+      </div>`;
+  }catch(error){document.getElementById('scanner-message').textContent=error.message;}
+}
+
+async function completeScannedCheckout(button){
+  const amount=Number(document.getElementById('scan-amount').value);
+  const rewardPercentage=Number(document.getElementById('scan-reward-pct').value);
+  if(!Number.isFinite(amount)||amount<100){showToast('Minimum purchase amount is ₹100','error');return;}
+  button.disabled=true;button.textContent='Processing...';
+  try{
+    const response=await apiFetch('/api/checkouts',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({customerCode:scannedCustomer.id,amount,rewardPercentage,location:'In-store'})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Checkout failed');
+    showToast(`Checkout saved · ${data.purchase.points_earned} points issued`,'success');
+    scannedCustomer=null;dashboardData=null;await loadServerData();
+    document.getElementById('main-content').innerHTML=renderDashboard();await loadDashboardData();
+  }catch(error){showToast(error.message,'error');button.disabled=false;button.textContent='Complete checkout';}
+}
+
+function formatIndianPhone(value){
+  const digits=String(value||'').replace(/\D/g,'').slice(-10);
+  return digits.length===10?`+91 ${digits.slice(0,5)} ${digits.slice(5)}`:value;
+}
+
 /* ══ ORDER LIST ══ */
 function renderOrders(){
   const myO=currentRole==='merchant'?orders.filter(o=>o.merchant===currentUser.merchantName):orders;
@@ -972,21 +1234,22 @@ function renderOrders(){
   <div style="margin-bottom:16px"><button class="btn-wa" onclick="navigate('add-customer')">➕ ${currentRole==='admin'?'Add Customer':'Add Buyer'}</button></div>
   <div class="panel" style="padding:0;overflow:hidden">
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Order No.</th><th>Customer</th><th>Phone</th><th>Email</th><th>Amount</th><th>Reward Pts</th><th>Date</th><th>Time</th><th>Month</th><th>WA</th><th>Email</th></tr></thead>
+      <thead><tr><th>#</th><th>Order No.</th><th>Customer</th><th>Phone</th><th>Email</th><th>Amount</th><th>Reward %</th><th>Reward Pts</th><th>Date</th><th>Time</th><th>Month</th><th>WA</th><th>Email</th></tr></thead>
       <tbody>${list.map((o,idx)=>{
-        const col=COLORS[o.id%COLORS.length];
+        const col=COLORS[idx%COLORS.length];
         return`<tr>
           <td style="color:var(--muted);font-size:12px">${idx+1}</td>
           <td><span class="order-num">${o.orderNo}</span></td>
           <td><div class="cell-name"><div class="av" style="background:${col}22;color:${col}">${inits(o.customer)}</div><div><div style="font-weight:600">${o.customer}</div><div style="font-size:10px;color:var(--muted)">${o.cid}</div></div></div></td>
           <td style="color:var(--muted);font-size:12px">${o.phone}</td>
           <td style="color:var(--muted);font-size:12px">${o.email||'—'}</td>
-          <td><span class="tag tg" style="font-size:12px;font-weight:700">₹${o.amount.toLocaleString()}</span></td>
-          <td><span class="reward-badge">🏆 ${Math.floor(o.amount*globalRewardPct/100)} pts</span></td>
+          <td class="amount-col"><span class="tag tg" style="font-size:13px;font-weight:700">₹${o.amount.toLocaleString()}</span></td>
+          <td><span class="tag tb">${Number(o.rewardPercentage||globalRewardPct)}%</span></td>
+          <td><span class="reward-badge">🏆 ${Number(o.rewardPoints||0).toFixed(2)} pts</span></td>
           <td style="font-size:11px;color:var(--muted);white-space:nowrap">${fmtDate(o.timestamp)}</td>
           <td style="font-size:11px;color:var(--muted)">${fmtTime(o.timestamp)}</td>
           <td><span class="tag tb">${fmtMonth(o.timestamp)}</span></td>
-          <td>${o.waSent?'<span class="tag tw">💬</span>':'<span class="tag te">✗</span>'}</td>
+          <td><span class="tag ${['delivered','read'].includes(o.whatsappStatus)?'tw':o.whatsappStatus==='failed'?'te':'tb'}">${o.whatsappStatus||'not sent'}</span></td>
           <td>${o.emailSent?'<span class="tag tg">📧</span>':'<span class="tag te">✗</span>'}</td>
         </tr>`;
       }).join('')}</tbody>
@@ -1004,13 +1267,23 @@ function renderAddCustomer(){
     <div class="reg-title">🧑‍💼 New Customer Registration</div>
     <div class="reg-sub">Enter details — QR code sent to WhatsApp automatically for fast re-entry at next checkout.</div>
     <div class="form-grid" style="margin-bottom:18px">
-      <div class="form-group"><label>Customer Name *</label><input type="text" id="ab-name" placeholder="Priya Sharma"/></div>
-      <div class="form-group"><label>WhatsApp Number *</label><input type="tel" id="ab-phone" placeholder="+91 98765 43210"/></div>
-      <div class="form-group"><label>Email Address *</label><input type="email" id="ab-email" placeholder="priya@example.com"/></div>
-      <div class="form-group"><label>Purchase Amount (₹) *</label><input type="number" id="ab-amount" placeholder="2500"/></div>
+      <div class="form-group"><label>Customer Name *</label><input type="text" id="ab-name"/></div>
+      <div class="form-group"><label>WhatsApp Number *</label><div class="phone-input"><span class="phone-prefix">+91</span><input type="tel" id="ab-phone" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"/></div></div>
+      <div class="form-group"><label>Email Address (Optional)</label><input type="email" id="ab-email"/></div>
+      <div style="grid-column:1/-1">
+        <div class="purchase-reward-row">
+          <div class="form-group"><label>Purchase Amount (₹) *</label><input class="amount-input" type="number" min="100" step="0.01" id="ab-amount" placeholder="00" oninput="calculateRewardPreview('ab-amount','ab-reward-pct','ab-reward-preview')"/></div>
+          <div class="form-group"><label>Reward Percentage *</label>${rewardDropdown('ab-reward-pct',"calculateRewardPreview('ab-amount','ab-reward-pct','ab-reward-preview')")}</div>
+        </div>
+        <div class="reward-preview" id="ab-reward-preview"><span>Minimum purchase ₹100</span><strong>0.00 points</strong></div>
+      </div>
       
       ${isAdmin?`<div class="form-group"><label>Assign to Merchant</label><select id="ab-merchant">${merchants.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>`:''}
     </div>
+    <label style="display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);margin-bottom:16px;cursor:pointer">
+      <input type="checkbox" id="ab-wa-consent" style="margin-top:2px">
+      Customer agrees to receive their QR code, purchase receipts, and reward updates on WhatsApp.
+    </label>
     <div style="background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.18);border-radius:9px;padding:11px 14px;font-size:12px;color:var(--wa);margin-bottom:16px">
       💬 QR code is generated and sent to customer's WhatsApp on registration — they use it for fast checkout every time after.
     </div>
@@ -1025,36 +1298,44 @@ function renderAddCustomer(){
 
 async function addCustomer(){
   const name    =document.getElementById('ab-name').value.trim();
-  const phone   =document.getElementById('ab-phone').value.trim();
+  const phoneDigits=document.getElementById('ab-phone').value.replace(/\D/g,'');
+  const phone='+91'+phoneDigits;
   const email   =document.getElementById('ab-email').value.trim();
   const amount  =parseFloat(document.getElementById('ab-amount').value);
+  const rewardPercentage=Number(document.getElementById('ab-reward-pct').value);
   const location='In-store';
   const merchantEl=document.getElementById('ab-merchant');
   const merchantId=merchantEl?merchantEl.value:currentUser.merchant_id;
   const merchant=(merchants.find(m=>m.id===merchantId)||{}).name||currentUser.merchantName;
-  if(!name||!phone||!email||!amount){showToast('Name, phone, email and amount are required','error');return;}
+  const whatsappConsent=document.getElementById('ab-wa-consent').checked;
+  if(!name||!/^[6-9]\d{9}$/.test(phoneDigits)||!Number.isFinite(amount)||amount<100||!whatsappConsent){
+    showToast('Name, valid phone, minimum ₹100 purchase, and WhatsApp consent are required','error');return;
+  }
 
   let newCust,oNo;
   try{
     const createResponse=await apiFetch('/api/customers',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,phone,email,amount,merchantId,location})
+      body:JSON.stringify({name,phone,email,amount,rewardPercentage,merchantId,location,whatsappConsent})
     });
     const createData=await createResponse.json();
     if(!createResponse.ok)throw new Error(createData.error||'Could not save customer');
-    newCust=createData.customer;oNo=createData.orderNo;
+    newCust=createData.customer;oNo=createData.order.order_no;
     customers.unshift(newCust);
+    orders.unshift({
+      id:createData.order.order_id,orderNo:oNo,cid:newCust.id,customer:name,phone,email,amount,
+      merchant,location,timestamp:createData.order.created_at,rewardPoints:createData.order.points_earned,
+      rewardPercentage:createData.order.reward_percentage,
+      isReturning:false,source:'registration',
+      whatsappStatus:createData.notifications.whatsapp.sent?'sent':'failed',
+      emailSent:createData.notifications.email.sent
+    });
   }catch(error){showToast(error.message,'error');return;}
   const cid=newCust.id;
-  orders.push({id:nextOid++,orderNo:oNo,cid,customer:name,phone,email,amount,merchant,location,timestamp:today(),waSent:false,emailSent:false});
 
-  let waSent=false,emailSent=false;
-  try{
-    const r=await apiFetch('/api/send-qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone,email,cid,merchant,location})});
-    const d=await r.json();
-    waSent=d.success===true; emailSent=d.emailSent===true;
-    const last=orders[orders.length-1]; last.waSent=waSent; last.emailSent=emailSent;
-  }catch{}
+  const createdOrder=orders[0];
+  const waSent=createdOrder.whatsappStatus==='sent';
+  const emailSent=createdOrder.emailSent;
 
   showToast(`${name} registered! ID: ${cid}`,'success');
 
@@ -1085,6 +1366,7 @@ async function addCustomer(){
   </div>`;
   setTimeout(()=>genQRInto('res-qr-'+cid,qrData(newCust),128),120);
   ['ab-name','ab-phone','ab-email','ab-amount'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ab-wa-consent').checked=false;
 }
 
 /* ══ CUSTOMERS & QR ══ */
@@ -1122,7 +1404,6 @@ function renderCustomers(){
           <div style="display:flex;gap:5px">
             <button class="btn-wa btn-sm" onclick="sendQRWA('${c.id}')">💬</button>
             <button class="btn-primary btn-sm" onclick="openQRModal('${c.id}')">🔍</button>
-            <button class="btn-ghost btn-sm" onclick="simulateScan('${c.id}')" style="padding:4px 9px;font-size:11px">📲</button>
           </div>
         </div>
       </div>`;
@@ -1264,12 +1545,14 @@ async function saveRewardSetting(button){
   try{
     const response=await apiFetch('/api/settings/reward',{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({rewardPercentage:globalRewardPct})
+      body:JSON.stringify({rewardPercentage:globalRewardPct,rewardMinimum:globalRewardMin})
     });
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Could not save reward setting');
     globalRewardPct=data.rewardPercentage;
-    showToast('Reward percentage saved: '+globalRewardPct+'%','success');
+    globalRewardMin=data.rewardMinimum;
+    rewardOptions=data.rewardOptions;
+    showToast('Reward settings saved','success');
     renderPage('reward-settings');
   }catch(error){
     showToast(error.message,'error');
@@ -1283,51 +1566,51 @@ function renderRewardSettings(){
   const isAdmin=currentRole==='admin';
   return`
   <div class="page-title">Reward Settings</div>
-  <p class="page-sub">Configure the global reward percentage applied to every purchase across all merchants.</p>
+  <p class="page-sub">Set the minimum and default percentages available at checkout.</p>
 
   <div class="panel" style="border-color:rgba(245,158,11,.25)">
-    <div class="panel-title">🏆 Global Reward Percentage</div>
+    <div class="panel-title">Reward Percentage Rules</div>
     ${isAdmin?`
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Set the percentage of each purchase that is awarded as reward points to the customer. This applies to all merchants.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Merchants choose a percentage for each purchase. Values below the minimum are hidden and the default is preselected.</p>
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px">
-      <div>
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Reward %</div>
-        <div class="reward-pct-control">
-          <button onclick="if(globalRewardPct>0.5){globalRewardPct=Math.round((globalRewardPct-0.5)*10)/10;renderPage('reward-settings')}" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-          <input class="reward-pct-input" type="number" min="0.1" max="20" step="0.1" value="${globalRewardPct}" onchange="globalRewardPct=Math.max(0.1,Math.min(20,parseFloat(this.value)||1));renderPage('reward-settings')"/>
-          <button onclick="if(globalRewardPct<20){globalRewardPct=Math.round((globalRewardPct+0.5)*10)/10;renderPage('reward-settings')}" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-        </div>
+      <div class="form-group">
+        <label>Minimum Percentage</label>
+        <select onchange="globalRewardMin=Number(this.value);if(globalRewardPct<globalRewardMin)globalRewardPct=globalRewardMin;renderPage('reward-settings')">
+          ${ALL_REWARD_OPTIONS.map(value=>`<option value="${value}" ${value===globalRewardMin?'selected':''}>${value}%</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Default Percentage</label>
+        <select onchange="globalRewardPct=Number(this.value);renderPage('reward-settings')">
+          ${ALL_REWARD_OPTIONS.filter(value=>value>=globalRewardMin).map(value=>`<option value="${value}" ${value===globalRewardPct?'selected':''}>${value}%</option>`).join('')}
+        </select>
       </div>
       <div style="font-size:13px;color:var(--muted)">
-        Example: ₹2,500 purchase → <strong style="color:var(--warn)">₹${(2500*globalRewardPct/100).toFixed(0)} = ${Math.floor(2500*globalRewardPct/100)} reward points</strong>
+        Example: ₹2,500 × ${globalRewardPct}% = <strong style="color:var(--warn)">${(2500*globalRewardPct/100).toFixed(2)} points</strong>
       </div>
     </div>
-    <button class="btn-primary" onclick="saveRewardSetting(this)">💾 Save Setting</button>
+    <button class="btn-primary" onclick="saveRewardSetting(this)">Save Settings</button>
     `:`
     <div style="text-align:center;padding:24px 0">
       <div style="font-size:48px;font-weight:800;color:var(--warn);font-family:var(--fh)">${globalRewardPct}%</div>
-      <div style="font-size:14px;color:var(--muted);margin-top:8px">Set by Admin — applies to all purchases</div>
+      <div style="font-size:14px;color:var(--muted);margin-top:8px">Default percentage · minimum ${globalRewardMin}%</div>
     </div>
     `}
   </div>
 
   <div class="panel">
-    <div class="panel-title">📱 SMS Reward Notification</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">When merchant scans customer QR and confirms reward, an SMS is sent automatically via Fast2SMS.</p>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;color:var(--text);line-height:1.7;margin-bottom:16px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase">EXAMPLE SMS</div>
-      Hi <strong>[Name]</strong>! You earned <strong style="color:var(--warn)">[pts] reward points</strong> on your ₹[amount] purchase at [Merchant]. Total balance: <strong style="color:var(--warn)">[total] pts</strong>. — Affiliate AE
-    </div>
+    <div class="panel-title">WhatsApp Reward Receipt</div>
+    <p style="font-size:13px;color:var(--muted)">After QR checkout, the customer receives the order amount, points earned, and total balance through the approved WhatsApp template.</p>
   </div>
 
   <div class="panel">
     <div class="panel-title">🔄 How the Reward Flow Works</div>
     <div style="display:flex;flex-direction:column;gap:11px;font-size:13px;color:var(--muted)">
       <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">1️⃣</span><span>Customer shows QR code at checkout</span></div>
-      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">2️⃣</span><span>Merchant taps 📲 Scan on the customer card</span></div>
-      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">3️⃣</span><span>Popup shows last order amount + points to be awarded at <strong style="color:var(--warn)">${globalRewardPct}%</strong></span></div>
-      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">4️⃣</span><span>Merchant taps Confirm &amp; Send SMS</span></div>
-      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">5️⃣</span><span>Points added to customer account + SMS sent instantly via Fast2SMS</span></div>
+      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">2️⃣</span><span>Merchant scans it from the dashboard camera</span></div>
+      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">3️⃣</span><span>Merchant enters the new purchase amount</span></div>
+      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">4️⃣</span><span>Order and reward points are saved together</span></div>
+      <div style="display:flex;gap:10px"><span style="font-size:17px;flex-shrink:0">5️⃣</span><span>Customer receives a WhatsApp reward receipt</span></div>
     </div>
   </div>`;
 }
