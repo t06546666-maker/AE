@@ -10,7 +10,8 @@ Meta WhatsApp Cloud API notifications, and optional Resend email.
 2. Copy `.env.example` to `.env` and add the required credentials.
 3. Run `supabase-schema.sql`, `supabase-reward-settings.sql`,
    `supabase-dashboard-whatsapp.sql`, `supabase-universal-qr.sql`, and
-   `supabase-per-purchase-rewards.sql` in the Supabase SQL Editor.
+   `supabase-per-purchase-rewards.sql` in the Supabase SQL Editor. Existing
+   deployments should also run `supabase-checkout-fixes.sql`.
 4. Start the app with `npm start`.
 5. Open `http://localhost:3000`.
 
