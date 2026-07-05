@@ -1,45 +1,4 @@
-alter table public.customers
-  alter column reward_points type numeric(12,2)
-  using reward_points::numeric(12,2);
-
-alter table public.customer_merchants
-  alter column reward_points type numeric(12,2)
-  using reward_points::numeric(12,2);
-
-alter table public.orders
-  alter column reward_points type numeric(12,2)
-  using reward_points::numeric(12,2);
-
-alter table public.orders
-  add column if not exists reward_percentage numeric(4,1) not null default 1.0;
-
-alter table public.orders
-  drop constraint if exists orders_reward_percentage_check;
-alter table public.orders
-  add constraint orders_reward_percentage_check
-  check (
-    reward_percentage = 0.5
-    or (
-      reward_percentage between 1 and 10
-      and reward_percentage = trunc(reward_percentage)
-    )
-  );
-
-insert into public.app_settings (key, value)
-values ('reward_minimum', 0.5)
-on conflict (key) do nothing;
-
-update public.app_settings
-set value = case
-  when value = 0.5 then 0.5
-  when value between 1 and 10 then trunc(value)
-  else 1
-end
-where key = 'reward_percentage';
-
-drop function if exists public.process_purchase(text, uuid, numeric, numeric, text, text);
-
-create function public.process_purchase(
+create or replace function public.process_purchase(
   p_customer_code text,
   p_merchant_id uuid,
   p_amount numeric,
@@ -83,9 +42,9 @@ begin
     raise exception 'Minimum purchase amount is 100';
   end if;
 
-  select value into v_minimum
-  from public.app_settings
-  where key = 'reward_minimum';
+  select s.value into v_minimum
+  from public.app_settings as s
+  where s.key = 'reward_minimum';
   v_minimum := coalesce(v_minimum, 0.5);
 
   if not (
@@ -121,12 +80,14 @@ begin
 
   select cm.* into v_membership
   from public.customer_merchants as cm
-  where cm.customer_id = v_customer.id and cm.merchant_id = p_merchant_id
+  where cm.customer_id = v_customer.id
+    and cm.merchant_id = p_merchant_id
   for update;
 
   select count(*) into v_prior_orders
   from public.orders as o
-  where o.customer_id = v_customer.id and o.merchant_id = p_merchant_id;
+  where o.customer_id = v_customer.id
+    and o.merchant_id = p_merchant_id;
 
   v_points := round(p_amount * p_reward_percentage / 100, 2);
   v_order_no := 'AE-' || to_char(clock_timestamp(), 'YYMMDDHH24MISSMS');
@@ -145,7 +106,8 @@ begin
   update public.customer_merchants as cm
   set reward_points = cm.reward_points + v_points,
       qr_scans = cm.qr_scans + case when p_source = 'qr' then 1 else 0 end
-  where cm.customer_id = v_customer.id and cm.merchant_id = p_merchant_id
+  where cm.customer_id = v_customer.id
+    and cm.merchant_id = p_merchant_id
   returning * into v_membership;
 
   return query select

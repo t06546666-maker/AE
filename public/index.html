@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Affiliate (AE)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="/vendor/html5-qrcode/html5-qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -137,8 +137,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100
 .amount-input:focus{box-shadow:0 0 0 4px rgba(85,70,232,.14)}
 .amount-col{min-width:130px}
 .purchase-reward-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(130px,.55fr);gap:12px;align-items:end}
-.reward-preview{margin-top:8px;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid #b8ddc8;border-radius:7px;background:#effbf4;color:var(--success);font-size:12px;font-weight:700}
+.reward-preview{margin-top:8px;min-height:38px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:9px 12px;border:1px solid #b8ddc8;border-radius:7px;background:#effbf4;color:var(--success);font-size:12px;font-weight:700}
 .reward-preview strong{font-size:17px}
+.amount-rule{margin-top:5px;color:var(--muted);font-size:11px}
 body.dark .reward-preview{background:#14251c;border-color:#285c3d}
 @media(max-width:560px){.purchase-reward-row{grid-template-columns:1fr}}
 body.dark{--bg:#0d0d14;--surface:#15151f;--card:#1b1b27;--border:#303044;--accent:#7c6ef7;--accent2:#e84d8a;--success:#22b96f;--warn:#f0a11d;--info:#38a8d8;--wa:#25b864;--text:#f4f5fa;--muted:#a0a8b8}
@@ -200,6 +201,7 @@ tbody tr:hover td{background:rgba(255,255,255,.018)}
 
 /* FORMS */
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:13px}
+.customer-details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:end}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .form-group input,.form-group select{padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;transition:border .2s}
@@ -354,7 +356,7 @@ select option{background:var(--card)}
   .ret-wrap svg{align-self:center}
 
   /* Forms stack to 1 column, larger touch targets */
-  .form-grid{grid-template-columns:1fr;gap:12px}
+  .form-grid,.customer-details-grid{grid-template-columns:1fr;gap:12px}
   .form-group input,.form-group select{padding:12px 14px;font-size:16px}
   .btn-primary,.btn-wa,.btn-ghost{width:100%;justify-content:center;padding:13px 20px;font-size:14px}
   .reg-form{padding:18px}
@@ -426,8 +428,8 @@ select option{background:var(--card)}
     <div class="login-logo">Affiliate</div>
     <div class="login-ae">AE — Customer Management System</div>
     <form class="login-form" onsubmit="login(event)">
-      <div class="form-group"><label>Email</label><input id="login-email" type="email" autocomplete="username" required placeholder="you@company.com"></div>
-      <div class="form-group"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Your password"></div>
+      <div class="form-group"><label>Email</label><input id="login-email" type="email" autocomplete="username" required></div>
+      <div class="form-group"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" minlength="8" required></div>
       <button class="card-btn" id="login-btn" type="submit">Sign in securely</button>
       <div class="login-error" id="login-error"></div>
     </form>
@@ -491,6 +493,7 @@ let dashboardPeriod='today',dashboardData=null;
 let chartPeriod='today',chartData=null,chartCustomFrom='',chartCustomTo='';
 let retentionPeriod='today',retentionData=null,retentionCustomFrom='',retentionCustomTo='';
 let qrScanner=null,scannerRunning=false,scannedCustomer=null;
+let pageRenderVersion=0,scanBusy=false;
 const COLORS=['#7c6ef7','#e84d8a','#22d47a','#f59e0b','#38bdf8','#fb7185','#a78bfa','#34d399'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -523,8 +526,8 @@ function calculateRewardPreview(amountId,percentageId,previewId){
   const preview=document.getElementById(previewId);
   if(!preview)return;
   preview.innerHTML=amount>=100
-    ? `<span>₹${amount.toLocaleString('en-IN')} × ${percentage}%</span><strong>${points.toFixed(2)} points</strong>`
-    : `<span>Minimum purchase ₹100</span><strong>0.00 points</strong>`;
+    ? `<strong>${points.toFixed(2)} points</strong>`
+    : `<strong>0.00 points</strong>`;
 }
 
 /* ── SEED DATA ── */
@@ -771,13 +774,14 @@ function renderSidebar(){
 }
 function navigate(page){
   if(currentPage==='dashboard'&&page!=='dashboard')stopQrScanner();
-  currentPage=page;renderSidebar();renderPage(page);closeSidebar();window.scrollTo(0,0);
+  currentPage=page;pageRenderVersion++;renderSidebar();renderPage(page);closeSidebar();window.scrollTo(0,0);
 }
 function renderPage(page){
   const el=document.getElementById('main-content');
   if(page==='dashboard'){
     el.innerHTML=renderDashboard();
-    setTimeout(()=>loadDashboardData(),0);
+    const renderVersion=pageRenderVersion;
+    setTimeout(()=>loadDashboardData(renderVersion),0);
   }
   else if(page==='add-customer') el.innerHTML=renderAddCustomer();
   else if(page==='orders')   el.innerHTML=renderOrders();
@@ -1097,20 +1101,22 @@ function renderDashboard(){
 
 async function setDashboardPeriod(period){
   await stopQrScanner();
+  pageRenderVersion++;
   dashboardPeriod=period;dashboardData=null;
   document.getElementById('main-content').innerHTML=renderDashboard();
-  if(period!=='custom')await loadDashboardData();
+  if(period!=='custom')await loadDashboardData(pageRenderVersion);
 }
 
 async function setReportPeriod(kind,period){
   await stopQrScanner();
+  pageRenderVersion++;
   if(kind==='chart'){chartPeriod=period;chartData=null;}
   else{retentionPeriod=period;retentionData=null;}
   document.getElementById('main-content').innerHTML=renderDashboard();
-  if(period!=='custom')await loadReportData(kind);
+  if(period!=='custom')await loadReportData(kind,pageRenderVersion);
 }
 
-async function loadReportData(kind){
+async function loadReportData(kind,renderVersion=pageRenderVersion){
   if(kind==='chart'){
     chartCustomFrom=document.querySelector('.panel-row .panel:first-child input[type="date"]')?.value||chartCustomFrom;
     const inputs=document.querySelectorAll('.panel-row .panel:first-child input[type="date"]');
@@ -1126,11 +1132,12 @@ async function loadReportData(kind){
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Could not load report');
     if(kind==='chart')chartData=data;else retentionData=data;
+    if(currentPage!=='dashboard'||renderVersion!==pageRenderVersion)return;
     document.getElementById('main-content').innerHTML=renderDashboard();
   }catch(error){showToast(error.message,'error');}
 }
 
-async function loadDashboardData(){
+async function loadDashboardData(renderVersion=pageRenderVersion){
   const range=dashboardRange();if(!range){showToast('Choose both dates','error');return;}
   try{
     const response=await apiFetch('/api/dashboard?from='+encodeURIComponent(range.from)+'&to='+encodeURIComponent(range.to));
@@ -1139,6 +1146,7 @@ async function loadDashboardData(){
     dashboardData=data;
     if(!chartData)chartData=data;
     if(!retentionData)retentionData=data;
+    if(currentPage!=='dashboard'||renderVersion!==pageRenderVersion)return;
     document.getElementById('main-content').innerHTML=renderDashboard();
   }catch(error){showToast(error.message,'error');}
 }
@@ -1148,14 +1156,25 @@ async function startQrScanner(){
   if(!window.isSecureContext){message.textContent='Camera scanning needs HTTPS or localhost.';return;}
   if(typeof Html5Qrcode==='undefined'){message.textContent='QR scanner could not load.';return;}
   if(scannerRunning)return;
+  scanBusy=false;
   const scanButton=document.getElementById('scanner-start');
   if(scanButton){scanButton.disabled=true;scanButton.textContent='Scanning...';}
   try{
     document.getElementById('qr-reader').innerHTML='';
-    qrScanner=new Html5Qrcode('qr-reader');
+    qrScanner=new Html5Qrcode('qr-reader',{
+      formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE],
+      verbose:false
+    });
     await qrScanner.start(
       {facingMode:'environment'},
-      {fps:10,qrbox:{width:220,height:220}},
+      {
+        fps:20,
+        qrbox:(width,height)=>{
+          const size=Math.min(260,Math.floor(Math.min(width,height)*0.72));
+          return{width:size,height:size};
+        },
+        experimentalFeatures:{useBarCodeDetectorIfSupported:true}
+      },
       decoded=>handleQrDecoded(decoded),
       ()=>{}
     );
@@ -1174,15 +1193,20 @@ async function stopQrScanner(){
 }
 
 async function handleQrDecoded(decoded){
-  if(scannedCustomer)return;
+  if(scannedCustomer||scanBusy)return;
   let payload;
   try{payload=JSON.parse(decoded);}catch{document.getElementById('scanner-message').textContent='Invalid RewardHub QR.';return;}
   if(!payload?.id){document.getElementById('scanner-message').textContent='Customer ID is missing from the QR.';return;}
+  scanBusy=true;
+  document.getElementById('scanner-message').textContent='QR found. Loading customer...';
   try{
-    const response=await apiFetch('/api/customers/scan/'+encodeURIComponent(payload.id));
+    const [response]=await Promise.all([
+      apiFetch('/api/customers/scan/'+encodeURIComponent(payload.id)),
+      stopQrScanner()
+    ]);
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Customer not found');
-    scannedCustomer=data.customer;await stopQrScanner();
+    scannedCustomer=data.customer;
     document.getElementById('scanner-message').textContent='Customer verified.';
     document.getElementById('scan-checkout-panel').innerHTML=`
       <div class="panel" style="margin:0">
@@ -1191,13 +1215,16 @@ async function handleQrDecoded(decoded){
         ${scannedCustomer.isNewToMerchant?'<div class="tag tb" style="margin-bottom:12px">New merchant connection</div>':''}
         <div style="font-size:12px;margin-bottom:16px">Current balance: <strong>${scannedCustomer.rewardPoints} points</strong></div>
         <div class="purchase-reward-row">
-          <div class="form-group"><label>Purchase Amount (₹)</label><input class="amount-input" id="scan-amount" type="number" min="100" step="0.01" placeholder="00" oninput="calculateRewardPreview('scan-amount','scan-reward-pct','scan-reward-preview')"></div>
+          <div class="form-group"><label>Purchase Amount (₹)</label><input class="amount-input" id="scan-amount" type="number" min="100" step="0.01" oninput="calculateRewardPreview('scan-amount','scan-reward-pct','scan-reward-preview')"><div class="amount-rule">Minimum purchase ₹100</div></div>
           <div class="form-group"><label>Reward Percentage</label>${rewardDropdown('scan-reward-pct',"calculateRewardPreview('scan-amount','scan-reward-pct','scan-reward-preview')")}</div>
         </div>
-        <div class="reward-preview" id="scan-reward-preview"><span>Minimum purchase ₹100</span><strong>0.00 points</strong></div>
+        <div class="reward-preview" id="scan-reward-preview"><strong>0.00 points</strong></div>
         <button class="btn-primary" onclick="completeScannedCheckout(this)" style="width:100%;justify-content:center">Complete checkout</button>
       </div>`;
-  }catch(error){document.getElementById('scanner-message').textContent=error.message;}
+  }catch(error){
+    scanBusy=false;
+    document.getElementById('scanner-message').textContent=error.message;
+  }
 }
 
 async function completeScannedCheckout(button){
@@ -1267,15 +1294,17 @@ function renderAddCustomer(){
     <div class="reg-title">🧑‍💼 New Customer Registration</div>
     <div class="reg-sub">Enter details — QR code sent to WhatsApp automatically for fast re-entry at next checkout.</div>
     <div class="form-grid" style="margin-bottom:18px">
-      <div class="form-group"><label>Customer Name *</label><input type="text" id="ab-name"/></div>
-      <div class="form-group"><label>WhatsApp Number *</label><div class="phone-input"><span class="phone-prefix">+91</span><input type="tel" id="ab-phone" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"/></div></div>
-      <div class="form-group"><label>Email Address (Optional)</label><input type="email" id="ab-email"/></div>
+      <div class="customer-details-grid" style="grid-column:1/-1">
+        <div class="form-group"><label>Customer Name *</label><input type="text" id="ab-name"/></div>
+        <div class="form-group"><label>WhatsApp Number *</label><div class="phone-input"><span class="phone-prefix">+91</span><input type="tel" id="ab-phone" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"/></div></div>
+        <div class="form-group"><label>Email Address (Optional)</label><input type="email" id="ab-email"/></div>
+      </div>
       <div style="grid-column:1/-1">
         <div class="purchase-reward-row">
-          <div class="form-group"><label>Purchase Amount (₹) *</label><input class="amount-input" type="number" min="100" step="0.01" id="ab-amount" placeholder="00" oninput="calculateRewardPreview('ab-amount','ab-reward-pct','ab-reward-preview')"/></div>
+          <div class="form-group"><label>Purchase Amount (₹) *</label><input class="amount-input" type="number" min="100" step="0.01" id="ab-amount" oninput="calculateRewardPreview('ab-amount','ab-reward-pct','ab-reward-preview')"/><div class="amount-rule">Minimum purchase ₹100</div></div>
           <div class="form-group"><label>Reward Percentage *</label>${rewardDropdown('ab-reward-pct',"calculateRewardPreview('ab-amount','ab-reward-pct','ab-reward-preview')")}</div>
         </div>
-        <div class="reward-preview" id="ab-reward-preview"><span>Minimum purchase ₹100</span><strong>0.00 points</strong></div>
+        <div class="reward-preview" id="ab-reward-preview"><strong>0.00 points</strong></div>
       </div>
       
       ${isAdmin?`<div class="form-group"><label>Assign to Merchant</label><select id="ab-merchant">${merchants.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>`:''}
@@ -1419,10 +1448,10 @@ function renderMerchants(){
   <div class="panel">
     <div class="panel-title">Add Merchant</div>
     <div class="form-grid" style="margin-bottom:14px">
-      <div class="form-group"><label>Store Name</label><input type="text" id="nm-name" placeholder="FashionPoint"/></div>
-      <div class="form-group"><label>Email</label><input type="email" id="nm-email" placeholder="store@mail.com"/></div>
-      <div class="form-group"><label>Phone</label><input type="tel" id="nm-phone" placeholder="+91 ..."/></div>
-      <div class="form-group"><label>Temporary Password</label><input type="password" id="nm-password" minlength="8" placeholder="At least 8 characters"/></div>
+      <div class="form-group"><label>Store Name</label><input type="text" id="nm-name"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="nm-email"/></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="nm-phone"/></div>
+      <div class="form-group"><label>Temporary Password</label><input type="password" id="nm-password" minlength="8"/></div>
     </div>
     <button class="btn-primary" onclick="addMerchant()">+ Add Merchant</button>
   </div>
@@ -1478,9 +1507,9 @@ function renderAdministrators(){
   <div class="panel">
     <div class="panel-title">Add Administrator</div>
     <div class="form-grid" style="margin-bottom:14px">
-      <div class="form-group"><label>Full Name</label><input type="text" id="na-name" placeholder="Admin name"/></div>
-      <div class="form-group"><label>Email</label><input type="email" id="na-email" placeholder="admin@company.com"/></div>
-      <div class="form-group"><label>Temporary Password</label><input type="password" id="na-password" minlength="8" placeholder="At least 8 characters"/></div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="na-name"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="na-email"/></div>
+      <div class="form-group"><label>Temporary Password</label><input type="password" id="na-password" minlength="8"/></div>
     </div>
     <button class="btn-primary" onclick="addAdministrator(this)">+ Add Administrator</button>
   </div>

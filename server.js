@@ -31,6 +31,10 @@ app.use(express.json({
     req.rawBody = buffer;
   },
 }));
+app.use('/vendor/html5-qrcode', express.static(
+  path.join(__dirname, 'node_modules', 'html5-qrcode'),
+  { fallthrough: false, maxAge: '7d' },
+));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Clients ──

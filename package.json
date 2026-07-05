@@ -20,6 +20,7 @@
     "dotenv": "*",
     "express": "*",
     "form-data": "*",
+    "html5-qrcode": "^2.3.8",
     "qrcode": "*",
     "resend": "*"
   }
