@@ -358,6 +358,94 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (req, res) => {
+  const merchantId = cleanText(req.params.id, 100);
+  const { data: merchant, error: merchantError } = await supabaseAdmin
+    .from('merchants')
+    .select('id,name,email,phone,created_at')
+    .eq('id', merchantId)
+    .single();
+  if (merchantError || !merchant) {
+    return res.status(404).json({ success: false, error: 'Merchant not found' });
+  }
+
+  const [ordersResult, membershipsResult] = await Promise.all([
+    supabaseAdmin
+      .from('orders')
+      .select('id,customer_id,order_no,amount,reward_points,created_at')
+      .eq('merchant_id', merchantId)
+      .limit(10000),
+    supabaseAdmin
+      .from('customer_merchants')
+      .select('customer_id,reward_points,qr_scans,joined_at')
+      .eq('merchant_id', merchantId)
+      .limit(10000),
+  ]);
+  const baseError = ordersResult.error || membershipsResult.error;
+  if (baseError) return res.status(500).json({ success: false, error: baseError.message });
+
+  const memberships = membershipsResult.data || [];
+  const orders = ordersResult.data || [];
+  const customerIds = [...new Set(memberships.map((row) => row.customer_id).filter(Boolean))];
+  const customersResult = customerIds.length
+    ? await supabaseAdmin.from('customers')
+      .select('id,customer_code,name,phone,email,created_at')
+      .in('id', customerIds)
+    : { data: [], error: null };
+  if (customersResult.error) return res.status(500).json({ success: false, error: customersResult.error.message });
+
+  const orderTotals = new Map();
+  orders.forEach((order) => {
+    const current = orderTotals.get(order.customer_id) || { orders: 0, revenue: 0, points: 0 };
+    current.orders += 1;
+    current.revenue += Number(order.amount || 0);
+    current.points += Number(order.reward_points || 0);
+    orderTotals.set(order.customer_id, current);
+  });
+  const customerById = new Map((customersResult.data || []).map((customer) => [customer.id, customer]));
+  const retainedCustomers = [...orderTotals.values()].filter((row) => row.orders >= 2).length;
+  const totalCustomers = memberships.length;
+  const totalRevenue = orders.reduce((sum, order) => sum + Number(order.amount || 0), 0);
+  const pointsIssued = orders.reduce((sum, order) => sum + Number(order.reward_points || 0), 0);
+
+  res.json({
+    success: true,
+    merchant: {
+      id: merchant.id,
+      name: merchant.name,
+      email: merchant.email,
+      phone: merchant.phone,
+      joined: merchant.created_at,
+    },
+    summary: {
+      totalOrders: orders.length,
+      totalRevenue,
+      pointsIssued,
+      totalCustomers,
+      retainedCustomers,
+      retentionRate: totalCustomers ? Math.round((retainedCustomers / totalCustomers) * 100) : 0,
+    },
+    customers: memberships.map((row) => {
+      const customer = customerById.get(row.customer_id) || {};
+      const totals = orderTotals.get(row.customer_id) || { orders: 0, revenue: 0, points: 0 };
+      return {
+        id: customer.customer_code || '',
+        databaseId: row.customer_id,
+        name: customer.name || 'Unknown customer',
+        phone: customer.phone || '',
+        email: customer.email || '',
+        registeredAt: row.joined_at,
+        rewardPoints: Number(row.reward_points || 0),
+        qrScans: row.qr_scans || 0,
+        orderCount: totals.orders,
+        totalSpend: totals.revenue,
+        pointsIssued: totals.points,
+        isRetained: totals.orders >= 2,
+      };
+    }).sort((a, b) => b.orderCount - a.orderCount || b.rewardPoints - a.rewardPoints),
+  });
+});
+
 app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) => {
   const name = cleanText(req.body.name, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
@@ -490,6 +578,52 @@ app.get('/api/customers', requireAuth, async (req, res) => {
   if (relatedError) return res.status(500).json({ success: false, error: relatedError.message });
   const customerById = new Map(customersResult.data.map((customer) => [customer.id, customer]));
   const merchantById = new Map(merchantsResult.data.map((merchant) => [merchant.id, merchant]));
+
+  if (req.auth.profile.role === 'admin') {
+    const grouped = new Map();
+    memberships.forEach((row) => {
+      const customer = customerById.get(row.customer_id);
+      if (!customer) return;
+      const existing = grouped.get(customer.id) || {
+        id: customer.customer_code,
+        databaseId: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || '',
+        registeredAt: customer.created_at,
+        qrScans: 0,
+        rewardPoints: 0,
+        totalRewardPoints: 0,
+        merchantCount: 0,
+        merchant: '',
+        merchantId: '',
+        memberships: [],
+      };
+      const points = Number(row.reward_points || 0);
+      existing.qrScans += Number(row.qr_scans || 0);
+      existing.rewardPoints += points;
+      existing.totalRewardPoints += points;
+      if (!existing.merchantId) existing.merchantId = row.merchant_id;
+      existing.memberships.push({
+        merchantId: row.merchant_id,
+        merchant: merchantById.get(row.merchant_id)?.name || '',
+        rewardPoints: points,
+        qrScans: Number(row.qr_scans || 0),
+        joinedAt: row.joined_at,
+      });
+      existing.merchantCount = existing.memberships.length;
+      existing.merchant = `${existing.merchantCount} merchant${existing.merchantCount === 1 ? '' : 's'}`;
+      const joined = new Date(row.joined_at).getTime();
+      if (Number.isFinite(joined) && joined < new Date(existing.registeredAt).getTime()) {
+        existing.registeredAt = row.joined_at;
+      }
+      grouped.set(customer.id, existing);
+    });
+    return res.json({
+      success: true,
+      customers: [...grouped.values()].sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt)),
+    });
+  }
 
   res.json({
     success: true,
