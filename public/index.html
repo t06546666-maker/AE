@@ -1355,13 +1355,13 @@ async function addCustomer(){
     showToast('Name, valid phone, minimum ₹100 purchase, and WhatsApp consent are required','error');return;
   }
 
-  let newCust,oNo;
+  let newCust,oNo,createData;
   try{
     const createResponse=await apiFetch('/api/customers',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name,phone,email,amount,rewardPercentage,merchantId,location,whatsappConsent})
     });
-    const createData=await createResponse.json();
+    createData=await createResponse.json();
     if(!createResponse.ok)throw new Error(createData.error||'Could not save customer');
     newCust=createData.customer;oNo=createData.order.order_no;
     customers.unshift(newCust);
