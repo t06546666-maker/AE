@@ -1592,6 +1592,7 @@ async function delMerchant(id){
 
 async function delCustomer(id,name='Customer'){
   if(currentRole!=='admin')return;
+  if(!confirm(`Delete ${name} fully?\n\nClick OK to delete this selected customer, including their orders, reward balance, QR links, and WhatsApp message logs.`))return;
   try{
     const response=await apiFetch('/api/customers/'+encodeURIComponent(id),{method:'DELETE'});
     const data=await response.json();
