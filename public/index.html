@@ -656,11 +656,12 @@ async function sendQRWA(cid,merchantId=null){
   try{
     const r=await apiFetch('/api/send-qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cid:c.id,merchantId:targetMerchantId})});
     const d=await r.json();
-    showToast(d.success?`✅ QR sent to ${c.phone} via WhatsApp`:`⚠️ WhatsApp messaging is not configured`,'success');
-  }catch{showToast('⚠️ Backend not running — start server first','error');}
+    if(!r.ok||!d.success)throw new Error(d.whatsapp?.error||d.error||'WhatsApp message failed');
+    showToast(`QR sent to ${c.phone} via WhatsApp`,'success');
+  }catch(error){showToast(error.message,'error');}
 }
 
-/* ── AUTH ── */
+/* -- AUTH -- */
 async function login(event){
   event.preventDefault();
   const btn=document.getElementById('login-btn');
@@ -1377,6 +1378,7 @@ async function addCustomer(){
 
   const createdOrder=orders[0];
   const waSent=createdOrder.whatsappStatus==='sent';
+  const waError=createData.notifications?.whatsapp?.error||'WhatsApp template or delivery failed';
   const emailSent=createdOrder.emailSent;
 
   showToast(`${name} registered! ID: ${cid}`,'success');
@@ -1393,7 +1395,7 @@ async function addCustomer(){
         <div class="qr-row">✉ <span>${email}</span></div>
         <div class="qr-row">🧾 <span>${oNo} &nbsp;·&nbsp; ₹${amount.toLocaleString()}</span></div>
         <div class="chips">
-          <div class="chip ${waSent?'chip-ok':'chip-no'}">💬 WhatsApp ${waSent?'✓ Sent':'Not sent — add WA keys'}</div>
+          <div class="chip ${waSent?'chip-ok':'chip-no'}" title="${waSent?'Sent':waError}">WhatsApp ${waSent?'Sent':'Not sent - '+waError}</div>
           <div class="chip ${emailSent?'chip-ok':'chip-no'}">📧 Email ${emailSent?'✓ Sent':'Not sent — add email key'}</div>
         </div>
         <div class="qr-acts">
@@ -1577,7 +1579,6 @@ async function addMerchant(){
 async function delMerchant(id){
   const merchant=merchants.find(m=>String(m.id)===String(id));
   const label=merchant?.name||'this merchant';
-  if(!confirm(`Delete ${label} fully?\n\nThis removes the merchant login, merchant orders, memberships, and customers that only belong to this merchant.`))return;
   try{
     const response=await apiFetch('/api/merchants/'+encodeURIComponent(id),{method:'DELETE'});
     const data=await response.json();
@@ -1591,7 +1592,6 @@ async function delMerchant(id){
 
 async function delCustomer(id,name='Customer'){
   if(currentRole!=='admin')return;
-  if(!confirm(`Delete ${name} fully?\n\nThis removes the customer from all merchants, including orders, reward balances, QR links, and WhatsApp message logs.`))return;
   try{
     const response=await apiFetch('/api/customers/'+encodeURIComponent(id),{method:'DELETE'});
     const data=await response.json();
