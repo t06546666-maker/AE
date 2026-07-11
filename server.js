@@ -175,6 +175,9 @@ async function uploadQrMedia(payload) {
       { headers: { Authorization: `Bearer ${WA_TOKEN}`, ...form.getHeaders() } },
     );
     return response.data.id;
+  } catch (error) {
+    const apiError = error.response?.data?.error;
+    throw new Error(apiError?.error_data?.details || apiError?.message || error.message);
   } finally {
     try { fs.unlinkSync(qrPath); } catch {}
   }
@@ -245,6 +248,17 @@ async function sendRegistrationWhatsApp(purchase) {
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
+  const bodyComponent = {
+    type: 'body',
+    parameters: [
+      { type: 'text', text: purchase.customer_name },
+      { type: 'text', text: purchase.merchant_name },
+      { type: 'text', text: purchase.customer_code },
+      { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
+      { type: 'text', text: formatPoints(purchase.points_earned) },
+      { type: 'text', text: formatPoints(purchase.total_points) },
+    ],
+  };
   try {
     const mediaId = await uploadQrMedia({
       id: purchase.customer_code,
@@ -258,21 +272,19 @@ async function sendRegistrationWhatsApp(purchase) {
       templateName: WA_REGISTRATION_TEMPLATE,
       components: [
         { type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] },
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: purchase.customer_name },
-            { type: 'text', text: purchase.merchant_name },
-            { type: 'text', text: purchase.customer_code },
-            { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
-            { type: 'text', text: formatPoints(purchase.points_earned) },
-            { type: 'text', text: formatPoints(purchase.total_points) },
-          ],
-        },
+        bodyComponent,
       ],
     });
   } catch (error) {
-    return { sent: false, error: error.message };
+    const fallback = await sendWhatsAppTemplate({
+      customerId: purchase.customer_id,
+      orderId: purchase.order_id,
+      recipient: purchase.customer_phone,
+      templateName: WA_REGISTRATION_TEMPLATE,
+      components: [bodyComponent],
+    });
+    if (fallback.sent) return fallback;
+    return { sent: false, error: `${error.message}; fallback: ${fallback.error}` };
   }
 }
 
