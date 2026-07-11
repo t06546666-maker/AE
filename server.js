@@ -478,9 +478,75 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
 });
 
 app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
-  const { error } = await supabaseAdmin.from('merchants').delete().eq('id', req.params.id);
+  const merchantId = cleanText(req.params.id, 100);
+  const { data: merchant, error: merchantError } = await supabaseAdmin
+    .from('merchants')
+    .select('id,name')
+    .eq('id', merchantId)
+    .single();
+  if (merchantError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
+  const [{ data: profiles }, { data: orders }, { data: memberships }, { data: legacyCustomers }] = await Promise.all([
+    supabaseAdmin.from('profiles').select('id').eq('role', 'merchant').eq('merchant_id', merchantId),
+    supabaseAdmin.from('orders').select('id,customer_id').eq('merchant_id', merchantId),
+    supabaseAdmin.from('customer_merchants').select('customer_id').eq('merchant_id', merchantId),
+    supabaseAdmin.from('customers').select('id,merchant_id').eq('merchant_id', merchantId),
+  ]);
+
+  for (const profile of profiles || []) {
+    await supabaseAdmin.auth.admin.deleteUser(profile.id);
+  }
+  await supabaseAdmin.from('profiles').delete().eq('merchant_id', merchantId);
+
+  const orderIds = [...new Set((orders || []).map((order) => order.id).filter(Boolean))];
+  const customerIds = [...new Set([
+    ...(orders || []).map((order) => order.customer_id),
+    ...(memberships || []).map((row) => row.customer_id),
+    ...(legacyCustomers || []).map((customer) => customer.id),
+  ].filter(Boolean))];
+
+  if (orderIds.length) {
+    await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orderIds);
+  }
+  await supabaseAdmin.from('orders').delete().eq('merchant_id', merchantId);
+  await supabaseAdmin.from('customer_merchants').delete().eq('merchant_id', merchantId);
+
+  let deletedCustomers = 0;
+  if (customerIds.length) {
+    const [{ data: remainingMemberships }, { data: candidateCustomers }] = await Promise.all([
+      supabaseAdmin.from('customer_merchants').select('customer_id,merchant_id').in('customer_id', customerIds),
+      supabaseAdmin.from('customers').select('id,merchant_id').in('id', customerIds),
+    ]);
+    const remainingByCustomer = new Map();
+    for (const row of remainingMemberships || []) {
+      if (!remainingByCustomer.has(row.customer_id)) remainingByCustomer.set(row.customer_id, []);
+      remainingByCustomer.get(row.customer_id).push(row.merchant_id);
+    }
+    const orphanCustomerIds = [];
+    for (const customer of candidateCustomers || []) {
+      const remainingMerchantIds = remainingByCustomer.get(customer.id) || [];
+      if (!remainingMerchantIds.length) {
+        orphanCustomerIds.push(customer.id);
+      } else if (customer.merchant_id === merchantId) {
+        await supabaseAdmin.from('customers').update({ merchant_id: remainingMerchantIds[0] }).eq('id', customer.id);
+      }
+    }
+    if (orphanCustomerIds.length) {
+      const { data: orphanOrders } = await supabaseAdmin.from('orders').select('id').in('customer_id', orphanCustomerIds);
+      const orphanOrderIds = (orphanOrders || []).map((order) => order.id).filter(Boolean);
+      if (orphanOrderIds.length) await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orphanOrderIds);
+      await supabaseAdmin.from('whatsapp_messages').delete().in('customer_id', orphanCustomerIds);
+      await supabaseAdmin.from('orders').delete().in('customer_id', orphanCustomerIds);
+      await supabaseAdmin.from('customer_merchants').delete().in('customer_id', orphanCustomerIds);
+      const { error: customerDeleteError } = await supabaseAdmin.from('customers').delete().in('id', orphanCustomerIds);
+      if (customerDeleteError) return res.status(400).json({ success: false, error: customerDeleteError.message });
+      deletedCustomers = orphanCustomerIds.length;
+    }
+  }
+
+  const { error } = await supabaseAdmin.from('merchants').delete().eq('id', merchantId);
   if (error) return res.status(400).json({ success: false, error: error.message });
-  res.json({ success: true });
+  res.json({ success: true, deletedCustomers });
 });
 
 app.get('/api/admins', requireAuth, requireRole('admin'), async (_req, res) => {
@@ -644,6 +710,32 @@ app.get('/api/customers', requireAuth, async (req, res) => {
       }];
     }),
   });
+});
+
+app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const rawId = cleanText(req.params.id, 100);
+  let query = supabaseAdmin.from('customers').select('id,customer_code,name').limit(1);
+  query = rawId.startsWith('C') ? query.eq('customer_code', rawId) : query.eq('id', rawId);
+  const { data: matches, error: customerError } = await query;
+  const customer = matches?.[0];
+  if (customerError) return res.status(500).json({ success: false, error: customerError.message });
+  if (!customer) return res.status(404).json({ success: false, error: 'Customer not found' });
+
+  const { data: orders, error: ordersError } = await supabaseAdmin
+    .from('orders')
+    .select('id')
+    .eq('customer_id', customer.id);
+  if (ordersError) return res.status(500).json({ success: false, error: ordersError.message });
+  const orderIds = (orders || []).map((order) => order.id).filter(Boolean);
+
+  if (orderIds.length) await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orderIds);
+  await supabaseAdmin.from('whatsapp_messages').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('orders').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('customer_merchants').delete().eq('customer_id', customer.id);
+  const { error: deleteError } = await supabaseAdmin.from('customers').delete().eq('id', customer.id);
+  if (deleteError) return res.status(400).json({ success: false, error: deleteError.message });
+
+  res.json({ success: true });
 });
 
 app.post('/api/customers', requireAuth, async (req, res) => {
