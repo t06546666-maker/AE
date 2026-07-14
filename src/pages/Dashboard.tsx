@@ -1,13 +1,13 @@
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, IndianRupee, ReceiptText, Sparkles, UserRoundCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
+import QrScanner from '../components/QrScanner';
 import type { DashboardData, Period, RewardSettings, UserProfile } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForPeriod } from '../utils';
 
-const QrScanner = lazy(() => import('../components/QrScanner'));
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
   intervals: ['00-06', '06-12', '12-18', '18-24'].map((label) => ({ label, orders: 0, revenue: 0 })),
@@ -64,7 +64,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       )}
 
-      {user.role === 'merchant' && settings.data ? <Suspense fallback={<LoadingState label="Preparing scanner" />}><QrScanner settings={settings.data} /></Suspense> : null}
+      {user.role === 'merchant' && settings.data ? <QrScanner settings={settings.data} /> : null}
 
       <div className="report-grid">
         <section className="panel">

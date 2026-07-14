@@ -273,6 +273,8 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .customer-modal { width: min(720px, calc(100vw - 28px)); }
 
 .state-panel, .empty-state { min-height: 150px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.page-crash-state { min-height: 260px; flex-direction: column; text-align: center; padding: 28px; }
+.page-crash-state strong { color: var(--text); font-size: 18px; }
 .state-panel.error-state { color: var(--danger); flex-direction: column; text-align: center; padding: 24px; }
 .empty-state { min-height: 90px; border: 0; box-shadow: none; }
 .spin { animation: spin .8s linear infinite; }

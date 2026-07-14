@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
@@ -13,6 +13,29 @@ import { Orders } from './pages/Orders';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import type { Role, UserProfile } from './types';
 
+class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Page render failed:', error, info.componentStack);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="state-panel error-state page-crash-state">
+        <strong>This page could not load.</strong>
+        <span>{this.state.error.message || 'An unexpected display error occurred.'}</span>
+        <button className="button primary" onClick={() => window.location.reload()}>Reload page</button>
+      </div>
+    );
+  }
+}
+
 function RoleRoute({ user, role, children }: { user: UserProfile; role: Role; children: ReactNode }) {
   return user.role === role ? children : <Navigate to="/dashboard" replace />;
 }
@@ -21,6 +44,7 @@ export function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   function logout() {
     clearAccessToken(); setUser(null); queryClient.clear();
@@ -45,17 +69,19 @@ export function App() {
 
   return (
     <Layout user={user} onLogout={logout}>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard user={user} />} />
-        <Route path="/add-customer" element={<AddCustomer user={user} />} />
-        <Route path="/orders" element={<Orders user={user} />} />
-        <Route path="/customers" element={<Customers user={user} />} />
-        <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
-        <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
-        <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />
-        <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+      <PageErrorBoundary key={location.pathname}>
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
+          <Route path="/add-customer" element={<AddCustomer user={user} />} />
+          <Route path="/orders" element={<Orders user={user} />} />
+          <Route path="/customers" element={<Customers user={user} />} />
+          <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
+          <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
+          <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />
+          <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </PageErrorBoundary>
     </Layout>
   );
 }
