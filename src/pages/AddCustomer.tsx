@@ -16,9 +16,19 @@ interface CreatedCustomer {
     total_points: number; reward_percentage: number; amount: number;
   };
   notifications: {
-    whatsapp: { sent?: boolean; queued?: boolean; error?: string };
+    whatsapp: { sent?: boolean; queued?: boolean; error?: string; logId?: string; status?: WhatsAppStatus };
     email: { sent?: boolean; queued?: boolean; error?: string };
   };
+}
+
+type WhatsAppStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed';
+
+interface WhatsAppMessageStatus {
+  id: string;
+  status: WhatsAppStatus;
+  errorCode: string | null;
+  error: string | null;
+  updatedAt: string;
 }
 
 export function AddCustomer({ user }: { user: UserProfile }) {
@@ -41,6 +51,18 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     QRCode.toDataURL(qrPayload(result.customer), { width: 280, margin: 2, errorCorrectionLevel: 'M' }).then(setQrUrl);
   }, [result]);
 
+  const whatsappStatus = useQuery({
+    queryKey: ['whatsapp-message', result?.notifications.whatsapp.logId],
+    queryFn: ({ signal }) => apiFetch<WhatsAppMessageStatus>(
+      `/api/whatsapp/messages/${result?.notifications.whatsapp.logId}`,
+      { signal },
+    ),
+    enabled: Boolean(result?.notifications.whatsapp.logId),
+    refetchInterval(query) {
+      return !query.state.data || query.state.data.status === 'queued' ? 2_000 : false;
+    },
+  });
+
   const createCustomer = useMutation({
     mutationFn: () => apiFetch<CreatedCustomer>('/api/customers', {
       method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() },
@@ -57,10 +79,16 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   });
 
   const resendQr = useMutation({
-    mutationFn: () => apiFetch<{ whatsapp: { sent?: boolean; queued?: boolean } }>('/api/send-qr', {
+    mutationFn: () => apiFetch<{ whatsapp: CreatedCustomer['notifications']['whatsapp'] }>('/api/send-qr', {
       method: 'POST', body: JSON.stringify({ cid: result?.customer.id, merchantId: result?.customer.merchantId || merchantId }),
     }),
-    onSuccess() { showToast('WhatsApp QR message queued'); },
+    onSuccess(data) {
+      setResult((current) => current ? {
+        ...current,
+        notifications: { ...current.notifications, whatsapp: data.whatsapp },
+      } : current);
+      showToast(data.whatsapp.sent ? 'WhatsApp QR message sent' : 'WhatsApp message failed', data.whatsapp.sent ? 'success' : 'error');
+    },
     onError(error) { showToast(error.message, 'error'); },
   });
 
@@ -81,6 +109,11 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   const options = settings.data?.rewardOptions || [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const points = Number(amount) >= 100 ? Number(amount) * percentage / 100 : 0;
   const selectedMerchant = merchants.data?.merchants.find((merchant) => merchant.id === merchantId)?.name || '';
+  const liveWhatsapp = whatsappStatus.data;
+  const whatsappState = liveWhatsapp?.status
+    || result?.notifications.whatsapp.status
+    || (result?.notifications.whatsapp.sent ? 'sent' : result?.notifications.whatsapp.queued ? 'queued' : 'failed');
+  const whatsappError = liveWhatsapp?.error || result?.notifications.whatsapp.error;
   return (
     <>
       <PageHeader title={user.role === 'admin' ? 'Add Customer' : 'Add Buyer'} subtitle="Register a customer, save the first order, and queue their QR message." />
@@ -104,7 +137,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <div className="panel-heading"><div><h2><CheckCircle2 /> Customer registered</h2><p>The order and reward balance are saved.</p></div></div>
           <div className="result-grid">
             <div className="result-qr">{qrUrl ? <img src={qrUrl} alt={`QR code for ${result.customer.name}`} /> : <span>Generating QR...</span>}<strong>{result.customer.id}</strong></div>
-            <div className="result-details"><h3>{result.customer.name}</h3><p>{formatPhone(result.customer.phone)}</p><p>{result.customer.email}</p><dl><div><dt>Merchant</dt><dd>{result.customer.merchant || selectedMerchant}</dd></div><div><dt>Order</dt><dd>{result.order.order_no}</dd></div><div><dt>Amount</dt><dd>{formatCurrency(result.order.amount || 0)}</dd></div><div><dt>Points</dt><dd>{formatPoints(result.order.points_earned)}</dd></div></dl><div className="notification-row"><span className={`tag ${result.notifications.whatsapp.queued || result.notifications.whatsapp.sent ? 'success' : 'danger'}`}>WhatsApp {result.notifications.whatsapp.queued ? 'queued' : result.notifications.whatsapp.sent ? 'sent' : 'not sent'}</span><span className={`tag ${result.notifications.email.queued || result.notifications.email.sent ? 'success' : 'muted'}`}>Email {result.customer.email ? result.notifications.email.queued ? 'queued' : result.notifications.email.sent ? 'sent' : 'not sent' : 'not provided'}</span></div><div className="result-actions"><button className="button whatsapp" disabled={resendQr.isPending} onClick={() => resendQr.mutate()}><MessageCircle size={16} />Send WhatsApp</button><button className="button secondary" onClick={downloadQr}><Download size={16} />Download QR</button></div></div>
+            <div className="result-details"><h3>{result.customer.name}</h3><p>{formatPhone(result.customer.phone)}</p><p>{result.customer.email}</p><dl><div><dt>Merchant</dt><dd>{result.customer.merchant || selectedMerchant}</dd></div><div><dt>Order</dt><dd>{result.order.order_no}</dd></div><div><dt>Amount</dt><dd>{formatCurrency(result.order.amount || 0)}</dd></div><div><dt>Points</dt><dd>{formatPoints(result.order.points_earned)}</dd></div></dl><div className="notification-row"><span className={`tag ${['sent', 'delivered', 'read'].includes(whatsappState) ? 'success' : whatsappState === 'failed' ? 'danger' : 'info'}`}>WhatsApp {whatsappState}</span><span className={`tag ${result.notifications.email.queued || result.notifications.email.sent ? 'success' : 'muted'}`}>Email {result.customer.email ? result.notifications.email.queued ? 'queued' : result.notifications.email.sent ? 'sent' : 'not sent' : 'not provided'}</span></div>{whatsappState === 'failed' && whatsappError ? <div className="form-error">{whatsappError}</div> : null}<div className="result-actions"><button className="button whatsapp" disabled={resendQr.isPending} onClick={() => resendQr.mutate()}><MessageCircle size={16} />{resendQr.isPending ? 'Sending' : 'Send WhatsApp'}</button><button className="button secondary" onClick={downloadQr}><Download size={16} />Download QR</button></div></div>
           </div>
         </section>
       ) : null}

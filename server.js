@@ -307,14 +307,18 @@ async function sendWhatsAppTemplate({
     return { sent: true, messageId };
   } catch (error) {
     const apiError = error.response?.data?.error;
+    const apiDetails = apiError?.error_data?.details;
+    const errorMessage = [apiError?.message || error.message, apiDetails]
+      .filter(Boolean)
+      .join(' - ');
     await supabaseAdmin.from('whatsapp_messages').update({
       status: 'failed',
       error_code: apiError?.code ? String(apiError.code) : null,
-      error_message: apiError?.message || error.message,
+      error_message: errorMessage,
       status_timestamp: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', messageLogId);
-    return { sent: false, error: apiError?.message || error.message };
+    return { sent: false, error: errorMessage };
   }
 }
 
@@ -2012,8 +2016,52 @@ app.post('/api/send-qr', requireAuth, async (req, res) => {
   if (!whatsapp.queued) {
     return res.status(502).json({ success: false, whatsapp, error: whatsapp.error });
   }
-  scheduleBackground(() => runPurchaseNotifications(purchase, 'registration', whatsapp));
-  res.status(202).json({ success: true, whatsapp });
+  const delivery = await sendRegistrationWhatsApp(purchase, whatsapp.logId);
+  res.status(delivery.sent ? 200 : 502).json({
+    success: delivery.sent,
+    whatsapp: {
+      ...whatsapp,
+      queued: false,
+      sent: delivery.sent,
+      status: delivery.sent ? 'sent' : 'failed',
+      error: delivery.error,
+    },
+    error: delivery.sent ? undefined : delivery.error,
+  });
+});
+
+app.get('/api/whatsapp/messages/:id', requireAuth, async (req, res) => {
+  const messageId = cleanText(req.params.id, 100);
+  const { data: message, error } = await supabaseAdmin
+    .from('whatsapp_messages')
+    .select('id,customer_id,status,error_code,error_message,created_at,updated_at')
+    .eq('id', messageId)
+    .single();
+
+  if (error || !message) {
+    return res.status(404).json({ success: false, error: 'WhatsApp message was not found' });
+  }
+
+  if (req.auth.profile.role === 'merchant') {
+    const { data: membership } = await supabaseAdmin
+      .from('customer_merchants')
+      .select('customer_id')
+      .eq('customer_id', message.customer_id)
+      .eq('merchant_id', req.auth.profile.merchant_id)
+      .maybeSingle();
+    if (!membership) {
+      return res.status(403).json({ success: false, error: 'You cannot view this message' });
+    }
+  }
+
+  return res.json({
+    id: message.id,
+    status: message.status,
+    errorCode: message.error_code || null,
+    error: message.error_message || null,
+    createdAt: message.created_at,
+    updatedAt: message.updated_at,
+  });
 });
 
 // Kept temporarily for reference while existing deployments migrate to templates.
@@ -2162,6 +2210,9 @@ app.get('/api/status', (_req, res) => {
     whatsapp:  !!(WA_TOKEN && WA_PHONE_ID),
     fromEmail: process.env.RESEND_FROM_EMAIL || null,
     waPhoneId: WA_PHONE_ID || null,
+    waRegistrationTemplate: WA_REGISTRATION_TEMPLATE,
+    waRewardTemplate: WA_REWARD_TEMPLATE,
+    waTemplateLanguage: WA_TEMPLATE_LANGUAGE,
   });
 });
 
