@@ -6,13 +6,52 @@
     <meta name="theme-color" content="#f5f8fc" />
     <meta name="description" content="Affiliate AE customer rewards and retention dashboard" />
     <title>Affiliate AE</title>
+    <style>
+      #ae-static-boot { min-height: 100vh; display: grid; place-content: center; gap: 14px; text-align: center; font-family: Arial, sans-serif; color: #26337d; background: #f3f7fb; }
+      #ae-static-boot strong { font-size: 22px; }
+      #ae-static-boot span { color: #607089; }
+      #ae-static-boot button { margin: 4px auto 0; min-height: 40px; padding: 8px 16px; border: 0; border-radius: 7px; background: #5145d7; color: #fff; font-weight: 700; cursor: pointer; }
+    </style>
     <script>
       window.exports = window.exports || {};
       window.module = window.module || { exports: window.exports };
+      window.__aeStartupError = '';
+      window.addEventListener('error', function (event) {
+        if (event.target && event.target.tagName === 'SCRIPT') window.__aeStartupError = 'Application file could not be loaded.';
+        else if (event.message) window.__aeStartupError = event.message;
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {
+        window.__aeStartupError = event.reason && event.reason.message ? event.reason.message : 'Application startup failed.';
+      });
+      window.addEventListener('vite:preloadError', function (event) {
+        event.preventDefault();
+        var key = 'ae_asset_refresh';
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          var url = new URL(window.location.href);
+          url.searchParams.set('refresh', Date.now().toString());
+          window.location.replace(url.toString());
+        }
+      });
+      window.setTimeout(function () {
+        var boot = document.getElementById('ae-static-boot');
+        if (!boot) return;
+        var text = document.getElementById('ae-static-message');
+        var button = document.getElementById('ae-static-reload');
+        if (text) text.textContent = window.__aeStartupError || 'The application is taking longer than expected.';
+        if (button) button.hidden = false;
+      }, 8000);
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="ae-static-boot">
+        <strong>Affiliate AE</strong>
+        <span id="ae-static-message">Loading secure workspace...</span>
+        <button id="ae-static-reload" hidden onclick="var url=new URL(window.location.href);url.searchParams.set('refresh',Date.now().toString());window.location.replace(url.toString())">Reload application</button>
+      </div>
+    </div>
+    <noscript>Affiliate AE requires JavaScript to run.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -68,6 +68,8 @@ h1, h2, h3 { letter-spacing: 0; }
 .whatsapp-icon { color: var(--green); background: var(--green-soft); }
 
 .boot-screen { min-height: 100vh; display: grid; place-content: center; gap: 16px; background: var(--bg); }
+.root-crash-state { justify-items: center; padding: 28px; text-align: center; color: var(--muted); }
+.root-crash-state strong { color: var(--text); font-size: 18px; }
 .boot-brand { font-size: 28px; font-weight: 800; color: var(--primary); }
 .boot-brand span { color: var(--pink); font-size: 13px; }
 .boot-line { width: 180px; height: 4px; background: var(--border); overflow: hidden; position: relative; }
