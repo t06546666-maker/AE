@@ -208,8 +208,6 @@ label small { font-size: 10px; font-weight: 600; }
 .point-preview span { font-size: 10px; }
 .point-preview strong { font-size: 17px; }
 .merchant-select { max-width: 420px; margin-top: 14px; }
-.consent-field { display: flex; align-items: flex-start; gap: 9px; margin: 18px 0; cursor: pointer; line-height: 1.5; }
-.consent-field input { width: 17px; height: 17px; margin: 1px 0 0; }
 .form-actions, .result-actions, .modal-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .form-actions { padding-top: 16px; border-top: 1px solid var(--border); }
 .form-error { padding: 9px 11px; border-radius: 7px; color: var(--danger); background: var(--danger-soft); font-size: 12px; }

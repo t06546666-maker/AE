@@ -24,7 +24,7 @@ interface CreatedCustomer {
 export function AddCustomer({ user }: { user: UserProfile }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState('');
   const [amount, setAmount] = useState(''); const [merchantId, setMerchantId] = useState(user.merchant_id || '');
-  const [percentage, setPercentage] = useState(1); const [consent, setConsent] = useState(false);
+  const [percentage, setPercentage] = useState(1);
   const [result, setResult] = useState<CreatedCustomer | null>(null); const [qrUrl, setQrUrl] = useState('');
   const queryClient = useQueryClient(); const { showToast } = useToast();
   const settings = useQuery({ queryKey: ['reward-settings'], queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }) });
@@ -44,11 +44,11 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   const createCustomer = useMutation({
     mutationFn: () => apiFetch<CreatedCustomer>('/api/customers', {
       method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ name: name.trim(), phone: `+91${phone}`, email: email.trim(), amount: Number(amount), rewardPercentage: percentage, merchantId, location: 'In-store', whatsappConsent: consent }),
+      body: JSON.stringify({ name: name.trim(), phone: `+91${phone}`, email: email.trim(), amount: Number(amount), rewardPercentage: percentage, merchantId, location: 'In-store' }),
     }),
     onSuccess(data) {
       setResult(data); showToast(`${data.customer.name} registered successfully`);
-      setName(''); setPhone(''); setEmail(''); setAmount(''); setConsent(false);
+      setName(''); setPhone(''); setEmail(''); setAmount('');
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -68,7 +68,6 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     event.preventDefault();
     if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Enter a valid 10-digit Indian mobile number', 'error');
     if (Number(amount) < 100) return showToast('Minimum purchase amount is ₹100', 'error');
-    if (!consent) return showToast('WhatsApp consent is required', 'error');
     createCustomer.mutate();
   }
 
@@ -86,7 +85,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     <>
       <PageHeader title={user.role === 'admin' ? 'Add Customer' : 'Add Buyer'} subtitle="Register a customer, save the first order, and queue their QR message." />
       <form className="panel registration-form" onSubmit={submit}>
-        <div className="panel-heading"><div><h2>New customer registration</h2><p>Email is optional. WhatsApp consent is required.</p></div><UserPlus /></div>
+        <div className="panel-heading"><div><h2>New customer registration</h2><p>Email is optional.</p></div><UserPlus /></div>
         <div className="customer-fields">
           <label>Customer name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required /></label>
           <label>WhatsApp number<div className="phone-field"><span>+91</span><input value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div></label>
@@ -98,7 +97,6 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <div className="point-preview"><span>Points issued</span><strong>{formatPoints(points)} points</strong></div>
         </div>
         {user.role === 'admin' ? <label className="merchant-select">Assign to merchant<select value={merchantId} onChange={(event) => setMerchantId(event.target.value)} required>{merchants.data?.merchants.map((merchant) => <option key={merchant.id} value={merchant.id}>{merchant.name}</option>)}</select></label> : null}
-        <label className="consent-field"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Customer agrees to receive their QR code, purchase receipts, and reward updates on WhatsApp.</span></label>
         <div className="form-actions"><button className="button primary" disabled={createCustomer.isPending}><UserPlus size={17} />{createCustomer.isPending ? 'Registering' : 'Register and send QR'}</button><Link className="button secondary" to="/orders">Cancel</Link></div>
       </form>
       {result ? (

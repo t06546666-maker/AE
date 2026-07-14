@@ -55,7 +55,6 @@ declare
   v_membership public.customer_merchants%rowtype;
   v_order public.orders%rowtype;
   v_merchant_name text;
-  v_order_no text;
   v_points numeric(12,2);
   v_minimum numeric;
   v_prior_orders integer;
@@ -129,13 +128,12 @@ begin
   where o.customer_id = v_customer.id and o.merchant_id = p_merchant_id;
 
   v_points := round(p_amount * p_reward_percentage / 100, 2);
-  v_order_no := 'AE-' || to_char(clock_timestamp(), 'YYMMDDHH24MISSMS');
-
   insert into public.orders (
     order_no, customer_id, merchant_id, amount, location,
     reward_points, reward_percentage, is_returning, source, idempotency_key
   ) values (
-    v_order_no, v_customer.id, p_merchant_id, p_amount,
+    'AE-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)),
+    v_customer.id, p_merchant_id, p_amount,
     coalesce(nullif(p_location, ''), 'In-store'), v_points,
     p_reward_percentage, v_prior_orders > 0, p_source, p_idempotency_key
   ) returning * into v_order;

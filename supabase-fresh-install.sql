@@ -303,7 +303,7 @@ begin
 
   insert into public.customer_merchants (customer_id, merchant_id)
   values (v_customer.id, p_merchant_id)
-  on conflict (customer_id, merchant_id) do nothing;
+  on conflict on constraint customer_merchants_pkey do nothing;
 
   select cm.* into v_membership
   from public.customer_merchants as cm

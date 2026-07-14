@@ -1022,7 +1022,6 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   const amount = Number(req.body.amount);
   const rewardPercentage = Number(req.body.rewardPercentage);
   const rewardSettings = await getRewardSettings();
-  const whatsappConsent = req.body.whatsappConsent === true;
   const merchantId = req.auth.profile.role === 'admin'
     ? cleanText(req.body.merchantId, 100)
     : req.auth.profile.merchant_id;
@@ -1031,7 +1030,6 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     !phone ||
     (email && !isEmail(email)) ||
     !merchantId ||
-    !whatsappConsent ||
     !Number.isFinite(amount) ||
     amount < 100 ||
     !isAllowedRewardPercentage(rewardPercentage) ||
