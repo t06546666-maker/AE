@@ -59,7 +59,10 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     ),
     enabled: Boolean(result?.notifications.whatsapp.logId),
     refetchInterval(query) {
-      return !query.state.data || query.state.data.status === 'queued' ? 2_000 : false;
+      const status = query.state.data?.status;
+      const registrationTime = result?.order.created_at ? new Date(result.order.created_at).getTime() : Date.now();
+      const isWaitingForDelivery = !status || status === 'queued' || status === 'sent';
+      return isWaitingForDelivery && Date.now() - registrationTime < 5 * 60_000 ? 2_000 : false;
     },
   });
 
