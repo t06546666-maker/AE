@@ -17,7 +17,6 @@ try {
 } catch {}
 
 const app = express();
-app.set('trust proxy', 1);
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -63,10 +62,6 @@ const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEO
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const QR_SIGNING_SECRET = process.env.QR_SIGNING_SECRET
-  || WA_APP_SECRET
-  || WA_TOKEN
-  || SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAuth = SUPABASE_URL && SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
   : null;
@@ -149,19 +144,6 @@ function isAllowedRewardPercentage(value) {
 
 function formatPoints(value) {
   return Number(value || 0).toFixed(2);
-}
-
-function qrSignature(customerCode, expires) {
-  return crypto.createHmac('sha256', QR_SIGNING_SECRET)
-    .update(`${customerCode}.${expires}`)
-    .digest('base64url');
-}
-
-function makeSignedQrUrl(req, customerCode) {
-  if (!QR_SIGNING_SECRET || !customerCode) return '';
-  const expires = Math.floor(Date.now() / 1000) + 15 * 60;
-  const baseUrl = (process.env.PUBLIC_APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-  return `${baseUrl}/api/qr/${encodeURIComponent(customerCode)}.png?expires=${expires}&signature=${qrSignature(customerCode, expires)}`;
 }
 
 async function getRewardSettings() {
@@ -355,19 +337,6 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       { type: 'text', text: formatPoints(purchase.total_points) },
     ],
   };
-  if (purchase.qr_image_url) {
-    return sendWhatsAppTemplate({
-      customerId: purchase.customer_id,
-      orderId: purchase.order_id,
-      recipient: purchase.customer_phone,
-      templateName: WA_REGISTRATION_TEMPLATE,
-      logId,
-      components: [
-        { type: 'header', parameters: [{ type: 'image', image: { link: purchase.qr_image_url } }] },
-        bodyComponent,
-      ],
-    });
-  }
   try {
     const mediaId = await uploadQrMedia({
       id: purchase.customer_code,
@@ -1122,7 +1091,6 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     });
   }
   const purchase = purchases[0];
-  purchase.qr_image_url = makeSignedQrUrl(req, purchase.customer_code);
   const whatsapp = await queueWhatsApp(purchase, 'registration');
   const emailResult = purchase.customer_email && resend && process.env.RESEND_FROM_EMAIL
     ? { queued: true, sent: false }
@@ -1953,35 +1921,6 @@ app.put('/api/settings/reward', requireAuth, requireRole('admin'), async (req, r
   });
 });
 
-app.get('/api/qr/:code.png', async (req, res) => {
-  if (!QR_SIGNING_SECRET) return res.status(503).send('QR delivery is not configured');
-  const customerCode = cleanText(req.params.code, 100);
-  const expires = Number.parseInt(req.query.expires, 10);
-  const signature = cleanText(req.query.signature, 100);
-  if (!customerCode || !Number.isFinite(expires) || expires < Math.floor(Date.now() / 1000) || !signature) {
-    return res.status(403).send('QR link is invalid or expired');
-  }
-  const expected = qrSignature(customerCode, expires);
-  const suppliedBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
-    return res.status(403).send('QR link is invalid or expired');
-  }
-  const image = await QRCode.toBuffer(JSON.stringify({ id: customerCode }), {
-    type: 'png',
-    width: 400,
-    margin: 2,
-    errorCorrectionLevel: 'M',
-    color: { dark: '#000000', light: '#ffffff' },
-  });
-  res.set({
-    'Content-Type': 'image/png',
-    'Content-Length': String(image.length),
-    'Cache-Control': 'public, max-age=900, immutable',
-  });
-  return res.send(image);
-});
-
 app.get('/api/webhooks/whatsapp', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -2073,7 +2012,6 @@ app.post('/api/send-qr', requireAuth, async (req, res) => {
     total_points: membership.reward_points,
     merchant_name: membership.merchants?.name || '',
   };
-  purchase.qr_image_url = makeSignedQrUrl(req, purchase.customer_code);
   const whatsapp = await queueWhatsApp(purchase, 'registration');
   if (!whatsapp.queued) {
     return res.status(502).json({ success: false, whatsapp, error: whatsapp.error });
