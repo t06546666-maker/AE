@@ -180,7 +180,9 @@ h1, h2, h3 { letter-spacing: 0; }
 .quick-actions > div { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 15px; }
 
 .scanner-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, .8fr); gap: 18px; }
-.scanner-view { min-height: 280px; overflow: hidden; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-alt); display: grid; place-items: center; }
+.scanner-view { position: relative; min-height: 280px; overflow: hidden; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-alt); display: grid; place-items: center; }
+.qr-reader-host { width: 100%; min-height: inherit; display: grid; place-items: center; }
+.camera-off { position: absolute; inset: 0; pointer-events: none; }
 .scanner-view video { object-fit: cover; }
 .camera-off, .scan-placeholder { display: grid; justify-items: center; gap: 8px; color: var(--muted); text-align: center; }
 .scanner-actions { display: flex; gap: 8px; margin-top: 10px; }

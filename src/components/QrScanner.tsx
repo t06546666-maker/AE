@@ -8,6 +8,22 @@ import { useToast } from '../toast';
 
 type ScannerInstance = { start: (...args: unknown[]) => Promise<unknown>; stop: () => Promise<unknown>; clear: () => void };
 
+function cameraErrorMessage(cause: unknown) {
+  const message = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause || '');
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('notallowed') || normalized.includes('permission') || normalized.includes('denied')) {
+    return 'Camera permission is blocked. Click the lock or camera icon beside the website address, allow Camera, then try again.';
+  }
+  if (normalized.includes('notfound') || normalized.includes('requested device not found') || normalized.includes('no cameras')) {
+    return 'No camera was found on this device.';
+  }
+  if (normalized.includes('notreadable') || normalized.includes('could not start video') || normalized.includes('trackstarterror')) {
+    return 'The camera is busy. Close other apps using it, then try again.';
+  }
+  return message || 'The camera could not be started. Check browser camera permission and try again.';
+}
+
 export default function QrScanner({ settings }: { settings: RewardSettings }) {
   const [scanner, setScanner] = useState<ScannerInstance | null>(null);
   const [customer, setCustomer] = useState<(Customer & { isNewToMerchant?: boolean }) | null>(null);
@@ -16,17 +32,29 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
   const [amount, setAmount] = useState('');
   const [percentage, setPercentage] = useState(settings.rewardPercentage);
   const locked = useRef(false);
+  const scannerRef = useRef<ScannerInstance | null>(null);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  async function stopCamera(instance = scanner) {
+  async function stopCamera(instance = scannerRef.current) {
     if (!instance) return;
     try { await instance.stop(); } catch { /* camera may already be stopped */ }
     try { instance.clear(); } catch { /* reader was already removed */ }
-    setScanner(null);
+    if (scannerRef.current === instance) {
+      scannerRef.current = null;
+      setScanner(null);
+    }
   }
 
-  useEffect(() => () => { void stopCamera(scanner); }, [scanner]);
+  useEffect(() => () => {
+    const activeScanner = scannerRef.current;
+    scannerRef.current = null;
+    if (activeScanner) {
+      void activeScanner.stop().catch(() => undefined).finally(() => {
+        try { activeScanner.clear(); } catch { /* reader was already removed */ }
+      });
+    }
+  }, []);
 
   async function handleDecoded(decoded: string, instance: ScannerInstance) {
     if (locked.current) return;
@@ -51,31 +79,46 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
   async function startCamera() {
     if (starting || scanner) return;
     setStarting(true); setCustomer(null); locked.current = false; setMessage('Starting camera...');
+    let instance: ScannerInstance | null = null;
     try {
+      if (!window.isSecureContext) throw new Error('Camera requires a secure HTTPS connection.');
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('No camera access is available in this browser.');
+
       const library = await import('html5-qrcode');
-      const instance = new library.Html5Qrcode('react-qr-reader', {
+      const cameras = await library.Html5Qrcode.getCameras();
+      if (!cameras.length) throw new Error('No cameras were found.');
+      const preferredCamera = cameras.find((camera) => /back|rear|environment/i.test(camera.label)) || cameras[0];
+
+      instance = new library.Html5Qrcode('react-qr-reader', {
         formatsToSupport: [library.Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
       }) as unknown as ScannerInstance;
-      setScanner(instance);
-      await instance.start(
-        { facingMode: 'environment' },
+      const activeInstance = instance;
+      scannerRef.current = activeInstance;
+      setScanner(activeInstance);
+      await activeInstance.start(
+        preferredCamera.id,
         {
-          fps: 15,
+          fps: 18,
           qrbox: (width: number, height: number) => {
-            const size = Math.floor(Math.min(width, height) * 0.72);
+            const size = Math.floor(Math.min(width, height) * 0.76);
             return { width: size, height: size };
           },
           aspectRatio: 1,
-          disableFlip: true,
+          disableFlip: false,
         },
-        (decoded: string) => { void handleDecoded(decoded, instance); },
+        (decoded: string) => { void handleDecoded(decoded, activeInstance); },
         () => undefined,
       );
-      setMessage('Point the camera at the customer QR code.');
+      setMessage(`Point the camera at the customer QR code${preferredCamera.label ? ` (${preferredCamera.label})` : ''}.`);
     } catch (cause) {
+      if (instance) {
+        try { await instance.stop(); } catch { /* camera did not finish starting */ }
+        try { instance.clear(); } catch { /* reader was already removed */ }
+      }
+      if (scannerRef.current === instance) scannerRef.current = null;
       setScanner(null);
-      setMessage(cause instanceof Error ? cause.message : 'Camera permission was denied.');
+      setMessage(cameraErrorMessage(cause));
     } finally { setStarting(false); }
   }
 
@@ -101,7 +144,8 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       <div className="panel-heading"><div><h2>Scan customer QR</h2><p>Identify a customer and complete checkout.</p></div><ScanLine /></div>
       <div className="scanner-grid">
         <div>
-          <div className="scanner-view" id="react-qr-reader">
+          <div className="scanner-view">
+            <div className="qr-reader-host" id="react-qr-reader" />
             {!scanner ? <div className="camera-off"><Camera size={30} /><span>Camera is off</span></div> : null}
           </div>
           <div className="scanner-actions">
