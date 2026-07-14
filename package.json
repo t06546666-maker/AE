@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js"
+    "dev": "vite",
+    "build": "tsc -b && vite build --configLoader runner",
+    "preview": "vite preview",
+    "check": "node --check server.js && tsc -b --pretty false"
   },
   "keywords": [],
   "author": "",
@@ -15,13 +18,30 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
+    "@tanstack/react-query": "^5.90.21",
+    "@vercel/functions": "^3.4.3",
     "axios": "^1.18.1",
     "cors": "*",
     "dotenv": "*",
+    "exceljs": "^4.4.0",
     "express": "*",
     "form-data": "*",
     "html5-qrcode": "^2.3.8",
+    "pdfkit": "^0.19.1",
     "qrcode": "*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.1",
+    "lucide-react": "^0.577.0",
     "resend": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
   }
 }

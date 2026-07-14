@@ -488,6 +488,27 @@ select option{background:var(--card)}
   </div>
 </div>
 
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeExportModal()">✕</button>
+    <h3>Export Report</h3>
+    <p class="modal-sub">Choose date range and what data you want to save.</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+      <div class="form-group"><label>From</label><input id="export-from" type="date"></div>
+      <div class="form-group"><label>To</label><input id="export-to" type="date"></div>
+    </div>
+    <div class="form-group">
+      <label>What do you need?</label>
+      <select id="export-section"></select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px">
+      <button class="btn-ghost" onclick="closeExportModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmExport()">Download</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 
 <div id="toast"><span id="toast-msg"></span></div>
@@ -504,6 +525,7 @@ let retentionPeriod='today',retentionData=null,retentionCustomFrom='',retentionC
 let selectedMerchantProfile=null;
 let qrScanner=null,scannerRunning=false,scannedCustomer=null;
 let pageRenderVersion=0,scanBusy=false;
+let pendingExport={format:'xlsx',merchantId:''};
 const COLORS=['#7c6ef7','#e84d8a','#22d47a','#f59e0b','#38bdf8','#fb7185','#a78bfa','#34d399'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -991,6 +1013,79 @@ function reportRange(kind){
   return{from:from.toISOString(),to:to.toISOString()};
 }
 
+function dateValueFromIso(iso,offsetDays=0){
+  const date=new Date(iso);
+  date.setDate(date.getDate()+offsetDays);
+  return date.toISOString().slice(0,10);
+}
+
+function openExportModal(format,merchantId=''){
+  pendingExport={format,merchantId};
+  const range=dashboardRange()||dashboardRange('today');
+  document.getElementById('export-from').value=dateValueFromIso(range.from);
+  document.getElementById('export-to').value=dateValueFromIso(range.to,-1);
+  const options=[
+    ['all','All details'],
+    ['orders','Orders only'],
+    ['points','Customer points only'],
+    ['summary','Summary only'],
+  ];
+  if(currentRole==='admin')options.splice(3,0,['merchants','Merchant summary only']);
+  document.getElementById('export-section').innerHTML=options
+    .map(([value,label])=>`<option value="${value}">${label}</option>`)
+    .join('');
+  document.getElementById('export-modal').classList.add('open');
+}
+
+function closeExportModal(){document.getElementById('export-modal').classList.remove('open');}
+
+function exportRangeParams(merchantId='',section='all'){
+  const params=new URLSearchParams();
+  const fromValue=document.getElementById('export-from')?.value;
+  const toValue=document.getElementById('export-to')?.value;
+  if(fromValue&&toValue){
+    const from=new Date(fromValue+'T00:00:00');
+    const to=new Date(toValue+'T00:00:00');to.setDate(to.getDate()+1);
+    params.set('from',from.toISOString());params.set('to',to.toISOString());
+  }
+  if(merchantId)params.set('merchantId',merchantId);
+  params.set('section',section);
+  const query=params.toString();
+  return query?'?'+query:'';
+}
+
+async function confirmExport(){
+  const section=document.getElementById('export-section').value||'all';
+  const fromValue=document.getElementById('export-from').value;
+  const toValue=document.getElementById('export-to').value;
+  if(!fromValue||!toValue){showToast('Choose from and to dates','error');return;}
+  if(new Date(fromValue)>new Date(toValue)){showToast('From date must be before To date','error');return;}
+  await downloadExport(pendingExport.format,pendingExport.merchantId,section);
+}
+
+async function downloadExport(format,merchantId='',section='all'){
+  try{
+    const response=await apiFetch('/api/exports/full.'+format+exportRangeParams(merchantId,section));
+    if(!response.ok){
+      let message='Export failed';
+      try{const data=await response.json();message=data.error||message;}catch{}
+      throw new Error(message);
+    }
+    const blob=await response.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const date=new Date().toISOString().slice(0,10);
+    a.href=url;
+    a.download='rewardhub-export-'+date+'.'+format;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    closeExportModal();
+    showToast(format.toUpperCase()+' export downloaded','success');
+  }catch(error){showToast(error.message,'error');}
+}
+
 function renderDashboard(){
   const data=dashboardData||{
     summary:{totalOrders:0,totalRevenue:0,rewardPointsIssued:0,totalCustomers:0},
@@ -1011,6 +1106,10 @@ function renderDashboard(){
       ${[['today','Today'],['week','Weekly'],['month','Monthly'],['custom','Custom']].map(([id,label])=>
         `<button class="period-tab ${dashboardPeriod===id?'active':''}" onclick="setDashboardPeriod('${id}')">${label}</button>`
       ).join('')}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-ghost" onclick="openExportModal('xlsx')">Export Excel</button>
+      <button class="btn-ghost" onclick="openExportModal('pdf')">Export PDF</button>
     </div>
     <div class="date-range" style="${dashboardPeriod==='custom'?'':'display:none'}">
       <div><label>From<input id="dash-from" type="date" value="${today}"></label></div>
@@ -1547,7 +1646,11 @@ function renderMerchantProfile(){
       <div class="merchant-profile-title">${data.merchant.name}</div>
       <div class="merchant-profile-sub">${data.merchant.email||''} - ${data.merchant.phone||''} - Joined ${fmtDate(data.merchant.joined)}</div>
     </div>
-    <button class="btn-ghost" onclick="navigate('merchants')">Back to Merchants</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn-ghost" onclick="openExportModal('xlsx','${data.merchant.id}')">Export Excel</button>
+      <button class="btn-ghost" onclick="openExportModal('pdf','${data.merchant.id}')">Export PDF</button>
+      <button class="btn-ghost" onclick="navigate('merchants')">Back to Merchants</button>
+    </div>
   </div>
   <div class="stats-grid merchant-profile-stats">
     <div class="stat-card sg-purple"><div class="stat-label">Total Orders</div><div class="stat-val cp">${s.totalOrders||0}</div><div class="stat-sub">All time</div></div>

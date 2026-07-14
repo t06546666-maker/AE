@@ -7,8 +7,14 @@ const fs       = require('fs');
 const path     = require('path');
 const os       = require('os');
 const crypto   = require('crypto');
+const ExcelJS  = require('exceljs');
+const PDFDocument = require('pdfkit');
 const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
+let vercelWaitUntil = null;
+try {
+  ({ waitUntil: vercelWaitUntil } = require('@vercel/functions'));
+} catch {}
 
 const app = express();
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
@@ -35,7 +41,11 @@ app.use('/vendor/html5-qrcode', express.static(
   path.join(__dirname, 'node_modules', 'html5-qrcode'),
   { fallthrough: false, maxAge: '7d' },
 ));
-app.use(express.static(path.join(__dirname, 'public')));
+const reactBuildPath = path.join(__dirname, 'dist');
+const webRoot = fs.existsSync(path.join(reactBuildPath, 'index.html'))
+  ? reactBuildPath
+  : path.join(__dirname, 'public');
+app.use(express.static(webRoot));
 
 // ── Clients ──
 const resend      = process.env.RESEND_API_KEY    ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -48,6 +58,7 @@ const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'customer_welcome_qr';
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
 const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
+const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -151,6 +162,21 @@ async function getRewardSettings() {
   return { minimum, defaultPercentage };
 }
 
+async function processPurchase(params, idempotencyKey) {
+  const withIdempotency = {
+    ...params,
+    p_idempotency_key: cleanText(idempotencyKey, 120) || crypto.randomUUID(),
+  };
+  let result = await supabaseAdmin.rpc('process_purchase', withIdempotency);
+  if (result.error && (
+    result.error.code === 'PGRST202'
+    || /idempotency|function.*process_purchase|schema cache/i.test(result.error.message || '')
+  )) {
+    result = await supabaseAdmin.rpc('process_purchase', params);
+  }
+  return result;
+}
+
 async function uploadQrMedia(payload) {
   const qrPath = path.join(os.tmpdir(), `ae-qr-${crypto.randomUUID()}.png`);
   try {
@@ -172,7 +198,10 @@ async function uploadQrMedia(payload) {
     const response = await axios.post(
       `https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_ID}/media`,
       form,
-      { headers: { Authorization: `Bearer ${WA_TOKEN}`, ...form.getHeaders() } },
+      {
+        headers: { Authorization: `Bearer ${WA_TOKEN}`, ...form.getHeaders() },
+        timeout: WA_REQUEST_TIMEOUT_MS,
+      },
     );
     return response.data.id;
   } catch (error) {
@@ -183,29 +212,73 @@ async function uploadQrMedia(payload) {
   }
 }
 
+function cleanSearch(value) {
+  return cleanText(value, 80).replace(/[,()]/g, ' ').replace(/\s+/g, ' ');
+}
+
+function paginationFromRequest(req, defaultSize = 25, maxSize = 100) {
+  const enabled = req.query.page !== undefined
+    || req.query.pageSize !== undefined
+    || req.query.search !== undefined;
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const pageSize = Math.min(maxSize, Math.max(1, Number.parseInt(req.query.pageSize, 10) || defaultSize));
+  return {
+    enabled,
+    page,
+    pageSize,
+    from: (page - 1) * pageSize,
+    to: page * pageSize - 1,
+    search: cleanSearch(req.query.search),
+  };
+}
+
+function paginationMeta(paging, total) {
+  return {
+    page: paging.page,
+    pageSize: paging.pageSize,
+    total: Number(total || 0),
+    totalPages: Math.max(1, Math.ceil(Number(total || 0) / paging.pageSize)),
+  };
+}
+
+function scheduleBackground(task) {
+  if (process.env.VERCEL && vercelWaitUntil) {
+    vercelWaitUntil(Promise.resolve().then(task));
+    return;
+  }
+  setImmediate(() => Promise.resolve().then(task).catch((error) => {
+    console.error('Background task failed:', error.message);
+  }));
+}
+
 async function sendWhatsAppTemplate({
   customerId,
   orderId,
   recipient,
   templateName,
   components,
+  logId,
 }) {
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
 
-  const { data: log, error: logError } = await supabaseAdmin
-    .from('whatsapp_messages')
-    .insert({
-      customer_id: customerId,
-      order_id: orderId,
-      template_name: templateName,
-      recipient,
-      status: 'queued',
-    })
-    .select('id')
-    .single();
-  if (logError) return { sent: false, error: logError.message };
+  let messageLogId = logId;
+  if (!messageLogId) {
+    const { data: log, error: logError } = await supabaseAdmin
+      .from('whatsapp_messages')
+      .insert({
+        customer_id: customerId,
+        order_id: orderId,
+        template_name: templateName,
+        recipient,
+        status: 'queued',
+      })
+      .select('id')
+      .single();
+    if (logError) return { sent: false, error: logError.message };
+    messageLogId = log.id;
+  }
 
   try {
     const response = await axios.post(WA_URL, {
@@ -222,6 +295,7 @@ async function sendWhatsAppTemplate({
         Authorization: `Bearer ${WA_TOKEN}`,
         'Content-Type': 'application/json',
       },
+      timeout: WA_REQUEST_TIMEOUT_MS,
     });
     const messageId = response.data?.messages?.[0]?.id;
     await supabaseAdmin.from('whatsapp_messages').update({
@@ -229,7 +303,7 @@ async function sendWhatsAppTemplate({
       status: 'sent',
       status_timestamp: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', log.id);
+    }).eq('id', messageLogId);
     return { sent: true, messageId };
   } catch (error) {
     const apiError = error.response?.data?.error;
@@ -239,12 +313,12 @@ async function sendWhatsAppTemplate({
       error_message: apiError?.message || error.message,
       status_timestamp: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', log.id);
+    }).eq('id', messageLogId);
     return { sent: false, error: apiError?.message || error.message };
   }
 }
 
-async function sendRegistrationWhatsApp(purchase) {
+async function sendRegistrationWhatsApp(purchase, logId) {
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
@@ -270,6 +344,7 @@ async function sendRegistrationWhatsApp(purchase) {
       orderId: purchase.order_id,
       recipient: purchase.customer_phone,
       templateName: WA_REGISTRATION_TEMPLATE,
+      logId,
       components: [
         { type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] },
         bodyComponent,
@@ -281,6 +356,7 @@ async function sendRegistrationWhatsApp(purchase) {
       orderId: purchase.order_id,
       recipient: purchase.customer_phone,
       templateName: WA_REGISTRATION_TEMPLATE,
+      logId,
       components: [bodyComponent],
     });
     if (fallback.sent) return fallback;
@@ -288,12 +364,13 @@ async function sendRegistrationWhatsApp(purchase) {
   }
 }
 
-async function sendRewardWhatsApp(purchase) {
+async function sendRewardWhatsApp(purchase, logId) {
   return sendWhatsAppTemplate({
     customerId: purchase.customer_id,
     orderId: purchase.order_id,
     recipient: purchase.customer_phone,
     templateName: WA_REWARD_TEMPLATE,
+    logId,
     components: [{
       type: 'body',
       parameters: [
@@ -358,15 +435,36 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 app.get('/api/merchants', requireAuth, async (req, res) => {
-  let query = supabaseAdmin.from('merchants').select('id, name, email, phone, created_at').order('name');
+  const paging = paginationFromRequest(req, 20, 100);
+  let query = supabaseAdmin.from('merchants')
+    .select('id, name, email, phone, created_at', paging.enabled ? { count: 'exact' } : undefined)
+    .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
-  const { data, error } = await query;
+  if (paging.search) {
+    const pattern = `%${paging.search}%`;
+    query = query.or(`name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern}`);
+  }
+  if (paging.enabled) query = query.range(paging.from, paging.to);
+  const { data, error, count } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
+  const merchantIds = (data || []).map((row) => row.id);
+  const orderCounts = new Map();
+  if (merchantIds.length) {
+    const { data: orderRows } = await supabaseAdmin.from('orders')
+      .select('merchant_id')
+      .in('merchant_id', merchantIds)
+      .limit(10000);
+    (orderRows || []).forEach((row) => {
+      orderCounts.set(row.merchant_id, (orderCounts.get(row.merchant_id) || 0) + 1);
+    });
+  }
   res.json({
     success: true,
-    merchants: data.map((row) => ({
+    merchants: (data || []).map((row) => ({
       id: row.id, name: row.name, email: row.email, phone: row.phone, joined: row.created_at,
+      orderCount: orderCounts.get(row.id) || 0,
     })),
+    ...(paging.enabled ? { pagination: paginationMeta(paging, count) } : {}),
   });
 });
 
@@ -633,7 +731,174 @@ app.delete('/api/admins/:id', requireAuth, requireRole('admin'), async (req, res
   res.json({ success: true });
 });
 
+async function pagedCustomers(req, res, paging) {
+  const isAdmin = req.auth.profile.role === 'admin';
+  let customerRows = [];
+  let memberships = [];
+  let total = 0;
+
+  if (isAdmin) {
+    let customerQuery = supabaseAdmin.from('customers')
+      .select('id,customer_code,name,phone,email,created_at', { count: 'exact' })
+      .order('created_at', { ascending: false });
+    if (paging.search) {
+      const pattern = `%${paging.search}%`;
+      customerQuery = customerQuery.or(
+        `customer_code.ilike.${pattern},name.ilike.${pattern},phone.ilike.${pattern},email.ilike.${pattern}`,
+      );
+    }
+    const customerResult = await customerQuery.range(paging.from, paging.to);
+    if (customerResult.error) throw customerResult.error;
+    customerRows = customerResult.data || [];
+    total = customerResult.count || 0;
+    if (customerRows.length) {
+      const membershipResult = await supabaseAdmin.from('customer_merchants')
+        .select('customer_id,merchant_id,reward_points,qr_scans,joined_at')
+        .in('customer_id', customerRows.map((row) => row.id));
+      if (membershipResult.error) throw membershipResult.error;
+      memberships = membershipResult.data || [];
+    }
+  } else {
+    let matchingCustomerIds = null;
+    if (paging.search) {
+      const pattern = `%${paging.search}%`;
+      const matchingResult = await supabaseAdmin.from('customers')
+        .select('id')
+        .or(`customer_code.ilike.${pattern},name.ilike.${pattern},phone.ilike.${pattern},email.ilike.${pattern}`)
+        .limit(1000);
+      if (matchingResult.error) throw matchingResult.error;
+      matchingCustomerIds = (matchingResult.data || []).map((row) => row.id);
+      if (!matchingCustomerIds.length) {
+        return res.json({ success: true, customers: [], pagination: paginationMeta(paging, 0) });
+      }
+    }
+    let membershipQuery = supabaseAdmin.from('customer_merchants')
+      .select('customer_id,merchant_id,reward_points,qr_scans,joined_at', { count: 'exact' })
+      .eq('merchant_id', req.auth.profile.merchant_id)
+      .order('joined_at', { ascending: false });
+    if (matchingCustomerIds) membershipQuery = membershipQuery.in('customer_id', matchingCustomerIds);
+    const membershipResult = await membershipQuery.range(paging.from, paging.to);
+    if (membershipResult.error) throw membershipResult.error;
+    memberships = membershipResult.data || [];
+    total = membershipResult.count || 0;
+    if (memberships.length) {
+      const customerResult = await supabaseAdmin.from('customers')
+        .select('id,customer_code,name,phone,email,created_at')
+        .in('id', memberships.map((row) => row.customer_id));
+      if (customerResult.error) throw customerResult.error;
+      customerRows = customerResult.data || [];
+    }
+  }
+
+  const customerIds = customerRows.map((row) => row.id);
+  const merchantIds = [...new Set(memberships.map((row) => row.merchant_id))];
+  const [merchantResult, orderResult] = await Promise.all([
+    merchantIds.length
+      ? supabaseAdmin.from('merchants').select('id,name').in('id', merchantIds)
+      : Promise.resolve({ data: [], error: null }),
+    customerIds.length
+      ? (() => {
+        let query = supabaseAdmin.from('orders')
+          .select('customer_id,merchant_id,amount')
+          .in('customer_id', customerIds)
+          .limit(10000);
+        if (!isAdmin) query = query.eq('merchant_id', req.auth.profile.merchant_id);
+        return query;
+      })()
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const relatedError = merchantResult.error || orderResult.error;
+  if (relatedError) throw relatedError;
+
+  const customerById = new Map(customerRows.map((row) => [row.id, row]));
+  const merchantById = new Map((merchantResult.data || []).map((row) => [row.id, row.name]));
+  const orderTotals = new Map();
+  (orderResult.data || []).forEach((row) => {
+    const current = orderTotals.get(row.customer_id) || { count: 0, spend: 0 };
+    current.count += 1;
+    current.spend += Number(row.amount || 0);
+    orderTotals.set(row.customer_id, current);
+  });
+
+  if (isAdmin) {
+    const membershipsByCustomer = new Map();
+    memberships.forEach((row) => {
+      const list = membershipsByCustomer.get(row.customer_id) || [];
+      list.push({
+        merchantId: row.merchant_id,
+        merchant: merchantById.get(row.merchant_id) || '',
+        rewardPoints: Number(row.reward_points || 0),
+        qrScans: Number(row.qr_scans || 0),
+        joinedAt: row.joined_at,
+      });
+      membershipsByCustomer.set(row.customer_id, list);
+    });
+    return res.json({
+      success: true,
+      customers: customerRows.map((customer) => {
+        const customerMemberships = membershipsByCustomer.get(customer.id) || [];
+        const totals = orderTotals.get(customer.id) || { count: 0, spend: 0 };
+        const totalRewardPoints = customerMemberships
+          .reduce((sum, row) => sum + Number(row.rewardPoints || 0), 0);
+        return {
+          id: customer.customer_code,
+          databaseId: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email || '',
+          registeredAt: customer.created_at,
+          qrScans: customerMemberships.reduce((sum, row) => sum + row.qrScans, 0),
+          rewardPoints: totalRewardPoints,
+          totalRewardPoints,
+          merchantCount: customerMemberships.length,
+          merchant: `${customerMemberships.length} merchant${customerMemberships.length === 1 ? '' : 's'}`,
+          merchantId: customerMemberships[0]?.merchantId || '',
+          memberships: customerMemberships,
+          orderCount: totals.count,
+          totalSpend: totals.spend,
+          isRetained: totals.count >= 2,
+        };
+      }),
+      pagination: paginationMeta(paging, total),
+    });
+  }
+
+  return res.json({
+    success: true,
+    customers: memberships.flatMap((row) => {
+      const customer = customerById.get(row.customer_id);
+      if (!customer) return [];
+      const totals = orderTotals.get(customer.id) || { count: 0, spend: 0 };
+      return [{
+        id: customer.customer_code,
+        databaseId: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || '',
+        registeredAt: row.joined_at || customer.created_at,
+        qrScans: Number(row.qr_scans || 0),
+        rewardPoints: Number(row.reward_points || 0),
+        totalRewardPoints: Number(row.reward_points || 0),
+        merchantId: row.merchant_id,
+        merchant: merchantById.get(row.merchant_id) || '',
+        orderCount: totals.count,
+        totalSpend: totals.spend,
+        isRetained: totals.count >= 2,
+      }];
+    }),
+    pagination: paginationMeta(paging, total),
+  });
+}
+
 app.get('/api/customers', requireAuth, async (req, res) => {
+  const paging = paginationFromRequest(req, 18, 100);
+  if (paging.enabled) {
+    try {
+      return await pagedCustomers(req, res, paging);
+    } catch (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
   let query = supabaseAdmin.from('customer_merchants')
     .select('customer_id,merchant_id,reward_points,qr_scans,joined_at')
     .order('joined_at', { ascending: false });
@@ -808,14 +1073,14 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     }).eq('id', customer.id);
   }
 
-  const { data: purchases, error: purchaseError } = await supabaseAdmin.rpc('process_purchase', {
+  const { data: purchases, error: purchaseError } = await processPurchase({
     p_customer_code: customer.customer_code,
     p_merchant_id: merchantId,
     p_amount: amount,
     p_reward_percentage: rewardPercentage,
     p_source: 'registration',
     p_location: cleanText(req.body.location, 160) || 'In-store',
-  });
+  }, req.get('Idempotency-Key'));
   if (purchaseError || !purchases?.[0]) {
     if (createdCustomer) await supabaseAdmin.from('customers').delete().eq('id', customer.id);
     return res.status(400).json({
@@ -824,10 +1089,16 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     });
   }
   const purchase = purchases[0];
-  const [whatsapp, emailResult] = await Promise.all([
-    sendRegistrationWhatsApp(purchase),
-    sendWelcomeEmail(purchase),
-  ]);
+  const whatsapp = await queueWhatsApp(purchase, 'registration');
+  const emailResult = purchase.customer_email && resend && process.env.RESEND_FROM_EMAIL
+    ? { queued: true, sent: false }
+    : { queued: false, sent: false, error: 'Email not configured or not provided' };
+  scheduleBackground(() => runPurchaseNotifications(
+    purchase,
+    'registration',
+    whatsapp,
+    emailResult.queued,
+  ));
   res.status(201).json({
     success: true,
     customer: {
@@ -898,28 +1169,46 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       error: `Purchase must be at least 100 and reward percentage must be between ${rewardSettings.minimum}% and 10%`,
     });
   }
-  const { data, error } = await supabaseAdmin.rpc('process_purchase', {
+  const { data, error } = await processPurchase({
     p_customer_code: customerCode,
     p_merchant_id: req.auth.profile.merchant_id,
     p_amount: amount,
     p_reward_percentage: rewardPercentage,
     p_source: 'qr',
     p_location: cleanText(req.body.location, 160) || 'In-store',
-  });
+  }, req.get('Idempotency-Key'));
   if (error || !data?.[0]) {
     return res.status(400).json({ success: false, error: error?.message || 'Checkout failed' });
   }
   const purchase = data[0];
-  const whatsapp = await sendRewardWhatsApp(purchase);
+  const whatsapp = await queueWhatsApp(purchase, 'reward');
+  scheduleBackground(() => runPurchaseNotifications(purchase, 'reward', whatsapp));
   res.status(201).json({ success: true, purchase, whatsapp });
 });
 
 app.get('/api/orders', requireAuth, async (req, res) => {
+  const paging = paginationFromRequest(req, 25, 100);
   let query = supabaseAdmin.from('orders')
-    .select('id, order_no, amount, reward_points, reward_percentage, is_returning, source, location, email_sent, created_at, customers(customer_code,name,phone,email), merchants(name), whatsapp_messages(status,updated_at)')
+    .select(
+      'id, order_no, amount, reward_points, reward_percentage, is_returning, source, location, email_sent, created_at, customers(customer_code,name,phone,email), merchants(name), whatsapp_messages(status,updated_at)',
+      paging.enabled ? { count: 'exact' } : undefined,
+    )
     .order('created_at', { ascending: false });
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
-  const { data, error } = await query;
+  if (paging.search) {
+    const pattern = `%${paging.search}%`;
+    const customerResult = await supabaseAdmin.from('customers')
+      .select('id')
+      .or(`customer_code.ilike.${pattern},name.ilike.${pattern},phone.ilike.${pattern},email.ilike.${pattern}`)
+      .limit(1000);
+    if (customerResult.error) return res.status(500).json({ success: false, error: customerResult.error.message });
+    const customerIds = (customerResult.data || []).map((row) => row.id);
+    query = customerIds.length
+      ? query.or(`order_no.ilike.${pattern},customer_id.in.(${customerIds.join(',')})`)
+      : query.ilike('order_no', pattern);
+  }
+  if (paging.enabled) query = query.range(paging.from, paging.to);
+  const { data, error, count } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
   res.json({
     success: true,
@@ -937,7 +1226,535 @@ app.get('/api/orders', requireAuth, async (req, res) => {
         .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0]?.status || 'not_sent',
       emailSent: row.email_sent,
     })),
+    ...(paging.enabled ? { pagination: paginationMeta(paging, count) } : {}),
   });
+});
+
+function parseExportDateRange(req) {
+  const from = req.query.from ? new Date(req.query.from) : new Date('1970-01-01T00:00:00.000Z');
+  const to = req.query.to ? new Date(req.query.to) : new Date('2999-12-31T00:00:00.000Z');
+  if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to) {
+    return null;
+  }
+  return { from, to };
+}
+
+async function queueWhatsApp(purchase, kind) {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    return { queued: false, sent: false, error: 'WhatsApp Cloud API is not configured' };
+  }
+  const templateName = kind === 'registration' ? WA_REGISTRATION_TEMPLATE : WA_REWARD_TEMPLATE;
+  const { data, error } = await supabaseAdmin.from('whatsapp_messages').insert({
+    customer_id: purchase.customer_id,
+    order_id: purchase.order_id,
+    template_name: templateName,
+    recipient: purchase.customer_phone,
+    status: 'queued',
+  }).select('id').single();
+  if (error) return { queued: false, sent: false, error: error.message };
+  return { queued: true, sent: false, logId: data.id };
+}
+
+async function runPurchaseNotifications(purchase, kind, whatsappJob, sendEmail = false) {
+  const tasks = [];
+  if (whatsappJob.queued) {
+    tasks.push(kind === 'registration'
+      ? sendRegistrationWhatsApp(purchase, whatsappJob.logId)
+      : sendRewardWhatsApp(purchase, whatsappJob.logId));
+  }
+  if (sendEmail && purchase.customer_email) {
+    tasks.push(sendWelcomeEmail(purchase).then(async (result) => {
+      if (result.sent) {
+        await supabaseAdmin.from('orders').update({ email_sent: true }).eq('id', purchase.order_id);
+      }
+      return result;
+    }));
+  }
+  await Promise.allSettled(tasks);
+}
+
+function makeKey(customerId, merchantId) {
+  return `${customerId || ''}::${merchantId || ''}`;
+}
+
+function money(value) {
+  return Number(value || 0).toFixed(2);
+}
+
+async function buildExportReport(req) {
+  const range = parseExportDateRange(req);
+  if (!range) {
+    const error = new Error('Valid from and to dates are required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const requestedMerchantId = cleanText(req.query.merchantId, 100);
+  const requestedSection = cleanText(req.query.section, 30) || 'all';
+  const allowedSections = new Set(['all', 'orders', 'points', 'merchants', 'summary']);
+  const section = allowedSections.has(requestedSection) ? requestedSection : 'all';
+  const isAdmin = req.auth.profile.role === 'admin';
+  const merchantId = isAdmin ? requestedMerchantId : req.auth.profile.merchant_id;
+
+  if (requestedMerchantId && !isAdmin) {
+    const error = new Error('Admin access required for merchant export filters');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  let scopedMerchantsQuery = supabaseAdmin
+    .from('merchants')
+    .select('id,name,email,phone,created_at')
+    .order('name');
+  if (merchantId) scopedMerchantsQuery = scopedMerchantsQuery.eq('id', merchantId);
+
+  let membershipsQuery = supabaseAdmin
+    .from('customer_merchants')
+    .select('customer_id,merchant_id,reward_points,qr_scans,joined_at,customers(id,customer_code,name,phone,email,created_at),merchants(id,name,email,phone,created_at)')
+    .limit(10000);
+  if (merchantId) membershipsQuery = membershipsQuery.eq('merchant_id', merchantId);
+
+  let selectedOrdersQuery = supabaseAdmin
+    .from('orders')
+    .select('id,order_no,customer_id,merchant_id,amount,reward_points,reward_percentage,is_returning,source,location,email_sent,created_at,customers(customer_code,name,phone,email),merchants(name),whatsapp_messages(status,updated_at)')
+    .gte('created_at', range.from.toISOString())
+    .lt('created_at', range.to.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(10000);
+  if (merchantId) selectedOrdersQuery = selectedOrdersQuery.eq('merchant_id', merchantId);
+
+  let lifetimeOrdersQuery = supabaseAdmin
+    .from('orders')
+    .select('id,customer_id,merchant_id,amount,reward_points,is_returning,created_at')
+    .limit(10000);
+  if (merchantId) lifetimeOrdersQuery = lifetimeOrdersQuery.eq('merchant_id', merchantId);
+
+  const [merchantsResult, membershipsResult, selectedOrdersResult, lifetimeOrdersResult] = await Promise.all([
+    scopedMerchantsQuery,
+    membershipsQuery,
+    selectedOrdersQuery,
+    lifetimeOrdersQuery,
+  ]);
+  const queryError = merchantsResult.error || membershipsResult.error
+    || selectedOrdersResult.error || lifetimeOrdersResult.error;
+  if (queryError) throw queryError;
+
+  const memberships = membershipsResult.data || [];
+  const selectedOrders = selectedOrdersResult.data || [];
+  const lifetimeOrders = lifetimeOrdersResult.data || [];
+
+  const selectedByMembership = new Map();
+  selectedOrders.forEach((order) => {
+    const key = makeKey(order.customer_id, order.merchant_id);
+    const current = selectedByMembership.get(key) || { orders: 0, amount: 0, points: 0 };
+    current.orders += 1;
+    current.amount += Number(order.amount || 0);
+    current.points += Number(order.reward_points || 0);
+    selectedByMembership.set(key, current);
+  });
+
+  const lifetimeByMembership = new Map();
+  lifetimeOrders.forEach((order) => {
+    const key = makeKey(order.customer_id, order.merchant_id);
+    const current = lifetimeByMembership.get(key) || { orders: 0, amount: 0, points: 0 };
+    current.orders += 1;
+    current.amount += Number(order.amount || 0);
+    current.points += Number(order.reward_points || 0);
+    lifetimeByMembership.set(key, current);
+  });
+
+  const customers = memberships.map((row) => {
+    const customer = row.customers || {};
+    const selectedTotals = selectedByMembership.get(makeKey(row.customer_id, row.merchant_id))
+      || { orders: 0, amount: 0, points: 0 };
+    const lifetimeTotals = lifetimeByMembership.get(makeKey(row.customer_id, row.merchant_id))
+      || { orders: 0, amount: 0, points: 0 };
+    return {
+      customerId: customer.customer_code || '',
+      name: customer.name || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+      merchant: row.merchants?.name || '',
+      merchantId: row.merchant_id,
+      totalPoints: Number(row.reward_points || 0),
+      selectedOrders: selectedTotals.orders,
+      selectedPoints: selectedTotals.points,
+      lifetimeOrders: lifetimeTotals.orders,
+      retained: lifetimeTotals.orders >= 2 ? 'Yes' : 'No',
+      registeredAt: row.joined_at || customer.created_at || '',
+    };
+  }).sort((a, b) => a.merchant.localeCompare(b.merchant) || a.name.localeCompare(b.name));
+
+  const orders = selectedOrders.map((row) => ({
+    orderNo: row.order_no,
+    customerId: row.customers?.customer_code || '',
+    customer: row.customers?.name || '',
+    phone: row.customers?.phone || '',
+    email: row.customers?.email || '',
+    merchant: row.merchants?.name || '',
+    amount: Number(row.amount || 0),
+    rewardPercentage: Number(row.reward_percentage || 0),
+    pointsEarned: Number(row.reward_points || 0),
+    source: row.source || '',
+    returning: row.is_returning ? 'Yes' : 'No',
+    whatsappStatus: [...(row.whatsapp_messages || [])]
+      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0]?.status || 'not_sent',
+    createdAt: row.created_at,
+  }));
+
+  const customerCountInRange = memberships.filter((row) => {
+    const joined = new Date(row.joined_at);
+    return Number.isFinite(joined.getTime()) && joined >= range.from && joined < range.to;
+  }).length;
+
+  const retainedCustomerKeys = new Set(
+    [...lifetimeByMembership.entries()]
+      .filter(([, totals]) => totals.orders >= 2)
+      .map(([key]) => key),
+  );
+
+  const merchantRows = (merchantsResult.data || []).map((merchant) => {
+    const memberRows = memberships.filter((row) => row.merchant_id === merchant.id);
+    const merchantOrders = selectedOrders.filter((order) => order.merchant_id === merchant.id);
+    const retainedCount = memberRows.filter((row) => (
+      (lifetimeByMembership.get(makeKey(row.customer_id, row.merchant_id))?.orders || 0) >= 2
+    )).length;
+    return {
+      name: merchant.name,
+      email: merchant.email || '',
+      phone: merchant.phone || '',
+      customers: memberRows.length,
+      orders: merchantOrders.length,
+      pointsIssued: merchantOrders.reduce((sum, order) => sum + Number(order.reward_points || 0), 0),
+      retainedCustomers: retainedCount,
+      joinedAt: merchant.created_at,
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    section,
+    range,
+    scope: {
+      role: req.auth.profile.role,
+      merchantId: merchantId || '',
+      merchantName: merchantId
+        ? (merchantsResult.data || []).find((merchant) => merchant.id === merchantId)?.name || ''
+        : 'All merchants',
+    },
+    summary: {
+      totalOrders: orders.length,
+      totalCustomers: customerCountInRange,
+      totalPointsIssued: selectedOrders.reduce((sum, order) => sum + Number(order.reward_points || 0), 0),
+      retainedCustomers: retainedCustomerKeys.size,
+      returningVisits: selectedOrders.filter((order) => order.is_returning).length,
+    },
+    customers,
+    orders,
+    merchants: isAdmin ? merchantRows : [],
+  };
+}
+
+function addExcelColumns(sheet, columns) {
+  sheet.columns = columns.map((column) => ({ ...column, width: column.width || 18 }));
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF4FF' } };
+}
+
+async function createExcelReport(report) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'RewardHub';
+  workbook.created = new Date();
+
+  const summarySheet = workbook.addWorksheet('Summary');
+  summarySheet.addRows([
+    ['Report Scope', report.scope.merchantName || 'All merchants'],
+    ['From', report.range.from.toISOString()],
+    ['To', report.range.to.toISOString()],
+    ['Generated At', report.generatedAt],
+    [],
+    ['Total Orders', report.summary.totalOrders],
+    ['Total Customers', report.summary.totalCustomers],
+    ['Total Points Issued', money(report.summary.totalPointsIssued)],
+    ['Retained Customers', report.summary.retainedCustomers],
+    ['Returning Visits', report.summary.returningVisits],
+  ]);
+  summarySheet.getColumn(1).width = 24;
+  summarySheet.getColumn(2).width = 34;
+
+  if (['all', 'points'].includes(report.section)) {
+    const customersSheet = workbook.addWorksheet('Customer Points');
+    addExcelColumns(customersSheet, [
+      { header: 'Customer ID', key: 'customerId' },
+      { header: 'Name', key: 'name', width: 24 },
+      { header: 'Phone', key: 'phone' },
+      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Merchant', key: 'merchant', width: 24 },
+      { header: 'Total Points', key: 'totalPoints' },
+      { header: 'Selected Orders', key: 'selectedOrders' },
+      { header: 'Selected Points', key: 'selectedPoints' },
+      { header: 'Lifetime Orders', key: 'lifetimeOrders' },
+      { header: 'Retained', key: 'retained' },
+      { header: 'Registered Date', key: 'registeredAt', width: 24 },
+    ]);
+    report.customers.forEach((row) => customersSheet.addRow(row));
+  }
+
+  if (['all', 'orders'].includes(report.section)) {
+    const ordersSheet = workbook.addWorksheet('Orders');
+    addExcelColumns(ordersSheet, [
+      { header: 'Order No', key: 'orderNo' },
+      { header: 'Customer ID', key: 'customerId' },
+      { header: 'Customer', key: 'customer', width: 24 },
+      { header: 'Phone', key: 'phone' },
+      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Merchant', key: 'merchant', width: 24 },
+      { header: 'Amount', key: 'amount' },
+      { header: 'Reward %', key: 'rewardPercentage' },
+      { header: 'Points Earned', key: 'pointsEarned' },
+      { header: 'Source', key: 'source' },
+      { header: 'Returning', key: 'returning' },
+      { header: 'WhatsApp Status', key: 'whatsappStatus' },
+      { header: 'Date', key: 'createdAt', width: 24 },
+    ]);
+    report.orders.forEach((row) => ordersSheet.addRow(row));
+  }
+
+  if (['all', 'merchants'].includes(report.section) && report.merchants.length) {
+    const merchantsSheet = workbook.addWorksheet('Merchants');
+    addExcelColumns(merchantsSheet, [
+      { header: 'Merchant', key: 'name', width: 24 },
+      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Phone', key: 'phone' },
+      { header: 'Customers', key: 'customers' },
+      { header: 'Orders', key: 'orders' },
+      { header: 'Points Issued', key: 'pointsIssued' },
+      { header: 'Retained Customers', key: 'retainedCustomers' },
+      { header: 'Joined Date', key: 'joinedAt', width: 24 },
+    ]);
+  }
+  if (['all', 'merchants'].includes(report.section) && report.merchants.length) {
+    const merchantsSheet = workbook.getWorksheet('Merchants');
+    report.merchants.forEach((row) => merchantsSheet.addRow(row));
+  }
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function streamExcelReport(report, output) {
+  const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({
+    stream: output,
+    useStyles: true,
+    useSharedStrings: true,
+  });
+  workbook.creator = 'RewardHub';
+
+  const summarySheet = workbook.addWorksheet('Summary');
+  [
+    ['Report Scope', report.scope.merchantName || 'All merchants'],
+    ['From', report.range.from.toISOString()],
+    ['To', report.range.to.toISOString()],
+    ['Generated At', report.generatedAt],
+    [],
+    ['Total Orders', report.summary.totalOrders],
+    ['Total Customers', report.summary.totalCustomers],
+    ['Total Points Issued', money(report.summary.totalPointsIssued)],
+    ['Retained Customers', report.summary.retainedCustomers],
+    ['Returning Visits', report.summary.returningVisits],
+  ].forEach((row) => summarySheet.addRow(row).commit());
+  summarySheet.getColumn(1).width = 24;
+  summarySheet.getColumn(2).width = 34;
+  summarySheet.commit();
+
+  function addSheet(name, columns, rows) {
+    const sheet = workbook.addWorksheet(name);
+    sheet.columns = columns.map((column) => ({ ...column, width: column.width || 18 }));
+    const heading = sheet.getRow(1);
+    heading.font = { bold: true };
+    heading.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF4FF' } };
+    heading.commit();
+    rows.forEach((row) => sheet.addRow(row).commit());
+    sheet.commit();
+  }
+
+  if (['all', 'points'].includes(report.section)) addSheet('Customer Points', [
+    { header: 'Customer ID', key: 'customerId' },
+    { header: 'Name', key: 'name', width: 24 },
+    { header: 'Phone', key: 'phone' },
+    { header: 'Email', key: 'email', width: 28 },
+    { header: 'Merchant', key: 'merchant', width: 24 },
+    { header: 'Total Points', key: 'totalPoints' },
+    { header: 'Selected Orders', key: 'selectedOrders' },
+    { header: 'Selected Points', key: 'selectedPoints' },
+    { header: 'Lifetime Orders', key: 'lifetimeOrders' },
+    { header: 'Retained', key: 'retained' },
+    { header: 'Registered Date', key: 'registeredAt', width: 24 },
+  ], report.customers);
+
+  if (['all', 'orders'].includes(report.section)) addSheet('Orders', [
+    { header: 'Order No', key: 'orderNo' },
+    { header: 'Customer ID', key: 'customerId' },
+    { header: 'Customer', key: 'customer', width: 24 },
+    { header: 'Phone', key: 'phone' },
+    { header: 'Email', key: 'email', width: 28 },
+    { header: 'Merchant', key: 'merchant', width: 24 },
+    { header: 'Amount', key: 'amount' },
+    { header: 'Reward %', key: 'rewardPercentage' },
+    { header: 'Points Earned', key: 'pointsEarned' },
+    { header: 'Source', key: 'source' },
+    { header: 'Returning', key: 'returning' },
+    { header: 'WhatsApp Status', key: 'whatsappStatus' },
+    { header: 'Date', key: 'createdAt', width: 24 },
+  ], report.orders);
+
+  if (['all', 'merchants'].includes(report.section) && report.merchants.length) addSheet('Merchants', [
+    { header: 'Merchant', key: 'name', width: 24 },
+    { header: 'Email', key: 'email', width: 28 },
+    { header: 'Phone', key: 'phone' },
+    { header: 'Customers', key: 'customers' },
+    { header: 'Orders', key: 'orders' },
+    { header: 'Points Issued', key: 'pointsIssued' },
+    { header: 'Retained Customers', key: 'retainedCustomers' },
+    { header: 'Joined Date', key: 'joinedAt', width: 24 },
+  ], report.merchants);
+
+  await workbook.commit();
+}
+
+function tableLine(doc, columns, y) {
+  columns.forEach((column) => {
+    doc.text(String(column.text ?? ''), column.x, y, {
+      width: column.width,
+      ellipsis: true,
+    });
+  });
+}
+
+function addPdfTable(doc, title, headers, rows, mapper, maxRows = 30) {
+  doc.moveDown(1).fontSize(13).fillColor('#111827').text(title, { underline: true });
+  let y = doc.y + 8;
+  doc.fontSize(8).fillColor('#374151');
+  tableLine(doc, headers.map((header) => ({ ...header, text: header.label })), y);
+  y += 14;
+  doc.moveTo(40, y - 4).lineTo(555, y - 4).strokeColor('#e5e7eb').stroke();
+  rows.slice(0, maxRows).forEach((row) => {
+    if (y > 730) {
+      doc.addPage();
+      y = 50;
+    }
+    tableLine(doc, mapper(row), y);
+    y += 14;
+  });
+  if (rows.length > maxRows) {
+    doc.fillColor('#6b7280').text(`Showing first ${maxRows} of ${rows.length} rows. Use Excel for full details.`, 40, y + 4);
+  }
+}
+
+function renderPdfReport(doc, report) {
+  doc.fontSize(20).fillColor('#111827').text('RewardHub Export Report');
+  doc.moveDown(0.4).fontSize(10).fillColor('#4b5563')
+    .text(`Scope: ${report.scope.merchantName || 'All merchants'}`)
+    .text(`From: ${report.range.from.toISOString()}`)
+    .text(`To: ${report.range.to.toISOString()}`)
+    .text(`Generated: ${report.generatedAt}`);
+
+  doc.moveDown(1).fontSize(13).fillColor('#111827').text('Summary', { underline: true });
+  doc.fontSize(10).fillColor('#111827')
+    .text(`Total Orders: ${report.summary.totalOrders}`)
+    .text(`Total Customers: ${report.summary.totalCustomers}`)
+    .text(`Total Points Issued: ${money(report.summary.totalPointsIssued)}`)
+    .text(`Retained Customers: ${report.summary.retainedCustomers}`)
+    .text(`Returning Visits: ${report.summary.returningVisits}`);
+
+  if (['all', 'points'].includes(report.section)) addPdfTable(doc, 'Customer Points', [
+    { label: 'ID', x: 40, width: 50 },
+    { label: 'Name', x: 92, width: 95 },
+    { label: 'Phone', x: 190, width: 75 },
+    { label: 'Merchant', x: 268, width: 95 },
+    { label: 'Points', x: 366, width: 55 },
+    { label: 'Orders', x: 424, width: 45 },
+    { label: 'Retained', x: 472, width: 55 },
+  ], report.customers, (row) => [
+    { text: row.customerId, x: 40, width: 50 },
+    { text: row.name, x: 92, width: 95 },
+    { text: row.phone, x: 190, width: 75 },
+    { text: row.merchant, x: 268, width: 95 },
+    { text: money(row.totalPoints), x: 366, width: 55 },
+    { text: row.lifetimeOrders, x: 424, width: 45 },
+    { text: row.retained, x: 472, width: 55 },
+  ]);
+
+  if (['all', 'orders'].includes(report.section)) addPdfTable(doc, 'Orders', [
+    { label: 'Order', x: 40, width: 65 },
+    { label: 'Customer', x: 108, width: 90 },
+    { label: 'Merchant', x: 201, width: 95 },
+    { label: 'Amount', x: 299, width: 55 },
+    { label: 'Rate', x: 357, width: 42 },
+    { label: 'Points', x: 402, width: 50 },
+    { label: 'WA', x: 455, width: 75 },
+  ], report.orders, (row) => [
+    { text: row.orderNo, x: 40, width: 65 },
+    { text: row.customer, x: 108, width: 90 },
+    { text: row.merchant, x: 201, width: 95 },
+    { text: `Rs. ${money(row.amount)}`, x: 299, width: 55 },
+    { text: `${row.rewardPercentage}%`, x: 357, width: 42 },
+    { text: money(row.pointsEarned), x: 402, width: 50 },
+    { text: row.whatsappStatus, x: 455, width: 75 },
+  ]);
+
+  if (['all', 'merchants'].includes(report.section) && report.merchants.length) {
+    addPdfTable(doc, 'Merchants', [
+      { label: 'Merchant', x: 40, width: 120 },
+      { label: 'Email', x: 163, width: 120 },
+      { label: 'Phone', x: 286, width: 75 },
+      { label: 'Customers', x: 364, width: 55 },
+      { label: 'Orders', x: 422, width: 45 },
+      { label: 'Points', x: 470, width: 55 },
+    ], report.merchants, (row) => [
+      { text: row.name, x: 40, width: 120 },
+      { text: row.email, x: 163, width: 120 },
+      { text: row.phone, x: 286, width: 75 },
+      { text: row.customers, x: 364, width: 55 },
+      { text: row.orders, x: 422, width: 45 },
+      { text: money(row.pointsIssued), x: 470, width: 55 },
+    ]);
+  }
+}
+
+function streamPdfReport(report, output) {
+  const doc = new PDFDocument({ margin: 40, size: 'A4' });
+  doc.pipe(output);
+  renderPdfReport(doc, report);
+  doc.end();
+}
+
+function exportFilename(ext) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  return `rewardhub-export-${stamp}.${ext}`;
+}
+
+app.get('/api/exports/full.xlsx', requireAuth, async (req, res) => {
+  try {
+    const report = await buildExportReport(req);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${exportFilename('xlsx')}"`);
+    await streamExcelReport(report, res);
+  } catch (error) {
+    if (!res.headersSent) res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    else res.destroy(error);
+  }
+});
+
+app.get('/api/exports/full.pdf', requireAuth, async (req, res) => {
+  try {
+    const report = await buildExportReport(req);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${exportFilename('pdf')}"`);
+    streamPdfReport(report, res);
+  } catch (error) {
+    if (!res.headersSent) res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    else res.destroy(error);
+  }
 });
 
 app.get('/api/dashboard', requireAuth, async (req, res) => {
@@ -945,6 +1762,24 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   const to = new Date(req.query.to);
   if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to) {
     return res.status(400).json({ success: false, error: 'Valid from and to dates are required' });
+  }
+
+  const merchantId = req.auth.profile.role === 'merchant'
+    ? req.auth.profile.merchant_id
+    : null;
+  const analyticsResult = await supabaseAdmin.rpc('get_dashboard_analytics', {
+    p_from: from.toISOString(),
+    p_to: to.toISOString(),
+    p_merchant_id: merchantId,
+  });
+  if (!analyticsResult.error && analyticsResult.data) {
+    return res.json(analyticsResult.data);
+  }
+  if (analyticsResult.error && !(
+    analyticsResult.error.code === 'PGRST202'
+    || /get_dashboard_analytics|schema cache/i.test(analyticsResult.error.message || '')
+  )) {
+    return res.status(500).json({ success: false, error: analyticsResult.error.message });
   }
 
   let ordersQuery = supabaseAdmin.from('orders')
@@ -1155,7 +1990,7 @@ app.post('/api/send-qr', requireAuth, async (req, res) => {
   }
   const { data: order } = await supabaseAdmin
     .from('orders')
-    .select('id,order_no,amount,reward_points,created_at')
+    .select('id,order_no,amount,reward_points,reward_percentage,created_at')
     .eq('customer_id', customer.id)
     .eq('merchant_id', merchantId)
     .order('created_at', { ascending: false })
@@ -1171,11 +2006,16 @@ app.post('/api/send-qr', requireAuth, async (req, res) => {
     customer_email: customer.email || '',
     amount: order?.amount || 0,
     points_earned: order?.reward_points || 0,
+    reward_percentage: order?.reward_percentage || 0,
     total_points: membership.reward_points,
     merchant_name: membership.merchants?.name || '',
   };
-  const whatsapp = await sendRegistrationWhatsApp(purchase);
-  res.status(whatsapp.sent ? 200 : 502).json({ success: whatsapp.sent, whatsapp });
+  const whatsapp = await queueWhatsApp(purchase, 'registration');
+  if (!whatsapp.queued) {
+    return res.status(502).json({ success: false, whatsapp, error: whatsapp.error });
+  }
+  scheduleBackground(() => runPurchaseNotifications(purchase, 'registration', whatsapp));
+  res.status(202).json({ success: true, whatsapp });
 });
 
 // Kept temporarily for reference while existing deployments migrate to templates.
@@ -1335,8 +2175,16 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+if (webRoot === reactBuildPath) {
+  app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+    res.sendFile(path.join(reactBuildPath, 'index.html'));
+  });
+}
+
+module.exports = app;
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+if (require.main === module) app.listen(PORT, () => {
   console.log(`\n🚀  Affiliate AE → http://localhost:${PORT}`);
   console.log(`    Resend   : ${process.env.RESEND_API_KEY ? '✅' : '❌ RESEND_API_KEY not set'}`);
   console.log(`    WhatsApp : ${WA_TOKEN && WA_PHONE_ID    ? '✅' : '❌ WA_TOKEN / WA_PHONE_ID not set'}\n`);
