@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, CheckCircle2, RefreshCw, ScanLine } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { Customer, RewardSettings } from '../types';
@@ -84,13 +85,12 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       if (!window.isSecureContext) throw new Error('Camera requires a secure HTTPS connection.');
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('No camera access is available in this browser.');
 
-      const library = await import('html5-qrcode');
-      const cameras = await library.Html5Qrcode.getCameras();
+      const cameras = await Html5Qrcode.getCameras();
       if (!cameras.length) throw new Error('No cameras were found.');
       const preferredCamera = cameras.find((camera) => /back|rear|environment/i.test(camera.label)) || cameras[0];
 
-      instance = new library.Html5Qrcode('react-qr-reader', {
-        formatsToSupport: [library.Html5QrcodeSupportedFormats.QR_CODE],
+      instance = new Html5Qrcode('react-qr-reader', {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
       }) as unknown as ScannerInstance;
       const activeInstance = instance;
