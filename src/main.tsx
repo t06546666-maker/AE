@@ -6,6 +6,9 @@ import { App } from './App';
 import { ToastProvider } from './toast';
 import './styles.css';
 
+sessionStorage.removeItem('ae_script_refresh');
+sessionStorage.removeItem('ae_asset_refresh');
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },

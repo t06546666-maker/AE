@@ -16,8 +16,19 @@
       window.exports = window.exports || {};
       window.module = window.module || { exports: window.exports };
       window.__aeStartupError = '';
+      window.__aeRefreshOnce = function (key) {
+        if (sessionStorage.getItem(key)) return false;
+        sessionStorage.setItem(key, '1');
+        var url = new URL(window.location.href);
+        url.searchParams.set('refresh', Date.now().toString());
+        window.location.replace(url.toString());
+        return true;
+      };
       window.addEventListener('error', function (event) {
-        if (event.target && event.target.tagName === 'SCRIPT') window.__aeStartupError = 'Application file could not be loaded.';
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          window.__aeStartupError = 'Application file could not be loaded.';
+          window.__aeRefreshOnce('ae_script_refresh');
+        }
         else if (event.message) window.__aeStartupError = event.message;
       }, true);
       window.addEventListener('unhandledrejection', function (event) {
@@ -25,13 +36,7 @@
       });
       window.addEventListener('vite:preloadError', function (event) {
         event.preventDefault();
-        var key = 'ae_asset_refresh';
-        if (!sessionStorage.getItem(key)) {
-          sessionStorage.setItem(key, '1');
-          var url = new URL(window.location.href);
-          url.searchParams.set('refresh', Date.now().toString());
-          window.location.replace(url.toString());
-        }
+        window.__aeRefreshOnce('ae_asset_refresh');
       });
       window.setTimeout(function () {
         var boot = document.getElementById('ae-static-boot');
