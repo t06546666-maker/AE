@@ -16,6 +16,13 @@
       window.exports = window.exports || {};
       window.module = window.module || { exports: window.exports };
       window.__aeStartupError = '';
+      window.__aeHardReload = function () {
+        sessionStorage.removeItem('ae_script_refresh');
+        sessionStorage.removeItem('ae_asset_refresh');
+        var url = new URL(window.location.href);
+        url.searchParams.set('refresh', Date.now().toString());
+        window.location.replace(url.toString());
+      };
       window.__aeRefreshOnce = function (key) {
         if (sessionStorage.getItem(key)) return false;
         sessionStorage.setItem(key, '1');
@@ -53,7 +60,7 @@
       <div id="ae-static-boot">
         <strong>Affiliate AE</strong>
         <span id="ae-static-message">Loading secure workspace...</span>
-        <button id="ae-static-reload" hidden onclick="var url=new URL(window.location.href);url.searchParams.set('refresh',Date.now().toString());window.location.replace(url.toString())">Reload application</button>
+        <button id="ae-static-reload" hidden onclick="window.__aeHardReload()">Reload application</button>
       </div>
     </div>
     <noscript>Affiliate AE requires JavaScript to run.</noscript>

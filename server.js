@@ -46,7 +46,17 @@ const reactBuildPath = path.join(__dirname, 'dist');
 const webRoot = fs.existsSync(path.join(reactBuildPath, 'index.html'))
   ? reactBuildPath
   : path.join(__dirname, 'public');
-app.use(express.static(webRoot));
+app.use(express.static(webRoot, {
+  setHeaders(res, filePath) {
+    if (path.basename(filePath) === 'index.html') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return;
+    }
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 
 // ── Clients ──
 const resend      = process.env.RESEND_API_KEY    ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -3012,6 +3022,7 @@ app.get('/api/health', (_req, res) => {
 
 if (webRoot === reactBuildPath) {
   app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(reactBuildPath, 'index.html'));
   });
 }
