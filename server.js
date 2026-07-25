@@ -691,6 +691,27 @@ async function sendRegistrationWhatsApp(purchase, logId) {
 }
 
 async function sendRewardWhatsApp(purchase, logId) {
+  const usesPurchaseReceiptV2 = WA_REWARD_TEMPLATE === 'purchase_reward_receipt_v2';
+  const parameters = usesPurchaseReceiptV2
+    ? [
+      { type: 'text', text: purchase.customer_name },
+      { type: 'text', text: purchase.merchant_name },
+      { type: 'text', text: Number(purchase.reward_percentage).toString() },
+      { type: 'text', text: purchase.order_no },
+      { type: 'text', text: Number(purchase.amount).toFixed(2) },
+      { type: 'text', text: formatPoints(purchase.points_earned) },
+      { type: 'text', text: formatPoints(purchase.total_points) },
+    ]
+    : [
+      { type: 'text', text: purchase.customer_name },
+      { type: 'text', text: purchase.merchant_name },
+      { type: 'text', text: purchase.order_no },
+      { type: 'text', text: Number(purchase.amount).toFixed(2) },
+      { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
+      { type: 'text', text: formatPoints(purchase.points_earned) },
+      { type: 'text', text: formatPoints(purchase.total_points) },
+    ];
+
   return sendWhatsAppTemplate({
     customerId: purchase.customer_id,
     orderId: purchase.order_id,
@@ -699,15 +720,7 @@ async function sendRewardWhatsApp(purchase, logId) {
     logId,
     components: [{
       type: 'body',
-      parameters: [
-        { type: 'text', text: purchase.customer_name },
-        { type: 'text', text: purchase.merchant_name },
-        { type: 'text', text: Number(purchase.reward_percentage).toString() },
-        { type: 'text', text: purchase.order_no },
-        { type: 'text', text: Number(purchase.amount).toFixed(2) },
-        { type: 'text', text: formatPoints(purchase.points_earned) },
-        { type: 'text', text: formatPoints(purchase.total_points) },
-      ],
+      parameters,
     }],
   });
 }
