@@ -30,6 +30,7 @@ export function Merchants() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
   const queryClient = useQueryClient();
@@ -116,7 +117,7 @@ export function Merchants() {
 
   return (
     <>
-      <PageHeader title={t('merchants.title')} subtitle={t('merchants.subtitle')} />
+      <PageHeader title={t('merchants.title')} subtitle={t('merchants.subtitle')} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button></>} />
       <form className="panel merchant-form" onSubmit={submit}>
         <div className="panel-heading">
           <div><h2>{t('merchants.add')}</h2><p>{t('merchants.createSecure')}</p></div>
@@ -175,6 +176,7 @@ export function Merchants() {
       )}
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
+      <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
     </>
   );
 }

@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { Download, Eye, MessageCircle, Plus, Search, Trash2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
-import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
+import { EmptyState, ErrorState, ExportModal, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Customer, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPhone, formatPoints, initials, qrPayload } from '../utils';
 import { useToast } from '../toast';
@@ -25,6 +25,7 @@ function CustomerQrModal({ customer, onClose }: { customer: Customer; onClose: (
 export function Customers({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1); const [search, setSearch] = useState(''); const [selected, setSelected] = useState<Customer | null>(null);
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const deferredSearch = useDeferredValue(search.trim()); const queryClient = useQueryClient(); const { showToast } = useToast();
   useEffect(() => setPage(1), [deferredSearch]);
   const customers = useQuery({
@@ -42,7 +43,7 @@ export function Customers({ user }: { user: UserProfile }) {
     remove.mutate(customer);
   }
   return <>
-    <PageHeader title={t('customers.title')} subtitle={t('customers.subtitle')} actions={<Link className="button primary" to="/add-customer"><Plus size={16} />{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>} />
+    <PageHeader title={t('customers.title')} subtitle={t('customers.subtitle')} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><Link className="button primary" to="/add-customer"><Plus size={16} />{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link></>} />
     <div className="list-toolbar"><label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('customers.search')} /></label></div>
     {customers.isPending ? <LoadingState label={t('customers.loading')} /> : customers.isError ? <ErrorState error={customers.error} retry={() => customers.refetch()} /> : <>
       <div className="customer-grid">{customers.data?.customers.map((customer, index) => <article className="customer-card" key={`${customer.databaseId}-${customer.merchantId || index}`}>
@@ -55,5 +56,6 @@ export function Customers({ user }: { user: UserProfile }) {
       <PaginationBar pagination={customers.data?.pagination} onPage={setPage} />
     </>}
     {selected ? <CustomerQrModal customer={selected} onClose={() => setSelected(null)} /> : null}
+    <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} defaultSection="points" fixedSection onClose={() => setExportFormat(null)} />
   </>;
 }

@@ -84,11 +84,15 @@ export function CustomDates({ from, to, onFrom, onTo }: {
   );
 }
 
-export function ExportModal({ open, format, merchantId, isAdmin, onClose }: {
+type ExportSection = 'all' | 'summary' | 'orders' | 'points' | 'merchants';
+
+export function ExportModal({ open, format, merchantId, isAdmin, defaultSection = 'all', fixedSection = false, onClose }: {
   open: boolean;
   format: 'xlsx' | 'pdf';
   merchantId?: string;
   isAdmin: boolean;
+  defaultSection?: ExportSection;
+  fixedSection?: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -96,11 +100,16 @@ export function ExportModal({ open, format, merchantId, isAdmin, onClose }: {
   const monthStart = `${today.slice(0, 8)}01`;
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today);
-  const [section, setSection] = useState('all');
+  const [section, setSection] = useState<ExportSection>(defaultSection);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => { if (open) setError(''); }, [open]);
+  useEffect(() => {
+    if (open) {
+      setError('');
+      setSection(defaultSection);
+    }
+  }, [defaultSection, open]);
   if (!open) return null;
 
   async function submit() {
@@ -130,7 +139,7 @@ export function ExportModal({ open, format, merchantId, isAdmin, onClose }: {
           <label>{t('common.to')}<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
         </div>
         <label>{t('export.content')}
-          <select value={section} onChange={(event) => setSection(event.target.value)}>
+          <select value={section} disabled={fixedSection} onChange={(event) => setSection(event.target.value as ExportSection)}>
             <option value="all">{t('export.all')}</option>
             <option value="summary">{t('export.summary')}</option>
             <option value="orders">{t('dashboard.orders')}</option>

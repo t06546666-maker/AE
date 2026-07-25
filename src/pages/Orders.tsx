@@ -1,16 +1,17 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
-import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
+import { EmptyState, ErrorState, ExportModal, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Order, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPoints, formatTime, initials } from '../utils';
 
 export function Orders({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1); const [search, setSearch] = useState('');
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
   useEffect(() => setPage(1), [deferredSearch]);
   const orders = useQuery({
@@ -20,7 +21,7 @@ export function Orders({ user }: { user: UserProfile }) {
   });
   return (
     <>
-      <PageHeader title={t('nav.orders')} subtitle={t('orders.subtitle', { count: orders.data?.pagination.total || 0 })} actions={<Link className="button primary" to="/add-customer"><Plus size={16} />{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>} />
+      <PageHeader title={t('nav.orders')} subtitle={t('orders.subtitle', { count: orders.data?.pagination.total || 0 })} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><Link className="button primary" to="/add-customer"><Plus size={16} />{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link></>} />
       <div className="list-toolbar"><label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('orders.search')} /></label></div>
       {orders.isPending ? <LoadingState label={t('common.loading')} /> : orders.isError ? <ErrorState error={orders.error} retry={() => orders.refetch()} /> : (
         <section className="table-panel">
@@ -38,6 +39,7 @@ export function Orders({ user }: { user: UserProfile }) {
         </section>
       )}
       <div className="bottom-action"><Link className="button primary" to="/add-customer"><Plus size={16} />{t('orders.quickAdd')} {t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link></div>
+      <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} defaultSection="orders" fixedSection onClose={() => setExportFormat(null)} />
     </>
   );
 }
