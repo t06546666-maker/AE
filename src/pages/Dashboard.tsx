@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Download, Gift, IndianRupee, ReceiptText, ScanLine, Sparkles, UserRoundCheck, Users } from 'lucide-react';
+import { Download, Gift, IndianRupee, ReceiptText, Sparkles, UserRoundCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
@@ -39,33 +39,19 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [retentionPeriod, setRetentionPeriod] = useState<Period>('today');
   const [retentionFrom, setRetentionFrom] = useState(today); const [retentionTo, setRetentionTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
-  const [scannerOpen, setScannerOpen] = useState(false);
   const dashboard = useDashboard(period, from, to);
   const chart = useDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
   const settings = useQuery({
     queryKey: ['reward-settings'],
     queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }),
-    enabled: user.role === 'merchant' && scannerOpen,
+    enabled: user.role === 'merchant',
   });
   const data = dashboard.data || emptyDashboard;
   const chartData = chart.data || emptyDashboard;
   const retentionData = retention.data || emptyDashboard;
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
   const maxRevenue = Math.max(1, ...chartData.intervals.map((item) => item.revenue));
-
-  useEffect(() => {
-    if (scannerOpen) {
-      document.getElementById('merchant-scanner')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  }, [scannerOpen]);
-
-  function openScanner() {
-    setScannerOpen(true);
-  }
 
   if (dashboard.isError) return <><PageHeader title={t('dashboard.title')} subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')} /><ErrorState error={dashboard.error} retry={() => dashboard.refetch()} /></>;
   return (
@@ -79,7 +65,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <h2>{t('dashboard.quickActions')}</h2>
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button secondary" onClick={openScanner}><ScanLine size={16} />{t('dashboard.scanQr')}</button> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
@@ -95,7 +80,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       )}
 
-      {user.role === 'merchant' && scannerOpen ? (
+      {user.role === 'merchant' ? (
         <div id="merchant-scanner">
           {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
           {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
