@@ -78,7 +78,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <h2>{t('dashboard.quickActions')}</h2>
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button secondary" onClick={() => setScannerOpen(true)}><ScanLine size={16} />{t('dashboard.scanQr')}</button> : null}
+          {user.role === 'merchant' ? <button type="button" className="button scan-qr-action" onClick={() => setScannerOpen(true)}><ScanLine size={17} />{t('dashboard.scanQr')}</button> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
@@ -133,7 +133,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <button type="button" className="icon-button modal-close" title={t('common.close')} onClick={() => setScannerOpen(false)}><X /></button>
             {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
             {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
-            {settings.data ? <QrScanner settings={settings.data} /> : null}
+            {settings.data ? <QrScanner settings={settings.data} autoStart /> : null}
           </div>
         </div>
       ) : null}

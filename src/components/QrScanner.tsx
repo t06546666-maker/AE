@@ -27,7 +27,7 @@ function cameraErrorMessage(cause: unknown, t: TFunction) {
   return message || t('scanner.failed');
 }
 
-export default function QrScanner({ settings }: { settings: RewardSettings }) {
+export default function QrScanner({ settings, autoStart = false }: { settings: RewardSettings; autoStart?: boolean }) {
   const { t } = useTranslation();
   const [scanner, setScanner] = useState<ScannerInstance | null>(null);
   const [customer, setCustomer] = useState<(Customer & { isNewToMerchant?: boolean }) | null>(null);
@@ -120,6 +120,12 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       setMessage(cameraErrorMessage(cause, t));
     } finally { setStarting(false); }
   }
+
+  useEffect(() => {
+    if (!autoStart) return undefined;
+    const timer = window.setTimeout(() => { void startCamera(); }, 150);
+    return () => window.clearTimeout(timer);
+  }, [autoStart]);
 
   const checkout = useMutation({
     mutationFn: () => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {

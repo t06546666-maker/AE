@@ -60,6 +60,8 @@ h1, h2, h3 { letter-spacing: 0; }
 .button:disabled, .icon-button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 .button.primary { background: var(--primary); color: #fff; }
 .button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+.button.scan-qr-action { background: #0d73e8; color: #fff; font-weight: 850; box-shadow: 0 4px 12px rgba(13, 115, 232, .22); }
+.button.scan-qr-action:hover:not(:disabled) { background: #075fc4; }
 .button.whatsapp { background: #087f42; color: #fff; }
 .success-button { background: var(--green); color: #fff; }
 .danger-button { background: var(--danger); color: #fff; }
