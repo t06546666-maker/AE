@@ -148,8 +148,8 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
             {!scanner ? <div className="camera-off"><Camera size={30} /><span>{t('scanner.cameraOff')}</span></div> : null}
           </div>
           <div className="scanner-actions">
-            <button className="button primary" disabled={starting || Boolean(scanner)} onClick={startCamera}><ScanLine size={17} />{t(starting ? 'scanner.starting' : 'scanner.scan')}</button>
-            {!scanner && !customer && locked.current ? <button className="icon-button" title={t('scanner.scanAgain')} onClick={() => { locked.current = false; setMessage(t('scanner.ready')); }}><RefreshCw /></button> : null}
+            <button type="button" className="button primary" disabled={starting || Boolean(scanner)} onClick={startCamera}><ScanLine size={17} />{t(starting ? 'scanner.starting' : 'scanner.scan')}</button>
+            {!scanner && !customer && locked.current ? <button type="button" className="icon-button" title={t('scanner.scanAgain')} onClick={() => { locked.current = false; setMessage(t('scanner.ready')); }}><RefreshCw /></button> : null}
           </div>
           <p className="scanner-message">{message}</p>
         </div>
@@ -165,7 +165,7 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
               </div>
               <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
               <p className="amount-rule">{t('registration.minimum')}</p>
-              <button className="button primary full-button" disabled={Number(amount) < 100 || checkout.isPending} onClick={() => checkout.mutate()}>{t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
+              <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || checkout.isPending} onClick={() => checkout.mutate()}>{t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
             </div>
           ) : <div className="scan-placeholder"><ScanLine size={30} /><p>{t('scanner.begin')}</p></div>}
         </div>

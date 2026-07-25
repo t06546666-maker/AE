@@ -165,7 +165,12 @@ h1, h2, h3 { letter-spacing: 0; }
 
 .report-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: 18px; }
 .report-head { align-items: center; }
+.chart-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
 .grouped-chart { height: 230px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding-top: 20px; }
+.grouped-chart.daily-chart { gap: 7px; }
+.grouped-chart.daily-chart .chart-bars { gap: 3px; }
+.grouped-chart.daily-chart .chart-bar { width: min(38%, 16px); }
+.grouped-chart.daily-chart .chart-group > span { white-space: nowrap; }
 .chart-group { display: flex; flex-direction: column; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
 .chart-bars { height: 190px; width: 100%; border-bottom: 1px solid var(--border); display: flex; justify-content: center; align-items: flex-end; gap: 7px; }
 .chart-bar { width: min(32%, 36px); min-height: 4px; border-radius: 4px 4px 0 0; }
@@ -316,6 +321,8 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .two-column-form { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 13px; }
 .modal > label { margin-bottom: 12px; }
 .modal-actions { justify-content: flex-end; margin-top: 18px; }
+.scanner-modal { width: min(1040px, calc(100vw - 28px)); }
+.scanner-modal .scanner-panel { margin: 0; padding: 0; border: 0; box-shadow: none; }
 .toast { position: fixed; right: 20px; bottom: 20px; z-index: 200; max-width: min(420px, calc(100vw - 40px)); padding: 11px 14px; border-radius: 7px; color: #fff; font-weight: 700; font-size: 12px; box-shadow: 0 12px 35px rgba(0, 0, 0, .24); }
 .toast.success { background: #087a4b; }
 .toast.error { background: #bd3140; }

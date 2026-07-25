@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Download, Gift, IndianRupee, ReceiptText, Sparkles, UserRoundCheck, Users } from 'lucide-react';
+import { Download, Gift, IndianRupee, ReceiptText, ScanLine, Sparkles, UserRoundCheck, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
 import type { DashboardData, Period, RewardSettings, UserProfile } from '../types';
-import { dateInput, formatCurrency, formatPoints, rangeForPeriod } from '../utils';
+import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -20,6 +20,19 @@ function useDashboard(period: Period, from: string, to: string) {
   return useQuery({
     queryKey: ['dashboard', range?.from, range?.to],
     queryFn: ({ signal }) => apiFetch<DashboardData>(`/api/dashboard?${queryString(range || {})}`, { signal }),
+    enabled: Boolean(range),
+  });
+}
+
+function useChartDashboard(period: Period, from: string, to: string) {
+  const range = rangeForChartPeriod(period, from, to);
+  const bucket = period === 'today' ? 'six-hour' : 'daily';
+  return useQuery({
+    queryKey: ['dashboard', 'chart', range?.from, range?.to, bucket],
+    queryFn: ({ signal }) => apiFetch<DashboardData>(
+      `/api/dashboard?${queryString({ ...(range || {}), bucket })}`,
+      { signal },
+    ),
     enabled: Boolean(range),
   });
 }
@@ -38,13 +51,14 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [retentionPeriod, setRetentionPeriod] = useState<Period>('today');
   const [retentionFrom, setRetentionFrom] = useState(today); const [retentionTo, setRetentionTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const dashboard = useDashboard(period, from, to);
-  const chart = useDashboard(chartPeriod, chartFrom, chartTo);
+  const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
   const settings = useQuery({
     queryKey: ['reward-settings'],
     queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }),
-    enabled: user.role === 'merchant',
+    enabled: user.role === 'merchant' && scannerOpen,
   });
   const data = dashboard.data || emptyDashboard;
   const chartData = chart.data || emptyDashboard;
@@ -64,6 +78,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <h2>{t('dashboard.quickActions')}</h2>
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
+          {user.role === 'merchant' ? <button type="button" className="button secondary" onClick={() => setScannerOpen(true)}><ScanLine size={16} />{t('dashboard.scanQr')}</button> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
@@ -79,28 +94,28 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       )}
 
-      {user.role === 'merchant' ? (
-        <div id="merchant-scanner">
-          {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
-          {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
-          {settings.data ? <QrScanner settings={settings.data} /> : null}
-        </div>
-      ) : null}
-
       <div className="report-grid">
         <section className="panel">
-          <div className="report-head"><div><h2>{t('dashboard.ordersRevenue')}</h2><p>{t('dashboard.sixHours')}</p></div><PeriodControl compact value={chartPeriod} onChange={setChartPeriod} /></div>
+          <div className="report-head"><div><h2>{t('dashboard.ordersRevenue')}</h2><p>{t(chartPeriod === 'today' ? 'dashboard.sixHours' : 'dashboard.dailyBreakdown')}</p></div><PeriodControl compact value={chartPeriod} onChange={setChartPeriod} /></div>
           <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
           {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
-          <div className="grouped-chart">
-            {chartData.intervals.map((item) => (
-              <div className="chart-group" key={item.label}>
-                <div className="chart-bars">
-                  <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%` }} title={`${item.orders} orders`} />
-                  <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%` }} title={formatCurrency(item.revenue)} />
-                </div><span>{item.label}</span>
-              </div>
-            ))}
+          <div className="chart-scroll">
+            <div
+              className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`}
+              style={chartPeriod === 'today' ? undefined : {
+                gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(28px, 1fr))`,
+                minWidth: `${Math.max(420, chartData.intervals.length * 38)}px`,
+              }}
+            >
+              {chartData.intervals.map((item) => (
+                <div className="chart-group" key={item.label}>
+                  <div className="chart-bars">
+                    <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%` }} title={`${item.orders} orders`} />
+                    <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%` }} title={formatCurrency(item.revenue)} />
+                  </div><span>{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="chart-legend"><span><i className="orders" />{t('dashboard.orders')}</span><span><i className="revenue" />{t('dashboard.revenue')}</span></div>
         </section>
@@ -112,6 +127,16 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <div className="retention-list"><div><span>{t('dashboard.today')}</span><strong>{retentionData.retention.todayVisits}</strong></div><div><span>{t('dashboard.weekly')}</span><strong>{retentionData.retention.weekVisits}</strong></div><div><span>{t('dashboard.monthly')}</span><strong>{retentionData.retention.monthVisits}</strong></div></div>
         </section>
       </div>
+      {scannerOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerOpen(false); }}>
+          <div className="modal scanner-modal" role="dialog" aria-modal="true" aria-label={t('dashboard.scanQr')}>
+            <button type="button" className="icon-button modal-close" title={t('common.close')} onClick={() => setScannerOpen(false)}><X /></button>
+            {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
+            {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
+            {settings.data ? <QrScanner settings={settings.data} /> : null}
+          </div>
+        </div>
+      ) : null}
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
     </>
   );

@@ -2594,6 +2594,44 @@ function exportFilename(ext) {
   return `rewardhub-export-${stamp}.${ext}`;
 }
 
+const INDIA_OFFSET_MS = 330 * 60 * 1000;
+
+function indiaDateKey(value) {
+  return new Date(new Date(value).getTime() + INDIA_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function dailyDashboardIntervals(orders, from, to) {
+  const dates = [];
+  for (
+    let cursor = from.getTime();
+    cursor < to.getTime();
+    cursor += 24 * 60 * 60 * 1000
+  ) {
+    dates.push(indiaDateKey(cursor));
+  }
+  const shortRange = dates.length <= 7;
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+  });
+  const intervals = dates.map((date) => ({
+    date,
+    label: shortRange
+      ? weekday.format(new Date(`${date}T00:00:00+05:30`))
+      : `${date.slice(8, 10)}/${date.slice(5, 7)}`,
+    orders: 0,
+    revenue: 0,
+  }));
+  const byDate = new Map(intervals.map((item) => [item.date, item]));
+  for (const order of orders) {
+    const interval = byDate.get(indiaDateKey(order.created_at));
+    if (!interval) continue;
+    interval.orders += 1;
+    interval.revenue += Number(order.amount);
+  }
+  return intervals.map(({ date: _date, ...interval }) => interval);
+}
+
 app.get('/api/exports/full.xlsx', requireAuth, async (req, res) => {
   try {
     const report = await buildExportReport(req);
@@ -2621,6 +2659,7 @@ app.get('/api/exports/full.pdf', requireAuth, async (req, res) => {
 app.get('/api/dashboard', requireAuth, async (req, res) => {
   const from = new Date(req.query.from);
   const to = new Date(req.query.to);
+  const bucket = req.query.bucket === 'daily' ? 'daily' : 'six-hour';
   if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to) {
     return res.status(400).json({ success: false, error: 'Valid from and to dates are required' });
   }
@@ -2634,7 +2673,22 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     p_merchant_id: merchantId,
   });
   if (!analyticsResult.error && analyticsResult.data) {
-    return res.json(analyticsResult.data);
+    if (bucket !== 'daily') return res.json(analyticsResult.data);
+
+    let dailyOrdersQuery = supabaseAdmin.from('orders')
+      .select('amount,created_at')
+      .gte('created_at', from.toISOString())
+      .lt('created_at', to.toISOString())
+      .limit(10000);
+    if (merchantId) dailyOrdersQuery = dailyOrdersQuery.eq('merchant_id', merchantId);
+    const dailyOrdersResult = await dailyOrdersQuery;
+    if (dailyOrdersResult.error) {
+      return res.status(500).json({ success: false, error: dailyOrdersResult.error.message });
+    }
+    return res.json({
+      ...analyticsResult.data,
+      intervals: dailyDashboardIntervals(dailyOrdersResult.data || [], from, to),
+    });
   }
   if (analyticsResult.error && !(
     analyticsResult.error.code === 'PGRST202'
@@ -2694,6 +2748,9 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     intervals[interval].orders += 1;
     intervals[interval].revenue += Number(order.amount);
   }
+  const responseIntervals = bucket === 'daily'
+    ? dailyDashboardIntervals(orders, from, to)
+    : intervals;
 
   const indiaDateText = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Kolkata',
@@ -2722,7 +2779,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
       rewardPointsIssued: orders.reduce((sum, order) => sum + Number(order.reward_points), 0),
       totalCustomers: customersResult.data?.length || 0,
     },
-    intervals,
+    intervals: responseIntervals,
     retention: {
       lifetimeCustomers: lifetimeRetained,
       selectedVisits: orders.filter((order) => order.is_returning).length,
