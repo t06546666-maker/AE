@@ -10,7 +10,8 @@ reporting, Meta WhatsApp Cloud API notifications, and optional Resend email.
 2. Copy `.env.example` to `.env` and add the required credentials.
 3. For a new Supabase project, create the first Auth user and run
    `supabase-fresh-install.sql` in the Supabase SQL Editor. Existing databases
-   should run `supabase-react-performance.sql` instead.
+   should run `supabase-react-performance.sql` and any later targeted migration,
+   including `supabase-short-order-numbers.sql`.
 4. Build the React application with `npm run build`.
 5. Start Express with `npm start` and open `http://localhost:3000`.
 

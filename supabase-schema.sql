@@ -47,6 +47,36 @@ create table if not exists public.orders (
   created_at timestamptz not null default now()
 );
 
+create sequence if not exists public.order_number_seq
+  as bigint start with 1 increment by 1 minvalue 1 cache 1;
+
+create or replace function public.assign_short_order_number()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order_number bigint;
+begin
+  v_order_number := nextval('public.order_number_seq'::regclass);
+  new.order_no := 'AE' || lpad(
+    v_order_number::text,
+    greatest(3, length(v_order_number::text)),
+    '0'
+  );
+  return new;
+end;
+$$;
+
+revoke all on function public.assign_short_order_number() from public;
+
+drop trigger if exists orders_short_number_trigger on public.orders;
+create trigger orders_short_number_trigger
+before insert on public.orders
+for each row
+execute function public.assign_short_order_number();
+
 create table if not exists public.app_settings (
   key text primary key,
   value numeric not null,
