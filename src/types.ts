@@ -47,6 +47,8 @@ export interface OfferCampaign {
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  failureCode: string | null;
+  failureReason: string | null;
 }
 
 export interface Offer {

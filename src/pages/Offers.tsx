@@ -113,6 +113,18 @@ export function Offers({ user }: { user: UserProfile }) {
     onError(error) { showToast(error.message, 'error'); },
   });
 
+  const retry = useMutation({
+    mutationFn: (offer: Offer) => apiFetch<{ retried: number }>(
+      `/api/offers/${encodeURIComponent(offer.id)}/retry`,
+      { method: 'POST' },
+    ),
+    onSuccess(data) {
+      showToast(t('offers.retryToast', { count: data.retried }));
+      void queryClient.invalidateQueries({ queryKey: ['offers'] });
+    },
+    onError(error) { showToast(error.message, 'error'); },
+  });
+
   function submit(event: FormEvent) {
     event.preventDefault();
     save.mutate();
@@ -215,6 +227,11 @@ export function Offers({ user }: { user: UserProfile }) {
                           if (window.confirm(`Send "${offer.title}" to all eligible customers of ${offer.merchant}?`)) send.mutate(offer);
                         }}><Send size={16} />{t('offers.send')}</button>
                       ) : null}
+                      {user.role === 'admin' && offer.campaign?.failed && !expired ? (
+                        <button className="button secondary" disabled={retry.isPending} onClick={() => {
+                          if (window.confirm(t('offers.retryConfirm'))) retry.mutate(offer);
+                        }}><Send size={16} />{t(retry.isPending ? 'offers.retrying' : 'offers.retry')}</button>
+                      ) : null}
                     </div>
                   </div>
                 </article>
@@ -258,6 +275,12 @@ function CampaignSummary({ offer }: { offer: Offer }) {
       <div><span>{t('offers.read')}</span><strong>{campaign.read}</strong></div>
       <div><span>{t('offers.failed')}</span><strong>{campaign.failed}</strong></div>
       <div><span>{t('offers.skipped')}</span><strong>{campaign.skipped}</strong></div>
+      {campaign.failureReason ? (
+        <div className="campaign-failure">
+          <span>{t('offers.failureReason')}</span>
+          <strong>{campaign.failureCode ? `${campaign.failureCode}: ` : ''}{campaign.failureReason}</strong>
+        </div>
+      ) : null}
     </div>
   );
 }

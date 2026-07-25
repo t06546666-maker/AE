@@ -341,7 +341,7 @@ async function signedOfferImageUrl(imagePath) {
   return error ? '' : data.signedUrl;
 }
 
-function campaignDto(campaign) {
+function campaignDto(campaign, failure) {
   if (!campaign) return null;
   return {
     id: campaign.id,
@@ -357,10 +357,12 @@ function campaignDto(campaign) {
     startedAt: campaign.started_at,
     completedAt: campaign.completed_at,
     createdAt: campaign.created_at,
+    failureCode: failure?.error_code || null,
+    failureReason: failure?.error_message || null,
   };
 }
 
-async function offerDto(row) {
+async function offerDto(row, failure) {
   const campaign = Array.isArray(row.offer_campaigns)
     ? row.offer_campaigns[0] : row.offer_campaigns;
   return {
@@ -378,7 +380,7 @@ async function offerDto(row) {
     broadcastAt: row.broadcast_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    campaign: campaignDto(campaign),
+    campaign: campaignDto(campaign, failure),
   };
 }
 
@@ -1216,9 +1218,36 @@ app.get('/api/offers', requireAuth, async (req, res) => {
   query = query.range(paging.from, paging.to);
   const { data, error, count } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
+  const campaignIds = (data || []).flatMap((row) => {
+    const campaign = Array.isArray(row.offer_campaigns)
+      ? row.offer_campaigns[0] : row.offer_campaigns;
+    return campaign?.id ? [campaign.id] : [];
+  });
+  const failureByCampaign = new Map();
+  if (campaignIds.length) {
+    const { data: failures, error: failureError } = await supabaseAdmin
+      .from('offer_recipients')
+      .select('campaign_id,error_code,error_message,updated_at')
+      .in('campaign_id', campaignIds)
+      .eq('status', 'failed')
+      .order('updated_at', { ascending: false })
+      .limit(100);
+    if (failureError) {
+      return res.status(500).json({ success: false, error: failureError.message });
+    }
+    for (const failure of failures || []) {
+      if (!failureByCampaign.has(failure.campaign_id)) {
+        failureByCampaign.set(failure.campaign_id, failure);
+      }
+    }
+  }
   return res.json({
     success: true,
-    offers: await Promise.all((data || []).map(offerDto)),
+    offers: await Promise.all((data || []).map((row) => {
+      const campaign = Array.isArray(row.offer_campaigns)
+        ? row.offer_campaigns[0] : row.offer_campaigns;
+      return offerDto(row, failureByCampaign.get(campaign?.id));
+    })),
     pagination: paginationMeta(paging, count),
   });
 });
@@ -1414,6 +1443,47 @@ app.post('/api/offers/:id/send', requireAuth, requireRole('admin'), async (req, 
       status: campaign.campaign_status,
     },
   });
+});
+
+app.post('/api/offers/:id/retry', requireAuth, requireRole('admin'), async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  const { data: offer, error: offerError } = await supabaseAdmin
+    .from('offers')
+    .select('id,expires_at,offer_campaigns(id)')
+    .eq('id', offerId)
+    .maybeSingle();
+  if (offerError) return res.status(400).json({ success: false, error: offerError.message });
+  if (!offer) return res.status(404).json({ success: false, error: 'Offer was not found' });
+  if (new Date(offer.expires_at) <= new Date()) {
+    return res.status(409).json({ success: false, error: 'Expired offers cannot be retried' });
+  }
+  const campaign = Array.isArray(offer.offer_campaigns)
+    ? offer.offer_campaigns[0] : offer.offer_campaigns;
+  if (!campaign?.id) {
+    return res.status(404).json({ success: false, error: 'Campaign was not found' });
+  }
+  const now = new Date().toISOString();
+  const { data: retried, error } = await supabaseAdmin
+    .from('offer_recipients')
+    .update({
+      status: 'queued',
+      attempts: 0,
+      next_attempt_at: now,
+      error_code: null,
+      error_message: null,
+      status_timestamp: null,
+      updated_at: now,
+    })
+    .eq('campaign_id', campaign.id)
+    .eq('status', 'failed')
+    .select('id');
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  if (!retried?.length) {
+    return res.status(409).json({ success: false, error: 'There are no failed recipients to retry' });
+  }
+  await supabaseAdmin.rpc('refresh_offer_campaign', { p_campaign_id: campaign.id });
+  scheduleBackground(() => processOfferQueue(2));
+  return res.status(202).json({ success: true, retried: retried.length });
 });
 
 app.get('/api/offers/:id/campaign', requireAuth, async (req, res) => {
