@@ -96,7 +96,7 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       scannerRef.current = activeInstance;
       setScanner(activeInstance);
       await activeInstance.start(
-        { facingMode: { ideal: 'environment' } },
+        { facingMode: 'environment' },
         {
           fps: 18,
           qrbox: (width: number, height: number) => {
