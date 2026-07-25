@@ -279,10 +279,10 @@ declare
   created_campaign public.offer_campaigns%rowtype;
   recipient_count integer;
 begin
-  select *
+  select offer_row.*
   into selected_offer
-  from public.offers
-  where id = p_offer_id
+  from public.offers as offer_row
+  where offer_row.id = p_offer_id
   for update;
 
   if selected_offer.id is null then
@@ -295,10 +295,10 @@ begin
     raise exception 'Expired offers cannot be sent';
   end if;
 
-  select *
+  select campaign_row.*
   into created_campaign
-  from public.offer_campaigns
-  where offer_id = p_offer_id;
+  from public.offer_campaigns as campaign_row
+  where campaign_row.offer_id = p_offer_id;
 
   if created_campaign.id is null then
     insert into public.offer_campaigns (
@@ -334,23 +334,23 @@ begin
     where membership.merchant_id = selected_offer.merchant_id
       and customer_row.whatsapp_opt_in_at is not null
       and customer_row.phone ~ '^91[6-9][0-9]{9}$'
-    on conflict (campaign_id, customer_id) do nothing;
+    on conflict do nothing;
 
     get diagnostics recipient_count = row_count;
 
-    update public.offer_campaigns
+    update public.offer_campaigns as campaign_row
     set
       total_recipients = recipient_count,
       queued_count = recipient_count,
       status = case when recipient_count = 0 then 'completed' else 'queued' end,
       completed_at = case when recipient_count = 0 then now() else null end,
       updated_at = now()
-    where id = created_campaign.id
-    returning * into created_campaign;
+    where campaign_row.id = created_campaign.id
+    returning campaign_row.* into created_campaign;
 
-    update public.offers
+    update public.offers as offer_row
     set broadcast_at = now(), updated_at = now()
-    where id = selected_offer.id;
+    where offer_row.id = selected_offer.id;
   end if;
 
   return query
@@ -469,13 +469,13 @@ declare
 begin
   select
     count(*)::integer,
-    count(*) filter (where status = 'queued')::integer,
-    count(*) filter (where status = 'processing')::integer,
-    count(*) filter (where status = 'sent')::integer,
-    count(*) filter (where status = 'delivered')::integer,
-    count(*) filter (where status = 'read')::integer,
-    count(*) filter (where status = 'failed')::integer,
-    count(*) filter (where status = 'skipped')::integer
+    count(*) filter (where recipient_row.status = 'queued')::integer,
+    count(*) filter (where recipient_row.status = 'processing')::integer,
+    count(*) filter (where recipient_row.status = 'sent')::integer,
+    count(*) filter (where recipient_row.status = 'delivered')::integer,
+    count(*) filter (where recipient_row.status = 'read')::integer,
+    count(*) filter (where recipient_row.status = 'failed')::integer,
+    count(*) filter (where recipient_row.status = 'skipped')::integer
   into
     total_count,
     queued_total,
@@ -485,8 +485,8 @@ begin
     read_total,
     failed_total,
     skipped_total
-  from public.offer_recipients
-  where campaign_id = p_campaign_id;
+  from public.offer_recipients as recipient_row
+  where recipient_row.campaign_id = p_campaign_id;
 
   if queued_total + processing_total > 0 then
     next_status := 'processing';
@@ -498,7 +498,7 @@ begin
     next_status := 'completed';
   end if;
 
-  update public.offer_campaigns
+  update public.offer_campaigns as campaign_row
   set
     status = next_status,
     total_recipients = total_count,
@@ -510,12 +510,13 @@ begin
     failed_count = failed_total,
     skipped_count = skipped_total,
     completed_at = case
-      when next_status in ('completed', 'partial_failed', 'failed') then coalesce(completed_at, now())
+      when next_status in ('completed', 'partial_failed', 'failed')
+        then coalesce(campaign_row.completed_at, now())
       else null
     end,
     updated_at = now()
-  where id = p_campaign_id
-  returning * into refreshed_campaign;
+  where campaign_row.id = p_campaign_id
+  returning campaign_row.* into refreshed_campaign;
 
   return refreshed_campaign;
 end;
