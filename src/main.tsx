@@ -7,8 +7,10 @@ import { ToastProvider } from './toast';
 import './i18n';
 import './styles.css';
 
-sessionStorage.removeItem('ae_script_refresh');
-sessionStorage.removeItem('ae_asset_refresh');
+window.setTimeout(() => {
+  sessionStorage.removeItem('ae_script_refresh');
+  sessionStorage.removeItem('ae_asset_refresh');
+}, 30_000);
 
 const queryClient = new QueryClient({
   defaultOptions: {

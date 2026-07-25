@@ -88,10 +88,6 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       if (!window.isSecureContext) throw new Error(t('scanner.secureError'));
       if (!navigator.mediaDevices?.getUserMedia) throw new Error(t('scanner.unsupported'));
 
-      const cameras = await Html5Qrcode.getCameras();
-      if (!cameras.length) throw new Error(t('scanner.notFound'));
-      const preferredCamera = cameras.find((camera) => /back|rear|environment/i.test(camera.label)) || cameras[0];
-
       instance = new Html5Qrcode('react-qr-reader', {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
@@ -100,7 +96,7 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
       scannerRef.current = activeInstance;
       setScanner(activeInstance);
       await activeInstance.start(
-        preferredCamera.id,
+        { facingMode: { ideal: 'environment' } },
         {
           fps: 18,
           qrbox: (width: number, height: number) => {
@@ -113,7 +109,7 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
         (decoded: string) => { void handleDecoded(decoded, activeInstance); },
         () => undefined,
       );
-      setMessage(`${t('scanner.pointCamera')}${preferredCamera.label ? ` (${preferredCamera.label})` : ''}`);
+      setMessage(t('scanner.pointCamera'));
     } catch (cause) {
       if (instance) {
         try { await instance.stop(); } catch { /* camera did not finish starting */ }

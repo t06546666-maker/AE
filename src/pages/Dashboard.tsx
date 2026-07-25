@@ -1,14 +1,13 @@
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Download, Gift, IndianRupee, ReceiptText, Sparkles, UserRoundCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
+import QrScanner from '../components/QrScanner';
 import type { DashboardData, Period, RewardSettings, UserProfile } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForPeriod } from '../utils';
-
-const QrScanner = lazy(() => import('../components/QrScanner'));
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -84,11 +83,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <div id="merchant-scanner">
           {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
           {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
-          {settings.data ? (
-            <Suspense fallback={<LoadingState label={`${t('common.loading')} scanner`} />}>
-              <QrScanner settings={settings.data} />
-            </Suspense>
-          ) : null}
+          {settings.data ? <QrScanner settings={settings.data} /> : null}
         </div>
       ) : null}
 
