@@ -143,7 +143,7 @@ export default function QrScanner({ settings }: { settings: RewardSettings }) {
 
   const points = Number(amount) >= 100 ? Number(amount) * percentage / 100 : 0;
   return (
-    <section className="panel scanner-panel" id="merchant-scanner">
+    <section className="panel scanner-panel">
       <div className="panel-heading"><div><h2>{t('scanner.title')}</h2><p>{t('scanner.subtitle')}</p></div><ScanLine /></div>
       <div className="scanner-grid">
         <div>

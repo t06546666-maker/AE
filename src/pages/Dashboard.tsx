@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Download, Gift, IndianRupee, ReceiptText, ScanLine, Sparkles, UserRoundCheck, Users } from 'lucide-react';
@@ -54,9 +54,17 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
   const maxRevenue = Math.max(1, ...chartData.intervals.map((item) => item.revenue));
 
+  useEffect(() => {
+    if (scannerOpen) {
+      document.getElementById('merchant-scanner')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [scannerOpen]);
+
   function openScanner() {
     setScannerOpen(true);
-    window.setTimeout(() => document.getElementById('merchant-scanner')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   }
 
   if (dashboard.isError) return <><PageHeader title={t('dashboard.title')} subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')} /><ErrorState error={dashboard.error} retry={() => dashboard.refetch()} /></>;
@@ -71,7 +79,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <h2>{t('dashboard.quickActions')}</h2>
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
-          {user.role === 'merchant' ? <button className="button secondary" onClick={openScanner}><ScanLine size={16} />{t('dashboard.scanQr')}</button> : null}
+          {user.role === 'merchant' ? <button type="button" className="button secondary" onClick={openScanner}><ScanLine size={16} />{t('dashboard.scanQr')}</button> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
@@ -87,10 +95,16 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       )}
 
-      {user.role === 'merchant' && scannerOpen && settings.data ? (
-        <Suspense fallback={<LoadingState label={`${t('common.loading')} scanner`} />}>
-          <QrScanner settings={settings.data} />
-        </Suspense>
+      {user.role === 'merchant' && scannerOpen ? (
+        <div id="merchant-scanner">
+          {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
+          {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
+          {settings.data ? (
+            <Suspense fallback={<LoadingState label={`${t('common.loading')} scanner`} />}>
+              <QrScanner settings={settings.data} />
+            </Suspense>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="report-grid">
