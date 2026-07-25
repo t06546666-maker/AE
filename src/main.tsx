@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { ToastProvider } from './toast';
+import './i18n';
 import './styles.css';
 
 sessionStorage.removeItem('ae_script_refresh');

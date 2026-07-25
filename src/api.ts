@@ -2,10 +2,12 @@ const TOKEN_KEY = 'ae_access_token';
 
 export class ApiError extends Error {
   status: number;
+  code: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code = '') {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -25,7 +27,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const headers = new Headers(init.headers);
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   let response: Response;
   try {
@@ -43,11 +47,17 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const message = typeof payload === 'object' && payload && 'error' in payload
       ? String(payload.error)
       : String(payload || 'Request failed');
+    const code = typeof payload === 'object' && payload && 'code' in payload
+      ? String(payload.code)
+      : '';
     if (response.status === 401) {
       clearAccessToken();
       window.dispatchEvent(new Event('ae:unauthorized'));
     }
-    throw new ApiError(message, response.status);
+    if (code === 'PASSWORD_CHANGE_REQUIRED') {
+      window.dispatchEvent(new Event('ae:password-change-required'));
+    }
+    throw new ApiError(message, response.status, code);
   }
   return payload as T;
 }

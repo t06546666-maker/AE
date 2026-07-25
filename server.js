@@ -9,6 +9,7 @@ const os       = require('os');
 const crypto   = require('crypto');
 const ExcelJS  = require('exceljs');
 const PDFDocument = require('pdfkit');
+const multer   = require('multer');
 const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
 let vercelWaitUntil = null;
@@ -58,8 +59,23 @@ const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'customer_welcome_qr';
 const WA_QR_TEMPLATE = cleanText(process.env.WA_QR_TEMPLATE, 512);
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
+const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
+  process.env.WA_MERCHANT_CREDENTIALS_TEMPLATE || 'merchant_account_ready',
+  512,
+);
+const WA_OFFER_TEMPLATE = cleanText(
+  process.env.WA_OFFER_TEMPLATE || 'merchant_offer_v1',
+  512,
+);
 const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
 const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
+const OFFER_QUEUE_SECRET = process.env.OFFER_QUEUE_SECRET;
+const OFFER_IMAGE_BUCKET = 'offer-images';
+const OFFER_BATCH_SIZE = Math.min(50, Math.max(1, Number(process.env.OFFER_BATCH_SIZE || 20)));
+const offerUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+});
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -86,6 +102,23 @@ function isEmail(value) {
   return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function isStrongPassword(value) {
+  return typeof value === 'string'
+    && value.length >= 10
+    && value.length <= 72
+    && /[a-z]/.test(value)
+    && /[A-Z]/.test(value)
+    && /\d/.test(value)
+    && /[^A-Za-z0-9]/.test(value);
+}
+
+function generateTemporaryPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  const bytes = crypto.randomBytes(16);
+  const generated = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+  return `Aa1!${generated}`;
+}
+
 function requireSupabase(res) {
   if (supabaseAuth && supabaseAdmin) return true;
   res.status(503).json({ success: false, error: 'Supabase is not configured' });
@@ -102,7 +135,7 @@ async function requireAuth(req, res, next) {
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id, full_name, role, merchant_id')
+    .select('id, full_name, role, merchant_id, must_change_password, password_reset_at, password_changed_at')
     .eq('id', user.id)
     .single();
   if (profileError || !profile) {
@@ -110,6 +143,15 @@ async function requireAuth(req, res, next) {
   }
 
   req.auth = { user, profile, token };
+  const passwordRoute = req.path === '/api/auth/change-password'
+    || req.path === '/api/auth/me';
+  if (profile.role === 'merchant' && profile.must_change_password && !passwordRoute) {
+    return res.status(403).json({
+      success: false,
+      code: 'PASSWORD_CHANGE_REQUIRED',
+      error: 'Change the temporary password before continuing',
+    });
+  }
   next();
 }
 
@@ -213,8 +255,121 @@ async function uploadQrMedia(payload) {
   }
 }
 
+async function uploadWhatsAppMediaBuffer(buffer, contentType, filename) {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    throw new Error('WhatsApp Cloud API is not configured');
+  }
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('type', contentType);
+  form.append('file', buffer, { contentType, filename });
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_ID}/media`,
+      form,
+      {
+        headers: { Authorization: `Bearer ${WA_TOKEN}`, ...form.getHeaders() },
+        timeout: WA_REQUEST_TIMEOUT_MS,
+      },
+    );
+    return response.data.id;
+  } catch (error) {
+    const apiError = error.response?.data?.error;
+    throw new Error(apiError?.error_data?.details || apiError?.message || error.message);
+  }
+}
+
 function cleanSearch(value) {
   return cleanText(value, 80).replace(/[,()]/g, ' ').replace(/\s+/g, ' ');
+}
+
+function offerImageMiddleware(req, res, next) {
+  offerUpload.single('image')(req, res, (error) => {
+    if (!error) return next();
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, error: 'Offer image must be 5 MB or smaller' });
+    }
+    return res.status(400).json({ success: false, error: error.message || 'Offer image upload failed' });
+  });
+}
+
+function validOfferImage(file) {
+  return file && ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
+}
+
+function offerImageExtension(contentType) {
+  if (contentType === 'image/png') return 'png';
+  if (contentType === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+function offerContentType(imagePath) {
+  if (/\.png$/i.test(imagePath)) return 'image/png';
+  if (/\.webp$/i.test(imagePath)) return 'image/webp';
+  return 'image/jpeg';
+}
+
+async function uploadOfferImage(merchantId, file) {
+  const extension = offerImageExtension(file.mimetype);
+  const imagePath = `${merchantId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabaseAdmin.storage
+    .from(OFFER_IMAGE_BUCKET)
+    .upload(imagePath, file.buffer, {
+      contentType: file.mimetype,
+      cacheControl: '3600',
+      upsert: false,
+    });
+  if (error) throw error;
+  return imagePath;
+}
+
+async function signedOfferImageUrl(imagePath) {
+  const { data, error } = await supabaseAdmin.storage
+    .from(OFFER_IMAGE_BUCKET)
+    .createSignedUrl(imagePath, 60 * 60);
+  return error ? '' : data.signedUrl;
+}
+
+function campaignDto(campaign) {
+  if (!campaign) return null;
+  return {
+    id: campaign.id,
+    status: campaign.status,
+    totalRecipients: Number(campaign.total_recipients || 0),
+    queued: Number(campaign.queued_count || 0),
+    processing: Number(campaign.processing_count || 0),
+    sent: Number(campaign.sent_count || 0),
+    delivered: Number(campaign.delivered_count || 0),
+    read: Number(campaign.read_count || 0),
+    failed: Number(campaign.failed_count || 0),
+    skipped: Number(campaign.skipped_count || 0),
+    startedAt: campaign.started_at,
+    completedAt: campaign.completed_at,
+    createdAt: campaign.created_at,
+  };
+}
+
+async function offerDto(row) {
+  const campaign = Array.isArray(row.offer_campaigns)
+    ? row.offer_campaigns[0] : row.offer_campaigns;
+  return {
+    id: row.id,
+    merchantId: row.merchant_id,
+    merchant: row.merchants?.name || '',
+    merchantCode: row.merchants?.merchant_code || '',
+    title: row.title,
+    description: row.description,
+    imageUrl: await signedOfferImageUrl(row.image_path),
+    expiresAt: row.expires_at,
+    status: row.status,
+    rejectionReason: row.rejection_reason || '',
+    reviewedAt: row.reviewed_at,
+    broadcastAt: row.broadcast_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    campaign: campaignDto(campaign),
+  };
 }
 
 function paginationFromRequest(req, defaultSize = 25, maxSize = 100) {
@@ -252,9 +407,136 @@ function scheduleBackground(task) {
   }));
 }
 
+function isTransientWhatsAppFailure(result) {
+  const retryableCodes = new Set(['1', '2', '4', '17', '130429', '131000', '131016']);
+  return result.httpStatus === 408
+    || result.httpStatus === 429
+    || result.httpStatus >= 500
+    || retryableCodes.has(String(result.errorCode || ''));
+}
+
+async function ensureOfferCampaignMedia(campaignId, imagePath) {
+  const { data: campaign, error: campaignError } = await supabaseAdmin
+    .from('offer_campaigns')
+    .select('id,meta_media_id')
+    .eq('id', campaignId)
+    .single();
+  if (campaignError) throw campaignError;
+  if (campaign.meta_media_id) return campaign.meta_media_id;
+
+  const { data: image, error: imageError } = await supabaseAdmin.storage
+    .from(OFFER_IMAGE_BUCKET)
+    .download(imagePath);
+  if (imageError) throw imageError;
+  const contentType = offerContentType(imagePath);
+  const mediaId = await uploadWhatsAppMediaBuffer(
+    Buffer.from(await image.arrayBuffer()),
+    contentType,
+    `merchant-offer.${offerImageExtension(contentType)}`,
+  );
+  const { error: updateError } = await supabaseAdmin
+    .from('offer_campaigns')
+    .update({ meta_media_id: mediaId, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+    .is('meta_media_id', null);
+  if (updateError) throw updateError;
+  return mediaId;
+}
+
+async function processOfferRecipient(recipientRow, mediaCache) {
+  const now = new Date().toISOString();
+  if (!recipientRow.customer_id || !recipientRow.customer_name) {
+    await supabaseAdmin.from('offer_recipients').update({
+      status: 'skipped',
+      error_message: 'Customer is no longer available',
+      status_timestamp: now,
+      updated_at: now,
+    }).eq('id', recipientRow.recipient_id);
+    return;
+  }
+
+  try {
+    let mediaId = mediaCache.get(recipientRow.campaign_id);
+    if (!mediaId) {
+      mediaId = await ensureOfferCampaignMedia(
+        recipientRow.campaign_id,
+        recipientRow.image_path,
+      );
+      mediaCache.set(recipientRow.campaign_id, mediaId);
+    }
+    const delivery = await sendOfferWhatsApp(recipientRow, mediaId);
+    if (delivery.sent) {
+      await supabaseAdmin.from('offer_recipients').update({
+        status: 'sent',
+        meta_message_id: delivery.messageId || null,
+        status_timestamp: now,
+        error_code: null,
+        error_message: null,
+        updated_at: now,
+      }).eq('id', recipientRow.recipient_id);
+      return;
+    }
+
+    const retry = recipientRow.attempts < 3 && isTransientWhatsAppFailure(delivery);
+    await supabaseAdmin.from('offer_recipients').update({
+      status: retry ? 'queued' : 'failed',
+      attempts: retry ? recipientRow.attempts : 3,
+      next_attempt_at: retry
+        ? new Date(Date.now() + recipientRow.attempts * 60_000).toISOString()
+        : now,
+      error_code: delivery.errorCode || null,
+      error_message: delivery.error || 'WhatsApp delivery failed',
+      status_timestamp: now,
+      updated_at: now,
+    }).eq('id', recipientRow.recipient_id);
+  } catch (error) {
+    const retry = recipientRow.attempts < 3;
+    await supabaseAdmin.from('offer_recipients').update({
+      status: retry ? 'queued' : 'failed',
+      attempts: retry ? recipientRow.attempts : 3,
+      next_attempt_at: retry
+        ? new Date(Date.now() + recipientRow.attempts * 60_000).toISOString()
+        : now,
+      error_message: error.message || 'Offer delivery failed',
+      status_timestamp: now,
+      updated_at: now,
+    }).eq('id', recipientRow.recipient_id);
+  }
+}
+
+async function processOfferQueue(maxBatches = 1) {
+  const mediaCache = new Map();
+  let processed = 0;
+  for (let batch = 0; batch < maxBatches; batch += 1) {
+    const { data: recipients, error } = await supabaseAdmin.rpc(
+      'claim_offer_recipients',
+      { p_limit: OFFER_BATCH_SIZE },
+    );
+    if (error) throw error;
+    if (!recipients?.length) break;
+
+    for (let index = 0; index < recipients.length; index += 5) {
+      const group = recipients.slice(index, index + 5);
+      await Promise.allSettled(group.map((recipient) =>
+        processOfferRecipient(recipient, mediaCache)));
+    }
+    processed += recipients.length;
+    const campaignIds = [...new Set(recipients.map((row) => row.campaign_id))];
+    await Promise.allSettled(campaignIds.map((campaignId) =>
+      supabaseAdmin.rpc('refresh_offer_campaign', { p_campaign_id: campaignId })));
+    if (recipients.length < OFFER_BATCH_SIZE) break;
+  }
+  return processed;
+}
+
 async function sendWhatsAppTemplate({
   customerId,
   orderId,
+  merchantId,
+  offerId,
+  campaignId,
+  offerRecipientId,
+  messageType = 'order',
   recipient,
   templateName,
   components,
@@ -271,6 +553,11 @@ async function sendWhatsAppTemplate({
       .insert({
         customer_id: customerId,
         order_id: orderId,
+        merchant_id: merchantId,
+        offer_id: offerId,
+        campaign_id: campaignId,
+        offer_recipient_id: offerRecipientId,
+        message_type: messageType,
         template_name: templateName,
         recipient,
         status: 'queued',
@@ -305,7 +592,7 @@ async function sendWhatsAppTemplate({
       status_timestamp: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', messageLogId);
-    return { sent: true, messageId };
+    return { sent: true, messageId, logId: messageLogId };
   } catch (error) {
     const apiError = error.response?.data?.error;
     const apiDetails = apiError?.error_data?.details;
@@ -319,7 +606,13 @@ async function sendWhatsAppTemplate({
       status_timestamp: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', messageLogId);
-    return { sent: false, error: errorMessage };
+    return {
+      sent: false,
+      error: errorMessage,
+      errorCode: apiError?.code ? String(apiError.code) : null,
+      httpStatus: Number(error.response?.status || 0),
+      logId: messageLogId,
+    };
   }
 }
 
@@ -409,6 +702,62 @@ async function sendRewardWhatsApp(purchase, logId) {
   });
 }
 
+async function sendMerchantAccountReadyWhatsApp(merchant) {
+  return sendWhatsAppTemplate({
+    merchantId: merchant.id,
+    messageType: 'merchant_credentials',
+    recipient: merchant.phone,
+    templateName: WA_MERCHANT_CREDENTIALS_TEMPLATE,
+    components: [{
+      type: 'body',
+      parameters: [
+        { type: 'text', text: merchant.name },
+        { type: 'text', text: merchant.name },
+        { type: 'text', text: merchant.merchant_code },
+        { type: 'text', text: merchant.email },
+      ],
+    }],
+  });
+}
+
+function offerExpiryText(value) {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+async function sendOfferWhatsApp(recipientRow, mediaId) {
+  return sendWhatsAppTemplate({
+    customerId: recipientRow.customer_id,
+    merchantId: recipientRow.merchant_id,
+    offerId: recipientRow.offer_id,
+    campaignId: recipientRow.campaign_id,
+    offerRecipientId: recipientRow.recipient_id,
+    messageType: 'offer',
+    recipient: recipientRow.recipient,
+    templateName: WA_OFFER_TEMPLATE,
+    components: [
+      {
+        type: 'header',
+        parameters: [{ type: 'image', image: { id: mediaId } }],
+      },
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: recipientRow.customer_name || 'Customer' },
+          { type: 'text', text: recipientRow.merchant_name },
+          { type: 'text', text: recipientRow.offer_title },
+          { type: 'text', text: recipientRow.offer_description },
+          { type: 'text', text: offerExpiryText(recipientRow.offer_expires_at) },
+        ],
+      },
+    ],
+  });
+}
+
 async function sendWelcomeEmail(purchase) {
   if (!resend || !process.env.RESEND_FROM_EMAIL || !purchase.customer_email) {
     return { sent: false, error: 'Email not configured or not provided' };
@@ -439,7 +788,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id, full_name, role, merchant_id')
+    .select('id, full_name, role, merchant_id, must_change_password, password_reset_at, password_changed_at')
     .eq('id', data.user.id)
     .single();
   if (profileError || !profile) {
@@ -457,10 +806,57 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ success: true, user: { email: req.auth.user.email, ...req.auth.profile } });
 });
 
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  const currentPassword = typeof req.body.currentPassword === 'string'
+    ? req.body.currentPassword : '';
+  const newPassword = typeof req.body.newPassword === 'string'
+    ? req.body.newPassword : '';
+  if (!currentPassword || !isStrongPassword(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Enter the temporary password and a new password with at least 10 characters, uppercase, lowercase, number, and symbol',
+    });
+  }
+  if (currentPassword === newPassword) {
+    return res.status(400).json({
+      success: false,
+      error: 'The new password must be different from the temporary password',
+    });
+  }
+
+  const verifier = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: verifyError } = await verifier.auth.signInWithPassword({
+    email: req.auth.user.email,
+    password: currentPassword,
+  });
+  if (verifyError) {
+    return res.status(401).json({ success: false, error: 'The current password is incorrect' });
+  }
+
+  const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+    req.auth.user.id,
+    { password: newPassword },
+  );
+  if (passwordError) {
+    return res.status(400).json({ success: false, error: passwordError.message });
+  }
+  const changedAt = new Date().toISOString();
+  const { error: profileError } = await supabaseAdmin.from('profiles').update({
+    must_change_password: false,
+    password_changed_at: changedAt,
+  }).eq('id', req.auth.user.id);
+  if (profileError) {
+    return res.status(500).json({ success: false, error: profileError.message });
+  }
+  return res.json({ success: true, changedAt });
+});
+
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')
-    .select('id, name, email, phone, created_at', paging.enabled ? { count: 'exact' } : undefined)
+    .select('id, merchant_code, name, email, phone, created_at', paging.enabled ? { count: 'exact' } : undefined)
     .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
   if (paging.search) {
@@ -472,20 +868,32 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
   if (error) return res.status(500).json({ success: false, error: error.message });
   const merchantIds = (data || []).map((row) => row.id);
   const orderCounts = new Map();
+  const passwordStates = new Map();
   if (merchantIds.length) {
-    const { data: orderRows } = await supabaseAdmin.from('orders')
-      .select('merchant_id')
-      .in('merchant_id', merchantIds)
-      .limit(10000);
+    const [{ data: orderRows }, { data: profileRows }] = await Promise.all([
+      supabaseAdmin.from('orders')
+        .select('merchant_id')
+        .in('merchant_id', merchantIds)
+        .limit(10000),
+      supabaseAdmin.from('profiles')
+        .select('merchant_id,must_change_password')
+        .eq('role', 'merchant')
+        .in('merchant_id', merchantIds),
+    ]);
     (orderRows || []).forEach((row) => {
       orderCounts.set(row.merchant_id, (orderCounts.get(row.merchant_id) || 0) + 1);
+    });
+    (profileRows || []).forEach((row) => {
+      passwordStates.set(row.merchant_id, Boolean(row.must_change_password));
     });
   }
   res.json({
     success: true,
     merchants: (data || []).map((row) => ({
-      id: row.id, name: row.name, email: row.email, phone: row.phone, joined: row.created_at,
+      id: row.id, merchantCode: row.merchant_code,
+      name: row.name, email: row.email, phone: row.phone, joined: row.created_at,
       orderCount: orderCounts.get(row.id) || 0,
+      mustChangePassword: passwordStates.get(row.id) || false,
     })),
     ...(paging.enabled ? { pagination: paginationMeta(paging, count) } : {}),
   });
@@ -495,7 +903,7 @@ app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (
   const merchantId = cleanText(req.params.id, 100);
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .select('id,name,email,phone,created_at')
+    .select('id,merchant_code,name,email,phone,created_at')
     .eq('id', merchantId)
     .single();
   if (merchantError || !merchant) {
@@ -545,6 +953,7 @@ app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (
     success: true,
     merchant: {
       id: merchant.id,
+      merchantCode: merchant.merchant_code,
       name: merchant.name,
       email: merchant.email,
       phone: merchant.phone,
@@ -584,15 +993,18 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  if (!name || !email || !isEmail(email) || !phone || password.length < 8) {
+  if (!name || !email || !isEmail(email) || !phone || !isStrongPassword(password)) {
     return res.status(400).json({
       success: false,
-      error: 'Name, valid email/phone, and a password of at least 8 characters are required',
+      error: 'Name, valid email/phone, and a strong temporary password are required',
     });
   }
 
   const { data: merchant, error: merchantError } = await supabaseAdmin
-    .from('merchants').insert({ name, email, phone }).select().single();
+    .from('merchants')
+    .insert({ name, email, phone })
+    .select('id,merchant_code,name,email,phone,created_at')
+    .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -604,10 +1016,90 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
     return res.status(400).json({ success: false, error: authError.message });
   }
 
-  await supabaseAdmin.from('profiles').upsert({
-    id: authData.user.id, full_name: name, role: 'merchant', merchant_id: merchant.id,
+  const createdAt = new Date().toISOString();
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+    id: authData.user.id,
+    full_name: name,
+    role: 'merchant',
+    merchant_id: merchant.id,
+    must_change_password: true,
+    password_reset_at: createdAt,
   });
-  res.status(201).json({ success: true, merchant });
+  if (profileError) {
+    await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+    await supabaseAdmin.from('merchants').delete().eq('id', merchant.id);
+    return res.status(400).json({ success: false, error: profileError.message });
+  }
+
+  const whatsapp = await sendMerchantAccountReadyWhatsApp(merchant);
+  res.status(201).json({
+    success: true,
+    merchant: {
+      id: merchant.id,
+      merchantCode: merchant.merchant_code,
+      name: merchant.name,
+      email: merchant.email,
+      phone: merchant.phone,
+      joined: merchant.created_at,
+      mustChangePassword: true,
+    },
+    temporaryPassword: password,
+    whatsapp: {
+      sent: whatsapp.sent,
+      status: whatsapp.sent ? 'sent' : 'failed',
+      error: whatsapp.error || null,
+    },
+  });
+});
+
+app.post('/api/merchants/:id/reset-password', requireAuth, requireRole('admin'), async (req, res) => {
+  const merchantId = cleanText(req.params.id, 100);
+  const [{ data: merchant }, { data: profile }] = await Promise.all([
+    supabaseAdmin.from('merchants')
+      .select('id,merchant_code,name,email,phone,created_at')
+      .eq('id', merchantId)
+      .maybeSingle(),
+    supabaseAdmin.from('profiles')
+      .select('id,merchant_id')
+      .eq('role', 'merchant')
+      .eq('merchant_id', merchantId)
+      .maybeSingle(),
+  ]);
+  if (!merchant || !profile) {
+    return res.status(404).json({ success: false, error: 'Merchant login was not found' });
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+    profile.id,
+    { password: temporaryPassword },
+  );
+  if (passwordError) {
+    return res.status(400).json({ success: false, error: passwordError.message });
+  }
+
+  const resetAt = new Date().toISOString();
+  const { error: profileError } = await supabaseAdmin.from('profiles').update({
+    must_change_password: true,
+    password_reset_at: resetAt,
+  }).eq('id', profile.id);
+  if (profileError) {
+    return res.status(500).json({ success: false, error: profileError.message });
+  }
+
+  const whatsapp = await sendMerchantAccountReadyWhatsApp(merchant);
+  return res.json({
+    success: true,
+    merchantCode: merchant.merchant_code,
+    loginEmail: merchant.email,
+    temporaryPassword,
+    mustChangePassword: true,
+    whatsapp: {
+      sent: whatsapp.sent,
+      status: whatsapp.sent ? 'sent' : 'failed',
+      error: whatsapp.error || null,
+    },
+  });
 });
 
 app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
@@ -680,6 +1172,257 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
   const { error } = await supabaseAdmin.from('merchants').delete().eq('id', merchantId);
   if (error) return res.status(400).json({ success: false, error: error.message });
   res.json({ success: true, deletedCustomers });
+});
+
+app.get('/api/offers', requireAuth, async (req, res) => {
+  const paging = paginationFromRequest(req, 20, 50);
+  const status = cleanText(req.query.status, 30);
+  const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
+  let query = supabaseAdmin.from('offers').select(
+    'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
+    { count: 'exact' },
+  ).order('created_at', { ascending: false });
+  if (req.auth.profile.role === 'merchant') {
+    query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  }
+  if (allowedStatuses.has(status)) query = query.eq('status', status);
+  if (paging.search) {
+    const pattern = `%${paging.search}%`;
+    query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`);
+  }
+  query = query.range(paging.from, paging.to);
+  const { data, error, count } = await query;
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  return res.json({
+    success: true,
+    offers: await Promise.all((data || []).map(offerDto)),
+    pagination: paginationMeta(paging, count),
+  });
+});
+
+app.post(
+  '/api/offers',
+  requireAuth,
+  requireRole('merchant'),
+  offerImageMiddleware,
+  async (req, res) => {
+    const title = cleanText(req.body.title, 120);
+    const description = cleanText(req.body.description, 1000);
+    const expiresAt = new Date(req.body.expiresAt);
+    if (!title || !description || !Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title, description, and a future expiry date are required',
+      });
+    }
+    if (!validOfferImage(req.file)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Upload a JPEG, PNG, or WebP offer image',
+      });
+    }
+
+    let imagePath;
+    try {
+      imagePath = await uploadOfferImage(req.auth.profile.merchant_id, req.file);
+      const { data: offer, error } = await supabaseAdmin.from('offers').insert({
+        merchant_id: req.auth.profile.merchant_id,
+        title,
+        description,
+        image_path: imagePath,
+        expires_at: expiresAt.toISOString(),
+        status: 'pending',
+        submitted_by: req.auth.user.id,
+      }).select(
+        'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+      ).single();
+      if (error) throw error;
+      return res.status(201).json({ success: true, offer: await offerDto(offer) });
+    } catch (error) {
+      if (imagePath) {
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([imagePath]);
+      }
+      return res.status(400).json({ success: false, error: error.message });
+    }
+  },
+);
+
+app.put(
+  '/api/offers/:id',
+  requireAuth,
+  requireRole('merchant'),
+  offerImageMiddleware,
+  async (req, res) => {
+    const offerId = cleanText(req.params.id, 100);
+    const { data: currentOffer } = await supabaseAdmin.from('offers')
+      .select('id,merchant_id,status,image_path')
+      .eq('id', offerId)
+      .eq('merchant_id', req.auth.profile.merchant_id)
+      .maybeSingle();
+    if (!currentOffer) {
+      return res.status(404).json({ success: false, error: 'Offer was not found' });
+    }
+    if (currentOffer.status !== 'rejected') {
+      return res.status(409).json({ success: false, error: 'Only rejected offers can be edited' });
+    }
+
+    const title = cleanText(req.body.title, 120);
+    const description = cleanText(req.body.description, 1000);
+    const expiresAt = new Date(req.body.expiresAt);
+    if (!title || !description || !Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title, description, and a future expiry date are required',
+      });
+    }
+    if (req.file && !validOfferImage(req.file)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Upload a JPEG, PNG, or WebP offer image',
+      });
+    }
+
+    let replacementPath = currentOffer.image_path;
+    let uploadedPath = '';
+    try {
+      if (req.file) {
+        uploadedPath = await uploadOfferImage(req.auth.profile.merchant_id, req.file);
+        replacementPath = uploadedPath;
+      }
+      const { data: offer, error } = await supabaseAdmin.from('offers').update({
+        title,
+        description,
+        image_path: replacementPath,
+        expires_at: expiresAt.toISOString(),
+        status: 'pending',
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+        submitted_by: req.auth.user.id,
+        updated_at: new Date().toISOString(),
+      }).eq('id', offerId).select(
+        'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+      ).single();
+      if (error) throw error;
+      if (uploadedPath) {
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]);
+      }
+      return res.json({ success: true, offer: await offerDto(offer) });
+    } catch (error) {
+      if (uploadedPath) {
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([uploadedPath]);
+      }
+      return res.status(400).json({ success: false, error: error.message });
+    }
+  },
+);
+
+app.post('/api/offers/:id/approve', requireAuth, requireRole('admin'), async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  const { data: offer, error } = await supabaseAdmin.from('offers').update({
+    status: 'approved',
+    rejection_reason: null,
+    reviewed_by: req.auth.user.id,
+    reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', offerId)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .select('id,status')
+    .maybeSingle();
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  if (!offer) {
+    return res.status(409).json({
+      success: false,
+      error: 'Only pending, unexpired offers can be approved',
+    });
+  }
+  return res.json({ success: true, offer });
+});
+
+app.post('/api/offers/:id/reject', requireAuth, requireRole('admin'), async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  const reason = cleanText(req.body.reason, 500);
+  if (!reason) {
+    return res.status(400).json({ success: false, error: 'A rejection reason is required' });
+  }
+  const { data: offer, error } = await supabaseAdmin.from('offers').update({
+    status: 'rejected',
+    rejection_reason: reason,
+    reviewed_by: req.auth.user.id,
+    reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', offerId)
+    .eq('status', 'pending')
+    .select('id,status,rejection_reason')
+    .maybeSingle();
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  if (!offer) {
+    return res.status(409).json({ success: false, error: 'Only pending offers can be rejected' });
+  }
+  return res.json({ success: true, offer });
+});
+
+app.post('/api/offers/:id/send', requireAuth, requireRole('admin'), async (req, res) => {
+  if (!WA_TOKEN || !WA_PHONE_ID || !WA_OFFER_TEMPLATE) {
+    return res.status(503).json({
+      success: false,
+      error: 'The WhatsApp offer template is not configured',
+    });
+  }
+  const offerId = cleanText(req.params.id, 100);
+  const { data, error } = await supabaseAdmin.rpc('create_offer_campaign', {
+    p_offer_id: offerId,
+    p_created_by: req.auth.user.id,
+  });
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  const campaign = data?.[0];
+  if (!campaign) {
+    return res.status(500).json({ success: false, error: 'Offer campaign could not be created' });
+  }
+  if (campaign.campaign_status !== 'completed') {
+    scheduleBackground(() => processOfferQueue(2));
+  }
+  return res.status(202).json({
+    success: true,
+    campaign: {
+      id: campaign.campaign_id,
+      totalRecipients: campaign.total_recipients,
+      status: campaign.campaign_status,
+    },
+  });
+});
+
+app.get('/api/offers/:id/campaign', requireAuth, async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  let query = supabaseAdmin.from('offer_campaigns')
+    .select('id,offer_id,merchant_id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at')
+    .eq('offer_id', offerId);
+  if (req.auth.profile.role === 'merchant') {
+    query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  }
+  const { data: campaign, error } = await query.maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  if (!campaign) return res.status(404).json({ success: false, error: 'Campaign was not found' });
+  return res.json({ success: true, campaign: campaignDto(campaign) });
+});
+
+app.post('/api/internal/offers/process', async (req, res) => {
+  const supplied = req.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
+  if (!OFFER_QUEUE_SECRET || supplied.length !== OFFER_QUEUE_SECRET.length) {
+    return res.status(401).json({ success: false, error: 'Invalid queue credentials' });
+  }
+  const valid = crypto.timingSafeEqual(
+    Buffer.from(supplied),
+    Buffer.from(OFFER_QUEUE_SECRET),
+  );
+  if (!valid) return res.status(401).json({ success: false, error: 'Invalid queue credentials' });
+  try {
+    const processed = await processOfferQueue(3);
+    return res.json({ success: true, processed });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.get('/api/admins', requireAuth, requireRole('admin'), async (_req, res) => {
@@ -1270,6 +2013,8 @@ async function queueWhatsApp(purchase, kind) {
   const { data, error } = await supabaseAdmin.from('whatsapp_messages').insert({
     customer_id: purchase.customer_id,
     order_id: purchase.order_id,
+    merchant_id: purchase.merchant_id || null,
+    message_type: kind === 'registration' ? 'qr' : 'order',
     template_name: templateName,
     recipient: purchase.customer_phone,
     status: 'queued',
@@ -1972,7 +2717,7 @@ app.post('/api/webhooks/whatsapp', async (req, res) => {
     if (!(status in statusRank) || !item.id) continue;
     const { data: existing } = await supabaseAdmin
       .from('whatsapp_messages')
-      .select('id,status')
+      .select('id,status,offer_recipient_id,campaign_id')
       .eq('meta_message_id', item.id)
       .maybeSingle();
     if (!existing || statusRank[status] < statusRank[existing.status]) continue;
@@ -1986,6 +2731,22 @@ app.post('/api/webhooks/whatsapp', async (req, res) => {
         : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', existing.id);
+    if (existing.offer_recipient_id) {
+      await supabaseAdmin.from('offer_recipients').update({
+        status,
+        error_code: error?.code ? String(error.code) : null,
+        error_message: error?.title || error?.message || null,
+        status_timestamp: item.timestamp
+          ? new Date(Number(item.timestamp) * 1000).toISOString()
+          : new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', existing.offer_recipient_id);
+      if (existing.campaign_id) {
+        await supabaseAdmin.rpc('refresh_offer_campaign', {
+          p_campaign_id: existing.campaign_id,
+        });
+      }
+    }
   }
   res.sendStatus(200);
 });
@@ -2234,6 +2995,9 @@ app.get('/api/status', (_req, res) => {
     waRegistrationTemplate: WA_REGISTRATION_TEMPLATE,
     waQrTemplate: WA_QR_TEMPLATE || null,
     waRewardTemplate: WA_REWARD_TEMPLATE,
+    waMerchantCredentialsTemplate: WA_MERCHANT_CREDENTIALS_TEMPLATE,
+    waOfferTemplate: WA_OFFER_TEMPLATE,
+    offerQueue: Boolean(OFFER_QUEUE_SECRET),
     waTemplateLanguage: WA_TEMPLATE_LANGUAGE,
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight, Download, LoaderCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { downloadExport, queryString } from '../api';
 import type { Pagination, Period } from '../types';
 import { dateInput, rangeForPeriod } from '../utils';
@@ -18,11 +19,12 @@ export function LoadingState({ label = 'Loading data' }: { label?: string }) {
 }
 
 export function ErrorState({ error, retry }: { error: Error; retry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="state-panel error-state">
       <AlertCircle size={22} />
       <span>{error.message}</span>
-      {retry ? <button className="button secondary" onClick={retry}>Try again</button> : null}
+      {retry ? <button className="button secondary" onClick={retry}>{t('common.retry')}</button> : null}
     </div>
   );
 }
@@ -32,20 +34,24 @@ export function EmptyState({ children }: { children: ReactNode }) {
 }
 
 export function PaginationBar({ pagination, onPage }: { pagination?: Pagination; onPage: (page: number) => void }) {
+  const { t } = useTranslation();
   if (!pagination || pagination.totalPages <= 1) return null;
   return (
     <div className="pagination-bar">
-      <span>Page {pagination.page} of {pagination.totalPages} · {pagination.total} records</span>
+      <span>{t('common.page')} {pagination.page} {t('common.of')} {pagination.totalPages} · {pagination.total} {t('common.records')}</span>
       <div>
-        <button className="icon-button" title="Previous page" disabled={pagination.page <= 1} onClick={() => onPage(pagination.page - 1)}><ChevronLeft /></button>
-        <button className="icon-button" title="Next page" disabled={pagination.page >= pagination.totalPages} onClick={() => onPage(pagination.page + 1)}><ChevronRight /></button>
+        <button className="icon-button" title={t('common.previous')} disabled={pagination.page <= 1} onClick={() => onPage(pagination.page - 1)}><ChevronLeft /></button>
+        <button className="icon-button" title={t('common.next')} disabled={pagination.page >= pagination.totalPages} onClick={() => onPage(pagination.page + 1)}><ChevronRight /></button>
       </div>
     </div>
   );
 }
 
 const periodOptions: Array<[Period, string]> = [
-  ['today', 'Today'], ['week', 'Weekly'], ['month', 'Monthly'], ['custom', 'Custom'],
+  ['today', 'dashboard.today'],
+  ['week', 'dashboard.weekly'],
+  ['month', 'dashboard.monthly'],
+  ['custom', 'common.custom'],
 ];
 
 export function PeriodControl({ value, onChange, compact = false }: {
@@ -53,22 +59,27 @@ export function PeriodControl({ value, onChange, compact = false }: {
   onChange: (period: Period) => void;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className={`segmented ${compact ? 'compact' : ''}`}>
       {periodOptions.map(([id, label]) => (
-        <button key={id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>{label}</button>
+        <button key={id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>{t(label)}</button>
       ))}
     </div>
   );
 }
 
 export function CustomDates({ from, to, onFrom, onTo }: {
-  from: string; to: string; onFrom: (value: string) => void; onTo: (value: string) => void;
+  from: string;
+  to: string;
+  onFrom: (value: string) => void;
+  onTo: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="date-fields">
-      <label>From<input type="date" value={from} onChange={(event) => onFrom(event.target.value)} /></label>
-      <label>To<input type="date" value={to} onChange={(event) => onTo(event.target.value)} /></label>
+      <label>{t('common.from')}<input type="date" value={from} onChange={(event) => onFrom(event.target.value)} /></label>
+      <label>{t('common.to')}<input type="date" value={to} onChange={(event) => onTo(event.target.value)} /></label>
     </div>
   );
 }
@@ -80,6 +91,7 @@ export function ExportModal({ open, format, merchantId, isAdmin, onClose }: {
   isAdmin: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const today = dateInput();
   const monthStart = `${today.slice(0, 8)}01`;
   const [from, setFrom] = useState(monthStart);
@@ -94,39 +106,44 @@ export function ExportModal({ open, format, merchantId, isAdmin, onClose }: {
   async function submit() {
     const range = rangeForPeriod('custom', from, to);
     if (!range) return setError('Choose both dates.');
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
       const query = queryString({ ...range, section, merchantId });
       await downloadExport(`/api/exports/full.${format}?${query}`);
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Export failed');
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="export-title">
-        <button className="icon-button modal-close" title="Close" onClick={onClose}><X /></button>
-        <h2 id="export-title">Export report</h2>
-        <p>Choose a date range and the records you want.</p>
+        <button className="icon-button modal-close" title={t('common.close')} onClick={onClose}><X /></button>
+        <h2 id="export-title">{t('export.title')}</h2>
+        <p>{t('export.description')}</p>
         <div className="two-column-form">
-          <label>From<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-          <label>To<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <label>{t('common.from')}<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label>{t('common.to')}<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
         </div>
-        <label>Report content
+        <label>{t('export.content')}
           <select value={section} onChange={(event) => setSection(event.target.value)}>
-            <option value="all">All details</option>
-            <option value="summary">Summary only</option>
-            <option value="orders">Orders</option>
-            <option value="points">Customers and points</option>
-            {isAdmin ? <option value="merchants">Merchants</option> : null}
+            <option value="all">{t('export.all')}</option>
+            <option value="summary">{t('export.summary')}</option>
+            <option value="orders">{t('dashboard.orders')}</option>
+            <option value="points">{t('export.points')}</option>
+            {isAdmin ? <option value="merchants">{t('nav.merchants')}</option> : null}
           </select>
         </label>
         {error ? <div className="form-error">{error}</div> : null}
         <div className="modal-actions">
-          <button className="button secondary" onClick={onClose}>Cancel</button>
-          <button className="button primary" disabled={busy} onClick={submit}><Download size={16} />{busy ? 'Preparing' : `Download ${format.toUpperCase()}`}</button>
+          <button className="button secondary" onClick={onClose}>{t('offers.cancel')}</button>
+          <button className="button primary" disabled={busy} onClick={submit}>
+            <Download size={16} />{busy ? t('export.preparing') : `${t('export.download')} ${format.toUpperCase()}`}
+          </button>
         </div>
       </div>
     </div>

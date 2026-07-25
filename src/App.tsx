@@ -5,10 +5,12 @@ import { apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
 import { Administrators } from './pages/Administrators';
+import { ChangePassword } from './pages/ChangePassword';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { MerchantProfile, Merchants } from './pages/Merchants';
+import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import type { Role, UserProfile } from './types';
@@ -52,8 +54,15 @@ export function App() {
 
   useEffect(() => {
     const unauthorized = () => logout();
+    const passwordRequired = () => setUser((current) => current
+      ? { ...current, must_change_password: true }
+      : current);
     window.addEventListener('ae:unauthorized', unauthorized);
-    return () => window.removeEventListener('ae:unauthorized', unauthorized);
+    window.addEventListener('ae:password-change-required', passwordRequired);
+    return () => {
+      window.removeEventListener('ae:unauthorized', unauthorized);
+      window.removeEventListener('ae:password-change-required', passwordRequired);
+    };
   });
 
   useEffect(() => {
@@ -66,6 +75,12 @@ export function App() {
 
   if (restoring) return <div className="boot-screen"><div className="boot-brand">Affiliate <span>AE</span></div><div className="boot-line" /></div>;
   if (!user) return <Login onLogin={setUser} />;
+  if (user.role === 'merchant' && user.must_change_password) {
+    return <ChangePassword onChanged={() => {
+      setUser({ ...user, must_change_password: false });
+      void queryClient.invalidateQueries();
+    }} />;
+  }
 
   return (
     <Layout user={user} onLogout={logout}>
@@ -75,6 +90,7 @@ export function App() {
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customers" element={<Customers user={user} />} />
+          <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />

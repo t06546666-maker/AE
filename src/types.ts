@@ -7,6 +7,9 @@ export interface UserProfile {
   full_name: string;
   role: Role;
   merchant_id: string | null;
+  must_change_password?: boolean;
+  password_reset_at?: string | null;
+  password_changed_at?: string | null;
 }
 
 export interface Pagination {
@@ -18,11 +21,50 @@ export interface Pagination {
 
 export interface Merchant {
   id: string;
+  merchantCode: string;
   name: string;
   email: string;
   phone: string;
   joined: string;
   orderCount?: number;
+  mustChangePassword?: boolean;
+}
+
+export type OfferStatus = 'pending' | 'approved' | 'rejected';
+export type CampaignStatus = 'queued' | 'processing' | 'completed' | 'partial_failed' | 'failed';
+
+export interface OfferCampaign {
+  id: string;
+  status: CampaignStatus;
+  totalRecipients: number;
+  queued: number;
+  processing: number;
+  sent: number;
+  delivered: number;
+  read: number;
+  failed: number;
+  skipped: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface Offer {
+  id: string;
+  merchantId: string;
+  merchant: string;
+  merchantCode: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  expiresAt: string;
+  status: OfferStatus;
+  rejectionReason: string;
+  reviewedAt: string | null;
+  broadcastAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  campaign: OfferCampaign | null;
 }
 
 export interface Membership {
