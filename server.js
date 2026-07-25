@@ -399,11 +399,11 @@ async function sendRewardWhatsApp(purchase, logId) {
       parameters: [
         { type: 'text', text: purchase.customer_name },
         { type: 'text', text: purchase.merchant_name },
+        { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
+        { type: 'text', text: purchase.order_no },
         { type: 'text', text: Number(purchase.amount).toFixed(2) },
         { type: 'text', text: formatPoints(purchase.points_earned) },
-        { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
         { type: 'text', text: formatPoints(purchase.total_points) },
-        { type: 'text', text: purchase.order_no },
       ],
     }],
   });
