@@ -32,6 +32,11 @@ interface WhatsAppMessageStatus {
   updatedAt: string;
 }
 
+interface PhoneRegistrationStatus {
+  registered: boolean;
+  registeredWithMerchant: boolean;
+}
+
 export function AddCustomer({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState('');
@@ -52,6 +57,17 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     if (!result) return;
     QRCode.toDataURL(qrPayload(result.customer), { width: 280, margin: 2, errorCorrectionLevel: 'M' }).then(setQrUrl);
   }, [result]);
+  const validPhone = /^[6-9]\d{9}$/.test(phone);
+  const phoneStatus = useQuery({
+    queryKey: ['customer-phone-status', phone, merchantId],
+    queryFn: ({ signal }) => apiFetch<PhoneRegistrationStatus>(
+      `/api/customers/phone-status?${queryString({ phone: `+91${phone}`, merchantId })}`,
+      { signal },
+    ),
+    enabled: validPhone && Boolean(merchantId),
+    staleTime: 30_000,
+    retry: 1,
+  });
 
   const whatsappStatus = useQuery({
     queryKey: ['whatsapp-message', result?.notifications.whatsapp.logId],
@@ -126,7 +142,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
         <div className="panel-heading"><div><h2>{t('registration.new')}</h2><p>{t('registration.emailOptional')}</p></div><UserPlus /></div>
         <div className="customer-fields">
           <label>{t('registration.name')}<input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required /></label>
-          <label>{t('registration.whatsappNumber')}<div className="phone-field"><span>+91</span><input value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div></label>
+          <label>{t('registration.whatsappNumber')}<div className="phone-field"><span>+91</span><input value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div>{validPhone ? <span className={`phone-registration-status ${phoneStatus.data?.registered ? 'existing' : phoneStatus.data ? 'available' : ''}`} role="status" aria-live="polite">{phoneStatus.isFetching ? t('registration.phoneChecking') : phoneStatus.isError ? t('registration.phoneCheckFailed') : phoneStatus.data?.registeredWithMerchant ? t('registration.alreadyMerchant') : phoneStatus.data?.registered ? t('registration.alreadyAffiliate') : t('registration.newAffiliate')}</span> : null}</label>
           <label>{t('registration.emailAddress')} <small>{t('registration.optional')}</small><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         </div>
         <div className="purchase-fields registration-purchase">

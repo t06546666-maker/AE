@@ -1848,6 +1848,42 @@ app.get('/api/customers', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/api/customers/phone-status', requireAuth, async (req, res) => {
+  const phone = normalizePhone(req.query.phone);
+  const merchantId = req.auth.profile.role === 'admin'
+    ? cleanText(req.query.merchantId, 100)
+    : req.auth.profile.merchant_id;
+  if (!phone) {
+    return res.status(400).json({ success: false, error: 'Enter a valid 10-digit Indian mobile number' });
+  }
+
+  const { data: customer, error } = await supabaseAdmin
+    .from('customers')
+    .select('id')
+    .eq('phone', phone)
+    .maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  if (!customer) {
+    return res.json({ success: true, registered: false, registeredWithMerchant: false });
+  }
+
+  let registeredWithMerchant = false;
+  if (merchantId) {
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from('customer_merchants')
+      .select('customer_id')
+      .eq('customer_id', customer.id)
+      .eq('merchant_id', merchantId)
+      .maybeSingle();
+    if (membershipError) {
+      return res.status(500).json({ success: false, error: membershipError.message });
+    }
+    registeredWithMerchant = Boolean(membership);
+  }
+
+  return res.json({ success: true, registered: true, registeredWithMerchant });
+});
+
 app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const rawId = cleanText(req.params.id, 100);
   let query = supabaseAdmin.from('customers').select('id,customer_code,name').limit(1);
