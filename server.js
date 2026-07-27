@@ -2668,6 +2668,27 @@ function dailyDashboardIntervals(orders, from, to) {
   return intervals.map(({ date: _date, ...interval }) => interval);
 }
 
+function weeklyDashboardIntervals(orders, from, to) {
+  const startTime = from.getTime();
+  const endTime = to.getTime();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const intervals = Array.from({ length: 4 }, (_, index) => ({
+    label: `Week ${index + 1}`,
+    orders: 0,
+    revenue: 0,
+  }));
+
+  for (const order of orders) {
+    const orderTime = new Date(order.created_at).getTime();
+    if (orderTime < startTime || orderTime >= endTime) continue;
+    const intervalIndex = Math.min(3, Math.floor((orderTime - startTime) / weekMs));
+    intervals[intervalIndex].orders += 1;
+    intervals[intervalIndex].revenue += Number(order.amount);
+  }
+
+  return intervals;
+}
+
 app.get('/api/exports/full.xlsx', requireAuth, async (req, res) => {
   try {
     const report = await buildExportReport(req);
@@ -2695,7 +2716,7 @@ app.get('/api/exports/full.pdf', requireAuth, async (req, res) => {
 app.get('/api/dashboard', requireAuth, async (req, res) => {
   const from = new Date(req.query.from);
   const to = new Date(req.query.to);
-  const bucket = req.query.bucket === 'daily' ? 'daily' : 'six-hour';
+  const bucket = ['daily', 'weekly'].includes(req.query.bucket) ? req.query.bucket : 'six-hour';
   if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to) {
     return res.status(400).json({ success: false, error: 'Valid from and to dates are required' });
   }
@@ -2709,7 +2730,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     p_merchant_id: merchantId,
   });
   if (!analyticsResult.error && analyticsResult.data) {
-    if (bucket !== 'daily') return res.json(analyticsResult.data);
+    if (bucket === 'six-hour') return res.json(analyticsResult.data);
 
     let dailyOrdersQuery = supabaseAdmin.from('orders')
       .select('amount,created_at')
@@ -2723,7 +2744,9 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     }
     return res.json({
       ...analyticsResult.data,
-      intervals: dailyDashboardIntervals(dailyOrdersResult.data || [], from, to),
+      intervals: bucket === 'weekly'
+        ? weeklyDashboardIntervals(dailyOrdersResult.data || [], from, to)
+        : dailyDashboardIntervals(dailyOrdersResult.data || [], from, to),
     });
   }
   if (analyticsResult.error && !(
@@ -2786,7 +2809,9 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   }
   const responseIntervals = bucket === 'daily'
     ? dailyDashboardIntervals(orders, from, to)
-    : intervals;
+    : bucket === 'weekly'
+      ? weeklyDashboardIntervals(orders, from, to)
+      : intervals;
 
   const indiaDateText = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Kolkata',

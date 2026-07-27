@@ -71,7 +71,7 @@ export function rangeForChartPeriod(period: Period, customFrom?: string, customT
   end.setDate(end.getDate() + 1);
 
   if (period === 'week') start.setDate(start.getDate() - 6);
-  if (period === 'month') start.setDate(start.getDate() - 29);
+  if (period === 'month') start.setDate(start.getDate() - 27);
 
   return { from: indiaIso(start), to: indiaIso(end) };
 }

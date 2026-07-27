@@ -26,7 +26,7 @@ function useDashboard(period: Period, from: string, to: string) {
 
 function useChartDashboard(period: Period, from: string, to: string) {
   const range = rangeForChartPeriod(period, from, to);
-  const bucket = period === 'today' ? 'six-hour' : 'daily';
+  const bucket = period === 'today' ? 'six-hour' : period === 'month' ? 'weekly' : 'daily';
   return useQuery({
     queryKey: ['dashboard', 'chart', range?.from, range?.to, bucket],
     queryFn: ({ signal }) => apiFetch<DashboardData>(
@@ -96,7 +96,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
 
       <div className="report-grid">
         <section className="panel">
-          <div className="report-head"><div><h2>{t('dashboard.ordersRevenue')}</h2><p>{t(chartPeriod === 'today' ? 'dashboard.sixHours' : 'dashboard.dailyBreakdown')}</p></div><PeriodControl compact value={chartPeriod} onChange={setChartPeriod} /></div>
+          <div className="report-head"><div><h2>{t('dashboard.ordersRevenue')}</h2><p>{t(chartPeriod === 'today' ? 'dashboard.sixHours' : chartPeriod === 'month' ? 'dashboard.weeklyBreakdown' : 'dashboard.dailyBreakdown')}</p></div><PeriodControl compact value={chartPeriod} onChange={setChartPeriod} /></div>
           <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
           {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
           <div className="chart-scroll">
