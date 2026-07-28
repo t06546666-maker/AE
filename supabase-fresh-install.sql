@@ -121,9 +121,9 @@ declare
   v_order_number bigint;
 begin
   v_order_number := nextval('public.order_number_seq'::regclass);
-  new.order_no := 'AE' || lpad(
+  new.order_no := 'AE-' || lpad(
     v_order_number::text,
-    greatest(3, length(v_order_number::text)),
+    greatest(4, length(v_order_number::text)),
     '0'
   );
   return new;

@@ -65,6 +65,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const retentionData = retention.data || emptyDashboard;
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
   const maxRevenue = Math.max(1, ...chartData.intervals.map((item) => item.revenue));
+  const chartNeedsScroll = chartPeriod === 'custom' && chartData.intervals.length > 7;
 
   if (dashboard.isError) return <><PageHeader title={t('dashboard.title')} subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')} /><ErrorState error={dashboard.error} retry={() => dashboard.refetch()} /></>;
   return (
@@ -103,8 +104,8 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <div
               className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`}
               style={chartPeriod === 'today' ? undefined : {
-                gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(28px, 1fr))`,
-                minWidth: `${Math.max(420, chartData.intervals.length * 38)}px`,
+                gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`,
+                minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%',
               }}
             >
               {chartData.intervals.map((item) => (

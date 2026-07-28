@@ -166,9 +166,10 @@ h1, h2, h3 { letter-spacing: 0; }
 .metric-card.pink { border-top: 3px solid var(--pink); } .metric-card.pink > svg, .metric-card.pink strong { color: var(--pink); }
 
 .report-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: 18px; }
+.report-grid > .panel { min-width: 0; }
 .report-head { align-items: center; }
-.chart-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
-.grouped-chart { height: 230px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding-top: 20px; }
+.chart-scroll { width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
+.grouped-chart { width: 100%; height: 230px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding-top: 20px; }
 .grouped-chart.daily-chart { gap: 7px; }
 .grouped-chart.daily-chart .chart-bars { gap: 3px; }
 .grouped-chart.daily-chart .chart-bar { width: min(38%, 16px); }
@@ -427,7 +428,9 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
   .date-fields { width: 100%; }
   .date-fields label { flex: 1; }
   .report-head { align-items: stretch; flex-direction: column; }
-  .grouped-chart { gap: 6px; }
+  .grouped-chart { gap: 5px; height: 210px; }
+  .chart-bars { height: 170px; gap: 4px; }
+  .grouped-chart.daily-chart .chart-group > span { font-size: 9px; }
   .scanner-view { min-height: 230px; }
   .purchase-fields, .registration-purchase { grid-template-columns: 1fr; }
   .registration-purchase .point-preview { grid-column: auto; }

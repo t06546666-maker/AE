@@ -1,5 +1,5 @@
 -- Apply once in Supabase SQL Editor.
--- Existing order references are preserved. New orders use AE-0001, AE-0002, ...
+-- Existing references stay unchanged. New orders use AE-0001, AE-0002, ...
 
 begin;
 
