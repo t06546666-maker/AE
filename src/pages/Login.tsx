@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Languages, Mail, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Building2, Languages, Mail, Phone, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { apiFetch, setAccessToken } from '../api';
 import type { UserProfile } from '../types';
 
@@ -54,7 +54,7 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
         <div className="modal-backdrop">
           <div className="modal info-modal">
             <button className="icon-button modal-close" title={t('common.close')} onClick={() => setInfo(null)}><X /></button>
-            {info === 'about' ? <><h2>{t('login.aboutTitle')}</h2><p>{t('login.aboutText')}</p></> : <><h2>{t('login.contactTitle')}</h2><p>{t('login.contactText')}</p><a className="contact-link" href="mailto:safar@affiliateae.co.in"><Mail size={17} />safar@affiliateae.co.in</a></>}
+            {info === 'about' ? <><h2>{t('login.aboutTitle')}</h2><p>{t('login.aboutText')}</p></> : <><h2>{t('login.contactTitle')}</h2><p>{t('login.contactText')}</p><a className="contact-link" href="mailto:affiliateae1@gmail.com"><Mail size={17} />affiliateae1@gmail.com</a><a className="contact-link" href="tel:+919025547577"><Phone size={17} />+91 90255 47577</a></>}
           </div>
         </div>
       ) : null}

@@ -89,6 +89,7 @@ const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
 const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
 const OFFER_QUEUE_SECRET = process.env.OFFER_QUEUE_SECRET;
 const OFFER_IMAGE_BUCKET = 'offer-images';
+const CUSTOMER_ORDER_IMAGE_BUCKET = 'customer-order-images';
 const OFFER_BATCH_SIZE = Math.min(50, Math.max(1, Number(process.env.OFFER_BATCH_SIZE || 20)));
 const offerUpload = multer({
   storage: multer.memoryStorage(),
@@ -346,6 +347,45 @@ async function signedOfferImageUrl(imagePath) {
   const { data, error } = await supabaseAdmin.storage
     .from(OFFER_IMAGE_BUCKET)
     .createSignedUrl(imagePath, 60 * 60);
+  return error ? '' : data.signedUrl;
+}
+
+function customerOrderImageExtension(contentType) {
+  if (contentType === 'image/png') return 'png';
+  if (contentType === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+async function downloadWhatsAppImage(mediaId) {
+  if (!WA_TOKEN || !mediaId) throw new Error('WhatsApp image access is not configured');
+  const metadata = await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/${mediaId}`, {
+    headers: { Authorization: `Bearer ${WA_TOKEN}` }, timeout: WA_REQUEST_TIMEOUT_MS,
+  });
+  const download = await axios.get(metadata.data?.url, {
+    headers: { Authorization: `Bearer ${WA_TOKEN}` }, responseType: 'arraybuffer', timeout: WA_REQUEST_TIMEOUT_MS,
+  });
+  const contentType = String(download.headers['content-type'] || '').split(';')[0].toLowerCase();
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
+    throw new Error('Only JPEG, PNG, or WebP shopping-list images are supported');
+  }
+  const buffer = Buffer.from(download.data);
+  if (buffer.length > 5 * 1024 * 1024) throw new Error('The shopping-list image must be 5 MB or smaller');
+  return { buffer, contentType };
+}
+
+async function uploadCustomerOrderImage(merchantId, customerId, mediaId) {
+  const image = await downloadWhatsAppImage(mediaId);
+  const imagePath = `${merchantId}/${customerId}/${crypto.randomUUID()}.${customerOrderImageExtension(image.contentType)}`;
+  const { error } = await supabaseAdmin.storage.from(CUSTOMER_ORDER_IMAGE_BUCKET).upload(imagePath, image.buffer, {
+    contentType: image.contentType, cacheControl: '3600', upsert: false,
+  });
+  if (error) throw error;
+  return { imagePath, contentType: image.contentType };
+}
+
+async function signedCustomerOrderImageUrl(imagePath) {
+  const { data, error } = await supabaseAdmin.storage
+    .from(CUSTOMER_ORDER_IMAGE_BUCKET).createSignedUrl(imagePath, 60 * 60);
   return error ? '' : data.signedUrl;
 }
 
@@ -983,7 +1023,7 @@ async function showProductChoices(customer, session, page = 0) {
     ]);
   }
   await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
-  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'} or type a custom request.`, 'View products', rows);
+  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a custom request, or attach a shopping-list photo.`, 'View products', rows);
 }
 
 async function showCustomerOrderCart(customer, session) {
@@ -1004,6 +1044,29 @@ async function handleIncomingCustomerWhatsApp(message) {
     return;
   }
   const session = await getCustomerOrderSession(customer);
+  if (message.type === 'image') {
+    if (!session.merchant_id) {
+      await sendWhatsAppText(customer.phone, 'Choose a shop first, then send your shopping-list photo.');
+      return showMerchantChoices(customer, session);
+    }
+    try {
+      const uploaded = await uploadCustomerOrderImage(session.merchant_id, customer.id, message.image?.id);
+      const cart = Array.isArray(session.cart) ? [...session.cart] : [];
+      cart.push({
+        type: 'custom',
+        name: cleanText(message.image?.caption, 500) || 'Customer shopping-list photo',
+        quantity: 1,
+        unitPrice: null,
+        imagePath: uploaded.imagePath,
+        imageType: uploaded.contentType,
+      });
+      const next = await saveCustomerOrderSession(session, { state: 'product', cart, pending_item: null });
+      await sendWhatsAppText(customer.phone, 'Your shopping-list photo is attached. You can add products or confirm the order.');
+      return showCustomerOrderCart(customer, next);
+    } catch (error) {
+      return sendWhatsAppText(customer.phone, error.message || 'We could not save that image. Please send a JPEG, PNG, or WebP image under 5 MB.');
+    }
+  }
   const replyId = message.interactive?.list_reply?.id || message.interactive?.button_reply?.id || '';
   const text = cleanText(message.text?.body, 500);
   const command = replyId || text.toLowerCase();
@@ -1495,7 +1558,7 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
   res.json({ success: true, deletedCustomers });
 });
 
-function customerOrderDto(row) {
+async function customerOrderDto(row) {
   return {
     id: row.id,
     requestNo: row.request_no,
@@ -1516,6 +1579,13 @@ function customerOrderDto(row) {
       unitPrice: item.unit_price === null ? null : Number(item.unit_price),
       type: item.item_type,
     })),
+    images: await Promise.all((row.customer_order_images || []).map(async (image) => ({
+      id: image.id,
+      caption: image.caption || '',
+      mimeType: image.mime_type,
+      createdAt: image.created_at,
+      url: await signedCustomerOrderImageUrl(image.storage_path),
+    }))),
   };
 }
 
@@ -1589,7 +1659,7 @@ app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req
 app.get('/api/customer-orders', requireAuth, async (req, res) => {
   const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
   let query = customerOrderScope(supabaseAdmin.from('customer_orders').select(
-    'id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type)',
+    'id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type),customer_order_images(id,storage_path,caption,mime_type,created_at)',
     { count: 'exact' },
   ), req.auth).order('created_at', { ascending: false });
   const status = cleanText(req.query.status, 32);
@@ -1597,7 +1667,7 @@ app.get('/api/customer-orders', requireAuth, async (req, res) => {
   if (paging.search) query = query.or(`request_no.ilike.%${paging.search}%,customer_note.ilike.%${paging.search}%`);
   const { data, error, count } = await query.range(paging.from, paging.to);
   if (error) return res.status(500).json({ success: false, error: error.message });
-  res.json({ success: true, orders: (data || []).map(customerOrderDto), pagination: paginationMeta(paging, count) });
+  res.json({ success: true, orders: await Promise.all((data || []).map(customerOrderDto)), pagination: paginationMeta(paging, count) });
 });
 
 app.patch('/api/customer-orders/:id/status', requireAuth, async (req, res) => {
@@ -1637,6 +1707,40 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
     requestNo: item.customer_orders?.request_no || '', status: item.customer_orders?.status || '',
   }));
   res.json({ success: true, notifications, unreadCount: notifications.filter((item) => !item.readAt).length });
+});
+
+app.get('/api/feedback', requireAuth, async (req, res) => {
+  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  let query = supabaseAdmin.from('merchant_feedback')
+    .select('id,merchant_id,message,created_at,merchants(name,merchant_code)', { count: 'exact' })
+    .order('created_at', { ascending: false });
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  const { data, error, count } = await query.range(paging.from, paging.to);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({
+    success: true,
+    feedback: (data || []).map((item) => ({
+      id: item.id,
+      merchantId: item.merchant_id,
+      merchant: item.merchants?.name || '',
+      merchantCode: item.merchants?.merchant_code || '',
+      message: item.message,
+      createdAt: item.created_at,
+    })),
+    pagination: paginationMeta(paging, count),
+  });
+});
+
+app.post('/api/feedback', requireAuth, requireRole('merchant'), async (req, res) => {
+  const message = cleanText(req.body.message, 2000);
+  if (!message) return res.status(400).json({ success: false, error: 'Write your feedback before sending it' });
+  if (!req.auth.profile.merchant_id) return res.status(400).json({ success: false, error: 'Your merchant account is not configured' });
+  const { data, error } = await supabaseAdmin.from('merchant_feedback').insert({
+    merchant_id: req.auth.profile.merchant_id,
+    message,
+  }).select('id,created_at').single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.status(201).json({ success: true, feedback: { id: data.id, message, createdAt: data.created_at } });
 });
 
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
@@ -3683,7 +3787,7 @@ app.get('/privacy', (_req, res) => {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Privacy Policy | Affiliate AE</title><style>
 body{margin:0;background:#f4f6fb;color:#172033;font:16px/1.65 Arial,sans-serif}.wrap{max-width:760px;margin:0 auto;padding:48px 22px 64px}.brand{font-size:24px;font-weight:800;color:#4f46d9}.brand small{color:#be185d;font-size:12px;margin-left:4px}article{margin-top:28px;padding:32px;background:#fff;border:1px solid #dbe2ef;border-radius:8px;box-shadow:0 8px 24px rgba(20,30,55,.06)}h1{font-size:30px;line-height:1.2;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}p,li{color:#45536a}a{color:#4338ca}footer{margin-top:22px;color:#68748a;font-size:13px}</style></head>
-<body><main class="wrap"><div class="brand">Affiliate <small>AE</small></div><article><h1>Privacy Policy</h1><p>Last updated: August 6, 2026</p><p>Affiliate AE provides customer rewards, merchant dashboards, QR checkout and WhatsApp order communication for participating merchants.</p><h2>Information we collect</h2><p>We collect customer name, mobile number, optional email address, reward balances, QR activity, purchase records and customer order requests. Merchant account details and product catalogue information are also collected to operate the service.</p><h2>How we use information</h2><p>We use this information to register customers, calculate reward points, process merchant checkout, send WhatsApp messages requested or consented to by customers, and deliver customer orders to the selected merchant.</p><h2>WhatsApp</h2><p>When a customer contacts Affiliate AE on WhatsApp, message content and the customer phone number are processed to show merchant products, create requested orders and send order updates. Customers can stop promotional messages at any time by replying STOP where applicable.</p><h2>Sharing</h2><p>Customer order details are shared only with the merchant selected by the customer. We use trusted service providers, including Meta WhatsApp Cloud API, Supabase and Resend, to operate Affiliate AE. We do not sell personal information.</p><h2>Security and retention</h2><p>We use reasonable technical and organisational safeguards. Information is kept only for as long as needed for rewards, customer orders, legal obligations and support.</p><h2>Your choices</h2><p>You may request access, correction or deletion of your information by contacting us. Some reward or order records may need to be retained where required by law.</p><h2>Contact</h2><p>Email: <a href="mailto:safar@affiliateae.co.in">safar@affiliateae.co.in</a></p></article><footer>Copyright ${new Date().getFullYear()} Affiliate AE. All rights reserved.</footer></main></body></html>`);
+<body><main class="wrap"><div class="brand">Affiliate <small>AE</small></div><article><h1>Privacy Policy</h1><p>Last updated: August 6, 2026</p><p>Affiliate AE provides customer rewards, merchant dashboards, QR checkout and WhatsApp order communication for participating merchants.</p><h2>Information we collect</h2><p>We collect customer name, mobile number, optional email address, reward balances, QR activity, purchase records, customer order requests and customer-provided shopping-list images. Merchant account details and product catalogue information are also collected to operate the service.</p><h2>How we use information</h2><p>We use this information to register customers, calculate reward points, process merchant checkout, send WhatsApp messages requested or consented to by customers, and deliver customer orders to the selected merchant.</p><h2>WhatsApp</h2><p>When a customer contacts Affiliate AE on WhatsApp, message content, shopping-list images and the customer phone number are processed to show merchant products, create requested orders and send order updates. A shopping-list image is shared only with the merchant selected by the customer. Customers can stop promotional messages at any time by replying STOP where applicable.</p><h2>Sharing</h2><p>Customer order details are shared only with the merchant selected by the customer. We use trusted service providers, including Meta WhatsApp Cloud API, Supabase and Resend, to operate Affiliate AE. We do not sell personal information.</p><h2>Security and retention</h2><p>We use reasonable technical and organisational safeguards. Information is kept only for as long as needed for rewards, customer orders, legal obligations and support.</p><h2>Your choices</h2><p>You may request access, correction or deletion of your information by contacting us. Some reward or order records may need to be retained where required by law.</p><h2>Contact</h2><p>Email: <a href="mailto:affiliateae1@gmail.com">affiliateae1@gmail.com</a><br>Phone: <a href="tel:+919025547577">+91 90255 47577</a></p></article><footer>Copyright ${new Date().getFullYear()} Affiliate AE. All rights reserved.</footer></main></body></html>`);
 });
 
 if (webRoot === reactBuildPath) {

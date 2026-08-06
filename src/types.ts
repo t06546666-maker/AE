@@ -195,6 +195,24 @@ export interface CustomerOrder {
   createdAt: string;
   updatedAt: string;
   items: CustomerOrderItem[];
+  images: CustomerOrderImage[];
+}
+
+export interface CustomerOrderImage {
+  id: string;
+  caption: string;
+  mimeType: string;
+  createdAt: string;
+  url: string;
+}
+
+export interface MerchantFeedback {
+  id: string;
+  merchantId: string;
+  merchant: string;
+  merchantCode: string;
+  message: string;
+  createdAt: string;
 }
 
 export interface MerchantNotification {

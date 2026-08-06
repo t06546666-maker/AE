@@ -402,6 +402,17 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .customer-order-items span { color: var(--muted); }
 .customer-order-help { margin-top: 15px; padding: 12px 14px; display: flex; align-items: center; gap: 9px; border: 1px solid color-mix(in srgb, var(--blue) 30%, var(--border)); border-radius: 8px; color: var(--blue); background: var(--blue-soft); font-size: 12px; }
 .customer-order-help svg:last-child { margin-left: auto; }
+.customer-order-images { display: flex; flex-wrap: wrap; gap: 6px; min-width: 58px; }
+.customer-order-images a { display: block; width: 44px; height: 44px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
+.customer-order-images img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.muted-text { color: var(--muted); }
+.feedback-compose { display: grid; gap: 12px; max-width: 760px; }
+.feedback-compose textarea { min-height: 130px; resize: vertical; }
+.feedback-list { display: grid; gap: 10px; }
+.feedback-entry { padding: 15px; display: grid; gap: 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-alt); }
+.feedback-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; }
+.feedback-entry strong { color: var(--text); }
+.feedback-entry p { color: var(--text); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .credentials-modal { width: min(620px, calc(100vw - 28px)); }
