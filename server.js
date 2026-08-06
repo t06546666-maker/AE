@@ -3677,6 +3677,15 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+app.get('/privacy', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.type('html').send(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Policy | Affiliate AE</title><style>
+body{margin:0;background:#f4f6fb;color:#172033;font:16px/1.65 Arial,sans-serif}.wrap{max-width:760px;margin:0 auto;padding:48px 22px 64px}.brand{font-size:24px;font-weight:800;color:#4f46d9}.brand small{color:#be185d;font-size:12px;margin-left:4px}article{margin-top:28px;padding:32px;background:#fff;border:1px solid #dbe2ef;border-radius:8px;box-shadow:0 8px 24px rgba(20,30,55,.06)}h1{font-size:30px;line-height:1.2;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}p,li{color:#45536a}a{color:#4338ca}footer{margin-top:22px;color:#68748a;font-size:13px}</style></head>
+<body><main class="wrap"><div class="brand">Affiliate <small>AE</small></div><article><h1>Privacy Policy</h1><p>Last updated: August 6, 2026</p><p>Affiliate AE provides customer rewards, merchant dashboards, QR checkout and WhatsApp order communication for participating merchants.</p><h2>Information we collect</h2><p>We collect customer name, mobile number, optional email address, reward balances, QR activity, purchase records and customer order requests. Merchant account details and product catalogue information are also collected to operate the service.</p><h2>How we use information</h2><p>We use this information to register customers, calculate reward points, process merchant checkout, send WhatsApp messages requested or consented to by customers, and deliver customer orders to the selected merchant.</p><h2>WhatsApp</h2><p>When a customer contacts Affiliate AE on WhatsApp, message content and the customer phone number are processed to show merchant products, create requested orders and send order updates. Customers can stop promotional messages at any time by replying STOP where applicable.</p><h2>Sharing</h2><p>Customer order details are shared only with the merchant selected by the customer. We use trusted service providers, including Meta WhatsApp Cloud API, Supabase and Resend, to operate Affiliate AE. We do not sell personal information.</p><h2>Security and retention</h2><p>We use reasonable technical and organisational safeguards. Information is kept only for as long as needed for rewards, customer orders, legal obligations and support.</p><h2>Your choices</h2><p>You may request access, correction or deletion of your information by contacting us. Some reward or order records may need to be retained where required by law.</p><h2>Contact</h2><p>Email: <a href="mailto:safar@affiliateae.co.in">safar@affiliateae.co.in</a></p></article><footer>Copyright ${new Date().getFullYear()} Affiliate AE. All rights reserved.</footer></main></body></html>`);
+});
+
 if (webRoot === reactBuildPath) {
   app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
