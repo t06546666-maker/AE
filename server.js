@@ -981,12 +981,9 @@ async function saveCustomerOrderSession(session, changes) {
 }
 
 async function showMerchantChoices(customer, session, page = 0) {
-  const { data: products } = await supabaseAdmin.from('products')
-    .select('merchant_id').eq('active', true);
-  const merchantIds = [...new Set((products || []).map((product) => product.merchant_id))];
-  if (!merchantIds.length) return sendWhatsAppText(customer.phone, 'No merchant catalogues are available yet. Please try again later.');
   const { data: merchants } = await supabaseAdmin.from('merchants')
-    .select('id,name,merchant_code').in('id', merchantIds).order('name');
+    .select('id,name,merchant_code').order('name');
+  if (!(merchants || []).length) return sendWhatsAppText(customer.phone, 'No merchants are available yet. Please try again later.');
   const pageSize = 8;
   const start = Math.max(0, page) * pageSize;
   const list = (merchants || []).slice(start, start + pageSize);
@@ -1018,7 +1015,8 @@ async function showProductChoices(customer, session, page = 0) {
   if (start + pageSize < (products || []).length) rows.push({ id: `product-page:${page + 1}`, title: 'More products' });
   if (page > 0) rows.push({ id: `product-page:${page - 1}`, title: 'Previous products' });
   if (!(products || []).length) {
-    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products.`, [
+    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products yet. You can send a shopping-list photo or type a custom request.`, [
+      { id: 'cart', title: 'View cart' },
       { id: 'merchant-menu', title: 'Choose another shop' },
     ]);
   }
