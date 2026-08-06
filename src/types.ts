@@ -157,3 +157,54 @@ export interface Administrator {
   createdAt: string;
   isCurrent: boolean;
 }
+
+export interface Product {
+  id: string;
+  merchantId: string;
+  merchant: string;
+  merchantCode: string;
+  name: string;
+  description: string;
+  price: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomerOrderStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+
+export interface CustomerOrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number | null;
+  type: 'catalog' | 'custom';
+}
+
+export interface CustomerOrder {
+  id: string;
+  requestNo: string;
+  customerId: string;
+  customer: string;
+  customerPhone: string;
+  merchantId: string;
+  merchant: string;
+  status: CustomerOrderStatus;
+  note: string;
+  total: number | null;
+  createdAt: string;
+  updatedAt: string;
+  items: CustomerOrderItem[];
+}
+
+export interface MerchantNotification {
+  id: string;
+  merchantId: string;
+  customerOrderId: string;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+  requestNo: string;
+  status: CustomerOrderStatus;
+}

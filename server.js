@@ -77,6 +77,14 @@ const WA_OFFER_TEMPLATE = cleanText(
   process.env.WA_OFFER_TEMPLATE || 'merchant_offer_v1',
   512,
 );
+const WA_MERCHANT_ORDER_TEMPLATE = cleanText(
+  process.env.WA_MERCHANT_ORDER_TEMPLATE || 'merchant_new_order_v1',
+  512,
+);
+const WA_CUSTOMER_ORDER_STATUS_TEMPLATE = cleanText(
+  process.env.WA_CUSTOMER_ORDER_STATUS_TEMPLATE || 'customer_order_status_v1',
+  512,
+);
 const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
 const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
 const OFFER_QUEUE_SECRET = process.env.OFFER_QUEUE_SECRET;
@@ -544,6 +552,7 @@ async function processOfferQueue(maxBatches = 1) {
 async function sendWhatsAppTemplate({
   customerId,
   orderId,
+  customerOrderId,
   merchantId,
   offerId,
   campaignId,
@@ -565,6 +574,7 @@ async function sendWhatsAppTemplate({
       .insert({
         customer_id: customerId,
         order_id: orderId,
+        customer_order_id: customerOrderId,
         merchant_id: merchantId,
         offer_id: offerId,
         campaign_id: campaignId,
@@ -781,6 +791,292 @@ async function sendOfferWhatsApp(recipientRow, mediaId) {
       },
     ],
   });
+}
+
+async function sendWhatsAppInteractive(recipient, interactive) {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    return { sent: false, error: 'WhatsApp Cloud API is not configured' };
+  }
+  try {
+    const response = await axios.post(WA_URL, {
+      messaging_product: 'whatsapp',
+      to: recipient,
+      type: 'interactive',
+      interactive,
+    }, {
+      headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      timeout: WA_REQUEST_TIMEOUT_MS,
+    });
+    return { sent: true, messageId: response.data?.messages?.[0]?.id };
+  } catch (error) {
+    return { sent: false, error: error.response?.data?.error?.message || error.message };
+  }
+}
+
+async function sendWhatsAppText(recipient, body) {
+  if (!WA_TOKEN || !WA_PHONE_ID) {
+    return { sent: false, error: 'WhatsApp Cloud API is not configured' };
+  }
+  try {
+    const response = await axios.post(WA_URL, {
+      messaging_product: 'whatsapp',
+      to: recipient,
+      type: 'text',
+      text: { preview_url: false, body },
+    }, {
+      headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      timeout: WA_REQUEST_TIMEOUT_MS,
+    });
+    return { sent: true, messageId: response.data?.messages?.[0]?.id };
+  } catch (error) {
+    return { sent: false, error: error.response?.data?.error?.message || error.message };
+  }
+}
+
+function sendCustomerOrderButtons(recipient, body, buttons) {
+  return sendWhatsAppInteractive(recipient, {
+    type: 'button',
+    body: { text: body.slice(0, 1024) },
+    action: {
+      buttons: buttons.slice(0, 3).map(({ id, title }) => ({
+        type: 'reply',
+        reply: { id, title: title.slice(0, 20) },
+      })),
+    },
+  });
+}
+
+function sendCustomerOrderList(recipient, body, button, rows) {
+  return sendWhatsAppInteractive(recipient, {
+    type: 'list',
+    body: { text: body.slice(0, 1024) },
+    action: {
+      button: button.slice(0, 20),
+      sections: [{ title: 'Affiliate AE', rows: rows.slice(0, 10).map((row) => ({
+        id: row.id.slice(0, 200),
+        title: row.title.slice(0, 24),
+        description: cleanText(row.description, 72) || undefined,
+      })) }],
+    },
+  });
+}
+
+async function sendMerchantCustomerOrderWhatsApp(order) {
+  const items = (order.items || []).map((item) => `${item.quantity} x ${item.product_name}`).join(', ');
+  return sendWhatsAppTemplate({
+    customerId: order.customer_id,
+    customerOrderId: order.id,
+    merchantId: order.merchant_id,
+    messageType: 'customer_order',
+    recipient: order.merchant_phone,
+    templateName: WA_MERCHANT_ORDER_TEMPLATE,
+    components: [{
+      type: 'body',
+      parameters: [
+        { type: 'text', text: order.merchant_name },
+        { type: 'text', text: order.request_no },
+        { type: 'text', text: order.customer_name },
+        { type: 'text', text: order.customer_phone },
+        { type: 'text', text: items.slice(0, 512) || 'Custom request' },
+      ],
+    }],
+  });
+}
+
+async function sendCustomerOrderStatusWhatsApp(order) {
+  return sendWhatsAppTemplate({
+    customerId: order.customer_id,
+    customerOrderId: order.id,
+    merchantId: order.merchant_id,
+    messageType: 'customer_order_status',
+    recipient: order.customer_phone,
+    templateName: WA_CUSTOMER_ORDER_STATUS_TEMPLATE,
+    components: [{
+      type: 'body',
+      parameters: [
+        { type: 'text', text: order.customer_name },
+        { type: 'text', text: order.request_no },
+        { type: 'text', text: order.merchant_name },
+        { type: 'text', text: order.status },
+      ],
+    }],
+  });
+}
+
+function customerOrderItemText(cart) {
+  if (!Array.isArray(cart) || !cart.length) return 'Your cart is empty.';
+  const lines = cart.map((item, index) => {
+    const price = Number.isFinite(Number(item.unitPrice)) ? ` - Rs ${Number(item.unitPrice).toFixed(2)}` : '';
+    return `${index + 1}. ${item.quantity} x ${item.name}${price}`;
+  });
+  return `Your cart:\n${lines.join('\n')}`;
+}
+
+async function getCustomerOrderSession(customer) {
+  const { data } = await supabaseAdmin.from('whatsapp_customer_sessions')
+    .select('*').eq('customer_id', customer.id).maybeSingle();
+  if (data && new Date(data.expires_at).getTime() > Date.now()) return data;
+  const session = {
+    customer_id: customer.id,
+    phone: customer.phone,
+    merchant_id: null,
+    state: 'merchant',
+    cart: [],
+    pending_item: null,
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  await supabaseAdmin.from('whatsapp_customer_sessions').upsert(session, { onConflict: 'customer_id' });
+  return session;
+}
+
+async function saveCustomerOrderSession(session, changes) {
+  const next = {
+    ...changes,
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  await supabaseAdmin.from('whatsapp_customer_sessions').update(next).eq('customer_id', session.customer_id);
+  return { ...session, ...next };
+}
+
+async function showMerchantChoices(customer, session, page = 0) {
+  const { data: products } = await supabaseAdmin.from('products')
+    .select('merchant_id').eq('active', true);
+  const merchantIds = [...new Set((products || []).map((product) => product.merchant_id))];
+  if (!merchantIds.length) return sendWhatsAppText(customer.phone, 'No merchant catalogues are available yet. Please try again later.');
+  const { data: merchants } = await supabaseAdmin.from('merchants')
+    .select('id,name,merchant_code').in('id', merchantIds).order('name');
+  const pageSize = 8;
+  const start = Math.max(0, page) * pageSize;
+  const list = (merchants || []).slice(start, start + pageSize);
+  const rows = list.map((merchant) => ({
+    id: `merchant:${merchant.id}`,
+    title: merchant.name,
+    description: merchant.merchant_code,
+  }));
+  if (start + pageSize < (merchants || []).length) rows.push({ id: `merchant-page:${page + 1}`, title: 'More merchants' });
+  if (page > 0) rows.push({ id: `merchant-page:${page - 1}`, title: 'Previous merchants' });
+  await saveCustomerOrderSession(session, { merchant_id: null, state: 'merchant', cart: [], pending_item: null });
+  return sendCustomerOrderList(customer.phone, 'Welcome to Affiliate AE. Choose the shop you want to order from.', 'Choose shop', rows);
+}
+
+async function showProductChoices(customer, session, page = 0) {
+  if (!session.merchant_id) return showMerchantChoices(customer, session);
+  const { data: merchant } = await supabaseAdmin.from('merchants')
+    .select('id,name').eq('id', session.merchant_id).maybeSingle();
+  const { data: products } = await supabaseAdmin.from('products')
+    .select('id,name,description,price').eq('merchant_id', session.merchant_id).eq('active', true).order('name');
+  const pageSize = 7;
+  const start = Math.max(0, page) * pageSize;
+  const rows = (products || []).slice(start, start + pageSize).map((product) => ({
+    id: `product:${product.id}`,
+    title: product.name,
+    description: `Rs ${Number(product.price).toFixed(2)}${product.description ? ` - ${product.description}` : ''}`,
+  }));
+  rows.push({ id: 'cart', title: 'View cart' });
+  if (start + pageSize < (products || []).length) rows.push({ id: `product-page:${page + 1}`, title: 'More products' });
+  if (page > 0) rows.push({ id: `product-page:${page - 1}`, title: 'Previous products' });
+  if (!(products || []).length) {
+    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products.`, [
+      { id: 'merchant-menu', title: 'Choose another shop' },
+    ]);
+  }
+  await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
+  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'} or type a custom request.`, 'View products', rows);
+}
+
+async function showCustomerOrderCart(customer, session) {
+  const cart = Array.isArray(session.cart) ? session.cart : [];
+  await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
+  return sendCustomerOrderButtons(customer.phone, customerOrderItemText(cart), cart.length
+    ? [{ id: 'confirm-order', title: 'Confirm order' }, { id: 'continue-products', title: 'Add more' }, { id: 'cancel-order', title: 'Cancel' }]
+    : [{ id: 'continue-products', title: 'Choose products' }, { id: 'merchant-menu', title: 'Choose shop' }]);
+}
+
+async function handleIncomingCustomerWhatsApp(message) {
+  const from = normalizePhone(message.from);
+  if (!from) return;
+  const { data: customer } = await supabaseAdmin.from('customers')
+    .select('id,name,phone').eq('phone', from).maybeSingle();
+  if (!customer) {
+    await sendWhatsAppText(from, 'This WhatsApp number is not registered with Affiliate AE. Please register at a participating merchant first.');
+    return;
+  }
+  const session = await getCustomerOrderSession(customer);
+  const replyId = message.interactive?.list_reply?.id || message.interactive?.button_reply?.id || '';
+  const text = cleanText(message.text?.body, 500);
+  const command = replyId || text.toLowerCase();
+
+  if (!command || ['hi', 'hello', 'start', 'menu', 'shop', 'shops'].includes(command)) {
+    return showMerchantChoices(customer, session);
+  }
+  if (command.startsWith('merchant-page:')) return showMerchantChoices(customer, session, Number(command.split(':')[1]) || 0);
+  if (command === 'merchant-menu') return showMerchantChoices(customer, session);
+  if (command.startsWith('merchant:')) {
+    const merchantId = command.slice('merchant:'.length);
+    const { data: merchant } = await supabaseAdmin.from('merchants').select('id').eq('id', merchantId).maybeSingle();
+    if (!merchant) return sendWhatsAppText(customer.phone, 'That shop is no longer available. Please choose another shop.');
+    const next = await saveCustomerOrderSession(session, { merchant_id: merchantId, state: 'product', cart: [], pending_item: null });
+    return showProductChoices(customer, next);
+  }
+  if (command.startsWith('product-page:')) return showProductChoices(customer, session, Number(command.split(':')[1]) || 0);
+  if (command === 'continue-products') return showProductChoices(customer, session);
+  if (command === 'cart') return showCustomerOrderCart(customer, session);
+  if (command === 'cancel-order') {
+    await saveCustomerOrderSession(session, { state: 'merchant', merchant_id: null, cart: [], pending_item: null });
+    return sendWhatsAppText(customer.phone, 'Your customer order was cancelled. Send “Hi” whenever you want to start again.');
+  }
+  if (command === 'confirm-order') {
+    const cart = Array.isArray(session.cart) ? session.cart : [];
+    if (!session.merchant_id || !cart.length) return showCustomerOrderCart(customer, session);
+    const { data: created, error } = await supabaseAdmin.rpc('create_customer_order', {
+      p_customer_id: customer.id,
+      p_merchant_id: session.merchant_id,
+      p_cart: cart,
+    }).single();
+    if (error || !created) return sendWhatsAppText(customer.phone, 'We could not place that order. Please try again in a moment.');
+    await saveCustomerOrderSession(session, { state: 'merchant', merchant_id: null, cart: [], pending_item: null });
+    const { data: order } = await supabaseAdmin.from('customer_orders')
+      .select('id,request_no,customer_id,merchant_id,status,customers(name,phone),merchants(name,phone),customer_order_items(product_name,quantity,unit_price)')
+      .eq('id', created.order_id).single();
+    if (order) {
+      const notificationOrder = {
+        ...order,
+        customer_name: order.customers?.name,
+        customer_phone: order.customers?.phone,
+        merchant_name: order.merchants?.name,
+        merchant_phone: order.merchants?.phone,
+        items: order.customer_order_items,
+      };
+      scheduleBackground(() => sendMerchantCustomerOrderWhatsApp(notificationOrder));
+    }
+    return sendWhatsAppText(customer.phone, `Your request ${created.request_no} was sent to the merchant. The merchant will update you soon.`);
+  }
+  if (command.startsWith('product:')) {
+    const productId = command.slice('product:'.length);
+    const { data: product } = await supabaseAdmin.from('products')
+      .select('id,name,price,merchant_id').eq('id', productId).eq('merchant_id', session.merchant_id).eq('active', true).maybeSingle();
+    if (!product) return sendWhatsAppText(customer.phone, 'That product is no longer available. Please select another product.');
+    await saveCustomerOrderSession(session, { state: 'quantity', pending_item: { type: 'catalog', productId: product.id, name: product.name, unitPrice: product.price } });
+    return sendWhatsAppText(customer.phone, `How many ${product.name} would you like? Reply with a number from 1 to 99.`);
+  }
+  if (session.state === 'quantity' && /^\d{1,2}$/.test(text)) {
+    const quantity = Number(text);
+    const pending = session.pending_item;
+    if (!pending || quantity < 1 || quantity > 99) return sendWhatsAppText(customer.phone, 'Reply with a quantity from 1 to 99.');
+    const cart = Array.isArray(session.cart) ? [...session.cart] : [];
+    const matching = cart.find((item) => item.productId === pending.productId && item.name === pending.name);
+    if (matching) matching.quantity = Math.min(99, Number(matching.quantity || 0) + quantity);
+    else cart.push({ ...pending, quantity });
+    const next = await saveCustomerOrderSession(session, { state: 'product', cart, pending_item: null });
+    return showCustomerOrderCart(customer, next);
+  }
+  if (text && session.merchant_id) {
+    await saveCustomerOrderSession(session, { state: 'quantity', pending_item: { type: 'custom', name: text, unitPrice: null } });
+    return sendWhatsAppText(customer.phone, `How many would you like for “${text}”? Reply with a number from 1 to 99.`);
+  }
+  return showMerchantChoices(customer, session);
 }
 
 async function sendWelcomeEmail(purchase) {
@@ -1197,6 +1493,159 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
   const { error } = await supabaseAdmin.from('merchants').delete().eq('id', merchantId);
   if (error) return res.status(400).json({ success: false, error: error.message });
   res.json({ success: true, deletedCustomers });
+});
+
+function customerOrderDto(row) {
+  return {
+    id: row.id,
+    requestNo: row.request_no,
+    customerId: row.customer_id,
+    customer: row.customers?.name || '',
+    customerPhone: row.customers?.phone || '',
+    merchantId: row.merchant_id,
+    merchant: row.merchants?.name || '',
+    status: row.status,
+    note: row.customer_note || '',
+    total: row.total_amount === null ? null : Number(row.total_amount),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    items: (row.customer_order_items || []).map((item) => ({
+      id: item.id,
+      name: item.product_name,
+      quantity: item.quantity,
+      unitPrice: item.unit_price === null ? null : Number(item.unit_price),
+      type: item.item_type,
+    })),
+  };
+}
+
+function customerOrderScope(query, auth) {
+  return auth.profile.role === 'merchant'
+    ? query.eq('merchant_id', auth.profile.merchant_id)
+    : query;
+}
+
+app.get('/api/products', requireAuth, async (req, res) => {
+  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  let query = supabaseAdmin.from('products')
+    .select('id,merchant_id,name,description,price,active,created_at,updated_at,merchants(name,merchant_code)', { count: 'exact' })
+    .order('created_at', { ascending: false });
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  const active = req.query.active;
+  if (active === 'true' || active === 'false') query = query.eq('active', active === 'true');
+  if (paging.search) query = query.ilike('name', `%${paging.search}%`);
+  const { data, error, count } = await query.range(paging.from, paging.to);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({
+    success: true,
+    products: (data || []).map((item) => ({
+      id: item.id, merchantId: item.merchant_id, merchant: item.merchants?.name || '',
+      merchantCode: item.merchants?.merchant_code || '', name: item.name,
+      description: item.description || '', price: Number(item.price), active: item.active,
+      createdAt: item.created_at, updatedAt: item.updated_at,
+    })),
+    pagination: paginationMeta(paging, count),
+  });
+});
+
+app.post('/api/products', requireAuth, requireRole('merchant'), async (req, res) => {
+  const name = cleanText(req.body.name, 100);
+  const description = cleanText(req.body.description, 500);
+  const price = Number(req.body.price);
+  if (!name) return res.status(400).json({ success: false, error: 'Product name is required' });
+  if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
+    return res.status(400).json({ success: false, error: 'Enter a valid product price' });
+  }
+  const { data, error } = await supabaseAdmin.from('products').insert({
+    merchant_id: req.auth.profile.merchant_id, name, description, price, active: true,
+  }).select('id').single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.status(201).json({ success: true, productId: data.id });
+});
+
+app.put('/api/products/:id', requireAuth, requireRole('merchant'), async (req, res) => {
+  const name = cleanText(req.body.name, 100);
+  const description = cleanText(req.body.description, 500);
+  const price = Number(req.body.price);
+  const active = req.body.active !== false;
+  if (!name) return res.status(400).json({ success: false, error: 'Product name is required' });
+  if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
+    return res.status(400).json({ success: false, error: 'Enter a valid product price' });
+  }
+  const { error } = await supabaseAdmin.from('products').update({
+    name, description, price, active, updated_at: new Date().toISOString(),
+  }).eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true });
+});
+
+app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req, res) => {
+  const { error } = await supabaseAdmin.from('products').update({ active: false, updated_at: new Date().toISOString() })
+    .eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true });
+});
+
+app.get('/api/customer-orders', requireAuth, async (req, res) => {
+  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  let query = customerOrderScope(supabaseAdmin.from('customer_orders').select(
+    'id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type)',
+    { count: 'exact' },
+  ), req.auth).order('created_at', { ascending: false });
+  const status = cleanText(req.query.status, 32);
+  if (status) query = query.eq('status', status);
+  if (paging.search) query = query.or(`request_no.ilike.%${paging.search}%,customer_note.ilike.%${paging.search}%`);
+  const { data, error, count } = await query.range(paging.from, paging.to);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, orders: (data || []).map(customerOrderDto), pagination: paginationMeta(paging, count) });
+});
+
+app.patch('/api/customer-orders/:id/status', requireAuth, async (req, res) => {
+  const status = cleanText(req.body.status, 32);
+  const allowed = ['pending', 'accepted', 'rejected', 'completed', 'cancelled'];
+  if (!allowed.includes(status)) return res.status(400).json({ success: false, error: 'Choose a valid order status' });
+  let lookup = customerOrderScope(supabaseAdmin.from('customer_orders').select(
+    'id,request_no,customer_id,merchant_id,status,customers(name,phone),merchants(name,phone),customer_order_items(product_name,quantity)',
+  ).eq('id', cleanText(req.params.id, 100)), req.auth);
+  const { data: current, error: currentError } = await lookup.maybeSingle();
+  if (currentError) return res.status(500).json({ success: false, error: currentError.message });
+  if (!current) return res.status(404).json({ success: false, error: 'Customer order not found' });
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin.from('customer_orders').update({ status, updated_at: now }).eq('id', current.id);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  const order = {
+    ...current, status,
+    customer_name: current.customers?.name, customer_phone: current.customers?.phone,
+    merchant_name: current.merchants?.name, merchant_phone: current.merchants?.phone,
+    items: current.customer_order_items,
+  };
+  scheduleBackground(() => sendCustomerOrderStatusWhatsApp(order));
+  res.json({ success: true, status });
+});
+
+app.get('/api/notifications', requireAuth, async (req, res) => {
+  const limit = Math.min(20, Math.max(1, Number(req.query.limit) || 8));
+  let query = supabaseAdmin.from('merchant_notifications')
+    .select('id,merchant_id,customer_order_id,title,body,read_at,created_at,customer_orders(request_no,status)')
+    .order('created_at', { ascending: false }).limit(limit);
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  const notifications = (data || []).map((item) => ({
+    id: item.id, merchantId: item.merchant_id, customerOrderId: item.customer_order_id,
+    title: item.title, body: item.body, readAt: item.read_at, createdAt: item.created_at,
+    requestNo: item.customer_orders?.request_no || '', status: item.customer_orders?.status || '',
+  }));
+  res.json({ success: true, notifications, unreadCount: notifications.filter((item) => !item.readAt).length });
+});
+
+app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
+  let query = supabaseAdmin.from('merchant_notifications').update({ read_at: new Date().toISOString() })
+    .eq('id', cleanText(req.params.id, 100));
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  const { error } = await query;
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true });
 });
 
 app.get('/api/offers', requireAuth, async (req, res) => {
@@ -2920,46 +3369,53 @@ app.post('/api/webhooks/whatsapp', async (req, res) => {
     && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
   if (!validSignature) return res.sendStatus(401);
 
-  const statusRank = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
-  const statuses = req.body?.entry?.flatMap((entry) =>
-    entry.changes?.flatMap((change) => change.value?.statuses || []) || []) || [];
-  for (const item of statuses) {
-    const status = item.status;
-    if (!(status in statusRank) || !item.id) continue;
-    const { data: existing } = await supabaseAdmin
-      .from('whatsapp_messages')
-      .select('id,status,offer_recipient_id,campaign_id')
-      .eq('meta_message_id', item.id)
-      .maybeSingle();
-    if (!existing || statusRank[status] < statusRank[existing.status]) continue;
-    const error = item.errors?.[0];
-    await supabaseAdmin.from('whatsapp_messages').update({
-      status,
-      error_code: error?.code ? String(error.code) : null,
-      error_message: error?.title || error?.message || null,
-      status_timestamp: item.timestamp
-        ? new Date(Number(item.timestamp) * 1000).toISOString()
-        : new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', existing.id);
-    if (existing.offer_recipient_id) {
-      await supabaseAdmin.from('offer_recipients').update({
+  const entries = req.body?.entry || [];
+  const statuses = entries.flatMap((entry) => entry.changes?.flatMap((change) => change.value?.statuses || []) || []);
+  const messages = entries.flatMap((entry) => entry.changes?.flatMap((change) => change.value?.messages || []) || []);
+  res.sendStatus(200);
+  scheduleBackground(async () => {
+    const statusRank = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
+    for (const item of statuses) {
+      const status = item.status;
+      if (!(status in statusRank) || !item.id) continue;
+      const { data: existing } = await supabaseAdmin
+        .from('whatsapp_messages')
+        .select('id,status,offer_recipient_id,campaign_id')
+        .eq('meta_message_id', item.id)
+        .maybeSingle();
+      if (!existing || statusRank[status] < statusRank[existing.status]) continue;
+      const error = item.errors?.[0];
+      await supabaseAdmin.from('whatsapp_messages').update({
         status,
         error_code: error?.code ? String(error.code) : null,
         error_message: error?.title || error?.message || null,
-        status_timestamp: item.timestamp
-          ? new Date(Number(item.timestamp) * 1000).toISOString()
-          : new Date().toISOString(),
+        status_timestamp: item.timestamp ? new Date(Number(item.timestamp) * 1000).toISOString() : new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }).eq('id', existing.offer_recipient_id);
-      if (existing.campaign_id) {
-        await supabaseAdmin.rpc('refresh_offer_campaign', {
-          p_campaign_id: existing.campaign_id,
-        });
+      }).eq('id', existing.id);
+      if (existing.offer_recipient_id) {
+        await supabaseAdmin.from('offer_recipients').update({
+          status,
+          error_code: error?.code ? String(error.code) : null,
+          error_message: error?.title || error?.message || null,
+          status_timestamp: item.timestamp ? new Date(Number(item.timestamp) * 1000).toISOString() : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', existing.offer_recipient_id);
+        if (existing.campaign_id) await supabaseAdmin.rpc('refresh_offer_campaign', { p_campaign_id: existing.campaign_id });
       }
     }
-  }
-  res.sendStatus(200);
+    for (const message of messages) {
+      if (!message?.id || !message?.from) continue;
+      const { error } = await supabaseAdmin.from('whatsapp_inbound_messages').insert({
+        meta_message_id: message.id,
+        sender: normalizePhone(message.from),
+        message_type: message.type || 'unknown',
+        payload: message,
+      });
+      if (error?.code === '23505') continue;
+      if (error) throw error;
+      await handleIncomingCustomerWhatsApp(message);
+    }
+  });
 });
 
 app.post('/api/send-qr', requireAuth, async (req, res) => {

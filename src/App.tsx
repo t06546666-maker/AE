@@ -12,6 +12,8 @@ import { Login } from './pages/Login';
 import { MerchantProfile, Merchants } from './pages/Merchants';
 import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
+import { Products } from './pages/Products';
+import { CustomerOrders } from './pages/CustomerOrders';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import type { Role, UserProfile } from './types';
 
@@ -89,7 +91,9 @@ export function App() {
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/orders" element={<Orders user={user} />} />
+          <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customers" element={<Customers user={user} />} />
+          <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />

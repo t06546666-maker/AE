@@ -80,6 +80,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
           {user.role === 'merchant' ? <button type="button" className="button scan-qr-action" onClick={() => setScannerOpen(true)}><ScanLine size={17} />{t('dashboard.scanQr')}</button> : null}
+          {user.role === 'merchant' ? <Link className="button customer-orders-action" to="/customer-orders">Customer orders</Link> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
