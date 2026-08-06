@@ -398,12 +398,14 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .customer-order-toolbar { align-items: center; gap: 10px; }
 .customer-order-toolbar .search-field { margin-left: auto; }
 .customer-order-toolbar select, .customer-orders-table select { min-height: 38px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); }
-.customer-order-items { min-width: 190px; display: grid; gap: 3px; font-size: 11px; }
+.customer-order-detail { min-width: 210px; }
+.customer-order-items { display: grid; gap: 4px; font-size: 12px; }
 .customer-order-items span { color: var(--muted); }
+.customer-order-phone { display: block; margin-top: 4px; color: var(--primary); font-size: 12px; font-weight: 750; white-space: nowrap; }
 .customer-order-help { margin-top: 15px; padding: 12px 14px; display: flex; align-items: center; gap: 9px; border: 1px solid color-mix(in srgb, var(--blue) 30%, var(--border)); border-radius: 8px; color: var(--blue); background: var(--blue-soft); font-size: 12px; }
 .customer-order-help svg:last-child { margin-left: auto; }
-.customer-order-images { display: flex; flex-wrap: wrap; gap: 6px; min-width: 58px; }
-.customer-order-images a { display: block; width: 44px; height: 44px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
+.customer-order-images { display: flex; flex-wrap: wrap; gap: 7px; min-width: 88px; }
+.customer-order-images a { display: block; width: 84px; height: 84px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
 .customer-order-images img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .muted-text { color: var(--muted); }
 .feedback-compose { display: grid; gap: 12px; max-width: 760px; }
@@ -494,4 +496,8 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
   .product-form-grid { grid-template-columns: 1fr; }
   .customer-order-toolbar { align-items: stretch; flex-direction: column; }
   .customer-order-toolbar .search-field { margin-left: 0; width: 100%; }
+  .customer-orders-table { min-width: 620px; }
+  .customer-orders-table th:nth-child(4), .customer-orders-table td:nth-child(4), .customer-orders-table th:nth-child(6), .customer-orders-table td:nth-child(6) { display: none; }
+  .customer-order-detail { min-width: 160px; }
+  .customer-order-images a { width: 72px; height: 72px; }
 }

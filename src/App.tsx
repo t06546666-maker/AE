@@ -92,10 +92,10 @@ export function App() {
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/orders" element={<Orders user={user} />} />
-          <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
+          <Route path="/customer-orders" element={<RoleRoute user={user} role="merchant"><CustomerOrders user={user} /></RoleRoute>} />
           <Route path="/feedback" element={<Feedback user={user} />} />
           <Route path="/customers" element={<Customers user={user} />} />
-          <Route path="/products" element={<Products user={user} />} />
+          <Route path="/products" element={<RoleRoute user={user} role="merchant"><Products user={user} /></RoleRoute>} />
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />

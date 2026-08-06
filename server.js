@@ -1026,7 +1026,7 @@ async function showMerchantChoices(customer, session, page = 0) {
   if (start + pageSize < (merchants || []).length) rows.push({ id: `merchant-page:${page + 1}`, title: 'More merchants' });
   if (page > 0) rows.push({ id: `merchant-page:${page - 1}`, title: 'Previous merchants' });
   await saveCustomerOrderSession(session, { merchant_id: null, state: 'merchant', cart: [], pending_item: null });
-  return sendCustomerOrderList(customer.phone, 'Choose the shop you want to order from.', 'Choose shop', rows);
+  return sendCustomerOrderList(customer.phone, `Your Affiliate AE reward balance: ${formatPoints(customer.reward_points)} points.\n\nChoose the shop you want to order from.`, 'Choose shop', rows);
 }
 
 async function showProductChoices(customer, session, page = 0) {
@@ -1067,7 +1067,7 @@ async function handleIncomingCustomerWhatsApp(message) {
   const from = normalizePhone(message.from);
   if (!from) return;
   const { data: customer } = await supabaseAdmin.from('customers')
-    .select('id,name,phone').eq('phone', from).maybeSingle();
+    .select('id,name,phone,reward_points').eq('phone', from).maybeSingle();
   if (!customer) {
     await sendWhatsAppText(from, 'This WhatsApp number is not registered with Affiliate AE. Please register at a participating merchant first.');
     return;
@@ -1655,7 +1655,7 @@ function customerOrderListQuery(auth, paging, status, includeImages) {
   return query;
 }
 
-app.get('/api/products', requireAuth, async (req, res) => {
+app.get('/api/products', requireAuth, requireRole('merchant'), async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('products')
     .select('id,merchant_id,name,description,price,active,created_at,updated_at,merchants(name,merchant_code)', { count: 'exact' })
@@ -1716,7 +1716,7 @@ app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req
   res.json({ success: true });
 });
 
-app.get('/api/customer-orders', requireAuth, async (req, res) => {
+app.get('/api/customer-orders', requireAuth, requireRole('merchant'), async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   const status = cleanText(req.query.status, 32);
   let { data, error, count } = await customerOrderListQuery(req.auth, paging, status, true).range(paging.from, paging.to);
