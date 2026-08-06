@@ -910,7 +910,7 @@ function sendCustomerOrderList(recipient, body, button, rows) {
 }
 
 async function sendMerchantCustomerOrderWhatsApp(order) {
-  const items = (order.items || []).map((item) => `${item.quantity} x ${item.product_name}`).join(', ');
+  const items = (order.items || []).map(customerOrderLine).join(', ');
   return sendWhatsAppTemplate({
     customerId: order.customer_id,
     customerOrderId: order.id,
@@ -955,9 +955,15 @@ function customerOrderItemText(cart) {
   if (!Array.isArray(cart) || !cart.length) return 'Your cart is empty.';
   const lines = cart.map((item, index) => {
     const price = Number.isFinite(Number(item.unitPrice)) ? ` - Rs ${Number(item.unitPrice).toFixed(2)}` : '';
-    return `${index + 1}. ${item.quantity} x ${item.name}${price}`;
+    return `${index + 1}. ${customerOrderLine(item)}${price}`;
   });
   return `Your cart:\n${lines.join('\n')}`;
+}
+
+function customerOrderLine(item) {
+  const name = item?.product_name || item?.name || 'Custom request';
+  const type = item?.item_type || item?.type;
+  return type === 'custom' ? name : `${item?.quantity || 1} x ${name}`;
 }
 
 function parseCustomOrderList(text) {
@@ -966,6 +972,8 @@ function parseCustomOrderList(text) {
     .map((part) => part.trim())
     .map((part) => {
       const measured = part.match(/^(.+?)(?:\s*(?:-|:)\s*|\s+)(\d+(?:\s*\/\s*\d+|\.\d+)?\s*(?:kg|g|ml|l))$/i);
+      const packet = part.match(/^(.+?)(?:\s*(?:-|:)\s*|\s+)(\d{1,2})\s*(?:packets?|packs?|pkts?|pac|p)$/i);
+      const money = part.match(/^(.+?)(?:\s*(?:-|:)\s*|\s+)(?:₹\s*(\d+(?:\.\d{1,2})?)|(\d+(?:\.\d{1,2})?)\s*(?:rs\.?|rupees?))$/i);
       const nameFirst = part.match(/^(.+?)\s*(?:-|:|x|\*)\s*(\d{1,2})$/i);
       const quantityFirst = part.match(/^(\d{1,2})\s*(?:x|\*)\s*(.+)$/i);
       if (measured) {
@@ -974,10 +982,26 @@ function parseCustomOrderList(text) {
           .replace(/\s*\/\s*/g, '/')
           .replace(/\s*(kg|g|ml|l)$/i, ' $1')
           .trim();
-        return name ? { name: `${name} (${measure})`, quantity: 1 } : null;
+        return name ? { name: `${name} - ${measure}`, quantity: 1 } : null;
       }
-      if (nameFirst) return { name: cleanText(nameFirst[1], 500), quantity: Number(nameFirst[2]) };
-      if (quantityFirst) return { name: cleanText(quantityFirst[2], 500), quantity: Number(quantityFirst[1]) };
+      if (packet) {
+        const name = cleanText(packet[1], 450);
+        const count = Number(packet[2]);
+        return name ? { name: `${name} - ${count} ${count === 1 ? 'packet' : 'packets'}`, quantity: 1 } : null;
+      }
+      if (money) {
+        const name = cleanText(money[1], 450);
+        const amount = money[2] || money[3];
+        return name ? { name: `${name} - Rs ${amount}`, quantity: 1 } : null;
+      }
+      if (nameFirst) {
+        const name = cleanText(nameFirst[1], 450);
+        return name ? { name: `${name} - ${nameFirst[2]}`, quantity: 1 } : null;
+      }
+      if (quantityFirst) {
+        const name = cleanText(quantityFirst[2], 450);
+        return name ? { name: `${name} - ${quantityFirst[1]}`, quantity: 1 } : null;
+      }
       return null;
     })
     .filter((item) => item && item.name && item.quantity >= 1 && item.quantity <= 99);
@@ -1046,13 +1070,13 @@ async function showProductChoices(customer, session, page = 0) {
   if (start + pageSize < (products || []).length) rows.push({ id: `product-page:${page + 1}`, title: 'More products' });
   if (page > 0) rows.push({ id: `product-page:${page - 1}`, title: 'Previous products' });
   if (!(products || []).length) {
-    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products yet. Send a shopping-list photo or type a request like Onion - 1 kg, Oil - 500 ml, or Shirt - 1.`, [
+    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products yet. Send a shopping-list photo or type a request like Onion - 1 kg, Biscuits - 2 packets, or Onion - Rs 10.`, [
       { id: 'cart', title: 'View cart' },
       { id: 'merchant-menu', title: 'Choose another shop' },
     ]);
   }
   await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
-  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a list like Shirt - 1, Onion - 1 kg, Oil - 500 ml, or attach a shopping-list photo.`, 'View products', rows);
+  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a list like Onion - 1 kg, Biscuits - 2 packets, Onion - Rs 10, or attach a shopping-list photo.`, 'View products', rows);
 }
 
 async function showCustomerOrderCart(customer, session) {
@@ -1131,7 +1155,7 @@ async function handleIncomingCustomerWhatsApp(message) {
     if (error || !created) return sendWhatsAppText(customer.phone, 'We could not place that order. Please try again in a moment.');
     await saveCustomerOrderSession(session, { state: 'merchant', merchant_id: null, cart: [], pending_item: null });
     const { data: order } = await supabaseAdmin.from('customer_orders')
-      .select('id,request_no,customer_id,merchant_id,status,customers(name,phone),merchants(name,phone),customer_order_items(product_name,quantity,unit_price)')
+      .select('id,request_no,customer_id,merchant_id,status,customers(name,phone),merchants(name,phone),customer_order_items(product_name,quantity,unit_price,item_type)')
       .eq('id', created.order_id).single();
     if (order) {
       const notificationOrder = {
@@ -1170,11 +1194,7 @@ async function handleIncomingCustomerWhatsApp(message) {
     if (customItems.length) {
       const cart = Array.isArray(session.cart) ? [...session.cart] : [];
       for (const item of customItems) {
-        const matching = cart.find((cartItem) => cartItem.type === 'custom'
-          && !cartItem.imagePath
-          && String(cartItem.name || '').toLowerCase() === item.name.toLowerCase());
-        if (matching) matching.quantity = Math.min(99, Number(matching.quantity || 0) + item.quantity);
-        else cart.push({ type: 'custom', name: item.name, quantity: item.quantity, unitPrice: null });
+        cart.push({ type: 'custom', name: item.name, quantity: item.quantity, unitPrice: null });
       }
       const next = await saveCustomerOrderSession(session, { state: 'product', cart, pending_item: null });
       return showCustomerOrderCart(customer, next);
