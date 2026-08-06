@@ -1647,7 +1647,7 @@ function customerOrderListQuery(auth, paging, status, includeImages) {
 }
 
 app.get('/api/products', requireAuth, async (req, res) => {
-  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('products')
     .select('id,merchant_id,name,description,price,active,created_at,updated_at,merchants(name,merchant_code)', { count: 'exact' })
     .order('created_at', { ascending: false });
@@ -1708,7 +1708,7 @@ app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req
 });
 
 app.get('/api/customer-orders', requireAuth, async (req, res) => {
-  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  const paging = paginationFromRequest(req, 20, 100);
   const status = cleanText(req.query.status, 32);
   let { data, error, count } = await customerOrderListQuery(req.auth, paging, status, true).range(paging.from, paging.to);
   if (error && /customer_order_images|relationship/i.test(error.message || '')) {
@@ -1759,7 +1759,7 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
 });
 
 app.get('/api/feedback', requireAuth, async (req, res) => {
-  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchant_feedback')
     .select('id,merchant_id,message,created_at,merchants(name,merchant_code)', { count: 'exact' })
     .order('created_at', { ascending: false });
