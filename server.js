@@ -111,6 +111,14 @@ function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
+function supabaseProjectRef() {
+  try {
+    return SUPABASE_URL ? new URL(SUPABASE_URL).hostname.split('.')[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizePhone(value) {
   const digits = String(value || '').replace(/\D/g, '');
   const national = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
@@ -1009,7 +1017,7 @@ async function showMerchantChoices(customer, session, page = 0) {
   if (start + pageSize < (merchants || []).length) rows.push({ id: `merchant-page:${page + 1}`, title: 'More merchants' });
   if (page > 0) rows.push({ id: `merchant-page:${page - 1}`, title: 'Previous merchants' });
   await saveCustomerOrderSession(session, { merchant_id: null, state: 'merchant', cart: [], pending_item: null });
-  return sendCustomerOrderList(customer.phone, 'Welcome to Affiliate AE. Choose the shop you want to order from.', 'Choose shop', rows);
+  return sendCustomerOrderList(customer.phone, 'Choose the shop you want to order from.', 'Choose shop', rows);
 }
 
 async function showProductChoices(customer, session, page = 0) {
@@ -1083,7 +1091,8 @@ async function handleIncomingCustomerWhatsApp(message) {
   const text = cleanText(message.text?.body, 500);
   const command = replyId || text.toLowerCase();
 
-  if (!command || ['hi', 'hello', 'start', 'menu', 'shop', 'shops'].includes(command)) {
+  if (!command) return;
+  if (['hi', 'hello', 'start', 'menu', 'shop', 'shops'].includes(command)) {
     return showMerchantChoices(customer, session);
   }
   if (command.startsWith('merchant-page:')) return showMerchantChoices(customer, session, Number(command.split(':')[1]) || 0);
@@ -1584,6 +1593,18 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
 });
 
 async function customerOrderDto(row) {
+  let images = [];
+  try {
+    images = await Promise.all((row.customer_order_images || []).map(async (image) => ({
+      id: image.id,
+      caption: image.caption || '',
+      mimeType: image.mime_type,
+      createdAt: image.created_at,
+      url: await signedCustomerOrderImageUrl(image.storage_path),
+    })));
+  } catch (error) {
+    console.error('Customer order image signing failed:', error.message);
+  }
   return {
     id: row.id,
     requestNo: row.request_no,
@@ -1604,13 +1625,7 @@ async function customerOrderDto(row) {
       unitPrice: item.unit_price === null ? null : Number(item.unit_price),
       type: item.item_type,
     })),
-    images: await Promise.all((row.customer_order_images || []).map(async (image) => ({
-      id: image.id,
-      caption: image.caption || '',
-      mimeType: image.mime_type,
-      createdAt: image.created_at,
-      url: await signedCustomerOrderImageUrl(image.storage_path),
-    }))),
+    images,
   };
 }
 
@@ -1618,6 +1633,17 @@ function customerOrderScope(query, auth) {
   return auth.profile.role === 'merchant'
     ? query.eq('merchant_id', auth.profile.merchant_id)
     : query;
+}
+
+function customerOrderListQuery(auth, paging, status, includeImages) {
+  const imageFields = includeImages ? ',customer_order_images(id,storage_path,caption,mime_type,created_at)' : '';
+  let query = customerOrderScope(supabaseAdmin.from('customer_orders').select(
+    `id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type)${imageFields}`,
+    { count: 'exact' },
+  ), auth).order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  if (paging.search) query = query.or(`request_no.ilike.%${paging.search}%,customer_note.ilike.%${paging.search}%`);
+  return query;
 }
 
 app.get('/api/products', requireAuth, async (req, res) => {
@@ -1683,14 +1709,12 @@ app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req
 
 app.get('/api/customer-orders', requireAuth, async (req, res) => {
   const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
-  let query = customerOrderScope(supabaseAdmin.from('customer_orders').select(
-    'id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type),customer_order_images(id,storage_path,caption,mime_type,created_at)',
-    { count: 'exact' },
-  ), req.auth).order('created_at', { ascending: false });
   const status = cleanText(req.query.status, 32);
-  if (status) query = query.eq('status', status);
-  if (paging.search) query = query.or(`request_no.ilike.%${paging.search}%,customer_note.ilike.%${paging.search}%`);
-  const { data, error, count } = await query.range(paging.from, paging.to);
+  let { data, error, count } = await customerOrderListQuery(req.auth, paging, status, true).range(paging.from, paging.to);
+  if (error && /customer_order_images|relationship/i.test(error.message || '')) {
+    console.warn('Customer-order image relation unavailable; loading orders without images.');
+    ({ data, error, count } = await customerOrderListQuery(req.auth, paging, status, false).range(paging.from, paging.to));
+  }
   if (error) return res.status(500).json({ success: false, error: error.message });
   res.json({ success: true, orders: await Promise.all((data || []).map(customerOrderDto)), pagination: paginationMeta(paging, count) });
 });
@@ -3784,6 +3808,7 @@ if (false) app.post('/api/send-qr-legacy-disabled', requireAuth, async (req, res
 app.get('/api/status', (_req, res) => {
   res.json({
     supabase:  !!(supabaseAuth && supabaseAdmin),
+    supabaseProject: supabaseProjectRef(),
     resend:    !!process.env.RESEND_API_KEY,
     whatsapp:  !!(WA_TOKEN && WA_PHONE_ID),
     fromEmail: process.env.RESEND_FROM_EMAIL || null,
@@ -3813,6 +3838,15 @@ app.get('/privacy', (_req, res) => {
 <title>Privacy Policy | Affiliate AE</title><style>
 body{margin:0;background:#f4f6fb;color:#172033;font:16px/1.65 Arial,sans-serif}.wrap{max-width:760px;margin:0 auto;padding:48px 22px 64px}.brand{font-size:24px;font-weight:800;color:#4f46d9}.brand small{color:#be185d;font-size:12px;margin-left:4px}article{margin-top:28px;padding:32px;background:#fff;border:1px solid #dbe2ef;border-radius:8px;box-shadow:0 8px 24px rgba(20,30,55,.06)}h1{font-size:30px;line-height:1.2;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}p,li{color:#45536a}a{color:#4338ca}footer{margin-top:22px;color:#68748a;font-size:13px}</style></head>
 <body><main class="wrap"><div class="brand">Affiliate <small>AE</small></div><article><h1>Privacy Policy</h1><p>Last updated: August 6, 2026</p><p>Affiliate AE provides customer rewards, merchant dashboards, QR checkout and WhatsApp order communication for participating merchants.</p><h2>Information we collect</h2><p>We collect customer name, mobile number, optional email address, reward balances, QR activity, purchase records, customer order requests and customer-provided shopping-list images. Merchant account details and product catalogue information are also collected to operate the service.</p><h2>How we use information</h2><p>We use this information to register customers, calculate reward points, process merchant checkout, send WhatsApp messages requested or consented to by customers, and deliver customer orders to the selected merchant.</p><h2>WhatsApp</h2><p>When a customer contacts Affiliate AE on WhatsApp, message content, shopping-list images and the customer phone number are processed to show merchant products, create requested orders and send order updates. A shopping-list image is shared only with the merchant selected by the customer. Customers can stop promotional messages at any time by replying STOP where applicable.</p><h2>Sharing</h2><p>Customer order details are shared only with the merchant selected by the customer. We use trusted service providers, including Meta WhatsApp Cloud API, Supabase and Resend, to operate Affiliate AE. We do not sell personal information.</p><h2>Security and retention</h2><p>We use reasonable technical and organisational safeguards. Information is kept only for as long as needed for rewards, customer orders, legal obligations and support.</p><h2>Your choices</h2><p>You may request access, correction or deletion of your information by contacting us. Some reward or order records may need to be retained where required by law.</p><h2>Contact</h2><p>Email: <a href="mailto:affiliateae1@gmail.com">affiliateae1@gmail.com</a><br>Phone: <a href="tel:+919025547577">+91 90255 47577</a></p></article><footer>Copyright ${new Date().getFullYear()} Affiliate AE. All rights reserved.</footer></main></body></html>`);
+});
+
+app.use((error, req, res, _next) => {
+  console.error('Unhandled request error:', error?.message || error);
+  if (res.headersSent) return;
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({ success: false, error: 'The server could not complete this request. Please try again.' });
+  }
+  res.status(500).type('html').send('<!doctype html><title>Affiliate AE</title><p>Something went wrong. Please reload the page.</p>');
 });
 
 if (webRoot === reactBuildPath) {
