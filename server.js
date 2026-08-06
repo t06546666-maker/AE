@@ -952,6 +952,20 @@ function customerOrderItemText(cart) {
   return `Your cart:\n${lines.join('\n')}`;
 }
 
+function parseCustomOrderList(text) {
+  return cleanText(text, 500)
+    .split(/\r?\n|,|\s+and\s+/i)
+    .map((part) => part.trim())
+    .map((part) => {
+      const nameFirst = part.match(/^(.+?)\s*(?:-|:|x|\*)\s*(\d{1,2})$/i);
+      const quantityFirst = part.match(/^(\d{1,2})\s*(?:x|\*)\s*(.+)$/i);
+      if (nameFirst) return { name: cleanText(nameFirst[1], 500), quantity: Number(nameFirst[2]) };
+      if (quantityFirst) return { name: cleanText(quantityFirst[2], 500), quantity: Number(quantityFirst[1]) };
+      return null;
+    })
+    .filter((item) => item && item.name && item.quantity >= 1 && item.quantity <= 99);
+}
+
 async function getCustomerOrderSession(customer) {
   const { data } = await supabaseAdmin.from('whatsapp_customer_sessions')
     .select('*').eq('customer_id', customer.id).maybeSingle();
@@ -1021,7 +1035,7 @@ async function showProductChoices(customer, session, page = 0) {
     ]);
   }
   await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
-  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a custom request, or attach a shopping-list photo.`, 'View products', rows);
+  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a list like Shirt - 1, Pant - 1, or attach a shopping-list photo.`, 'View products', rows);
 }
 
 async function showCustomerOrderCart(customer, session) {
@@ -1134,6 +1148,19 @@ async function handleIncomingCustomerWhatsApp(message) {
     return showCustomerOrderCart(customer, next);
   }
   if (text && session.merchant_id) {
+    const customItems = parseCustomOrderList(text);
+    if (customItems.length) {
+      const cart = Array.isArray(session.cart) ? [...session.cart] : [];
+      for (const item of customItems) {
+        const matching = cart.find((cartItem) => cartItem.type === 'custom'
+          && !cartItem.imagePath
+          && String(cartItem.name || '').toLowerCase() === item.name.toLowerCase());
+        if (matching) matching.quantity = Math.min(99, Number(matching.quantity || 0) + item.quantity);
+        else cart.push({ type: 'custom', name: item.name, quantity: item.quantity, unitPrice: null });
+      }
+      const next = await saveCustomerOrderSession(session, { state: 'product', cart, pending_item: null });
+      return showCustomerOrderCart(customer, next);
+    }
     await saveCustomerOrderSession(session, { state: 'quantity', pending_item: { type: 'custom', name: text, unitPrice: null } });
     return sendWhatsAppText(customer.phone, `How many would you like for “${text}”? Reply with a number from 1 to 99.`);
   }
