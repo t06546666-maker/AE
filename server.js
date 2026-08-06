@@ -965,8 +965,17 @@ function parseCustomOrderList(text) {
     .split(/\r?\n|,|\s+and\s+/i)
     .map((part) => part.trim())
     .map((part) => {
+      const measured = part.match(/^(.+?)(?:\s*(?:-|:)\s*|\s+)(\d+(?:\s*\/\s*\d+|\.\d+)?\s*(?:kg|g|ml|l))$/i);
       const nameFirst = part.match(/^(.+?)\s*(?:-|:|x|\*)\s*(\d{1,2})$/i);
       const quantityFirst = part.match(/^(\d{1,2})\s*(?:x|\*)\s*(.+)$/i);
+      if (measured) {
+        const name = cleanText(measured[1], 450);
+        const measure = measured[2]
+          .replace(/\s*\/\s*/g, '/')
+          .replace(/\s*(kg|g|ml|l)$/i, ' $1')
+          .trim();
+        return name ? { name: `${name} (${measure})`, quantity: 1 } : null;
+      }
       if (nameFirst) return { name: cleanText(nameFirst[1], 500), quantity: Number(nameFirst[2]) };
       if (quantityFirst) return { name: cleanText(quantityFirst[2], 500), quantity: Number(quantityFirst[1]) };
       return null;
@@ -1037,13 +1046,13 @@ async function showProductChoices(customer, session, page = 0) {
   if (start + pageSize < (products || []).length) rows.push({ id: `product-page:${page + 1}`, title: 'More products' });
   if (page > 0) rows.push({ id: `product-page:${page - 1}`, title: 'Previous products' });
   if (!(products || []).length) {
-    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products yet. You can send a shopping-list photo or type a custom request.`, [
+    return sendCustomerOrderButtons(customer.phone, `${merchant?.name || 'This merchant'} has no active products yet. Send a shopping-list photo or type a request like Onion - 1 kg, Oil - 500 ml, or Shirt - 1.`, [
       { id: 'cart', title: 'View cart' },
       { id: 'merchant-menu', title: 'Choose another shop' },
     ]);
   }
   await saveCustomerOrderSession(session, { state: 'product', pending_item: null });
-  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a list like Shirt - 1, Pant - 1, or attach a shopping-list photo.`, 'View products', rows);
+  return sendCustomerOrderList(customer.phone, `Choose products from ${merchant?.name || 'the shop'}, type a list like Shirt - 1, Onion - 1 kg, Oil - 500 ml, or attach a shopping-list photo.`, 'View products', rows);
 }
 
 async function showCustomerOrderCart(customer, session) {
