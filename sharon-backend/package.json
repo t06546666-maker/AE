@@ -1,0 +1,21 @@
+{
+  "name": "sharon-rewards-settlement-engine",
+  "version": "1.0.0",
+  "description": "Sharon Business / Future Rewards Settlement Engine Backend",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "node --import tsx src/tests/run-tests.ts"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}
