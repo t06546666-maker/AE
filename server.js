@@ -12,6 +12,17 @@ const PDFDocument = require('pdfkit');
 const multer   = require('multer');
 const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
+
+// --- Affiliate AE Settlement Engine ---
+const { recordRewardEarned } = require('./src/modules/affiliate/rewards');
+const { toPaise } = require('./src/modules/affiliate/common/money');
+const { router: networksRouter } = require('./src/modules/affiliate/networks');
+const { router: redemptionsRouter } = require('./src/modules/affiliate/redemptions');
+const { router: rewardsRouter } = require('./src/modules/affiliate/rewards');
+const { router: settlementsRouter } = require('./src/modules/affiliate/settlements');
+const paymentsRouter = require('./src/modules/affiliate/payments');
+// --------------------------------------
+
 let vercelWaitUntil = null;
 try {
   ({ waitUntil: vercelWaitUntil } = require('@vercel/functions'));
@@ -235,6 +246,33 @@ async function processPurchase(params, idempotencyKey) {
   )) {
     result = await supabaseAdmin.rpc('process_purchase', params);
   }
+  
+  // -- Affiliate AE Reward Engine Hook --
+  if (!result.error && result.data && result.data.length > 0) {
+    try {
+      const orderData = result.data[0];
+      // Convert earned points to integer paise (points are numeric so we multiply by 100)
+      // Actually, reward points in existing system is a float (e.g., 1.50). 
+      // 1 point = 1 INR = 100 paise.
+      const rewardPaise = toPaise(orderData.points_earned);
+      
+      const tx = {
+        id: orderData.order_id,
+        order_no: orderData.order_no,
+        customer_id: orderData.customer_id,
+        merchant_id: params.p_merchant_id,
+        network_id: '00000000-0000-0000-0000-000000000000' // Default legacy network
+      };
+
+      if (rewardPaise > 0) {
+        await recordRewardEarned(tx, rewardPaise);
+      }
+    } catch (engineError) {
+      console.error('Affiliate AE Reward Engine Hook Failed:', engineError);
+    }
+  }
+  // -------------------------------------
+
   return result;
 }
 
@@ -1095,6 +1133,14 @@ async function sendWelcomeEmail(purchase) {
   if (error) return { sent: false, error: error.message };
   return { sent: true, id: data?.id };
 }
+
+// --- Affiliate AE Settlement Engine Modules ---
+app.use('/api/networks', requireAuth, networksRouter);
+app.use('/api', requireAuth, rewardsRouter); 
+app.use('/api/redemptions', requireAuth, redemptionsRouter);
+app.use('/api/settlements', requireAuth, settlementsRouter);
+app.use('/api/payments', paymentsRouter);
+// ----------------------------------------------
 
 app.post('/api/auth/login', async (req, res) => {
   if (!requireSupabase(res)) return;
