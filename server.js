@@ -16,8 +16,8 @@ const { createClient } = require('@supabase/supabase-js');
 // --- Affiliate AE Settlement Engine ---
 const { recordRewardEarned } = require('./src/modules/affiliate/rewards');
 const { toPaise } = require('./src/modules/affiliate/common/money');
-const { router: networksRouter } = require('./src/modules/affiliate/networks');
-const { router: redemptionsRouter } = require('./src/modules/affiliate/redemptions');
+const networksRouter = require('./src/modules/affiliate/networks');
+const redemptionsRouter = require('./src/modules/affiliate/redemptions');
 const { router: rewardsRouter } = require('./src/modules/affiliate/rewards');
 const { router: settlementsRouter } = require('./src/modules/affiliate/settlements');
 const paymentsRouter = require('./src/modules/affiliate/payments');
