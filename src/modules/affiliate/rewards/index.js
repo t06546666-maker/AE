@@ -76,7 +76,7 @@ async function getCustomerEntitlement(networkId, customerId) {
 }
 
 // API Routes
-router.get('/customers/:id/reward-lots', async (req, res) => {
+router.get('/:id/reward-lots', async (req, res) => {
   const { data, error } = await supabase
     .from('reward_lots')
     .select('*')
@@ -87,7 +87,7 @@ router.get('/customers/:id/reward-lots', async (req, res) => {
   res.json(data);
 });
 
-router.get('/customers/:id/rewards', async (req, res) => {
+router.get('/:id/rewards', async (req, res) => {
   // Aggregate sum
   const networkId = req.query.network_id || '00000000-0000-0000-0000-000000000000';
   try {

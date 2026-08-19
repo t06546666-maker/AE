@@ -1136,7 +1136,7 @@ async function sendWelcomeEmail(purchase) {
 
 // --- Affiliate AE Settlement Engine Modules ---
 app.use('/api/networks', requireAuth, networksRouter);
-app.use('/api', requireAuth, rewardsRouter); 
+app.use('/api/customers', requireAuth, rewardsRouter); 
 app.use('/api/redemptions', requireAuth, redemptionsRouter);
 app.use('/api/settlements', requireAuth, settlementsRouter);
 app.use('/api/payments', paymentsRouter);
