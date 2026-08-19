@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Languages, Mail, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Building2, Languages, Mail, ShieldCheck, Sparkles, X, Eye, EyeOff } from 'lucide-react';
 import { apiFetch, setAccessToken } from '../api';
 import type { UserProfile } from '../types';
 
@@ -11,6 +11,7 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState<'about' | 'contact' | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError('');
@@ -44,7 +45,15 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
           <h2>{t('login.welcome')}</h2>
           <p>{t('login.prompt')}</p>
           <label>{t('login.email')}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required /></label>
-          <label>{t('login.password')}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" minLength={8} required /></label>
+          <label>
+            <span>{t('login.password')}</span>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" minLength={8} required style={{ width: '100%', paddingRight: '40px' }} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }} title={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </label>
           {error ? <div className="form-error">{error}</div> : null}
           <button className="button primary login-button" disabled={busy}>{busy ? t('login.signingIn') : t('login.signIn')}</button>
           <div className="login-links"><button type="button" onClick={() => setInfo('about')}>{t('login.about')}</button><button type="button" onClick={() => setInfo('contact')}>{t('login.contact')}</button></div>
