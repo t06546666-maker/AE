@@ -1572,7 +1572,7 @@ function customerOrderScope(query, auth) {
 }
 
 app.get('/api/products', requireAuth, async (req, res) => {
-  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('products')
     .select('id,merchant_id,name,description,price,active,created_at,updated_at,merchants(name,merchant_code)', { count: 'exact' })
     .order('created_at', { ascending: false });
@@ -1633,7 +1633,7 @@ app.delete('/api/products/:id', requireAuth, requireRole('merchant'), async (req
 });
 
 app.get('/api/customer-orders', requireAuth, async (req, res) => {
-  const paging = getPagination(req, { defaultSize: 20, maxSize: 100 });
+  const paging = paginationFromRequest(req, 20, 100);
   let query = customerOrderScope(supabaseAdmin.from('customer_orders').select(
     'id,request_no,customer_id,merchant_id,status,customer_note,total_amount,created_at,updated_at,customers(name,phone),merchants(name),customer_order_items(id,product_name,quantity,unit_price,item_type)',
     { count: 'exact' },
