@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Plus } from 'lucide-react';
+import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { EmptyState, ErrorState, LoadingState, PageHeader } from '../components/Common';
 import { formatDate } from '../utils';
@@ -45,6 +46,23 @@ export function Locations() {
       showToast(error.message, 'error');
     }
   });
+
+  const remove = useMutation({
+    mutationFn: (network: Network) => apiFetch(`/api/networks/${network.id}`, { method: 'DELETE' }),
+    onSuccess() {
+      showToast('Location removed');
+      void queryClient.invalidateQueries({ queryKey: ['networks'] });
+    },
+    onError(error) {
+      showToast(error.message, 'error');
+    }
+  });
+
+  function deleteNetwork(network: Network) {
+    if (window.confirm(`Remove ${network.code}? This action cannot be undone.`)) {
+      remove.mutate(network);
+    }
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -102,15 +120,21 @@ export function Locations() {
                   <th>Location Name</th>
                   <th>Currency</th>
                   <th>Created At</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {networks.data?.networks.map((network) => (
                   <tr key={network.id}>
-                    <td><strong>{network.code}</strong></td>
+                    <td><strong><Link to={`/locations/${network.id}`}>{network.code}</Link></strong></td>
                     <td>{network.name}</td>
                     <td>{network.currency}</td>
                     <td>{formatDate(network.created_at)}</td>
+                    <td>
+                      <button className="icon-button danger-icon" title="Delete Location" onClick={() => deleteNetwork(network)}>
+                        <Trash2 />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

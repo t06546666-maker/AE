@@ -49,4 +49,22 @@ router.post('/:id/merchants', async (req, res) => {
   res.json({ success: true, merchant: data });
 });
 
+router.delete('/:id', async (req, res) => {
+  // Check if network has merchants
+  const { count, error: countError } = await supabase.from('merchants')
+    .select('*', { count: 'exact', head: true })
+    .eq('network_id', req.params.id);
+
+  if (countError) return res.status(500).json({ error: countError.message });
+  if (count && count > 0) {
+    return res.status(400).json({ error: `Cannot delete location because ${count} merchant(s) are assigned to it.` });
+  }
+
+  const { error } = await supabase.from('networks').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+
+  await logAudit(req.params.id, 'NETWORK', req.params.id, 'DELETED', req.auth?.user?.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

@@ -1226,6 +1226,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
     .select('id, merchant_code, name, email, phone, created_at', paging.enabled ? { count: 'exact' } : undefined)
     .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
+  if (req.query.networkId) query = query.eq('network_id', req.query.networkId);
   if (paging.search) {
     const pattern = `%${paging.search}%`;
     query = query.or(`name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern}`);
