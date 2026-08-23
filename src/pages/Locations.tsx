@@ -118,7 +118,6 @@ export function Locations() {
                 <tr>
                   <th>Location Code</th>
                   <th>Location Name</th>
-                  <th>Currency</th>
                   <th>Created At</th>
                   <th>Actions</th>
                 </tr>
@@ -128,7 +127,6 @@ export function Locations() {
                   <tr key={network.id}>
                     <td><strong><Link to={`/locations/${network.id}`}>{network.code}</Link></strong></td>
                     <td>{network.name}</td>
-                    <td>{network.currency}</td>
                     <td>{formatDate(network.created_at)}</td>
                     <td>
                       <button className="icon-button danger-icon" title="Delete Location" onClick={() => deleteNetwork(network)}>

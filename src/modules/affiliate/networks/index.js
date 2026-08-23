@@ -4,7 +4,7 @@ const { logAudit } = require('../audit');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('networks').select('id, code, name').order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('networks').select('id, code, name, created_at').order('created_at', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true, networks: data });
 });
