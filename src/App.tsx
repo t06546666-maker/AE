@@ -11,6 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
+import { Locations } from './pages/Locations';
 import { MerchantProfile, Merchants } from './pages/Merchants';
 import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
@@ -108,6 +109,7 @@ export function App() {
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />
+          <Route path="/locations" element={<RoleRoute user={user} role="admin"><Locations /></RoleRoute>} />
           <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

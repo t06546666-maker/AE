@@ -1367,30 +1367,9 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
     });
   }
 
-  let network_id = '00000000-0000-0000-0000-000000000000';
-  if (req.body.network_code) {
-    const code = req.body.network_code.toUpperCase();
-    let { data: network } = await supabaseAdmin.from('networks').select('id').eq('code', code).single();
-    
-    if (!network) {
-      // Auto-create the network if it doesn't exist
-      const { data: newNet, error: newNetError } = await supabaseAdmin.from('networks')
-        .insert({ code, name: code })
-        .select('id')
-        .single();
-        
-      if (newNetError) {
-        return res.status(400).json({ success: false, error: `Failed to create new location: ${newNetError.message}` });
-      }
-      network_id = newNet.id;
-    } else {
-      network_id = network.id;
-    }
-  }
-
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({ name, email, phone, network_id })
+    .insert({ name, email, phone, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });

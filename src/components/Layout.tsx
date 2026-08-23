@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  BadgeIndianRupee, Bell, Building2, Gift, Languages, LayoutDashboard, LogOut, Menu, Moon, Package,
+  BadgeIndianRupee, Bell, Building2, Gift, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, Package,
   Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X,
 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -16,6 +16,7 @@ const adminNav = [
   ['/customer-orders', 'Customer orders', ShoppingBag],
   ['/customers', 'nav.customers', Users],
   ['/merchants', 'nav.merchants', Building2],
+  ['/locations', 'Locations', MapPin],
   ['/products', 'Product catalogues', Package],
   ['/offers', 'nav.offers', Gift],
   ['/administrators', 'nav.administrators', UserCog],
