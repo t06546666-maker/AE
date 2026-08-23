@@ -53,18 +53,19 @@ router.delete('/:id', async (req, res) => {
   const networkId = req.params.id;
 
   // Find all nested entities to clean up their dependents
-  const [{ data: merchants }, { data: customers }, { data: orders }] = await Promise.all([
-    supabase.from('merchants').select('id').eq('network_id', networkId),
-    supabase.from('customers').select('id').eq('network_id', networkId),
-    supabase.from('orders').select('id').eq('network_id', networkId)
-  ]);
-  
+  const { data: merchants } = await supabase.from('merchants').select('id').eq('network_id', networkId);
   const merchantIds = (merchants || []).map(m => m.id);
-  const customerIds = (customers || []).map(c => c.id);
-  const orderIds = (orders || []).map(o => o.id);
 
-  // 1. Delete dependents without network_id
   if (merchantIds.length > 0) {
+    // Get all child records by merchant_id to avoid relying on network_id migration state
+    const [{ data: customers }, { data: orders }] = await Promise.all([
+      supabase.from('customers').select('id').in('merchant_id', merchantIds),
+      supabase.from('orders').select('id').in('merchant_id', merchantIds)
+    ]);
+    
+    const customerIds = (customers || []).map(c => c.id);
+    const orderIds = (orders || []).map(o => o.id);
+
     const { data: profiles } = await supabase.from('profiles').select('id').in('merchant_id', merchantIds);
     for (const profile of profiles || []) {
       if (supabase.auth?.admin) await supabase.auth.admin.deleteUser(profile.id).catch(() => {});
@@ -72,37 +73,34 @@ router.delete('/:id', async (req, res) => {
     await supabase.from('profiles').delete().in('merchant_id', merchantIds);
     await supabase.from('customer_merchants').delete().in('merchant_id', merchantIds);
     
-    // Cleanup voucher/redemption pivot tables
-    if (merchantIds.length > 0) {
-      await supabase.from('voucher_redemptions').delete().in('redeeming_merchant_id', merchantIds);
-      await supabase.from('redemption_allocations').delete().in('funding_merchant_id', merchantIds);
+    // Cleanup voucher/redemption pivot tables (ignore errors if tables don't exist yet)
+    await supabase.from('voucher_redemptions').delete().in('redeeming_merchant_id', merchantIds).catch(() => {});
+    await supabase.from('redemption_allocations').delete().in('funding_merchant_id', merchantIds).catch(() => {});
+
+    if (customerIds.length > 0) {
+      await supabase.from('customer_merchants').delete().in('customer_id', customerIds);
+      await supabase.from('whatsapp_messages').delete().in('customer_id', customerIds);
     }
+
+    if (orderIds.length > 0) {
+      await supabase.from('whatsapp_messages').delete().in('order_id', orderIds);
+    }
+
+    if (orderIds.length > 0) await supabase.from('orders').delete().in('merchant_id', merchantIds);
+    if (customerIds.length > 0) await supabase.from('customers').delete().in('merchant_id', merchantIds);
+    await supabase.from('merchants').delete().in('id', merchantIds);
   }
 
-  if (customerIds.length > 0) {
-    await supabase.from('customer_merchants').delete().in('customer_id', customerIds);
-    await supabase.from('whatsapp_messages').delete().in('customer_id', customerIds);
-  }
-
-  if (orderIds.length > 0) {
-    await supabase.from('whatsapp_messages').delete().in('order_id', orderIds);
-  }
-
-  // 2. Cascade delete all network-level entities (bottom-up)
+  // Cascade delete all network-level entities (ignore errors if tables don't exist yet)
   await Promise.all([
-    supabase.from('vouchers').delete().eq('network_id', networkId),
-    supabase.from('redemptions').delete().eq('network_id', networkId),
-    supabase.from('reward_ledger').delete().eq('network_id', networkId),
-    supabase.from('reward_lots').delete().eq('network_id', networkId),
-    supabase.from('reward_rules').delete().eq('network_id', networkId),
+    supabase.from('vouchers').delete().eq('network_id', networkId).catch(() => {}),
+    supabase.from('redemptions').delete().eq('network_id', networkId).catch(() => {}),
+    supabase.from('reward_ledger').delete().eq('network_id', networkId).catch(() => {}),
+    supabase.from('reward_lots').delete().eq('network_id', networkId).catch(() => {}),
+    supabase.from('reward_rules').delete().eq('network_id', networkId).catch(() => {}),
   ]);
 
-  // 3. Delete base entities
-  await supabase.from('orders').delete().eq('network_id', networkId);
-  await supabase.from('customers').delete().eq('network_id', networkId);
-  await supabase.from('merchants').delete().eq('network_id', networkId);
-
-  // 4. Finally delete the network
+  // Finally delete the network
   const { error } = await supabase.from('networks').delete().eq('id', networkId);
   if (error) return res.status(500).json({ error: error.message });
 
