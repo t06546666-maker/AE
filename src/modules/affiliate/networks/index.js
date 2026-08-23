@@ -3,6 +3,12 @@ const { supabase } = require('../common/db');
 const { logAudit } = require('../audit');
 const router = express.Router();
 
+router.get('/', async (req, res) => {
+  const { data, error } = await supabase.from('networks').select('id, code, name').order('created_at', { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, networks: data });
+});
+
 router.post('/', async (req, res) => {
   const { code, name, currency, rewardRateBps, minRedemptionThresholdPaise } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'Code and Name are required' });
