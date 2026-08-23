@@ -13,7 +13,6 @@ const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/add-customer', 'nav.addCustomer', Plus],
   ['/orders', 'nav.orders', ReceiptText],
-  ['/customer-orders', 'Customer orders', ShoppingBag],
   ['/customers', 'nav.customers', Users],
   ['/merchants', 'nav.merchants', Building2],
   ['/locations', 'Locations', MapPin],
