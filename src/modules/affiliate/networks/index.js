@@ -73,9 +73,9 @@ router.delete('/:id', async (req, res) => {
     await supabase.from('profiles').delete().in('merchant_id', merchantIds);
     await supabase.from('customer_merchants').delete().in('merchant_id', merchantIds);
     
-    // Cleanup voucher/redemption pivot tables (ignore errors if tables don't exist yet)
-    await supabase.from('voucher_redemptions').delete().in('redeeming_merchant_id', merchantIds).catch(() => {});
-    await supabase.from('redemption_allocations').delete().in('funding_merchant_id', merchantIds).catch(() => {});
+    // Cleanup voucher/redemption pivot tables
+    await supabase.from('voucher_redemptions').delete().in('redeeming_merchant_id', merchantIds);
+    await supabase.from('redemption_allocations').delete().in('funding_merchant_id', merchantIds);
 
     if (customerIds.length > 0) {
       await supabase.from('customer_merchants').delete().in('customer_id', customerIds);
@@ -91,13 +91,13 @@ router.delete('/:id', async (req, res) => {
     await supabase.from('merchants').delete().in('id', merchantIds);
   }
 
-  // Cascade delete all network-level entities (ignore errors if tables don't exist yet)
+  // Cascade delete all network-level entities
   await Promise.all([
-    supabase.from('vouchers').delete().eq('network_id', networkId).catch(() => {}),
-    supabase.from('redemptions').delete().eq('network_id', networkId).catch(() => {}),
-    supabase.from('reward_ledger').delete().eq('network_id', networkId).catch(() => {}),
-    supabase.from('reward_lots').delete().eq('network_id', networkId).catch(() => {}),
-    supabase.from('reward_rules').delete().eq('network_id', networkId).catch(() => {}),
+    supabase.from('vouchers').delete().eq('network_id', networkId),
+    supabase.from('redemptions').delete().eq('network_id', networkId),
+    supabase.from('reward_ledger').delete().eq('network_id', networkId),
+    supabase.from('reward_lots').delete().eq('network_id', networkId),
+    supabase.from('reward_rules').delete().eq('network_id', networkId),
   ]);
 
   // Finally delete the network
