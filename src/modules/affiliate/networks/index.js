@@ -50,14 +50,17 @@ router.post('/:id/merchants', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-  // Check if network has merchants
-  const { count, error: countError } = await supabase.from('merchants')
-    .select('*', { count: 'exact', head: true })
-    .eq('network_id', req.params.id);
+  const { data: merchants } = await supabase.from('merchants').select('id').eq('network_id', req.params.id);
+  const merchantIds = (merchants || []).map(m => m.id);
 
-  if (countError) return res.status(500).json({ error: countError.message });
-  if (count && count > 0) {
-    return res.status(400).json({ error: `Cannot delete location because ${count} merchant(s) are assigned to it.` });
+  if (merchantIds.length > 0) {
+    // Delete profiles associated with these merchants
+    const { error: profileError } = await supabase.from('profiles').delete().in('merchant_id', merchantIds);
+    if (profileError) return res.status(500).json({ error: `Failed to delete merchant profiles: ${profileError.message}` });
+    
+    // Delete merchants
+    const { error: merchantError } = await supabase.from('merchants').delete().in('id', merchantIds);
+    if (merchantError) return res.status(500).json({ error: `Failed to delete merchants: ${merchantError.message}` });
   }
 
   const { error } = await supabase.from('networks').delete().eq('id', req.params.id);
