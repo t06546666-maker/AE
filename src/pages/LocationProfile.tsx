@@ -87,7 +87,7 @@ export function LocationProfile() {
                     <td>{merchant.email}</td>
                     <td>{merchant.phone}</td>
                     <td>{formatDate(merchant.joined)}</td>
-                    <td>{merchant.summary?.totalOrders ?? 0}</td>
+                    <td>{merchant.orderCount ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
