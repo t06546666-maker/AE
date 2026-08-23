@@ -39,17 +39,6 @@ export function Merchants() {
 
   useEffect(() => setPage(1), [deferredSearch]);
 
-  const networksQuery = useQuery({
-    queryKey: ['networks'],
-    queryFn: ({ signal }) => apiFetch<{ networks: { id: string; code: string; name: string }[] }>('/api/networks', { signal }),
-  });
-
-  useEffect(() => {
-    if (networksQuery.data?.networks?.length && !networkId) {
-      setNetworkId(networksQuery.data.networks[0].id);
-    }
-  }, [networksQuery.data, networkId]);
-
   const merchants = useQuery({
     queryKey: ['merchants', page, deferredSearch],
     queryFn: ({ signal }) => apiFetch<{ merchants: Merchant[]; pagination: Pagination }>(`/api/merchants?${queryString({
@@ -63,7 +52,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim(), password, network_id: networkId }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim(), password, network_code: networkId }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -144,16 +133,10 @@ export function Merchants() {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required />
             <small>{t('merchants.passwordHelp')}</small>
           </label>
-          {networksQuery.data?.networks && networksQuery.data.networks.length > 0 && (
-            <label>
-              Location / Network
-              <select value={networkId} onChange={(e) => setNetworkId(e.target.value)} required>
-                {networksQuery.data.networks.map(n => (
-                  <option key={n.id} value={n.id}>{n.code} - {n.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
+          <label>
+            Location Code
+            <input type="text" value={networkId} onChange={(e) => setNetworkId(e.target.value)} placeholder="e.g. PALAKKAD-001" required />
+          </label>
         </div>
         <button className="button primary" disabled={create.isPending}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : t('merchants.add')}

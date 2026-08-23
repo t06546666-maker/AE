@@ -1367,9 +1367,18 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
     });
   }
 
+  let network_id = '00000000-0000-0000-0000-000000000000';
+  if (req.body.network_code) {
+    const { data: network } = await supabaseAdmin.from('networks').select('id').eq('code', req.body.network_code.toUpperCase()).single();
+    if (!network) {
+      return res.status(400).json({ success: false, error: `Location code '${req.body.network_code}' not found.` });
+    }
+    network_id = network.id;
+  }
+
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({ name, email, phone, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
+    .insert({ name, email, phone, network_id })
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
