@@ -63,7 +63,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim(), password, network_id: networkId }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, network_id: networkId }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -138,7 +138,7 @@ export function Merchants() {
         <div className="four-column-form">
           <label>{t('merchants.storeName')}<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
           <label>{t('login.email')}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>{t('merchants.phone')}<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required /></label>
+          <label>{t('merchants.phone')}<div className="phone-field"><span>+91</span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div></label>
           <label>
             {t('merchants.tempPassword')}
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required />
