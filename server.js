@@ -1503,6 +1503,7 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
   }
   await supabaseAdmin.from('orders').delete().eq('merchant_id', merchantId);
   await supabaseAdmin.from('customer_merchants').delete().eq('merchant_id', merchantId);
+  await supabaseAdmin.from('customer_orders').delete().eq('merchant_id', merchantId);
 
   let deletedCustomers = 0;
   if (customerIds.length) {
@@ -1531,6 +1532,8 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
       await supabaseAdmin.from('whatsapp_messages').delete().in('customer_id', orphanCustomerIds);
       await supabaseAdmin.from('orders').delete().in('customer_id', orphanCustomerIds);
       await supabaseAdmin.from('customer_merchants').delete().in('customer_id', orphanCustomerIds);
+      await supabaseAdmin.from('customer_orders').delete().in('customer_id', orphanCustomerIds);
+      
       const { error: customerDeleteError } = await supabaseAdmin.from('customers').delete().in('id', orphanCustomerIds);
       if (customerDeleteError) return res.status(400).json({ success: false, error: customerDeleteError.message });
       deletedCustomers = orphanCustomerIds.length;

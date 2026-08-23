@@ -86,6 +86,8 @@ router.delete('/:id', async (req, res) => {
       await supabase.from('whatsapp_messages').delete().in('order_id', orderIds);
     }
 
+    await supabase.from('customer_orders').delete().in('merchant_id', merchantIds);
+
     if (orderIds.length > 0) await supabase.from('orders').delete().in('merchant_id', merchantIds);
     if (customerIds.length > 0) await supabase.from('customers').delete().in('merchant_id', merchantIds);
     await supabase.from('merchants').delete().in('id', merchantIds);
