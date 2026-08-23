@@ -1369,7 +1369,7 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
 
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({ name, email, phone })
+    .insert({ name, email, phone, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
