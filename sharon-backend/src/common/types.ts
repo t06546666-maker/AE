@@ -221,6 +221,8 @@ export interface PaymentInstruction {
   recipient_type: 'CUSTOMER' | 'MERCHANT';
   recipient_id: string;
   amount_paise: number;
+  direction?: 'PAYOUT' | 'COLLECTION';
+  payment_link_url?: string;
   status: PaymentStatus;
   provider_ref?: string;
   idempotency_key: string;

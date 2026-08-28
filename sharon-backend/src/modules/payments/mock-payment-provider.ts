@@ -3,6 +3,7 @@ import { PaymentStatus } from '../../common/types';
 import {
   CustomerPayoutRequest,
   MerchantSettlementRequest,
+  PaymentLinkRequest,
   PaymentProvider,
   PaymentProviderResponse
 } from './payment-provider.interface';
@@ -46,6 +47,24 @@ export class MockPaymentProvider implements PaymentProvider {
     return {
       provider_ref,
       status: this.simulateStatus
+    };
+  }
+
+  async createPaymentLink(request: PaymentLinkRequest): Promise<PaymentProviderResponse> {
+    const provider_ref = `MOCK-PLINK-${randomUUID().substring(0, 8)}`;
+    Logger.info(`[MockPaymentProvider] Creating Payment Link`, {
+      instruction_id: request.instruction_id,
+      merchant_id: request.merchant_id,
+      amount_paise: request.amount_paise,
+      provider_ref
+    });
+
+    // We keep status as PENDING for payment links since it waits for user action
+    this.transactionsMap.set(provider_ref, 'PENDING');
+    return {
+      provider_ref,
+      status: 'PENDING',
+      payment_link_url: `https://mock-gateway.local/pay/${provider_ref}`
     };
   }
 

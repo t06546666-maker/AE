@@ -12,7 +12,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../common/erro
 import { NetworksService } from '../networks/networks.service';
 import { MerchantsService } from '../merchants/merchants.service';
 import { ReconciliationService } from '../reconciliation/reconciliation.service';
-import { mockPaymentProvider } from '../payments/mock-payment-provider';
+import { razorpayPaymentProvider } from '../payments/razorpay-payment-provider';
 
 export class SettlementsService {
   static async runSettlementCycle(data: {
@@ -138,7 +138,39 @@ export class SettlementsService {
     const paymentInstructions: PaymentInstruction[] = [];
 
     for (const pos of positions) {
-      if (pos.net_amount_paise !== 0) {
+      if (pos.net_amount_paise > 0) {
+        // Merchant is owed money (PAYOUT)
+        totalBatchAmount += pos.net_amount_paise;
+        const merchant = db.merchants.get(pos.merchant_id);
+        
+        if (merchant) {
+          const inst: PaymentInstruction = {
+            id: randomUUID(),
+            network_id: network.id,
+            settlement_cycle_id: cycle.id,
+            recipient_type: 'MERCHANT',
+            recipient_id: merchant.id,
+            amount_paise: pos.net_amount_paise,
+            direction: 'PAYOUT',
+            status: 'PENDING',
+            idempotency_key: `SETTLE-PAYOUT-${cycle.id}-${merchant.id}`,
+            created_at: now.toISOString()
+          };
+
+          const providerRes = await razorpayPaymentProvider.createMerchantSettlement({
+            instruction_id: inst.id,
+            merchant_id: merchant.id,
+            amount_paise: inst.amount_paise,
+            bank_details: merchant.bank_details
+          });
+
+          inst.provider_ref = providerRes.provider_ref;
+          inst.status = providerRes.status;
+          paymentInstructions.push(inst);
+          db.paymentInstructions.set(inst.id, inst);
+        }
+      } else if (pos.net_amount_paise < 0) {
+        // Merchant owes money (COLLECTION / INVOICING)
         totalBatchAmount += Math.abs(pos.net_amount_paise);
         const merchant = db.merchants.get(pos.merchant_id);
         
@@ -150,20 +182,23 @@ export class SettlementsService {
             recipient_type: 'MERCHANT',
             recipient_id: merchant.id,
             amount_paise: Math.abs(pos.net_amount_paise),
+            direction: 'COLLECTION',
             status: 'PENDING',
-            idempotency_key: `SETTLE-${cycle.id}-${merchant.id}`,
+            idempotency_key: `SETTLE-COLL-${cycle.id}-${merchant.id}`,
             created_at: now.toISOString()
           };
 
-          const providerRes = await mockPaymentProvider.createMerchantSettlement({
+          const providerRes = await razorpayPaymentProvider.createPaymentLink({
             instruction_id: inst.id,
             merchant_id: merchant.id,
             amount_paise: inst.amount_paise,
-            bank_details: merchant.bank_details
+            customer_name: merchant.name,
+            description: `Settlement Invoice for Cycle ${cycle.id}`
           });
 
           inst.provider_ref = providerRes.provider_ref;
           inst.status = providerRes.status;
+          inst.payment_link_url = providerRes.payment_link_url;
           paymentInstructions.push(inst);
           db.paymentInstructions.set(inst.id, inst);
         }

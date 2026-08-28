@@ -9,13 +9,15 @@
     "test": "node --import tsx src/tests/run-tests.ts"
   },
   "dependencies": {
-    "express": "^4.21.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^24.10.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.9.3"
   }
 }

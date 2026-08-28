@@ -13,7 +13,7 @@ import { IdempotencyManager } from '../../common/idempotency';
 import { CustomersService } from '../customers/customers.service';
 import { NetworksService } from '../networks/networks.service';
 import { RewardsService } from '../rewards/rewards.service';
-import { mockPaymentProvider } from '../payments/mock-payment-provider';
+import { razorpayPaymentProvider } from '../payments/razorpay-payment-provider';
 
 export class RedemptionsService {
   static async requestRedemption(data: {
@@ -136,7 +136,7 @@ export class RedemptionsService {
       db.paymentInstructions.set(paymentInstruction.id, paymentInstruction);
 
       // Execute via PaymentProvider Adapter
-      const providerRes = await mockPaymentProvider.createCustomerPayout({
+      const providerRes = await razorpayPaymentProvider.createCustomerPayout({
         instruction_id: paymentInstruction.id,
         amount_paise: data.amount_paise,
         upi_id: upiId
