@@ -52,7 +52,7 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
 
       // 3. Open Razorpay Checkout
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_HERE', // Replace with your key
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_HERE', // Replace with your key
         subscription_id: subscription.id,
         name: 'Sharon Rewards',
         description: 'Monthly Dashboard Access & Points',
