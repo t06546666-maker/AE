@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
-import type { DashboardData, Period, RewardSettings, UserProfile } from '../types';
+import type { DashboardData, Period, RewardSettings, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
 
 const emptyDashboard: DashboardData = {
@@ -37,6 +37,8 @@ function useChartDashboard(period: Period, from: string, to: string) {
   });
 }
 
+import MerchantWallet from '../components/MerchantWallet';
+
 function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
   return period === 'custom' ? <CustomDates from={from} to={to} onFrom={setFrom} onTo={setTo} /> : null;
 }
@@ -55,6 +57,13 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const dashboard = useDashboard(period, from, to);
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
+  
+  const merchantQuery = useQuery({
+    queryKey: ['merchant', user.merchant_id],
+    queryFn: ({ signal }) => apiFetch<{ data: Merchant }>(`/api/merchants/${user.merchant_id}`, { signal }),
+    enabled: user.role === 'merchant' && !!user.merchant_id,
+  });
+
   const settings = useQuery({
     queryKey: ['reward-settings'],
     queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }),
@@ -86,6 +95,16 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
         </div>
       </section>
+      
+      {user.role === 'merchant' && merchantQuery.isPending && <LoadingState label="Loading wallet..." />}
+      {user.role === 'merchant' && merchantQuery.isError && <ErrorState error={merchantQuery.error} retry={() => merchantQuery.refetch()} />}
+      {user.role === 'merchant' && merchantQuery.data?.data && (
+        <MerchantWallet 
+          merchant={merchantQuery.data.data} 
+          onUpdate={() => merchantQuery.refetch()} 
+        />
+      )}
+
       <div className="filter-row"><PeriodControl value={period} onChange={setPeriod} /><ReportDates period={period} from={from} to={to} setFrom={setFrom} setTo={setTo} /></div>
       {dashboard.isPending ? <LoadingState label="Loading dashboard" /> : (
         <div className="metric-grid">
