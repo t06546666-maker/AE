@@ -93,17 +93,16 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
+          
+          {user.role === 'merchant' && merchantQuery.isPending && <LoadingState label="..." />}
+          {user.role === 'merchant' && merchantQuery.data?.data && (
+            <MerchantWallet 
+              merchant={merchantQuery.data.data} 
+              onUpdate={() => merchantQuery.refetch()} 
+            />
+          )}
         </div>
       </section>
-      
-      {user.role === 'merchant' && merchantQuery.isPending && <LoadingState label="Loading wallet..." />}
-      {user.role === 'merchant' && merchantQuery.isError && <ErrorState error={merchantQuery.error} retry={() => merchantQuery.refetch()} />}
-      {user.role === 'merchant' && merchantQuery.data?.data && (
-        <MerchantWallet 
-          merchant={merchantQuery.data.data} 
-          onUpdate={() => merchantQuery.refetch()} 
-        />
-      )}
 
       <div className="filter-row"><PeriodControl value={period} onChange={setPeriod} /><ReportDates period={period} from={from} to={to} setFrom={setFrom} setTo={setTo} /></div>
       {dashboard.isPending ? <LoadingState label="Loading dashboard" /> : (
