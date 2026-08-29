@@ -11,6 +11,7 @@ const ExcelJS  = require('exceljs');
 const PDFDocument = require('pdfkit');
 const multer   = require('multer');
 const { Resend } = require('resend');
+const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 
 // --- Affiliate AE Settlement Engine ---
@@ -71,6 +72,9 @@ app.use(express.static(webRoot, {
 
 // ── Clients ──
 const resend      = process.env.RESEND_API_KEY    ? new Resend(process.env.RESEND_API_KEY) : null;
+const razorpay    = (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+  ? new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET })
+  : null;
 const WA_TOKEN    = process.env.WA_TOKEN;
 const WA_PHONE_ID = process.env.WA_PHONE_ID;
 const WA_API_VERSION = process.env.WA_API_VERSION || 'v23.0';
@@ -1218,6 +1222,18 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: profileError.message });
   }
   return res.json({ success: true, changedAt });
+});
+
+app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
+  if (req.params.id === 'summary' || req.params.id === 'reset-password') return next(); // Skip specific routes
+  const { data, error } = await supabaseAdmin
+    .from('merchants')
+    .select('*')
+    .eq('id', req.params.id)
+    .maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  if (!data) return res.status(404).json({ success: false, error: 'Merchant not found' });
+  return res.json({ success: true, data });
 });
 
 app.get('/api/merchants', requireAuth, async (req, res) => {
@@ -3717,6 +3733,110 @@ app.get('/api/status', (_req, res) => {
     offerQueue: Boolean(OFFER_QUEUE_SECRET),
     waTemplateLanguage: WA_TEMPLATE_LANGUAGE,
   });
+});
+
+app.post('/api/payments/create-subscription', requireAuth, async (req, res) => {
+  try {
+    const { merchant_id } = req.body;
+    if (!razorpay) return res.status(500).json({ success: false, error: 'Razorpay is not configured' });
+    
+    const PLAN_ID = process.env.RAZORPAY_MONTHLY_PLAN_ID || 'plan_YourPlanIdHere';
+    const subscription = await razorpay.subscriptions.create({
+      plan_id: PLAN_ID,
+      customer_notify: 1,
+      total_count: 120, // max 10 years for monthly
+      notes: { merchant_id }
+    });
+    res.json({ success: true, data: subscription });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to create Razorpay subscription' });
+  }
+});
+
+app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
+  try {
+    const { payment_reference, mandate_id, signature } = req.body;
+    const merchantId = req.params.id;
+    
+    if (!payment_reference) return res.status(400).json({ success: false, error: 'Payment reference required' });
+    
+    if (mandate_id && signature) {
+      if (!process.env.RAZORPAY_KEY_SECRET) return res.status(500).json({ success: false, error: 'Razorpay secret missing' });
+      const text = `${payment_reference}|${mandate_id}`;
+      const generatedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(text)
+        .digest('hex');
+      if (generatedSignature !== signature) {
+        return res.status(400).json({ success: false, error: 'Invalid Razorpay signature. Payment verification failed.' });
+      }
+    }
+
+    const { data: merchant, error: fetchError } = await supabaseAdmin
+      .from('merchants')
+      .select('point_balance, subscription_expires_at')
+      .eq('id', merchantId)
+      .single();
+      
+    if (fetchError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
+    const currentPoints = merchant.point_balance || 0;
+    const now = new Date();
+    const expiryDate = merchant.subscription_expires_at && new Date(merchant.subscription_expires_at) > now
+      ? new Date(merchant.subscription_expires_at)
+      : now;
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    
+    const updatePayload = {
+      point_balance: currentPoints + 100,
+      subscription_expires_at: expiryDate.toISOString(),
+    };
+    if (mandate_id) updatePayload.subscription_mandate_id = mandate_id;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('merchants')
+      .update(updatePayload)
+      .eq('id', merchantId);
+
+    if (updateError) throw updateError;
+    
+    res.json({ success: true, message: 'Subscription purchased successfully. 100 points added.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to process subscription' });
+  }
+});
+
+app.post('/api/merchants/:id/top-up', requireAuth, async (req, res) => {
+  try {
+    const { points, payment_reference } = req.body;
+    const merchantId = req.params.id;
+    if (!points || points < 50) return res.status(400).json({ success: false, error: 'Minimum top-up is 50 points' });
+    if (!payment_reference) return res.status(400).json({ success: false, error: 'Payment reference required' });
+
+    // In a real scenario, you'd verify a one-time Razorpay payment signature here 
+    // similar to the subscription route. For now, we simulate success if reference is provided.
+    
+    const { data: merchant, error: fetchError } = await supabaseAdmin
+      .from('merchants')
+      .select('point_balance')
+      .eq('id', merchantId)
+      .single();
+      
+    if (fetchError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
+    const currentPoints = merchant.point_balance || 0;
+    
+    const { error: updateError } = await supabaseAdmin
+      .from('merchants')
+      .update({ point_balance: currentPoints + points })
+      .eq('id', merchantId);
+
+    if (updateError) throw updateError;
+    
+    res.json({ success: true, message: `${points} points topped up successfully.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to process top-up' });
+  }
 });
 
 app.get('/api/health', (_req, res) => {
