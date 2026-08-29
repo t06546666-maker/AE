@@ -59,6 +59,16 @@ export class TransactionsService {
       created_at: new Date().toISOString()
     };
 
+    // Calculate reward points based on amount (1 point = 100 paise)
+    const rewardPoints = Math.floor(rewardAmountPaise / 100);
+
+    if (merchant.point_balance < rewardPoints) {
+      throw new ValidationError(`Merchant does not have enough points. Balance: ${merchant.point_balance}, Required: ${rewardPoints}. Please top-up.`);
+    }
+
+    merchant.point_balance -= rewardPoints;
+    db.merchants.set(merchant.id, merchant);
+
     db.transactions.set(transaction.id, transaction);
 
     // Create Reward Lot retaining source funding merchant ID

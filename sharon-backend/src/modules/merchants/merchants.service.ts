@@ -40,6 +40,7 @@ export class MerchantsService {
         account_holder_name: data.name
       },
       reward_rate_bps: data.reward_rate_bps,
+      point_balance: 0,
       created_at: new Date().toISOString()
     };
 

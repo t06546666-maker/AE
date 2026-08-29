@@ -77,6 +77,9 @@ export interface Merchant {
   status: MerchantStatus;
   bank_details: BankDetails;
   reward_rate_bps?: number; // Optional merchant-specific override
+  point_balance: number; // Prepaid points for rewards (1 point = 1rs)
+  subscription_expires_at?: string; // ISO string when monthly subscription ends
+  subscription_mandate_id?: string; // Razorpay recurring mandate ID for autopay
   created_at: string;
 }
 

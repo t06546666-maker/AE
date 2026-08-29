@@ -12,6 +12,7 @@ import { InsufficientBalanceError, NotFoundError, ValidationError } from '../../
 import { IdempotencyManager } from '../../common/idempotency';
 import { CustomersService } from '../customers/customers.service';
 import { NetworksService } from '../networks/networks.service';
+import { MerchantsService } from '../merchants/merchants.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { razorpayPaymentProvider } from '../payments/razorpay-payment-provider';
 
@@ -158,6 +159,12 @@ export class RedemptionsService {
             lot.status = 'EXHAUSTED';
             db.rewardLots.set(lot.id, lot);
           }
+          
+          // Auto top-up to compensate merchant
+          const merchant = MerchantsService.getMerchant(alloc.funding_merchant_id);
+          const autoTopUpPoints = Math.floor(alloc.amount_consumed_paise / 100);
+          merchant.point_balance += autoTopUpPoints;
+          db.merchants.set(merchant.id, merchant);
         }
 
         // Ledger Entry REWARD_REDEEMED

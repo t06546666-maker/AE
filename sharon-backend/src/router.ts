@@ -24,6 +24,8 @@ sharonRouter.post('/merchants', MerchantsController.create);
 sharonRouter.get('/merchants', MerchantsController.list);
 sharonRouter.get('/merchants/:id', MerchantsController.get);
 sharonRouter.patch('/merchants/:id/status', MerchantsController.updateStatus);
+sharonRouter.post('/merchants/:id/subscription', MerchantsController.purchaseSubscription);
+sharonRouter.post('/merchants/:id/top-up', MerchantsController.topUpPoints);
 
 // Customers
 sharonRouter.post('/customers', CustomersController.create);
@@ -58,6 +60,7 @@ sharonRouter.get('/networks/:id/reconciliation', ReconciliationController.getSta
 // Payments & Callbacks
 sharonRouter.post('/payment-callbacks', PaymentsController.handleCallback);
 sharonRouter.get('/payments/instructions/:id', PaymentsController.getInstruction);
+sharonRouter.post('/payments/create-subscription', PaymentsController.createSubscription);
 
 // Refunds
 sharonRouter.post('/refunds', RefundsController.create);

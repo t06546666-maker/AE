@@ -19,4 +19,15 @@ export class PaymentsController {
       res.status(err.statusCode || 500).json({ success: false, error: err.message });
     }
   }
+
+  static async createSubscription(req: Request, res: Response): Promise<void> {
+    try {
+      const { merchant_id } = req.body;
+      const { MerchantPaymentsService } = require('./merchant-payments.service');
+      const subscription = await MerchantPaymentsService.createSubscription(merchant_id);
+      res.json({ success: true, data: subscription });
+    } catch (err: any) {
+      res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+  }
 }

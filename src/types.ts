@@ -28,6 +28,10 @@ export interface Merchant {
   joined: string;
   orderCount?: number;
   mustChangePassword?: boolean;
+  point_balance?: number;
+  reward_rate_bps?: number;
+  subscription_expires_at?: string;
+  subscription_mandate_id?: string;
 }
 
 export type OfferStatus = 'pending' | 'approved' | 'rejected';
