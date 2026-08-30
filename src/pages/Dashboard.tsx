@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
+import { RedemptionModal } from '../components/RedemptionModal';
 import type { DashboardData, Period, RewardSettings, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
 
