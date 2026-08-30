@@ -34,7 +34,7 @@ export default function QrScanner({ settings, autoStart = false }: { settings: R
   const [message, setMessage] = useState(() => t('scanner.secure'));
   const [starting, setStarting] = useState(false);
   const [amount, setAmount] = useState('');
-  const [percentage, setPercentage] = useState(settings.rewardPercentage);
+  const [percentage, setPercentage] = useState(settings.merchantEarnPoints || (settings.earnOptions?.[0] || 10));
   const locked = useRef(false);
   const scannerRef = useRef<ScannerInstance | null>(null);
   const queryClient = useQueryClient();
@@ -143,7 +143,8 @@ export default function QrScanner({ settings, autoStart = false }: { settings: R
     onError(error) { showToast(error.message, 'error'); },
   });
 
-  const points = Number(amount) >= 100 ? Number(amount) * percentage / 100 : 0;
+  const eligibleAmount = Number(amount) < 100 ? 0 : Math.min(Number(amount), 10000);
+  const points = Math.floor((eligibleAmount / 100) * percentage);
   return (
     <section className="panel scanner-panel">
       <div className="panel-heading"><div><h2>{t('scanner.title')}</h2><p>{t('scanner.subtitle')}</p></div><ScanLine /></div>
@@ -167,7 +168,7 @@ export default function QrScanner({ settings, autoStart = false }: { settings: R
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
               <div className="purchase-fields">
                 <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                <label>{t('registration.rewardPercentage')}<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{settings.rewardOptions.map((option) => <option key={option} value={option}>{option}%</option>)}</select></label>
+                <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).map((option: number) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
               </div>
               <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
               <p className="amount-rule">{t('registration.minimum')}</p>
