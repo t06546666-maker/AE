@@ -259,19 +259,6 @@ async function getMerchantRewardSettings(merchantId) {
   const { data, error } = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
   if (error || !data) return { earn_points_per_100: 10, redeem_discount_per_100: 5 };
   return data;
-} = await supabaseAdmin
-    .from('app_settings')
-    .select('key,value')
-    .in('key', ['reward_percentage', 'reward_minimum']);
-  if (error) throw error;
-  const settings = Object.fromEntries(data.map((row) => [row.key, Number(row.value)]));
-  const minimum = isAllowedRewardPercentage(settings.reward_minimum)
-    ? settings.reward_minimum : 0.5;
-  const defaultPercentage = (
-    isAllowedRewardPercentage(settings.reward_percentage)
-    && settings.reward_percentage >= minimum
-  ) ? settings.reward_percentage : minimum;
-  return { minimum, defaultPercentage };
 }
 
 async function processPurchase(params, idempotencyKey) {
@@ -3455,26 +3442,7 @@ app.put('/api/merchants/:id/reward-settings', requireAuth, async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-  }
-  const now = new Date().toISOString();
-  const { error } = await supabaseAdmin.from('app_settings').upsert([
-    {
-      key: 'reward_percentage', value: rewardPercentage,
-      updated_by: req.auth.user.id, updated_at: now,
-    },
-    {
-      key: 'reward_minimum', value: rewardMinimum,
-      updated_by: req.auth.user.id, updated_at: now,
-    },
-  ]);
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  res.json({
-    success: true,
-    rewardPercentage,
-    rewardMinimum,
-    rewardOptions: REWARD_PERCENTAGES.filter((value) => value >= rewardMinimum),
-  });
-});
+
 
 app.get('/api/webhooks/whatsapp', (req, res) => {
   const mode = req.query['hub.mode'];
