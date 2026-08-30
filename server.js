@@ -2453,8 +2453,8 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   const phone = normalizePhone(req.body.phone);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const amount = Number(req.body.amount);
-  const rewardPercentage = Number(req.body.rewardPercentage);
-  const rewardSettings = await getRewardSettings();
+  const selectedPoints = Number(req.body.rewardPercentage); // We reuse this field for points per 100
+  const adminConfig = await getAdminRewardConfig();
   const merchantId = req.auth.profile.role === 'admin'
     ? cleanText(req.body.merchantId, 100)
     : req.auth.profile.merchant_id;
@@ -2464,13 +2464,11 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     (email && !isEmail(email)) ||
     !merchantId ||
     !Number.isFinite(amount) ||
-    amount < 100 ||
-    !isAllowedRewardPercentage(rewardPercentage) ||
-    rewardPercentage < rewardSettings.minimum
+    amount < 100
   ) {
     return res.status(400).json({
       success: false,
-      error: `Purchase must be at least 100 and reward percentage must be between ${rewardSettings.minimum}% and 10%`,
+      error: `Purchase must be at least 100.`,
     });
   }
 
@@ -2504,12 +2502,14 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     }).eq('id', customer.id);
   }
 
-  const earnRate = await getMerchantEarnRateWithCap(merchantId);
+  const earnRateWithCap = await getMerchantEarnRateWithCap(merchantId);
+  // If cap is reached (0), we issue 0 points, otherwise we use the selected points
+  const pointsToIssue = earnRateWithCap === 0 ? 0 : selectedPoints;
   const { data: purchases, error: purchaseError } = await processPurchase({
     p_customer_code: customer.customer_code,
     p_merchant_id: merchantId,
     p_amount: amount,
-    p_points_per_100: earnRate,
+    p_points_per_100: pointsToIssue,
     p_source: 'registration',
     p_location: cleanText(req.body.location, 160) || 'In-store',
   }, req.get('Idempotency-Key'));
@@ -2587,25 +2587,26 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
-  const rewardPercentage = Number(req.body.rewardPercentage);
-  const rewardSettings = await getRewardSettings();
+  const selectedPoints = Number(req.body.rewardPercentage);
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
-    amount < 100 ||
-    !isAllowedRewardPercentage(rewardPercentage) ||
-    rewardPercentage < rewardSettings.minimum
+    amount < 100
   ) {
     return res.status(400).json({
       success: false,
-      error: `Purchase must be at least 100 and reward percentage must be between ${rewardSettings.minimum}% and 10%`,
+      error: `Purchase must be at least 100.`,
     });
   }
+  
+  const earnRateWithCap = await getMerchantEarnRateWithCap(req.auth.profile.merchant_id);
+  const pointsToIssue = earnRateWithCap === 0 ? 0 : selectedPoints;
+
   const { data, error } = await processPurchase({
     p_customer_code: customerCode,
     p_merchant_id: req.auth.profile.merchant_id,
     p_amount: amount,
-    p_reward_percentage: rewardPercentage,
+    p_points_per_100: pointsToIssue,
     p_source: 'qr',
     p_location: cleanText(req.body.location, 160) || 'In-store',
   }, req.get('Idempotency-Key'));
