@@ -120,9 +120,10 @@ export interface Order {
 }
 
 export interface RewardSettings {
-  rewardPercentage: number;
-  rewardMinimum: number;
-  rewardOptions: number[];
+  earnOptions: number[];
+  redeemOptions: number[];
+  merchantEarnPoints?: number;
+  merchantRedeemDiscount?: number;
 }
 
 export interface DashboardData {

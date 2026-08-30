@@ -51,7 +51,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
     enabled: user.role === 'admin',
   });
 
-  useEffect(() => { if (settings.data) setPercentage(settings.data.rewardPercentage); }, [settings.data]);
+  useEffect(() => { if (settings.data) setPercentage(settings.data.merchantEarnPoints || (settings.data.earnOptions?.[0] || 10)); }, [settings.data]);
   useEffect(() => { if (user.role === 'admin' && merchants.data?.merchants[0] && !merchantId) setMerchantId(merchants.data.merchants[0].id); }, [merchantId, merchants.data, user.role]);
   useEffect(() => {
     if (!result) return;
@@ -127,8 +127,9 @@ export function AddCustomer({ user }: { user: UserProfile }) {
 
   if (settings.isPending || (user.role === 'admin' && merchants.isPending)) return <><PageHeader title={t(user.role === 'admin' ? 'nav.addCustomer' : 'nav.addBuyer')} subtitle={t('registration.subtitle')} /><LoadingState /></>;
   if (settings.isError) return <ErrorState error={settings.error} retry={() => settings.refetch()} />;
-  const options = settings.data?.rewardOptions || [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  const points = Number(amount) >= 100 ? Number(amount) * percentage / 100 : 0;
+  const options = settings.data?.earnOptions || [5, 10, 20, 30, 50];
+  const eligibleAmount = Number(amount) < 100 ? 0 : Math.min(Number(amount), 10000);
+  const points = Math.floor((eligibleAmount / 100) * percentage);
   const selectedMerchant = merchants.data?.merchants.find((merchant) => merchant.id === merchantId)?.name || '';
   const liveWhatsapp = whatsappStatus.data;
   const whatsappState = liveWhatsapp?.status
@@ -147,7 +148,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
         </div>
         <div className="purchase-fields registration-purchase">
           <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">{t('registration.minimum')}</span></label>
-          <label>{t('registration.rewardPercentage')}<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option}%</option>)}</select></label>
+          <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
           <div className="point-preview"><span>{t('registration.pointsIssued')}</span><strong>{formatPoints(points)} points</strong></div>
         </div>
         {user.role === 'admin' ? <label className="merchant-select">{t('registration.assignMerchant')}<select value={merchantId} onChange={(event) => setMerchantId(event.target.value)} required>{merchants.data?.merchants.map((merchant) => <option key={merchant.id} value={merchant.id}>{merchant.name}</option>)}</select></label> : null}

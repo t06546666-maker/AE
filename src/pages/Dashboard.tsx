@@ -54,6 +54,8 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [retentionFrom, setRetentionFrom] = useState(today); const [retentionTo, setRetentionTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [redeemOpen, setRedeemOpen] = useState(false);
+
   const dashboard = useDashboard(period, from, to);
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
@@ -93,6 +95,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
+          {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setRedeemOpen(true)}><Gift size={16}/> Redeem Points</button> : null}
         </div>
       </section>
       

@@ -212,18 +212,54 @@ function customerDto(row) {
   };
 }
 
-const REWARD_PERCENTAGES = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-function isAllowedRewardPercentage(value) {
-  return REWARD_PERCENTAGES.includes(Number(value));
-}
+const EARN_OPTIONS = [5, 10, 20, 30, 50];
+const REDEEM_OPTIONS = [1, 2, 3, 4, 5, 10, 15, 20];
 
 function formatPoints(value) {
   return Number(value || 0).toFixed(2);
 }
 
-async function getRewardSettings() {
-  const { data, error } = await supabaseAdmin
+async function getAdminRewardConfig() {
+  const { data } = await supabaseAdmin.from('app_settings').select('key,value').in('key', ['earn_options', 'redeem_options']);
+  let earn = EARN_OPTIONS;
+  let redeem = REDEEM_OPTIONS;
+  if (data) {
+    const earnStr = data.find(r => r.key === 'earn_options')?.value;
+    const redeemStr = data.find(r => r.key === 'redeem_options')?.value;
+    if (earnStr) earn = JSON.parse(earnStr);
+    if (redeemStr) redeem = JSON.parse(redeemStr);
+  }
+  return { earnOptions: earn, redeemOptions: redeem };
+}
+
+async function getMerchantEarnRateWithCap(merchantId) {
+  const settings = await getMerchantRewardSettings(merchantId);
+  const earnRate = settings.earn_points_per_100;
+  
+  // Calculate points issued this month
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0,0,0,0);
+  
+  const { data, error } = await supabaseAdmin.from('orders')
+    .select('reward_points')
+    .eq('merchant_id', merchantId)
+    .gte('created_at', startOfMonth.toISOString());
+    
+  if (!error && data) {
+    const totalIssued = data.reduce((sum, order) => sum + (order.reward_points || 0), 0);
+    if (totalIssued >= 5000) {
+      return 0; // Cap reached
+    }
+  }
+  return earnRate;
+}
+
+async function getMerchantRewardSettings(merchantId) {
+  const { data, error } = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
+  if (error || !data) return { earn_points_per_100: 10, redeem_discount_per_100: 5 };
+  return data;
+} = await supabaseAdmin
     .from('app_settings')
     .select('key,value')
     .in('key', ['reward_percentage', 'reward_minimum']);
@@ -2481,11 +2517,12 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     }).eq('id', customer.id);
   }
 
+  const earnRate = await getMerchantEarnRateWithCap(merchantId);
   const { data: purchases, error: purchaseError } = await processPurchase({
     p_customer_code: customer.customer_code,
     p_merchant_id: merchantId,
     p_amount: amount,
-    p_reward_percentage: rewardPercentage,
+    p_points_per_100: earnRate,
     p_source: 'registration',
     p_location: cleanText(req.body.location, 160) || 'In-store',
   }, req.get('Idempotency-Key'));
@@ -3366,32 +3403,58 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   });
 });
 
-app.get('/api/settings/reward', requireAuth, async (_req, res) => {
+app.get('/api/settings/reward', requireAuth, async (req, res) => {
   try {
-    const settings = await getRewardSettings();
-    res.json({
-      success: true,
-      rewardPercentage: settings.defaultPercentage,
-      rewardMinimum: settings.minimum,
-      rewardOptions: REWARD_PERCENTAGES.filter((value) => value >= settings.minimum),
-    });
+    const adminConfig = await getAdminRewardConfig();
+    
+    if (req.auth.profile.role === 'admin') {
+      res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions });
+    } else {
+      const merchantSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
+      res.json({ 
+        success: true, 
+        earnOptions: adminConfig.earnOptions, 
+        redeemOptions: adminConfig.redeemOptions,
+        merchantEarnPoints: merchantSettings.earn_points_per_100,
+        merchantRedeemDiscount: merchantSettings.redeem_discount_per_100
+      });
+    }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 app.put('/api/settings/reward', requireAuth, requireRole('admin'), async (req, res) => {
-  const rewardPercentage = Number(req.body.rewardPercentage);
-  const rewardMinimum = Number(req.body.rewardMinimum);
-  if (
-    !isAllowedRewardPercentage(rewardPercentage) ||
-    !isAllowedRewardPercentage(rewardMinimum) ||
-    rewardPercentage < rewardMinimum
-  ) {
-    return res.status(400).json({
-      success: false,
-      error: 'Choose valid percentages and keep the default at or above the minimum',
-    });
+  try {
+    const { earnOptions, redeemOptions } = req.body;
+    if (earnOptions) {
+      await supabaseAdmin.from('app_settings').upsert({ key: 'earn_options', value: JSON.stringify(earnOptions) });
+    }
+    if (redeemOptions) {
+      await supabaseAdmin.from('app_settings').upsert({ key: 'redeem_options', value: JSON.stringify(redeemOptions) });
+    }
+    const adminConfig = await getAdminRewardConfig();
+    res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/merchants/:id/reward-settings', requireAuth, async (req, res) => {
+  try {
+    if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+    const { earn_points_per_100, redeem_discount_per_100 } = req.body;
+    await supabaseAdmin.from('merchants').update({
+      earn_points_per_100: Number(earn_points_per_100),
+      redeem_discount_per_100: Number(redeem_discount_per_100)
+    }).eq('id', req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
   }
   const now = new Date().toISOString();
   const { error } = await supabaseAdmin.from('app_settings').upsert([
@@ -3864,3 +3927,61 @@ if (require.main === module) app.listen(PORT, () => {
 });
 
 // ══════════════════════════════════════════
+
+app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    if (req.auth.profile.merchant_id !== merchantId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+    
+    const { customerCode, transactionAmount, pointsToRedeem } = req.body;
+    
+    if (!customerCode || !Number.isFinite(transactionAmount) || !Number.isFinite(pointsToRedeem)) {
+      return res.status(400).json({ success: false, error: 'Invalid parameters' });
+    }
+    
+    if (transactionAmount < 100) return res.status(400).json({ success: false, error: 'Minimum transaction for redemption is ₹100' });
+    if (pointsToRedeem < 100) return res.status(400).json({ success: false, error: 'Minimum points to redeem is 100' });
+    if (pointsToRedeem > 1000) return res.status(400).json({ success: false, error: 'Maximum points to redeem is 1000' });
+
+    // 1. Get Merchant settings
+    const settings = await getMerchantRewardSettings(merchantId);
+    const discountPer100 = settings.redeem_discount_per_100;
+    
+    // 2. Get Customer
+    const { data: customer, error: custError } = await supabaseAdmin.from('customers').select('id, reward_points').eq('customer_code', customerCode).single();
+    if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
+    
+    if (customer.reward_points < pointsToRedeem) {
+      return res.status(400).json({ success: false, error: 'Insufficient points balance' });
+    }
+    
+    // 3. Calculate Discount
+    const discountPercentage = (pointsToRedeem / 100) * discountPer100;
+    const discountAmount = transactionAmount * (discountPercentage / 100);
+    
+    // 4. Perform deduction transaction in Supabase
+    const { data: redemption, error: redError } = await supabaseAdmin.from('point_redemptions').insert({
+      customer_id: customer.id,
+      merchant_id: merchantId,
+      transaction_amount: transactionAmount,
+      points_redeemed: pointsToRedeem,
+      discount_percentage: discountPercentage,
+      discount_amount: discountAmount
+    }).select().single();
+    
+    if (redError) throw redError;
+    
+    // Deduct points
+    await supabaseAdmin.rpc('deduct_customer_points', {
+      p_customer_id: customer.id,
+      p_merchant_id: merchantId,
+      p_points: pointsToRedeem
+    });
+    
+    res.json({ success: true, discountAmount, newBalance: customer.reward_points - pointsToRedeem });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
