@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
-import { RedemptionModal } from '../components/RedemptionModal';
 import type { DashboardData, Period, RewardSettings, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
 
@@ -54,8 +53,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [retentionPeriod, setRetentionPeriod] = useState<Period>('today');
   const [retentionFrom, setRetentionFrom] = useState(today); const [retentionTo, setRetentionTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState<'earn' | 'redeem' | null>(null);
 
   const dashboard = useDashboard(period, from, to);
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
@@ -70,7 +68,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const settings = useQuery({
     queryKey: ['reward-settings'],
     queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }),
-    enabled: user.role === 'merchant' && scannerOpen,
+    enabled: user.role === 'merchant' && Boolean(scannerMode),
   });
   const data = dashboard.data || emptyDashboard;
   const chartData = chart.data || emptyDashboard;
@@ -91,12 +89,12 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <h2>{t('dashboard.quickActions')}</h2>
         <div>
           <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button scan-qr-action" onClick={() => setScannerOpen(true)}><ScanLine size={17} />{t('dashboard.scanQr')}</button> : null}
+          {user.role === 'merchant' ? <button type="button" className="button scan-qr-action" onClick={() => setScannerMode('earn')}><ScanLine size={17} />{t('dashboard.scanQr')}</button> : null}
           {user.role === 'merchant' ? <Link className="button customer-orders-action" to="/customer-orders">Customer orders</Link> : null}
           <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setRedeemOpen(true)}><Gift size={16}/> Redeem Points</button> : null}
+          {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setScannerMode('redeem')}><Gift size={16}/> Redeem Points</button> : null}
         </div>
       </section>
       
@@ -152,17 +150,17 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <div className="retention-list"><div><span>{t('dashboard.today')}</span><strong>{retentionData.retention.todayVisits}</strong></div><div><span>{t('dashboard.weekly')}</span><strong>{retentionData.retention.weekVisits}</strong></div><div><span>{t('dashboard.monthly')}</span><strong>{retentionData.retention.monthVisits}</strong></div></div>
         </section>
       </div>
-      {scannerOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerOpen(false); }}>
+      {Boolean(scannerMode) ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerMode(null); }}>
           <div className="modal scanner-modal" role="dialog" aria-modal="true" aria-label={t('dashboard.scanQr')}>
-            <button type="button" className="icon-button modal-close" title={t('common.close')} onClick={() => setScannerOpen(false)}><X /></button>
+            <button type="button" className="icon-button modal-close" title={t('common.close')} onClick={() => setScannerMode(null)}><X /></button>
             {settings.isPending ? <LoadingState label={`${t('common.loading')} scanner`} /> : null}
             {settings.isError ? <ErrorState error={settings.error} retry={() => settings.refetch()} /> : null}
-            {settings.data ? <QrScanner settings={settings.data} autoStart /> : null}
+            {settings.data ? <QrScanner settings={settings.data} mode={scannerMode as any} merchantId={user.merchant_id || undefined} autoStart /> : null}
           </div>
         </div>
       ) : null}
-      {redeemOpen && <RedemptionModal merchantId={user.merchant_id!} onClose={() => setRedeemOpen(false)} />}
+      
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
     </>
   );
