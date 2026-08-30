@@ -37,7 +37,7 @@ function useChartDashboard(period: Period, from: string, to: string) {
   });
 }
 
-import MerchantWallet from '../components/MerchantWallet';
+import { SubscriptionModal } from '../components/SubscriptionModal';
 
 function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
   return period === 'custom' ? <CustomDates from={from} to={to} onFrom={setFrom} onTo={setTo} /> : null;
@@ -54,6 +54,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [retentionFrom, setRetentionFrom] = useState(today); const [retentionTo, setRetentionTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [scannerMode, setScannerMode] = useState<'earn' | 'redeem' | null>(null);
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
 
   const dashboard = useDashboard(period, from, to);
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
@@ -95,16 +96,21 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
           {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setScannerMode('redeem')}><Gift size={16}/> Redeem Points</button> : null}
+          {user.role === 'merchant' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+              <span className="tag" style={{ background: 'var(--bg-inset)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
+                <strong>{merchantQuery.data?.data?.point_balance || 0}</strong> points
+              </span>
+              <button type="button" className="button primary" style={{ background: '#F59E0B', color: 'white', border: 'none' }} onClick={() => setSubscribeOpen(true)}>
+                Subscribe
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
       
-      {user.role === 'merchant' && merchantQuery.isPending && <LoadingState label="Loading wallet..." />}
-      {user.role === 'merchant' && merchantQuery.isError && <ErrorState error={merchantQuery.error} retry={() => merchantQuery.refetch()} />}
-      {user.role === 'merchant' && merchantQuery.data?.data && (
-        <MerchantWallet 
-          merchant={merchantQuery.data.data} 
-          onUpdate={() => merchantQuery.refetch()} 
-        />
+      {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
+        <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
       )}
 
       <div className="filter-row"><PeriodControl value={period} onChange={setPeriod} /><ReportDates period={period} from={from} to={to} setFrom={setFrom} setTo={setTo} /></div>
