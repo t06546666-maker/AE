@@ -161,6 +161,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
           </div>
         </div>
       ) : null}
+      {redeemOpen && <RedemptionModal merchantId={user.merchant_id!} onClose={() => setRedeemOpen(false)} />}
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
     </>
   );

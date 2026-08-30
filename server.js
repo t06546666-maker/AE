@@ -3918,11 +3918,16 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     const discountPer100 = settings.redeem_discount_per_100;
     
     // 2. Get Customer
-    const { data: customer, error: custError } = await supabaseAdmin.from('customers').select('id, reward_points').eq('customer_code', customerCode).single();
+    const { data: customer, error: custError } = await supabaseAdmin
+      .from('customers')
+      .select('id, reward_points')
+      .or(`customer_code.eq.${customerCode},phone.eq.${cleanPhone(customerCode)}`)
+      .single();
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
     
-    if (customer.reward_points < pointsToRedeem) {
-      return res.status(400).json({ success: false, error: 'Insufficient points balance' });
+    const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', merchantId).single();
+    if (!cm || cm.reward_points < pointsToRedeem) {
+      return res.status(400).json({ success: false, error: 'Insufficient points balance at this store' });
     }
     
     // 3. Calculate Discount
@@ -3948,7 +3953,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       p_points: pointsToRedeem
     });
     
-    res.json({ success: true, discountAmount, newBalance: customer.reward_points - pointsToRedeem });
+    res.json({ success: true, discountAmount, newBalance: cm.reward_points - pointsToRedeem });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
