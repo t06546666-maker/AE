@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IndianRupee, CreditCard, Activity, Coins, CalendarClock, CheckCircle2, ChevronRight, X } from 'lucide-react';
+import { IndianRupee, CreditCard, Activity, Coins, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { Merchant } from '../types';
 
@@ -12,7 +12,6 @@ interface MerchantWalletProps {
 export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<number>(50);
   const [error, setError] = useState<string>('');
 
@@ -39,27 +38,33 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
       setLoading(true);
       setError('');
       
+      // 1. Load Razorpay script
       const res = await loadRazorpay();
-      if (!res) throw new Error('Razorpay SDK failed to load. Are you online?');
+      if (!res) {
+        throw new Error('Razorpay SDK failed to load. Are you online?');
+      }
 
+      // 2. Create subscription in backend
       const { data: subscription } = await apiFetch<any>(`/api/payments/create-subscription`, {
         method: 'POST',
         body: JSON.stringify({ merchant_id: merchant.id })
       });
 
+      // 3. Open Razorpay Checkout
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_HERE',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_HERE', // Replace with your key
         subscription_id: subscription.id,
         name: 'Sharon Rewards',
         description: 'Monthly Dashboard Access & Points',
         handler: async function (response: any) {
           try {
+            // 4. Verify & save on backend
             await apiFetch(`/api/merchants/${merchant.id}/subscription`, {
               method: 'POST',
               body: JSON.stringify({
                 payment_reference: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-                mandate_id: response.razorpay_subscription_id
+                mandate_id: response.razorpay_subscription_id,
+                signature: response.razorpay_signature
               })
             });
             onUpdate();
@@ -67,16 +72,24 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
             setError(err.message || 'Payment verification failed');
           }
         },
-        theme: { color: '#6366f1' }
+        prefill: {
+          name: merchant.name,
+          email: merchant.email,
+          contact: merchant.phone
+        },
+        theme: {
+          color: '#3399cc'
+        }
       };
-
+      
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
         setError(response.error.description || 'Payment failed');
       });
       rzp.open();
+
     } catch (err: any) {
-      setError(err.message || 'Failed to initialize payment');
+      setError(err.message || 'Failed to setup subscription');
     } finally {
       setLoading(false);
     }
@@ -84,21 +97,21 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
 
   const handleTopUp = async () => {
     if (topUpAmount < 50) {
-      setError('Minimum top-up is ₹50');
+      setError('Minimum top-up is 50 points (₹50)');
       return;
     }
     
     try {
       setLoading(true);
       setError('');
+      // In a real app, this would integrate with Razorpay one-time checkout
       const payment_reference = `topup_${Date.now()}`;
       await apiFetch(`/api/merchants/${merchant.id}/top-up`, {
         method: 'POST',
         body: JSON.stringify({ points: topUpAmount, payment_reference })
       });
       onUpdate();
-      setTopUpAmount(50);
-      setShowTopUp(false);
+      setTopUpAmount(50); // reset after success
     } catch (err: any) {
       setError(err.message || 'Failed to top up');
     } finally {
@@ -107,122 +120,119 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
   };
 
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-      
-      {/* Mini Wallet Box */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '12px', 
-        background: 'var(--bg-inset)', 
-        border: '1px solid var(--border)',
-        padding: '6px 16px',
-        borderRadius: '24px',
-        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', fontWeight: '600' }}>
-          <Coins size={16} style={{ color: 'var(--accent-vibrant, #f59e0b)' }} />
-          <span>{currentPoints} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>Pts</span></span>
+    <div className="panel" style={{ border: '1px solid var(--border)', padding: '24px', borderRadius: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ background: 'var(--accent)', color: 'var(--primary)', padding: '12px', borderRadius: '50%' }}>
+          <Coins size={24} />
         </div>
-
-        <div style={{ width: '1px', height: '16px', background: 'var(--border)' }}></div>
-
-        {isExpired ? (
-           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--error)', fontSize: '0.85rem', fontWeight: '500' }}>
-             <Activity size={14} />
-             <span>Inactive</span>
-           </div>
-        ) : (
-           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '0.85rem', fontWeight: '500' }}>
-             <CheckCircle2 size={14} />
-             <span>Active</span>
-           </div>
-        )}
+        <div>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>Merchant Wallet & Access</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Manage your dashboard subscription and point balance</p>
+        </div>
       </div>
 
-      {/* Action Button */}
-      {isExpired ? (
-        <button 
-          className="button primary" 
-          onClick={handlePurchaseSubscription}
-          disabled={loading}
-          style={{ padding: '6px 16px', height: '36px', display: 'flex', gap: '6px', borderRadius: '24px' }}
-        >
-          <CalendarClock size={16} />
-          {loading ? '...' : 'Setup AutoPay'}
-        </button>
-      ) : (
-        <button 
-          className="button secondary" 
-          onClick={() => setShowTopUp(!showTopUp)}
-          style={{ padding: '6px 16px', height: '36px', display: 'flex', gap: '6px', borderRadius: '24px', position: 'relative' }}
-        >
-          <IndianRupee size={14} />
-          Top Up
-        </button>
-      )}
+      <div style={{ 
+        background: 'var(--bg-inset)', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <div>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Current Balance</span>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {currentPoints} <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>Points</span>
+          </div>
+        </div>
+        
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Subscription Status</span>
+          {isExpired ? (
+             <div style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+               <Activity size={16} />
+               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>Expired / Inactive</span>
+             </div>
+          ) : (
+             <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+               <CheckCircle2 size={16} />
+               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>
+                 Active until {expiryDate?.toLocaleDateString()}
+               </span>
+             </div>
+          )}
+        </div>
+      </div>
 
-      {/* Top Up Popover */}
-      {showTopUp && !isExpired && (
-        <div style={{ 
-          position: 'absolute', 
-          top: 'calc(100% + 10px)', 
-          right: 0, 
-          background: 'var(--bg-panel)', 
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '16px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-          zIndex: 100,
-          width: '260px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h4 style={{ margin: 0, fontSize: '1rem' }}>Top Up Points</h4>
-            <button onClick={() => setShowTopUp(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-              <X size={16} />
-            </button>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <input 
-              type="number"
-              value={topUpAmount}
-              onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
-              min={50}
-              className="input-field"
-              style={{ flex: 1, padding: '8px' }}
-            />
-          </div>
-          
-          <button 
-            className="button primary"
-            onClick={handleTopUp}
-            disabled={loading || topUpAmount < 50}
-            style={{ width: '100%', justifyContent: 'center' }}
-          >
-            {loading ? 'Processing...' : `Pay ₹${topUpAmount}`}
-          </button>
+      {error && (
+        <div style={{ color: 'var(--error)', background: 'var(--error-light)', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '0.9rem' }}>
+          {error}
         </div>
       )}
 
-      {/* Error Message Tooltip */}
-      {error && (
-        <div style={{ 
-          position: 'absolute', 
-          top: 'calc(100% + 5px)', 
-          right: '0', 
-          color: 'var(--error)', 
-          background: 'var(--bg-panel)', 
-          border: '1px solid var(--error)',
-          padding: '8px 12px', 
-          borderRadius: '6px', 
-          fontSize: '0.8rem',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          whiteSpace: 'nowrap',
-          zIndex: 50
-        }}>
-          {error}
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', marginLeft: '8px', cursor: 'pointer' }}><X size={12} /></button>
+      {isExpired ? (
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--error)', padding: '20px', borderRadius: '8px' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>Dashboard Access Locked</h4>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--text-muted)' }}>
+            Your monthly subscription is inactive. Set up AutoPay for ₹200/month to restore dashboard access. Each renewal grants you 100 reward points!
+          </p>
+          <button 
+            className="btn btn-primary" 
+            onClick={handlePurchaseSubscription}
+            disabled={loading}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px' }}
+          >
+            <CalendarClock size={18} />
+            {loading ? 'Setting up AutoPay...' : 'Setup AutoPay (₹200/mo)'}
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div>
+              <h4 style={{ margin: '0 0 8px 0' }}>Top Up Points</h4>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)' }}>
+                Purchase more points to continue issuing rewards to your customers. (1 Point = ₹1)
+              </p>
+            </div>
+            {hasMandate && (
+              <span style={{ background: 'var(--success-light)', color: 'var(--success)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                AutoPay Active
+              </span>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                <IndianRupee size={16} />
+              </div>
+              <input 
+                type="number"
+                value={topUpAmount}
+                onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
+                min={50}
+                disabled={loading}
+                className="input-field"
+                style={{ width: '100%', padding: '10px 10px 10px 36px', height: '100%', borderRadius: '6px', border: '1px solid var(--border)' }}
+              />
+            </div>
+            <button 
+              className="btn btn-secondary"
+              onClick={handleTopUp}
+              disabled={loading || topUpAmount < 50}
+              style={{ whiteSpace: 'nowrap', padding: '0 20px' }}
+            >
+              <CreditCard size={16} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />
+              {loading ? '...' : `Pay ₹${topUpAmount}`}
+            </button>
+          </div>
+          {topUpAmount < 50 && (
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--error)' }}>Minimum top-up is ₹50.</p>
+          )}
         </div>
       )}
     </div>
