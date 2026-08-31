@@ -129,7 +129,7 @@ BEGIN
 
   UPDATE public.customer_merchants
   SET reward_points = reward_points + v_points,
-      qr_scans = qr_scans + CASE WHEN p_source = 'qr' THEN 1 ELSE 0 END
+      qr_scans = customer_merchants.qr_scans + CASE WHEN p_source = 'qr' THEN 1 ELSE 0 END
   WHERE customer_merchants.customer_id = v_customer.id AND customer_merchants.merchant_id = p_merchant_id
   RETURNING * INTO v_membership;
 
