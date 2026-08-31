@@ -1256,6 +1256,14 @@ app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
     .maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
   if (!data) return res.status(404).json({ success: false, error: 'Merchant not found' });
+  
+  const { data: redemptionData } = await supabaseAdmin
+    .from('point_redemptions')
+    .select('points_redeemed')
+    .eq('merchant_id', req.params.id);
+  
+  data.total_points_redeemed = (redemptionData || []).reduce((sum, r) => sum + r.points_redeemed, 0);
+  
   return res.json({ success: true, data });
 });
 
