@@ -27,6 +27,8 @@ CREATE POLICY "merchants read own point redemptions" ON public.point_redemptions
 USING (merchant_id = public.current_merchant_id());
 
 -- Update process_purchase RPC function to use the new exact point calculation logic
+DROP FUNCTION IF EXISTS public.process_purchase(text, text, uuid, numeric, text, text, integer);
+
 CREATE OR REPLACE FUNCTION public.process_purchase(
   p_idempotency_key text,
   p_customer_code text,
