@@ -84,7 +84,25 @@ export function Dashboard({ user }: { user: UserProfile }) {
       <PageHeader
         title={t('dashboard.title')}
         subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')}
-        actions={<><button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button></>}
+        actions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {user.role === 'merchant' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
+                <span className="tag" style={{ background: 'var(--bg-inset)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
+                  <strong>{merchantQuery.data?.data?.point_balance || 0}</strong> Available Points
+                </span>
+                <span className="tag" style={{ background: 'var(--bg-inset)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
+                  <strong>{(merchantQuery.data?.data as any)?.total_points_redeemed || 0}</strong> Points Redeemed
+                </span>
+                <button type="button" className="button primary" style={{ background: '#F59E0B', color: 'white', border: 'none' }} onClick={() => setSubscribeOpen(true)}>
+                  Subscribe
+                </button>
+              </div>
+            ) : null}
+            <button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button>
+            <button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button>
+          </div>
+        }
       />
       <section className="panel quick-actions quick-actions-top">
         <h2>{t('dashboard.quickActions')}</h2>
@@ -96,19 +114,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
           <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
           {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setScannerMode('redeem')}><Gift size={16}/> Redeem Points</button> : null}
-          {user.role === 'merchant' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-              <span className="tag" style={{ background: 'var(--bg-inset)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
-                <strong>{merchantQuery.data?.data?.point_balance || 0}</strong> Available Points
-              </span>
-              <span className="tag" style={{ background: 'var(--bg-inset)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
-                <strong>{(merchantQuery.data?.data as any)?.total_points_redeemed || 0}</strong> Points Redeemed
-              </span>
-              <button type="button" className="button primary" style={{ background: '#F59E0B', color: 'white', border: 'none' }} onClick={() => setSubscribeOpen(true)}>
-                Subscribe
-              </button>
-            </div>
-          ) : null}
         </div>
       </section>
       
