@@ -2480,6 +2480,9 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   let createdCustomer = false;
   if (error) return res.status(400).json({ success: false, error: error.message });
   if (!customer) {
+    const { data: merchantData } = await supabaseAdmin.from('merchants').select('network_id').eq('id', merchantId).single();
+    const networkId = merchantData?.network_id;
+
     const customerCode = `C${Date.now().toString(36).toUpperCase()}`;
     const created = await supabaseAdmin.from('customers').insert({
       customer_code: customerCode,
@@ -2487,7 +2490,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
       phone,
       email: email || null,
       merchant_id: merchantId,
-      network_id: '00000000-0000-0000-0000-000000000000',
+      network_id: networkId,
       whatsapp_opt_in_at: new Date().toISOString(),
     }).select('id,customer_code,name,phone,email,created_at').single();
     if (created.error) return res.status(400).json({ success: false, error: created.error.message });
