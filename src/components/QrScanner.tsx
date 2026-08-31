@@ -161,7 +161,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     onSuccess(data) {
       setRedeemResult(data);
       showToast('Redemption successful!', 'success');
-      setCustomer(null); setAmount(''); setPointsToRedeem(''); locked.current = false;
+      setAmount(''); setPointsToRedeem(''); locked.current = false;
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -202,7 +202,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                       <span>Remaining pts:</span><strong>{redeemResult.newBalance} pts</strong>
                     </div>
                   </div>
-                  <button type="button" className="button primary full-button" onClick={() => setRedeemResult(null)}>Done</button>
+                  <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); }}>Done</button>
                 </div>
               ) : mode === 'redeem' ? (
                 <>

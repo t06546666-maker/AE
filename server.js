@@ -3955,10 +3955,15 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     
     // 2. Get Customer
     const cleanPhone = (phone) => phone ? String(phone).replace(/\D/g, '') : '';
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerCode);
+    const orQuery = isUUID 
+      ? `id.eq.${customerCode}` 
+      : `customer_code.eq.${customerCode},phone.eq.${cleanPhone(customerCode)}`;
+      
     const { data: customer, error: custError } = await supabaseAdmin
       .from('customers')
       .select('id, reward_points, name, phone')
-      .or(`customer_code.eq.${customerCode},phone.eq.${cleanPhone(customerCode)}`)
+      .or(orQuery)
       .single();
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
     
@@ -3983,12 +3988,26 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     
     if (redError) throw redError;
     
-    // Deduct points
-    await supabaseAdmin.rpc('deduct_customer_points', {
-      p_customer_id: customer.id,
-      p_merchant_id: merchantId,
-      p_points: pointsToRedeem
-    });
+    // Deduct points from global customer balance
+    const { error: deductCustError } = await supabaseAdmin.from('customers')
+      .update({ reward_points: Math.max(0, customer.reward_points - pointsToRedeem) })
+      .eq('id', customer.id);
+      
+    if (deductCustError) {
+      console.error('Failed to deduct global points:', deductCustError);
+      throw new Error(`Failed to deduct global points: ${deductCustError.message}`);
+    }
+
+    // Deduct points from merchant-specific balance
+    const { error: deductMerchError } = await supabaseAdmin.from('customer_merchants')
+      .update({ reward_points: Math.max(0, cm.reward_points - pointsToRedeem) })
+      .eq('customer_id', customer.id)
+      .eq('merchant_id', merchantId);
+      
+    if (deductMerchError) {
+      console.error('Failed to deduct merchant points:', deductMerchError);
+      throw new Error(`Failed to deduct merchant points: ${deductMerchError.message}`);
+    }
     
     const newBalance = cm.reward_points - pointsToRedeem;
     
