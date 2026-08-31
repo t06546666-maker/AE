@@ -77,9 +77,12 @@ BEGIN
   SELECT name INTO v_merchant_name FROM public.merchants WHERE id = p_merchant_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Merchant not found'; END IF;
 
-  INSERT INTO public.customer_merchants (customer_id, merchant_id)
-  VALUES (v_customer.id, p_merchant_id)
-  ON CONFLICT (customer_id, merchant_id) DO NOTHING;
+  BEGIN
+    INSERT INTO public.customer_merchants (customer_id, merchant_id)
+    VALUES (v_customer.id, p_merchant_id);
+  EXCEPTION WHEN unique_violation THEN
+    -- Do nothing on conflict
+  END;
 
   SELECT * INTO v_membership
   FROM public.customer_merchants
