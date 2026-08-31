@@ -2487,6 +2487,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
       phone,
       email: email || null,
       merchant_id: merchantId,
+      network_id: '00000000-0000-0000-0000-000000000000',
       whatsapp_opt_in_at: new Date().toISOString(),
     }).select('id,customer_code,name,phone,email,created_at').single();
     if (created.error) return res.status(400).json({ success: false, error: created.error.message });
