@@ -3926,7 +3926,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     const cleanPhone = (phone) => phone ? String(phone).replace(/\D/g, '') : '';
     const { data: customer, error: custError } = await supabaseAdmin
       .from('customers')
-      .select('id, reward_points')
+      .select('id, reward_points, name, phone')
       .or(`customer_code.eq.${customerCode},phone.eq.${cleanPhone(customerCode)}`)
       .single();
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
@@ -3959,7 +3959,22 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       p_points: pointsToRedeem
     });
     
-    res.json({ success: true, discountAmount, newBalance: cm.reward_points - pointsToRedeem });
+    // Attempt to send a WhatsApp notification
+    const newBalance = cm.reward_points - pointsToRedeem;
+    const message = `🎉 *Redemption Successful!*
+
+Hi ${customer.name || 'Customer'},
+You just redeemed ${pointsToRedeem} points for a discount of ₹${discountAmount.toFixed(2)} at our store.
+
+Your new point balance is ${newBalance} points.
+Thank you!`;
+    
+    let whatsapp = { sent: false };
+    if (customer.phone) {
+       whatsapp = await sendWhatsAppText(customer.phone, message).catch(e => ({ sent: false, error: e.message }));
+    }
+    
+    res.json({ success: true, discountAmount, newBalance, whatsapp });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
