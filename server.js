@@ -84,6 +84,7 @@ const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'customer_welcome_qr';
 const WA_QR_TEMPLATE = cleanText(process.env.WA_QR_TEMPLATE, 512);
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
+const WA_REDEEM_TEMPLATE = process.env.WA_REDEEM_TEMPLATE || 'redeem_receipt';
 const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
   process.env.WA_MERCHANT_CREDENTIALS_TEMPLATE || 'merchant_account_ready',
   512,
@@ -794,6 +795,28 @@ async function sendRewardWhatsApp(purchase, logId) {
     orderId: purchase.order_id,
     recipient: purchase.customer_phone,
     templateName: WA_REWARD_TEMPLATE,
+    logId,
+    components: [{
+      type: 'body',
+      parameters,
+    }],
+  });
+}
+
+async function sendRedeemWhatsApp(purchase, logId) {
+  const parameters = [
+    { type: 'text', text: purchase.customer_name },
+    { type: 'text', text: purchase.merchant_name },
+    { type: 'text', text: formatPoints(Math.abs(purchase.points_earned)) },
+    { type: 'text', text: Number(purchase.amount).toFixed(2) },
+    { type: 'text', text: formatPoints(purchase.total_points) },
+  ];
+
+  return sendWhatsAppTemplate({
+    customerId: purchase.customer_id,
+    orderId: purchase.order_id,
+    recipient: purchase.customer_phone,
+    templateName: WA_REDEEM_TEMPLATE,
     logId,
     components: [{
       type: 'body',
@@ -2690,12 +2713,12 @@ async function queueWhatsApp(purchase, kind) {
   }
   const templateName = kind === 'registration'
     ? WA_QR_TEMPLATE || WA_REGISTRATION_TEMPLATE
-    : WA_REWARD_TEMPLATE;
+    : (kind === 'redeem' ? WA_REDEEM_TEMPLATE : WA_REWARD_TEMPLATE);
   const { data, error } = await supabaseAdmin.from('whatsapp_messages').insert({
     customer_id: purchase.customer_id,
     order_id: purchase.order_id,
     merchant_id: purchase.merchant_id || null,
-    message_type: kind === 'registration' ? 'qr' : 'order',
+    message_type: kind === 'registration' ? 'qr' : (kind === 'redeem' ? 'redeem' : 'order'),
     template_name: templateName,
     recipient: purchase.customer_phone,
     status: 'queued',
@@ -2707,9 +2730,9 @@ async function queueWhatsApp(purchase, kind) {
 async function runPurchaseNotifications(purchase, kind, whatsappJob, sendEmail = false) {
   const tasks = [];
   if (whatsappJob.queued) {
-    tasks.push(kind === 'registration'
-      ? sendRegistrationWhatsApp(purchase, whatsappJob.logId)
-      : sendRewardWhatsApp(purchase, whatsappJob.logId));
+    if (kind === 'registration') tasks.push(sendRegistrationWhatsApp(purchase, whatsappJob.logId));
+    else if (kind === 'redeem') tasks.push(sendRedeemWhatsApp(purchase, whatsappJob.logId));
+    else tasks.push(sendRewardWhatsApp(purchase, whatsappJob.logId));
   }
   if (sendEmail && purchase.customer_email) {
     tasks.push(sendWelcomeEmail(purchase).then(async (result) => {
@@ -3983,9 +4006,9 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       total_points: newBalance
     };
 
-    const whatsapp = await queueWhatsApp(fakePurchase, 'reward');
+    const whatsapp = await queueWhatsApp(fakePurchase, 'redeem');
     if (whatsapp.queued) {
-      scheduleBackground(() => sendRewardWhatsApp(fakePurchase, whatsapp.logId));
+      scheduleBackground(() => sendRedeemWhatsApp(fakePurchase, whatsapp.logId));
     }
     
     res.json({ success: true, discountAmount, newBalance, whatsapp });
