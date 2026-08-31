@@ -46,8 +46,8 @@ RETURNS TABLE (
   customer_email text,
   merchant_name text,
   amount numeric,
-  points_earned integer,
-  total_points integer,
+  points_earned numeric,
+  total_points numeric,
   qr_scans integer,
   is_returning boolean,
   created_at timestamptz
@@ -61,7 +61,7 @@ DECLARE
   v_membership public.customer_merchants%rowtype;
   v_merchant_name text;
   v_order public.orders%rowtype;
-  v_points integer;
+  v_points numeric;
   v_prior_orders integer;
   v_eligible_amount numeric;
 BEGIN
@@ -143,7 +143,7 @@ END;
 $$;
 
 -- RPC to deduct points safely
-CREATE OR REPLACE FUNCTION public.deduct_customer_points(p_customer_id UUID, p_merchant_id UUID, p_points INTEGER)
+CREATE OR REPLACE FUNCTION public.deduct_customer_points(p_customer_id UUID, p_merchant_id UUID, p_points NUMERIC)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
