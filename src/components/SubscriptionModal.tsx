@@ -16,6 +16,8 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [success, setSuccess] = useState(false);
+
   const handlePurchaseSubscription = async () => {
     try {
       console.log('Purchase clicked for merchant:', merchant.id);
@@ -31,8 +33,11 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
       });
       console.log('Subscription response:', res);
       
-      onUpdate();
-      onClose();
+      setSuccess(true);
+      setTimeout(() => {
+        onUpdate();
+        onClose();
+      }, 1500);
     } catch (err: any) {
       console.error('Subscription error:', err);
       setError(err.message || 'Failed to setup subscription');
@@ -122,11 +127,17 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
             <button 
               type="button"
               className="button primary" 
-              style={{ justifyContent: 'center', background: '#F59E0B', color: '#fff', border: 'none' }}
-              disabled={loading}
+              style={{ 
+                justifyContent: 'center', 
+                background: success ? '#10b981' : '#F59E0B', 
+                color: '#fff', 
+                border: 'none',
+                transition: 'background 0.3s'
+              }}
+              disabled={loading || success}
               onClick={handlePurchaseSubscription}
             >
-              {loading ? <Loader2 className="spinning" size={16} /> : 'Select'}
+              {loading ? <Loader2 className="spinning" size={16} /> : success ? 'Successfully Redeemed!' : 'Select'}
             </button>
             <button className="button secondary" disabled style={{ justifyContent: 'center', opacity: 0.5 }}>Coming Soon</button>
             <button className="button secondary" disabled style={{ justifyContent: 'center', opacity: 0.5 }}>Coming Soon</button>

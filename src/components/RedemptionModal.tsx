@@ -28,7 +28,7 @@ export function RedemptionModal({ merchantId, onClose }: RedemptionModalProps) {
       })
     }),
     onSuccess(data) {
-      setResult(data);
+      setTimeout(() => setResult(data), 1500);
       showToast('Redemption successful!', 'success');
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -114,11 +114,16 @@ export function RedemptionModal({ merchantId, onClose }: RedemptionModalProps) {
           
           <button 
             className="button primary" 
-            style={{ marginTop: '8px', justifyContent: 'center' }} 
-            disabled={redeem.isPending || !customerCode || !transactionAmount || !pointsToRedeem}
+            style={{ 
+              marginTop: '8px', 
+              justifyContent: 'center',
+              background: redeem.isSuccess ? '#10b981' : '',
+              transition: 'background 0.3s'
+            }} 
+            disabled={redeem.isPending || !customerCode || !transactionAmount || !pointsToRedeem || redeem.isSuccess}
             onClick={() => redeem.mutate()}
           >
-            {redeem.isPending ? 'Processing...' : 'Calculate & Redeem'}
+            {redeem.isPending ? 'Processing...' : redeem.isSuccess ? 'Successfully Redeemed!' : 'Calculate & Redeem'}
           </button>
         </div>
       </div>
