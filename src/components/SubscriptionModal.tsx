@@ -16,67 +16,21 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const loadRazorpay = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePurchaseSubscription = async () => {
     try {
       setLoading(true);
       setError('');
       
-      const res = await loadRazorpay();
-      if (!res) {
-        throw new Error('Razorpay SDK failed to load. Are you online?');
-      }
-
-      const { data: subscription } = await apiFetch<any>(`/api/payments/create-subscription`, {
+      // Simulate automatic payment success without Razorpay modal
+      await apiFetch(`/api/merchants/${merchant.id}/subscription`, {
         method: 'POST',
-        body: JSON.stringify({ merchant_id: merchant.id })
+        body: JSON.stringify({
+          payment_reference: 'mock_payment_' + Date.now(),
+        })
       });
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_HERE',
-        subscription_id: subscription.id,
-        name: 'Sharon Rewards',
-        description: 'Monthly Dashboard Access & Points',
-        handler: async function (response: any) {
-          try {
-            await apiFetch(`/api/merchants/${merchant.id}/subscription`, {
-              method: 'POST',
-              body: JSON.stringify({
-                payment_reference: response.razorpay_payment_id,
-                mandate_id: response.razorpay_subscription_id,
-                signature: response.razorpay_signature
-              })
-            });
-            onUpdate();
-            onClose();
-          } catch (err: any) {
-            setError(err.message || 'Payment verification failed');
-          }
-        },
-        prefill: {
-          name: merchant.name,
-          email: merchant.email,
-          contact: merchant.phone
-        },
-        theme: {
-          color: '#F59E0B'
-        }
-      };
       
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', function (response: any) {
-        setError(response.error.description || 'Payment failed');
-      });
-      rzp.open();
+      onUpdate();
+      onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to setup subscription');
     } finally {
