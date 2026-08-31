@@ -18,21 +18,25 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
 
   const handlePurchaseSubscription = async () => {
     try {
+      console.log('Purchase clicked for merchant:', merchant.id);
       setLoading(true);
       setError('');
       
       // Simulate automatic payment success without Razorpay modal
-      await apiFetch(`/api/merchants/${merchant.id}/subscription`, {
+      const res = await apiFetch(`/api/merchants/${merchant.id}/subscription`, {
         method: 'POST',
         body: JSON.stringify({
           payment_reference: 'mock_payment_' + Date.now(),
         })
       });
+      console.log('Subscription response:', res);
       
       onUpdate();
       onClose();
     } catch (err: any) {
+      console.error('Subscription error:', err);
       setError(err.message || 'Failed to setup subscription');
+      alert('Subscription failed: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -116,6 +120,7 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '20px 16px', gap: '16px' }}>
             <div />
             <button 
+              type="button"
               className="button primary" 
               style={{ justifyContent: 'center', background: '#F59E0B', color: '#fff', border: 'none' }}
               disabled={loading}
