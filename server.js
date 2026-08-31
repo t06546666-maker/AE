@@ -3923,6 +3923,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     const discountPer100 = settings.redeem_discount_per_100;
     
     // 2. Get Customer
+    const cleanPhone = (phone) => phone ? String(phone).replace(/\D/g, '') : '';
     const { data: customer, error: custError } = await supabaseAdmin
       .from('customers')
       .select('id, reward_points')
