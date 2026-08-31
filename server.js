@@ -3832,7 +3832,7 @@ app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
     expiryDate.setDate(expiryDate.getDate() + 30);
     
     const updatePayload = {
-      point_balance: currentPoints + 100,
+      point_balance: currentPoints + 10000,
       subscription_expires_at: expiryDate.toISOString(),
     };
     if (mandate_id) updatePayload.subscription_mandate_id = mandate_id;
@@ -3844,7 +3844,7 @@ app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
 
     if (updateError) throw updateError;
     
-    res.json({ success: true, message: 'Subscription purchased successfully. 100 points added.' });
+    res.json({ success: true, message: 'Subscription purchased successfully. 10000 points added.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message || 'Failed to process subscription' });
   }
