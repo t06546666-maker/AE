@@ -3931,7 +3931,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       .single();
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
     
-    const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', merchantId).single();
+    const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points, merchants(name)').eq('customer_id', customer.id).eq('merchant_id', merchantId).single();
     if (!cm || cm.reward_points < pointsToRedeem) {
       return res.status(400).json({ success: false, error: 'Insufficient points balance at this store' });
     }
@@ -3959,19 +3959,25 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       p_points: pointsToRedeem
     });
     
-    // Attempt to send a WhatsApp notification
     const newBalance = cm.reward_points - pointsToRedeem;
-    const message = `🎉 *Redemption Successful!*
-
-Hi ${customer.name || 'Customer'},
-You just redeemed ${pointsToRedeem} points for a discount of ₹${discountAmount.toFixed(2)} at our store.
-
-Your new point balance is ${newBalance} points.
-Thank you!`;
     
-    let whatsapp = { sent: false };
-    if (customer.phone) {
-       whatsapp = await sendWhatsAppText(customer.phone, message).catch(e => ({ sent: false, error: e.message }));
+    const fakePurchase = {
+      customer_id: customer.id,
+      customer_name: customer.name || 'Customer',
+      customer_phone: customer.phone,
+      merchant_id: merchantId,
+      merchant_name: cm.merchants?.name || 'Store',
+      order_id: null,
+      order_no: `RD-${String(Date.now()).slice(-6)}`,
+      amount: transactionAmount,
+      reward_percentage: discountPercentage,
+      points_earned: -pointsToRedeem,
+      total_points: newBalance
+    };
+
+    const whatsapp = await queueWhatsApp(fakePurchase, 'reward');
+    if (whatsapp.queued) {
+      scheduleBackground(() => sendRewardWhatsApp(fakePurchase, whatsapp.logId));
     }
     
     res.json({ success: true, discountAmount, newBalance, whatsapp });
