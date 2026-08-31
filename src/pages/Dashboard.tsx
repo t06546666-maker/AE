@@ -85,9 +85,9 @@ export function Dashboard({ user }: { user: UserProfile }) {
         title={t('dashboard.title')}
         subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')}
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             {user.role === 'merchant' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '9999px', padding: '3px 12px 3px 3px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #ca8a04', boxShadow: 'inset 0 0 0 2px #fef08a' }}>
                     <span style={{ color: 'white', fontWeight: '900', fontSize: '13px' }}>S</span>
