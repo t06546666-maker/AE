@@ -130,18 +130,27 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </div>
         </aside>
         <main className="main-content">
-          <div className="mobile-topbar desktop-view-hidden">
-            <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none', width: '40px' }} onClick={() => setSidebarOpen(true)}><Menu size={24} color="#1a1a1a" /></button>
-            <div className="mobile-topbar-brand" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>AE</div>
+          <div className="mobile-topbar desktop-view-hidden" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'white' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
+                <Menu size={28} color="#1a1a1a" strokeWidth={2} />
+              </button>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#3b28cc', letterSpacing: '0.5px' }}>AE</div>
+            </div>
             {user.role === 'merchant' ? (
-              <div className="notification-menu">
-                <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none', width: '40px' }} onClick={() => setNotificationsOpen(v => !v)}>
-                  <Bell size={24} color="#1a1a1a" />
-                  {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: 4, right: 8, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span> : null}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => document.body.classList.toggle('dark')}>
+                  <Moon size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
-                {renderNotificationPopover()}
+                <div className="notification-menu">
+                  <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', padding: 0 }} onClick={() => setNotificationsOpen(v => !v)}>
+                    <Bell size={24} color="#1a1a1a" strokeWidth={2} />
+                    {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: -4, right: -4, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 700, borderRadius: '8px', padding: '0 4px' }}>{notifications.data.unreadCount}</span> : null}
+                  </button>
+                  {renderNotificationPopover()}
+                </div>
               </div>
-            ) : <div style={{ width: '40px' }} />}
+            ) : <div />}
           </div>
           {children}
         </main>

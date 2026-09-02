@@ -486,8 +486,9 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 }
 
 @media (max-width: 820px) {
-  .app-shell:has(.mobile-dashboard-wrapper) .topbar { display: none; }
-  .app-shell:has(.mobile-dashboard-wrapper) .main-content { padding: 0; }
+  .topbar { display: none; }
+  .main-content { padding: 0; padding-bottom: 80px; }
+  .page-header { display: none !important; }
 }
 
 /* Mobile Dashboard UI Styles */
