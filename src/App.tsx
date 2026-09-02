@@ -19,6 +19,8 @@ import { Orders } from './pages/Orders';
 import { Products } from './pages/Products';
 import { CustomerOrders } from './pages/CustomerOrders';
 import { RewardSettingsPage } from './pages/RewardSettings';
+import { More } from './pages/More';
+import { Rewards } from './pages/Rewards';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -107,6 +109,8 @@ export function App() {
           <Route path="/customers" element={<Customers user={user} />} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />
+          <Route path="/rewards" element={<Rewards user={user} />} />
+          <Route path="/more" element={<More user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />

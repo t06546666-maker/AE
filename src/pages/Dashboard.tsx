@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Download, Gift, IndianRupee, ReceiptText, ScanLine, Sparkles, UserRoundCheck, Users, X } from 'lucide-react';
+import { 
+  Bell, ChevronRight, Download, Gift, Headset, Home, IndianRupee, Menu, MoreHorizontal, ReceiptText, QrCode, ScanLine, Sparkles, Tag, UserRoundCheck, Users, X 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
 import type { DashboardData, Period, RewardSettings, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
+import { SubscriptionModal } from '../components/SubscriptionModal';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -36,8 +39,6 @@ function useChartDashboard(period: Period, from: string, to: string) {
     enabled: Boolean(range),
   });
 }
-
-import { SubscriptionModal } from '../components/SubscriptionModal';
 
 function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
   return period === 'custom' ? <CustomDates from={from} to={to} onFrom={setFrom} onTo={setTo} /> : null;
@@ -71,6 +72,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
     queryFn: ({ signal }) => apiFetch<RewardSettings>('/api/settings/reward', { signal }),
     enabled: user.role === 'merchant' && Boolean(scannerMode),
   });
+
   const data = dashboard.data || emptyDashboard;
   const chartData = chart.data || emptyDashboard;
   const retentionData = retention.data || emptyDashboard;
@@ -79,101 +81,158 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const chartNeedsScroll = chartPeriod === 'custom' && chartData.intervals.length > 7;
 
   if (dashboard.isError) return <><PageHeader title={t('dashboard.title')} subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')} /><ErrorState error={dashboard.error} retry={() => dashboard.refetch()} /></>;
+
   return (
-    <>
-      <PageHeader
-        title={t('dashboard.title')}
-        subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')}
-        actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {user.role === 'merchant' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '9999px', padding: '3px 12px 3px 3px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #ca8a04', boxShadow: 'inset 0 0 0 2px #fef08a' }}>
-                    <span style={{ color: 'white', fontWeight: '900', fontSize: '13px' }}>S</span>
-                  </div>
-                  <span style={{ color: '#eab308', fontWeight: '800', fontSize: '14px' }}>
-                    {(merchantQuery.data?.data?.point_balance || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '9999px', padding: '3px 12px 3px 3px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4b5563', boxShadow: 'inset 0 0 0 2px #e5e7eb' }}>
-                    <span style={{ color: 'white', fontWeight: '900', fontSize: '13px' }}>R</span>
-                  </div>
-                  <span style={{ color: '#6b7280', fontWeight: '800', fontSize: '14px' }}>
-                    {((merchantQuery.data?.data as any)?.total_points_redeemed || 0).toLocaleString()} Redeemed
-                  </span>
-                </div>
-                <button type="button" className="button primary" style={{ background: '#F59E0B', color: 'white', border: 'none' }} onClick={() => setSubscribeOpen(true)}>
-                  Subscribe
-                </button>
+    <div className="mobile-dashboard-wrapper">
+      {/* Mobile Top Bar */}
+      <div className="mobile-topbar">
+        <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}><Menu size={24} color="#1a1a1a" /></button>
+        <div className="mobile-topbar-brand">AE</div>
+        <button className="icon-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none' }}>
+          <Bell size={24} color="#1a1a1a" />
+          <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span>
+        </button>
+      </div>
+
+      {/* Greeting */}
+      <div className="mobile-greeting">
+        <h1>{t('dashboard.goodMorning', 'Good morning!')}</h1>
+        <p>{t('dashboard.growBusiness', 'Let\'s grow your business today.')}</p>
+      </div>
+
+      {/* Main Action - Scan QR */}
+      {user.role === 'merchant' ? (
+        <>
+          <button className="mobile-main-action" onClick={() => setScannerMode('earn')}>
+            <div className="mobile-main-action-content">
+              <div className="mobile-main-action-icon"><QrCode /></div>
+              <div className="mobile-main-action-text">
+                <h2>{t('dashboard.scanQrActionTitle', 'Scan QR')}</h2>
+                <p>{t('dashboard.newSale', 'New Sale')}</p>
               </div>
-            ) : null}
-            <button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button>
-            <button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button>
-          </div>
-        }
-      />
-      <section className="panel quick-actions quick-actions-top">
-        <h2>{t('dashboard.quickActions')}</h2>
-        <div>
-          <Link className="button primary" to="/add-customer">{t(user.role === 'admin' ? 'dashboard.addCustomer' : 'dashboard.addBuyer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button scan-qr-action" onClick={() => setScannerMode('earn')}><ScanLine size={17} />{t('dashboard.scanQr')}</button> : null}
-          {user.role === 'merchant' ? <Link className="button customer-orders-action" to="/customer-orders">Customer orders</Link> : null}
-          <Link className="button secondary" to="/customers">{t('dashboard.viewCustomers')}</Link>
-          <Link className="button secondary" to="/orders">{t('dashboard.viewOrders')}</Link>
-          <Link className="button secondary" to="/offers"><Gift size={16} />{t(user.role === 'admin' ? 'dashboard.reviewOffers' : 'dashboard.createOffer')}</Link>
-          {user.role === 'merchant' ? <button type="button" className="button primary" onClick={() => setScannerMode('redeem')}><Gift size={16}/> Redeem Points</button> : null}
-        </div>
-      </section>
-      
-      {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
-        <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
-      )}
+            </div>
+            <ChevronRight color="white" opacity={0.8} />
+          </button>
+          <Link to="/add-customer" className="mobile-sub-action">
+             <div className="mobile-sub-action-text">
+               <div style={{ background: '#f1f5f9', padding: '8px', borderRadius: '8px' }}><Users size={20} color="#3b28cc" /></div>
+               <div>
+                 <p>{t('dashboard.noQrPrompt', 'Customer doesn\'t have QR?')}</p>
+                 <strong>{t('dashboard.enterMobile', 'Enter mobile number')}</strong>
+               </div>
+             </div>
+             <ChevronRight color="#94a3b8" />
+          </Link>
+        </>
+      ) : null}
 
-      <div className="filter-row"><PeriodControl value={period} onChange={setPeriod} /><ReportDates period={period} from={from} to={to} setFrom={setFrom} setTo={setTo} /></div>
-      {dashboard.isPending ? <LoadingState label="Loading dashboard" /> : (
-        <div className="metric-grid">
-          <article className="metric-card violet"><div><span>{t('dashboard.totalOrders')}</span><strong>{data.summary.totalOrders}</strong><small>{t('dashboard.selectedPeriod')}</small></div><ReceiptText /></article>
-          <article className="metric-card green"><div><span>{t('dashboard.totalRevenue')}</span><strong>{formatCurrency(data.summary.totalRevenue)}</strong><small>{t('dashboard.selectedPeriod')}</small></div><IndianRupee /></article>
-          <article className="metric-card blue"><div><span>{t('dashboard.pointsIssued')}</span><strong>{formatPoints(data.summary.rewardPointsIssued)}</strong><small>{t('dashboard.selectedPeriod')}</small></div><Sparkles /></article>
-          <article className="metric-card pink"><div><span>{t('dashboard.totalCustomers')}</span><strong>{data.summary.totalCustomers}</strong><small>{t('dashboard.registeredPeriod')}</small></div><Users /></article>
+      {/* Today's Summary */}
+      <div className="mobile-section">
+        <div className="mobile-section-header">
+          <h3>{t('dashboard.todaysSummary', 'Today\'s Summary')}</h3>
+          <Link to="/reports">{t('common.viewAll', 'View all')}</Link>
         </div>
-      )}
-
-      <div className="report-grid">
-        <section className="panel">
-          <div className="report-head"><div><h2>{t('dashboard.ordersRevenue')}</h2><p>{t(chartPeriod === 'today' ? 'dashboard.sixHours' : chartPeriod === 'month' ? 'dashboard.weeklyBreakdown' : 'dashboard.dailyBreakdown')}</p></div><PeriodControl compact value={chartPeriod} onChange={setChartPeriod} /></div>
-          <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
-          {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
-          <div className="chart-scroll">
-            <div
-              className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`}
-              style={chartPeriod === 'today' ? undefined : {
-                gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`,
-                minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%',
-              }}
-            >
-              {chartData.intervals.map((item) => (
-                <div className="chart-group" key={item.label}>
-                  <div className="chart-bars">
-                    <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%` }} title={`${item.orders} orders`} />
-                    <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%` }} title={formatCurrency(item.revenue)} />
-                  </div><span>{item.label}</span>
-                </div>
-              ))}
+        {dashboard.isPending ? <LoadingState label="Loading" /> : (
+          <div className="mobile-summary-cards">
+            <div className="mobile-summary-card sales">
+              <div className="mobile-summary-card-icon"><ReceiptText size={20} /></div>
+              <div>
+                <p>{t('dashboard.sales', 'Sales')}</p>
+                <strong>{formatCurrency(data.summary.totalRevenue)}</strong>
+                <small>{data.summary.totalOrders} {t('dashboard.orders', 'Orders')}</small>
+              </div>
+            </div>
+            <div className="mobile-summary-card customers">
+              <div className="mobile-summary-card-icon"><Users size={20} /></div>
+              <div>
+                <p>{t('dashboard.customers', 'Customers')}</p>
+                <strong>{data.summary.totalCustomers}</strong>
+                <small>New: {retentionData.retention.todayVisits}</small> 
+              </div>
+            </div>
+            <div className="mobile-summary-card rewards">
+              <div className="mobile-summary-card-icon"><Gift size={20} /></div>
+              <div>
+                <p>{t('dashboard.rewards', 'Rewards')}</p>
+                <strong>{formatCurrency(data.summary.rewardPointsIssued)}</strong>
+                <small>Issued</small>
+              </div>
             </div>
           </div>
-          <div className="chart-legend"><span><i className="orders" />{t('dashboard.orders')}</span><span><i className="revenue" />{t('dashboard.revenue')}</span></div>
-        </section>
-        <section className="panel">
-          <div className="report-head"><div><h2>{t('dashboard.retention')}</h2><p>{t('dashboard.returningVisits')}</p></div><PeriodControl compact value={retentionPeriod} onChange={setRetentionPeriod} /></div>
-          <ReportDates period={retentionPeriod} from={retentionFrom} to={retentionTo} setFrom={setRetentionFrom} setTo={setRetentionTo} />
-          <div className="retention-total"><strong>{retentionData.retention.selectedVisits}</strong><span>{t('dashboard.selectedVisits')}</span></div>
-          <div className="retention-lifetime"><UserRoundCheck /><strong>{retentionData.retention.lifetimeCustomers}</strong><span>{t('dashboard.lifetimeRetained')}</span></div>
-          <div className="retention-list"><div><span>{t('dashboard.today')}</span><strong>{retentionData.retention.todayVisits}</strong></div><div><span>{t('dashboard.weekly')}</span><strong>{retentionData.retention.weekVisits}</strong></div><div><span>{t('dashboard.monthly')}</span><strong>{retentionData.retention.monthVisits}</strong></div></div>
-        </section>
+        )}
       </div>
+
+      {/* Quick Actions */}
+      <div className="mobile-section">
+        <div className="mobile-section-header">
+          <h3>{t('dashboard.quickActionsTitle', 'Quick Actions')}</h3>
+        </div>
+        <div className="mobile-quick-actions">
+          {user.role === 'merchant' && (
+            <button className="mobile-quick-action" onClick={() => setScannerMode('redeem')}>
+              <div className="mobile-quick-action-icon"><Gift size={24} /></div>
+              <span>{t('dashboard.redeemPointsBtn', 'Redeem Points')}</span>
+            </button>
+          )}
+          <Link to="/customers" className="mobile-quick-action">
+            <div className="mobile-quick-action-icon"><Users size={24} /></div>
+            <span>{t('nav.customers', 'Customers')}</span>
+          </Link>
+          <Link to="/offers" className="mobile-quick-action">
+            <div className="mobile-quick-action-icon"><Tag size={24} /></div>
+            <span>{t('nav.offers', 'Offers')}</span>
+          </Link>
+          <Link to="/orders" className="mobile-quick-action">
+            <div className="mobile-quick-action-icon"><ReceiptText size={24} /></div>
+            <span>{t('nav.orders', 'Orders')}</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="mobile-section">
+        <div className="mobile-section-header">
+          <h3>{t('dashboard.recentTransactions', 'Recent Transactions')}</h3>
+          <Link to="/orders">{t('common.viewAll', 'View all')}</Link>
+        </div>
+        <div className="mobile-transactions">
+          <div className="mobile-transaction-item">
+            <div className="mobile-transaction-avatar green">R</div>
+            <div className="mobile-transaction-info">
+              <h4>Rahul Kumar</h4>
+              <p>Today, 10:30 AM</p>
+            </div>
+            <div className="mobile-transaction-amount">
+              <strong>₹500.00</strong>
+              <span>+5.00 pts</span>
+            </div>
+          </div>
+          <div className="mobile-transaction-item">
+            <div className="mobile-transaction-avatar pink">A</div>
+            <div className="mobile-transaction-info">
+              <h4>Anu Stores</h4>
+              <p>Today, 10:15 AM</p>
+            </div>
+            <div className="mobile-transaction-amount">
+              <strong>₹800.00</strong>
+              <span>+8.00 pts</span>
+            </div>
+          </div>
+          <div className="mobile-transaction-item">
+            <div className="mobile-transaction-avatar blue">S</div>
+            <div className="mobile-transaction-info">
+              <h4>Shyam Traders</h4>
+              <p>Today, 09:45 AM</p>
+            </div>
+            <div className="mobile-transaction-amount">
+              <strong>₹1,200.00</strong>
+              <span>+12.00 pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scanner Modal */}
       {Boolean(scannerMode) ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerMode(null); }}>
           <div className="modal scanner-modal" role="dialog" aria-modal="true" aria-label={t('dashboard.scanQr')}>
@@ -184,8 +243,12 @@ export function Dashboard({ user }: { user: UserProfile }) {
           </div>
         </div>
       ) : null}
-      
+
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
-    </>
+      
+      {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
+        <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
+      )}
+    </div>
   );
 }

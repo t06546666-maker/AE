@@ -484,3 +484,152 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
   .customer-order-toolbar { align-items: stretch; flex-direction: column; }
   .customer-order-toolbar .search-field { margin-left: 0; width: 100%; }
 }
+
+/* Mobile Dashboard UI Styles */
+.mobile-dashboard-wrapper {
+  padding-bottom: 70px; /* space for bottom nav */
+  background-color: #f7f9fc;
+  min-height: 100vh;
+}
+.mobile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: #fff;
+}
+.mobile-topbar-brand {
+  color: #3b28cc;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+.mobile-greeting {
+  padding: 12px 20px 24px;
+  background-color: #fff;
+}
+.mobile-greeting h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+.mobile-greeting p {
+  color: #6b7280;
+  font-size: 14px;
+}
+.mobile-main-action {
+  background: linear-gradient(135deg, #4f32e6, #7a42f5);
+  border-radius: 16px;
+  padding: 24px 20px;
+  color: white;
+  margin: -10px 20px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 20px rgba(79, 50, 230, 0.2);
+  border: none;
+  width: calc(100% - 40px);
+  cursor: pointer;
+  text-align: left;
+}
+.mobile-main-action-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.mobile-main-action-icon {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+.mobile-main-action-icon svg { width: 32px; height: 32px; }
+.mobile-main-action-text h2 { font-size: 20px; font-weight: 700; margin: 0; color: white; }
+.mobile-main-action-text p { font-size: 13px; opacity: 0.9; margin: 0; }
+.mobile-sub-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 20px 24px;
+  border: 1px solid #e2e8f0;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+.mobile-sub-action-text { display: flex; align-items: center; gap: 12px; }
+.mobile-sub-action-text p { font-size: 12px; color: #64748b; margin: 0; }
+.mobile-sub-action-text strong { font-size: 14px; color: #3b28cc; font-weight: 600; display: block; }
+.mobile-section { margin: 0 20px 24px; }
+.mobile-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.mobile-section-header h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0; }
+.mobile-section-header a, .mobile-section-header button { color: #3b28cc; font-size: 13px; font-weight: 600; text-decoration: none; background: none; border: none; cursor: pointer; }
+.mobile-summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.mobile-summary-card { background: white; padding: 16px; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px; }
+.mobile-summary-card-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.mobile-summary-card.sales .mobile-summary-card-icon { background: #e0f2fe; color: #0284c7; }
+.mobile-summary-card.customers .mobile-summary-card-icon { background: #dbeafe; color: #2563eb; }
+.mobile-summary-card.rewards .mobile-summary-card-icon { background: #ffedd5; color: #ea580c; }
+.mobile-summary-card p { font-size: 12px; color: #64748b; margin: 0; }
+.mobile-summary-card strong { font-size: 18px; font-weight: 800; color: #1a1a1a; margin: 4px 0 2px; }
+.mobile-summary-card small { font-size: 11px; color: #94a3b8; margin: 0; }
+.mobile-quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 20px 24px; }
+.mobile-quick-action { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; text-decoration: none; }
+.mobile-quick-action-icon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.mobile-quick-action:nth-child(1) .mobile-quick-action-icon { background: #5a3ce1; color: white; }
+.mobile-quick-action:nth-child(2) .mobile-quick-action-icon { background: #1d4ed8; color: white; }
+.mobile-quick-action:nth-child(3) .mobile-quick-action-icon { background: #16a34a; color: white; }
+.mobile-quick-action:nth-child(4) .mobile-quick-action-icon { background: #f97316; color: white; }
+.mobile-quick-action span { font-size: 11px; font-weight: 600; color: #475569; text-align: center; }
+.mobile-transactions { background: white; border-radius: 16px; padding: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.03); margin-bottom: 24px;}
+.mobile-transaction-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f1f5f9; }
+.mobile-transaction-item:last-child { border-bottom: none; }
+.mobile-transaction-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; margin-right: 12px; }
+.mobile-transaction-avatar.green { background: #dcfce7; color: #166534; }
+.mobile-transaction-avatar.pink { background: #fce7f3; color: #9d174d; }
+.mobile-transaction-avatar.blue { background: #dbeafe; color: #1e40af; }
+.mobile-transaction-info { flex: 1; }
+.mobile-transaction-info h4 { font-size: 14px; font-weight: 600; color: #1a1a1a; margin: 0 0 4px; }
+.mobile-transaction-info p { font-size: 12px; color: #64748b; margin: 0; }
+.mobile-transaction-amount { text-align: right; }
+.mobile-transaction-amount strong { display: block; font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+.mobile-transaction-amount span { display: block; font-size: 12px; font-weight: 600; color: #16a34a; }
+
+.mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0 20px; border-top: 1px solid #e2e8f0; z-index: 50; }
+.mobile-bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #94a3b8; text-decoration: none; font-size: 10px; font-weight: 600; background: none; border: none; cursor: pointer; }
+.mobile-bottom-nav-item.active { color: #3b28cc; }
+.mobile-bottom-nav-item svg { width: 22px; height: 22px; }
+
+.mobile-panel { background: white; border-radius: 16px; padding: 20px; margin: 0 20px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.03); }
+.mobile-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.mobile-panel-header h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0; }
+.mobile-dropdown { padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 13px; font-weight: 600; color: #475569; }
+
+/* Rewards Summary List */
+.mobile-rewards-summary { display: grid; gap: 16px; }
+.mobile-rewards-summary-item { display: flex; justify-content: space-between; align-items: center; }
+.mobile-rewards-summary-item span { font-size: 14px; color: #475569; }
+.mobile-rewards-summary-item strong { font-size: 14px; color: #1a1a1a; font-weight: 700; }
+.mobile-rewards-summary-item.liability strong { color: #ef4444; }
+
+/* Create Offer Banner */
+.mobile-create-offer-banner { background: #f4f0ff; border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+.mobile-create-offer-text h4 { font-size: 15px; font-weight: 600; color: #1a1a1a; margin: 0 0 16px; max-width: 150px; }
+.mobile-create-offer-btn { background: white; color: #3b28cc; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 8px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* Help Support */
+.mobile-help-support { margin: 24px 20px 32px; }
+.mobile-help-support p { font-size: 12px; color: #64748b; margin: 0 0 12px; }
+.mobile-help-btn { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; width: 100%; font-weight: 600; color: #1a1a1a; cursor: pointer; text-decoration: none;}
+.mobile-help-btn-left { display: flex; align-items: center; gap: 12px; }
+
+/* Dashboard Toggle Layout specific */
+.desktop-view-hidden { display: none; }
+@media (min-width: 821px) {
+  .desktop-view-hidden { display: block; }
+  .mobile-only { display: none; }
+}
+

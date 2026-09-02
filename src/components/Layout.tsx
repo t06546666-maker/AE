@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  BadgeIndianRupee, Bell, Building2, Gift, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, Package,
+  BadgeIndianRupee, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal, Package,
   Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X,
 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -115,6 +115,30 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </aside>
         <main className="main-content">{children}</main>
       </div>
+      {user.role === 'merchant' && (
+        <div className="mobile-bottom-nav desktop-view-hidden">
+          <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <Home />
+            <span>Home</span>
+          </NavLink>
+          <NavLink to="/orders" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <ReceiptText />
+            <span>Orders</span>
+          </NavLink>
+          <NavLink to="/customers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <Users />
+            <span>Customers</span>
+          </NavLink>
+          <NavLink to="/rewards" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <Gift />
+            <span>Rewards</span>
+          </NavLink>
+          <NavLink to="/more" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <MoreHorizontal />
+            <span>More</span>
+          </NavLink>
+        </div>
+      )}
     </div>
   );
 }
