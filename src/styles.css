@@ -256,8 +256,8 @@ label small { font-size: 10px; font-weight: 600; }
 .result-details dd { margin: 0; font-weight: 750; }
 .notification-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
 
-.list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
-.search-field { width: min(360px, 100%); height: 40px; padding: 0 11px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); }
+.list-toolbar { display: flex; justify-content: center; margin-bottom: 12px; }
+.search-field { width: min(360px, 100%); height: 40px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 9999px; background: var(--surface); }
 .search-field svg { color: var(--muted); }
 .search-field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); }
 .table-scroll { overflow-x: auto; }
@@ -352,8 +352,8 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .password-card label { display: grid; gap: 7px; }
 .password-brand { display: block; }
 
-.offer-toolbar { align-items: center; gap: 10px; }
-.offer-toolbar .search-field { margin-left: auto; }
+.offer-toolbar { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+.offer-toolbar .search-field { margin: 0 auto; }
 .offer-toolbar > select { min-height: 40px; min-width: 150px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); }
 .offer-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 14px; margin-bottom: 18px; }
 .offer-form-grid label { display: grid; gap: 7px; }
@@ -395,8 +395,8 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .product-active { grid-column: 1 / -1; display: flex !important; align-items: center; gap: 8px; }
 .product-active input { width: 16px; height: 16px; }
 .product-form-grid .form-actions { grid-column: 1 / -1; }
-.customer-order-toolbar { align-items: center; gap: 10px; }
-.customer-order-toolbar .search-field { margin-left: auto; }
+.customer-order-toolbar { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+.customer-order-toolbar .search-field { margin: 0 auto; }
 .customer-order-toolbar select, .customer-orders-table select { min-height: 38px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); }
 .customer-order-items { min-width: 190px; display: grid; gap: 3px; font-size: 11px; }
 .customer-order-items span { color: var(--muted); }
