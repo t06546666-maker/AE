@@ -213,10 +213,10 @@ export function Dashboard({ user }: { user: UserProfile }) {
              !recentOrders.data?.orders?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>No recent transactions.</p> :
               recentOrders.data?.orders.slice(0, 5).map((order) => (
               <Link to={`/orders?search=${order.orderNo}`} key={order.id} className="mobile-transaction-item" style={{ textDecoration: 'none' }}>
-                <div className="mobile-transaction-avatar blue">{initials(order.customer?.name || '?')}</div>
+                <div className="mobile-transaction-avatar blue">{initials(order.customer || '?')}</div>
                 <div className="mobile-transaction-info">
-                  <h4>{order.customer?.name || 'Walk-in Customer'}</h4>
-                  <p>{formatDate(order.date)} • {formatTime(order.date)}</p>
+                  <h4>{order.customer || 'Walk-in Customer'}</h4>
+                  <p>{formatDate(order.timestamp)} • {formatTime(order.timestamp)}</p>
                 </div>
                 <div className="mobile-transaction-amount">
                   <strong>₹{formatCurrency(order.amount)}</strong>
