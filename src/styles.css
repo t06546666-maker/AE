@@ -572,15 +572,18 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .mobile-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .mobile-section-header h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0; }
 .mobile-section-header a, .mobile-section-header button { color: #3b28cc; font-size: 13px; font-weight: 600; text-decoration: none; background: none; border: none; cursor: pointer; }
-.mobile-summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.mobile-summary-card { background: white; padding: 12px 10px; border-radius: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; }
-.mobile-summary-card-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 2px; }
-.mobile-summary-card.sales .mobile-summary-card-icon { background: #e0f2fe; color: #0284c7; }
-.mobile-summary-card.customers .mobile-summary-card-icon { background: #dbeafe; color: #2563eb; }
-.mobile-summary-card.rewards .mobile-summary-card-icon { background: #ffedd5; color: #ea580c; }
-.mobile-summary-card p { font-size: 11px; color: #64748b; margin: 0; }
-.mobile-summary-card strong { font-size: 15px; font-weight: 800; color: #1a1a1a; margin: 0; white-space: nowrap; }
-.mobile-summary-card small { font-size: 10px; color: #94a3b8; margin: 0; white-space: nowrap; }
+.mobile-summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mobile-summary-card { padding: 14px 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.mobile-summary-card.sales { background: white; border: 1px solid #f1f5f9; }
+.mobile-summary-card.customers { background: #fbfdff; border: 1px solid #eff6ff; }
+.mobile-summary-card.rewards { background: #fffcf8; border: 1px solid #fff7ed; }
+.mobile-summary-card-icon { margin-bottom: 8px; display: flex; align-items: center; }
+.mobile-summary-card.sales .mobile-summary-card-icon { color: #16a34a; }
+.mobile-summary-card.customers .mobile-summary-card-icon { color: #2563eb; }
+.mobile-summary-card.rewards .mobile-summary-card-icon { color: #f59e0b; }
+.mobile-summary-card p { font-size: 12px; color: #475569; margin: 0; font-weight: 500; }
+.mobile-summary-card strong { font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; white-space: nowrap; letter-spacing: -0.3px; }
+.mobile-summary-card small { font-size: 11px; color: #64748b; margin: 0; white-space: nowrap; }
 .mobile-quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 20px 24px; }
 .mobile-quick-action { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; text-decoration: none; }
 .mobile-quick-action-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }

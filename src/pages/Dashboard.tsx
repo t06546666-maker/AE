@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { 
-  Bell, ChevronRight, Download, Gift, Headset, Home, IndianRupee, Menu, MoreHorizontal, ReceiptText, QrCode, ScanLine, Sparkles, Tag, UserRoundCheck, Users, X 
+  Bell, ChevronRight, Download, Gift, Headset, Home, IndianRupee, Menu, MoreHorizontal, ReceiptText, QrCode, ScanLine, Sparkles, Tag, UserRoundCheck, Users, X, BadgeIndianRupee 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
@@ -132,28 +132,22 @@ export function Dashboard({ user }: { user: UserProfile }) {
         {dashboard.isPending ? <LoadingState label="Loading" /> : (
           <div className="mobile-summary-cards">
             <div className="mobile-summary-card sales">
-              <div className="mobile-summary-card-icon"><ReceiptText size={20} /></div>
-              <div>
-                <p>{t('dashboard.sales', 'Sales')}</p>
-                <strong>{formatCurrency(data.summary.totalRevenue)}</strong>
-                <small>{data.summary.totalOrders} {t('dashboard.orders', 'Orders')}</small>
-              </div>
+              <div className="mobile-summary-card-icon"><BadgeIndianRupee size={24} strokeWidth={1.5} /></div>
+              <p>{t('dashboard.sales', 'Sales')}</p>
+              <strong>₹{formatCurrency(data.summary.totalRevenue)}</strong>
+              <small>{data.summary.totalOrders} {t('dashboard.orders', 'Orders')}</small>
             </div>
             <div className="mobile-summary-card customers">
-              <div className="mobile-summary-card-icon"><Users size={20} /></div>
-              <div>
-                <p>{t('dashboard.customers', 'Customers')}</p>
-                <strong>{data.summary.totalCustomers}</strong>
-                <small>New: {retentionData.retention.todayVisits}</small> 
-              </div>
+              <div className="mobile-summary-card-icon"><Users size={24} strokeWidth={1.5} /></div>
+              <p>{t('dashboard.customers', 'Customers')}</p>
+              <strong>{formatCurrency(data.summary.totalCustomers)}</strong>
+              <small>New: {retentionData.retention.todayVisits}</small> 
             </div>
             <div className="mobile-summary-card rewards">
-              <div className="mobile-summary-card-icon"><Gift size={20} /></div>
-              <div>
-                <p>{t('dashboard.rewards', 'Rewards')}</p>
-                <strong>{formatCurrency(data.summary.rewardPointsIssued)}</strong>
-                <small>Issued</small>
-              </div>
+              <div className="mobile-summary-card-icon"><Gift size={24} strokeWidth={1.5} /></div>
+              <p>{t('dashboard.rewards', 'Rewards')}</p>
+              <strong>₹{formatCurrency(data.summary.rewardPointsIssued)}</strong>
+              <small>{t('dashboard.issued', 'Issued')}</small>
             </div>
           </div>
         )}
