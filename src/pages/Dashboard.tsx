@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
-import type { DashboardData, Period, RewardSettings, UserProfile, Merchant, Order } from '../types';
+import type { DashboardData, Period, RewardSettings, UserProfile, Merchant, Order, Customer } from '../types';
 import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod, formatDate, formatTime, initials } from '../utils';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 
@@ -63,6 +63,12 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const recentOrders = useQuery({
     queryKey: ['recent-orders'],
     queryFn: ({ signal }) => apiFetch<{ orders: Order[] }>(`/api/orders?page=1&pageSize=5`, { signal }),
+    enabled: user.role === 'merchant',
+  });
+
+  const topCustomers = useQuery({
+    queryKey: ['top-customers'],
+    queryFn: ({ signal }) => apiFetch<{ customers: Customer[] }>(`/api/customers?page=1&pageSize=3`, { signal }),
     enabled: user.role === 'merchant',
   });
 
@@ -271,36 +277,20 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <Link to="/customers">View all</Link>
           </div>
           <div className="mobile-transactions">
-            <div className="mobile-transaction-item">
-              <div className="mobile-transaction-avatar green">1</div>
-              <div className="mobile-transaction-info">
-                <h4>Rahul Kumar</h4>
-                <p>2 orders • ₹1,700</p>
+            {topCustomers.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> : 
+             !topCustomers.data?.customers?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>No customers today.</p> :
+              topCustomers.data.customers.slice(0, 3).map((customer, index) => (
+              <div className="mobile-transaction-item" key={customer.id}>
+                <div className={`mobile-transaction-avatar ${index === 0 ? 'green' : index === 1 ? 'pink' : 'blue'}`}>{index + 1}</div>
+                <div className="mobile-transaction-info">
+                  <h4>{customer.name || 'Walk-in Customer'}</h4>
+                  <p>{customer.orderCount || 1} {t('dashboard.orders', 'orders')} • ₹{formatCurrency(customer.totalSpent || 0)}</p>
+                </div>
+                <div className="mobile-transaction-amount">
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>+{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints ?? 0)} pts</span>
+                </div>
               </div>
-              <div className="mobile-transaction-amount">
-                <span>+17.00 pts</span>
-              </div>
-            </div>
-            <div className="mobile-transaction-item">
-              <div className="mobile-transaction-avatar pink">2</div>
-              <div className="mobile-transaction-info">
-                <h4>Anu Stores</h4>
-                <p>1 order • ₹800</p>
-              </div>
-              <div className="mobile-transaction-amount">
-                <span>+8.00 pts</span>
-              </div>
-            </div>
-            <div className="mobile-transaction-item">
-              <div className="mobile-transaction-avatar blue">3</div>
-              <div className="mobile-transaction-info">
-                <h4>Shyam Traders</h4>
-                <p>1 order • ₹1,200</p>
-              </div>
-              <div className="mobile-transaction-amount">
-                <span>+12.00 pts</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       ) : null}
@@ -312,15 +302,15 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>Rewards Summary</h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Issued</span>
-              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>1,245 pts</strong>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.rewardPointsIssued || 0)} pts</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Redeemed</span>
-              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>800 pts</strong>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>0 pts</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Pending Liability</span>
-              <strong style={{ fontSize: 14, color: '#ea580c' }}>₹124.50</strong>
+              <strong style={{ fontSize: 14, color: '#ea580c' }}>₹{formatCurrency((data.summary.rewardPointsIssued || 0) * 0.1)}</strong>
             </div>
           </div>
         </div>
