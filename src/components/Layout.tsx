@@ -113,7 +113,17 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
             <span className="status-dot online" /> {t('layout.secureWorkspace')}
           </div>
         </aside>
-        <main className="main-content">{children}</main>
+        <main className="main-content">
+          <div className="mobile-topbar desktop-view-hidden">
+            <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }} onClick={() => setSidebarOpen(true)}><Menu size={24} color="#1a1a1a" /></button>
+            <div className="mobile-topbar-brand">AE</div>
+            <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none' }} onClick={() => setNotificationsOpen(v => !v)}>
+              <Bell size={24} color="#1a1a1a" />
+              {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span> : null}
+            </button>
+          </div>
+          {children}
+        </main>
       </div>
       {user.role === 'merchant' && (
         <div className="mobile-bottom-nav desktop-view-hidden">

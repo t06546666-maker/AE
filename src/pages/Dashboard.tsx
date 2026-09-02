@@ -84,16 +84,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
 
   return (
     <div className="mobile-dashboard-wrapper">
-      {/* Mobile Top Bar */}
-      <div className="mobile-topbar">
-        <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}><Menu size={24} color="#1a1a1a" /></button>
-        <div className="mobile-topbar-brand">AE</div>
-        <button className="icon-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none' }}>
-          <Bell size={24} color="#1a1a1a" />
-          <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span>
-        </button>
-      </div>
-
       {/* Greeting */}
       <div className="mobile-greeting">
         <h1>{t('dashboard.goodMorning', 'Good morning!')}</h1>

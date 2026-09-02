@@ -485,6 +485,11 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
   .customer-order-toolbar .search-field { margin-left: 0; width: 100%; }
 }
 
+@media (max-width: 820px) {
+  .app-shell:has(.mobile-dashboard-wrapper) .topbar { display: none; }
+  .app-shell:has(.mobile-dashboard-wrapper) .main-content { padding: 0; }
+}
+
 /* Mobile Dashboard UI Styles */
 .mobile-dashboard-wrapper {
   padding-bottom: 70px; /* space for bottom nav */
@@ -567,23 +572,23 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .mobile-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .mobile-section-header h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0; }
 .mobile-section-header a, .mobile-section-header button { color: #3b28cc; font-size: 13px; font-weight: 600; text-decoration: none; background: none; border: none; cursor: pointer; }
-.mobile-summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.mobile-summary-card { background: white; padding: 16px; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px; }
-.mobile-summary-card-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.mobile-summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mobile-summary-card { background: white; padding: 12px 10px; border-radius: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; }
+.mobile-summary-card-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 2px; }
 .mobile-summary-card.sales .mobile-summary-card-icon { background: #e0f2fe; color: #0284c7; }
 .mobile-summary-card.customers .mobile-summary-card-icon { background: #dbeafe; color: #2563eb; }
 .mobile-summary-card.rewards .mobile-summary-card-icon { background: #ffedd5; color: #ea580c; }
-.mobile-summary-card p { font-size: 12px; color: #64748b; margin: 0; }
-.mobile-summary-card strong { font-size: 18px; font-weight: 800; color: #1a1a1a; margin: 4px 0 2px; }
-.mobile-summary-card small { font-size: 11px; color: #94a3b8; margin: 0; }
-.mobile-quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 20px 24px; }
-.mobile-quick-action { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; text-decoration: none; }
-.mobile-quick-action-icon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.mobile-summary-card p { font-size: 11px; color: #64748b; margin: 0; }
+.mobile-summary-card strong { font-size: 15px; font-weight: 800; color: #1a1a1a; margin: 0; white-space: nowrap; }
+.mobile-summary-card small { font-size: 10px; color: #94a3b8; margin: 0; white-space: nowrap; }
+.mobile-quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 20px 24px; }
+.mobile-quick-action { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; text-decoration: none; }
+.mobile-quick-action-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .mobile-quick-action:nth-child(1) .mobile-quick-action-icon { background: #5a3ce1; color: white; }
 .mobile-quick-action:nth-child(2) .mobile-quick-action-icon { background: #1d4ed8; color: white; }
 .mobile-quick-action:nth-child(3) .mobile-quick-action-icon { background: #16a34a; color: white; }
 .mobile-quick-action:nth-child(4) .mobile-quick-action-icon { background: #f97316; color: white; }
-.mobile-quick-action span { font-size: 11px; font-weight: 600; color: #475569; text-align: center; }
+.mobile-quick-action span { font-size: 10px; font-weight: 650; color: #475569; text-align: center; line-height: 1.2; }
 .mobile-transactions { background: white; border-radius: 16px; padding: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.03); margin-bottom: 24px;}
 .mobile-transaction-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f1f5f9; }
 .mobile-transaction-item:last-child { border-bottom: none; }
