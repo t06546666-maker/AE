@@ -44,6 +44,56 @@ function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; fro
   return period === 'custom' ? <CustomDates from={from} to={to} onFrom={setFrom} onTo={setTo} /> : null;
 }
 
+function HelpModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<{ role: 'user' | 'bot', text: string }[]>([
+    { role: 'bot', text: 'Hi there! 👋 How can we help you today? Please choose from our frequently asked questions below:' }
+  ]);
+  const faqs = [
+    { q: 'How do I add a new customer?', a: 'You can add a new customer from the Customers tab by clicking the Add button, or simply by scanning their QR code from your phone.' },
+    { q: 'How do reward points get calculated?', a: 'Points are calculated automatically based on your Reward Settings, which you can configure in the settings area. The pending liability shows the total value of unused points.' },
+    { q: 'Can I change my subscription?', a: 'Yes! You can manage your subscription by clicking the billing settings icon. You can upgrade or downgrade your plan at any time.' },
+  ];
+
+  const ask = (q: string, a: string) => {
+    setMessages(prev => [...prev, { role: 'user', text: q }]);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'bot', text: a }]);
+    }, 500);
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ padding: 0, display: 'flex', flexDirection: 'column', height: '65vh', background: 'white' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#3b28cc', color: 'white', borderRadius: '8px 8px 0 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Headset size={20} color="white" />
+            <h2 style={{ margin: 0, fontSize: 16, color: 'white' }}>AE Support Chat</h2>
+          </div>
+          <button className="icon-button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', padding: 0 }}><X size={24} color="white" /></button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 12, background: '#f8fafc' }}>
+          {messages.map((m, i) => (
+            <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#3b28cc' : '#ffffff', color: m.role === 'user' ? 'white' : '#1e293b', padding: '12px 16px', borderRadius: 16, borderBottomLeftRadius: m.role === 'bot' ? 4 : 16, borderBottomRightRadius: m.role === 'user' ? 4 : 16, maxWidth: '85%', fontSize: 13, lineHeight: 1.5, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              {m.text}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: 16, background: 'white', borderTop: '1px solid #f1f5f9', borderRadius: '0 0 8px 8px' }}>
+          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 10px', fontWeight: 600, textTransform: 'uppercase' }}>Frequently Asked Questions</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {faqs.map((faq, i) => (
+              <button key={i} onClick={() => ask(faq.q, faq.a)} style={{ background: '#f1f5f9', border: 'none', padding: '10px 14px', borderRadius: 20, fontSize: 12, color: '#334155', cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}>
+                {faq.q}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Dashboard({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const today = dateInput();
@@ -56,6 +106,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [scannerMode, setScannerMode] = useState<'earn' | 'redeem' | null>(null);
   const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const dashboard = useDashboard(period, from, to);
   const data = dashboard.data || emptyDashboard;
@@ -337,16 +388,18 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <div style={{ background: '#f8fafc', borderRadius: 16, padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>Need help?</h3>
             <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 16px' }}>Visit our Help Center or contact support.</p>
-            <Link to="/more" style={{ background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, textDecoration: 'none', color: '#1a1a1a', fontWeight: 600, fontSize: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <button onClick={() => setHelpOpen(true)} style={{ background: 'white', width: '100%', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, color: '#1a1a1a', fontWeight: 600, fontSize: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Headset size={20} color="#1a1a1a" strokeWidth={2} />
                 <span>Help & Support</span>
               </div>
               <ChevronRight size={18} color="#1a1a1a" strokeWidth={2.5} />
-            </Link>
+            </button>
           </div>
         </div>
       ) : null}
+
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
 
       {/* Subscription Callout */}
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
