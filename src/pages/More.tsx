@@ -56,39 +56,6 @@ export function More({ user }: { user: UserProfile }) {
     <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
       <PageHeader title={t('nav.more', 'More')} subtitle="" />
 
-      {/* Business Overview */}
-      <div className="mobile-panel" style={{ marginTop: 16 }}>
-        <div className="mobile-panel-header">
-          <h3>{t('dashboard.businessOverview', 'Business Overview')}</h3>
-          <div style={{ width: '120px' }}>
-            <PeriodControl compact value={chartPeriod} onChange={setChartPeriod} />
-          </div>
-        </div>
-        <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
-        
-        <div style={{ marginBottom: 16 }}>
-          <strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>{t('dashboard.salesOverview', 'Sales Overview')}</strong>
-          <div className="chart-legend" style={{ marginTop: 0, marginBottom: 16 }}>
-            <span><i className="orders" style={{ background: '#3b28cc'}} /> {t('dashboard.orders', 'Orders')}</span>
-            <span><i className="revenue" style={{ background: '#16a34a'}} /> {t('dashboard.revenue', 'Revenue (₹)')}</span>
-          </div>
-          {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
-          <div className="chart-scroll">
-            <div className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`} style={chartPeriod === 'today' ? undefined : { gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`, minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%' }}>
-              {chartData.intervals.map((item) => (
-                <div className="chart-group" key={item.label}>
-                  <div className="chart-bars">
-                    <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%`, background: '#3b28cc' }} title={`${item.orders} orders`} />
-                    <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%`, background: '#16a34a' }} title={formatCurrency(item.revenue)} />
-                  </div><span>{item.label}</span>
-                </div>
-              ))}
-            </div>
-            {chartPeriod === 'today' && <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 12, textAlign: 'center' }}>{t('dashboard.sixHours', 'Grouped into six-hour intervals.')}</p>}
-          </div>
-        </div>
-      </div>
-
       {/* Account Settings & Exports */}
       <div className="mobile-section" style={{ marginTop: 24 }}>
         <div className="mobile-section-header">

@@ -228,6 +228,119 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       ) : null}
 
+      {/* Business Overview */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-panel" style={{ marginTop: 24 }}>
+          <div className="mobile-panel-header">
+            <h3>{t('dashboard.businessOverview', 'Business Overview')}</h3>
+            <div style={{ width: '120px' }}>
+              <PeriodControl compact value={chartPeriod} onChange={setChartPeriod} />
+            </div>
+          </div>
+          <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
+          
+          <div style={{ marginBottom: 16 }}>
+            <strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>{t('dashboard.salesOverview', 'Sales Overview')}</strong>
+            <div className="chart-legend" style={{ marginTop: 0, marginBottom: 16 }}>
+              <span><i className="orders" style={{ background: '#3b28cc'}} /> {t('dashboard.orders', 'Orders')}</span>
+              <span><i className="revenue" style={{ background: '#16a34a'}} /> {t('dashboard.revenue', 'Revenue (₹)')}</span>
+            </div>
+            {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
+            <div className="chart-scroll">
+              <div className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`} style={chartPeriod === 'today' ? undefined : { gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`, minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%' }}>
+                {chartData.intervals.map((item) => (
+                  <div className="chart-group" key={item.label}>
+                    <div className="chart-bars">
+                      <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%`, background: '#3b28cc' }} title={`${item.orders} orders`} />
+                      <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%`, background: '#16a34a' }} title={formatCurrency(item.revenue)} />
+                    </div><span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+              {chartPeriod === 'today' && <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 12, textAlign: 'center' }}>{t('dashboard.sixHours', 'Grouped into six-hour intervals.')}</p>}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Top Customers Today */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-section">
+          <div className="mobile-section-header">
+            <h3>Top Customers Today</h3>
+            <Link to="/customers">View all</Link>
+          </div>
+          <div className="mobile-transactions">
+            <div className="mobile-transaction-item">
+              <div className="mobile-transaction-avatar green">1</div>
+              <div className="mobile-transaction-info">
+                <h4>Rahul Kumar</h4>
+                <p>2 orders • ₹1,700</p>
+              </div>
+              <div className="mobile-transaction-amount">
+                <span>+17.00 pts</span>
+              </div>
+            </div>
+            <div className="mobile-transaction-item">
+              <div className="mobile-transaction-avatar pink">2</div>
+              <div className="mobile-transaction-info">
+                <h4>Anu Stores</h4>
+                <p>1 order • ₹800</p>
+              </div>
+              <div className="mobile-transaction-amount">
+                <span>+8.00 pts</span>
+              </div>
+            </div>
+            <div className="mobile-transaction-item">
+              <div className="mobile-transaction-avatar blue">3</div>
+              <div className="mobile-transaction-info">
+                <h4>Shyam Traders</h4>
+                <p>1 order • ₹1,200</p>
+              </div>
+              <div className="mobile-transaction-amount">
+                <span>+12.00 pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Rewards Summary */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-section">
+          <div className="mobile-transactions" style={{ padding: '20px' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>Rewards Summary</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Issued</span>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>1,245 pts</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Redeemed</span>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>800 pts</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Pending Liability</span>
+              <strong style={{ fontSize: 14, color: '#ea580c' }}>₹124.50</strong>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Create Offer CTA */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-section">
+          <div style={{ background: '#f5f3ff', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Create offers and attract<br/>more customers</h3>
+              <Link to="/offers" className="button" style={{ background: 'white', color: '#3b28cc', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'inline-block', textDecoration: 'none' }}>Create Offer</Link>
+            </div>
+            <div style={{ background: '#3b28cc', width: 64, height: 64, borderRadius: 16, display: 'grid', placeItems: 'center' }}>
+              <Gift size={32} color="white" />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Subscription Callout */}
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
         <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
