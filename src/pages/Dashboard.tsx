@@ -341,6 +341,23 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       ) : null}
 
+      {/* Help & Support */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-section">
+          <div style={{ background: '#f8fafc', borderRadius: 16, padding: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>Need help?</h3>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 16px' }}>Visit our Help Center or contact support.</p>
+            <Link to="/more" style={{ background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, textDecoration: 'none', color: '#1a1a1a', fontWeight: 600, fontSize: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Headset size={20} color="#1a1a1a" strokeWidth={2} />
+                <span>Help & Support</span>
+              </div>
+              <ChevronRight size={18} color="#1a1a1a" strokeWidth={2.5} />
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {/* Subscription Callout */}
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
         <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
