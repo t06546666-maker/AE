@@ -79,6 +79,13 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
   const maxRevenue = Math.max(1, ...chartData.intervals.map((item) => item.revenue));
   const chartNeedsScroll = chartPeriod === 'custom' && chartData.intervals.length > 7;
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('dashboard.goodMorning', 'Good morning!');
+    if (hour < 17) return t('dashboard.goodAfternoon', 'Good afternoon!');
+    return t('dashboard.goodEvening', 'Good evening!');
+  };
 
   if (dashboard.isError) return <><PageHeader title={t('dashboard.title')} subtitle={t(user.role === 'merchant' ? 'dashboard.merchantSubtitle' : 'dashboard.adminSubtitle')} /><ErrorState error={dashboard.error} retry={() => dashboard.refetch()} /></>;
 
@@ -86,7 +93,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
     <div className="mobile-dashboard-wrapper">
       {/* Greeting */}
       <div className="mobile-greeting">
-        <h1>{t('dashboard.goodMorning', 'Good morning!')}</h1>
+        <h1>{getGreeting()}</h1>
         <p>{t('dashboard.growBusiness', 'Let\'s grow your business today.')}</p>
       </div>
 

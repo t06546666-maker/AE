@@ -54,7 +54,7 @@ export function More({ user }: { user: UserProfile }) {
 
   return (
     <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
-      <PageHeader title={t('nav.more', 'More')} subtitle={user.full_name || user.email} />
+      <PageHeader title={t('nav.more', 'More')} />
 
       {/* Business Overview */}
       <div className="mobile-panel" style={{ marginTop: 16 }}>

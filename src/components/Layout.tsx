@@ -92,7 +92,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </button>
           {user.role === 'merchant' ? <div className="notification-menu">
             <button className="icon-button notification-button" title="Customer order notifications" onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
-            {notificationsOpen ? <div className="notification-popover"><strong>Customer orders</strong>{notifications.data?.notifications.length ? notifications.data.notifications.map((notice) => <Link key={notice.id} to="/customer-orders" onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}><b>{notice.requestNo || notice.title}</b><span>{notice.body}</span></Link>) : <p>No new customer orders.</p>}<Link to="/customer-orders" onClick={() => setNotificationsOpen(false)}>View all customer orders</Link></div> : null}
+            {renderNotificationPopover()}
           </div> : null}
           <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : t('layout.merchant')}</span>
           <span className="topbar-user">{user.full_name || user.email}</span>
@@ -116,12 +116,17 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </aside>
         <main className="main-content">
           <div className="mobile-topbar desktop-view-hidden">
-            <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none' }} onClick={() => setSidebarOpen(true)}><Menu size={24} color="#1a1a1a" /></button>
-            <div className="mobile-topbar-brand">AE</div>
-            <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none' }} onClick={() => setNotificationsOpen(v => !v)}>
-              <Bell size={24} color="#1a1a1a" />
-              {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span> : null}
-            </button>
+            <button className="icon-button" style={{ border: 'none', background: 'transparent', boxShadow: 'none', width: '40px' }} onClick={() => setSidebarOpen(true)}><Menu size={24} color="#1a1a1a" /></button>
+            <div className="mobile-topbar-brand" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>AE</div>
+            {user.role === 'merchant' ? (
+              <div className="notification-menu">
+                <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', boxShadow: 'none', width: '40px' }} onClick={() => setNotificationsOpen(v => !v)}>
+                  <Bell size={24} color="#1a1a1a" />
+                  {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: 4, right: 8, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span> : null}
+                </button>
+                {renderNotificationPopover()}
+              </div>
+            ) : <div style={{ width: '40px' }} />}
           </div>
           {children}
         </main>
