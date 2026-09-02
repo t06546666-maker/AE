@@ -61,11 +61,24 @@ export function PeriodControl({ value, onChange, compact = false }: {
 }) {
   const { t } = useTranslation();
   return (
-    <div className={`segmented ${compact ? 'compact' : ''}`}>
-      {periodOptions.map(([id, label]) => (
-        <button key={id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>{t(label)}</button>
-      ))}
-    </div>
+    compact ? (
+      <select 
+        className="mobile-dropdown" 
+        value={value} 
+        onChange={(e) => onChange(e.target.value as Period)}
+        style={{ width: '100%', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontSize: '13px', fontWeight: 600, outline: 'none' }}
+      >
+        {periodOptions.map(([id, label]) => (
+          <option key={id} value={id}>{t(label)}</option>
+        ))}
+      </select>
+    ) : (
+      <div className="segmented">
+        {periodOptions.map(([id, label]) => (
+          <button key={id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>{t(label)}</button>
+        ))}
+      </div>
+    )
   );
 }
 
