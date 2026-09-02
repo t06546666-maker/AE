@@ -134,7 +134,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <div className="mobile-summary-card sales">
               <div className="mobile-summary-card-icon"><BadgeIndianRupee size={24} strokeWidth={1.5} /></div>
               <p>{t('dashboard.sales', 'Sales')}</p>
-              <strong>₹{formatCurrency(data.summary.totalRevenue)}</strong>
+              <strong>{formatCurrency(data.summary.totalRevenue)}</strong>
               <small>{data.summary.totalOrders} {t('dashboard.orders', 'Orders')}</small>
             </div>
             <div className="mobile-summary-card customers">
@@ -146,7 +146,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <div className="mobile-summary-card rewards">
               <div className="mobile-summary-card-icon"><Gift size={24} strokeWidth={1.5} /></div>
               <p>{t('dashboard.rewards', 'Rewards')}</p>
-              <strong>₹{formatCurrency(data.summary.rewardPointsIssued)}</strong>
+              <strong>{formatCurrency(data.summary.rewardPointsIssued)}</strong>
               <small>{t('dashboard.issued', 'Issued')}</small>
             </div>
           </div>
