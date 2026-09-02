@@ -191,7 +191,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
       <div className="mobile-section">
         <div className="mobile-section-header">
           <h3>{t('dashboard.todaysSummary', 'Today\'s Summary')}</h3>
-          <Link to="/reports">{t('common.viewAll', 'View all')}</Link>
         </div>
         {dashboard.isPending ? <LoadingState label="Loading" /> : (
           <div className="mobile-summary-cards">
