@@ -139,7 +139,10 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
             </div>
             {user.role === 'merchant' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => document.body.classList.toggle('dark')}>
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title="Change Language">
+                  <Languages size={24} color="#1a1a1a" strokeWidth={2} />
+                </button>
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => document.body.classList.toggle('dark')} title="Toggle Dark Mode">
                   <Moon size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
                 <div className="notification-menu">
