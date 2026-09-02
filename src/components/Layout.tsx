@@ -63,6 +63,21 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
 
+  const renderNotificationPopover = () => {
+    if (!notificationsOpen) return null;
+    return (
+      <div className="notification-popover">
+        <strong>Customer orders</strong>
+        {notifications.data?.notifications.length ? notifications.data.notifications.map((notice) => (
+          <Link key={notice.id} to="/customer-orders" onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}>
+            <b>{notice.requestNo || notice.title}</b><span>{notice.body}</span>
+          </Link>
+        )) : <p>No new customer orders.</p>}
+        <Link to="/customer-orders" onClick={() => setNotificationsOpen(false)}>View all customer orders</Link>
+      </div>
+    );
+  };
+
   const nav = user.role === 'admin' ? adminNav : merchantNav;
   return (
     <div className="app-shell">
