@@ -632,9 +632,16 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .mobile-help-btn-left { display: flex; align-items: center; gap: 12px; }
 
 /* Dashboard Toggle Layout specific */
-.desktop-view-hidden { display: none; }
 @media (min-width: 821px) {
-  .desktop-view-hidden { display: block; }
-  .mobile-only { display: none; }
+  .desktop-view-hidden { display: none !important; }
+  .mobile-only { display: none !important; }
+  
+  /* Desktop Dashboard Layout Constraints */
+  .mobile-dashboard-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 30px;
+    background-color: transparent;
+  }
+  .mobile-greeting, .mobile-topbar { background-color: transparent; }
 }
-
