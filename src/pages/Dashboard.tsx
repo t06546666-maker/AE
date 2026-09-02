@@ -284,7 +284,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
                 <div className={`mobile-transaction-avatar ${index === 0 ? 'green' : index === 1 ? 'pink' : 'blue'}`}>{index + 1}</div>
                 <div className="mobile-transaction-info">
                   <h4>{customer.name || 'Walk-in Customer'}</h4>
-                  <p>{customer.orderCount || 1} {t('dashboard.orders', 'orders')} • ₹{formatCurrency(customer.totalSpent || 0)}</p>
+                  <p>{customer.orderCount || 1} {t('dashboard.orders', 'orders')} • ₹{formatCurrency(customer.totalSpend || 0)}</p>
                 </div>
                 <div className="mobile-transaction-amount">
                   <span style={{ color: '#16a34a', fontWeight: 600 }}>+{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints ?? 0)} pts</span>
