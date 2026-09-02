@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ErrorState, ExportModal, LoadingState, PageHeader, PeriodControl } from '../components/Common';
 import QrScanner from '../components/QrScanner';
-import type { DashboardData, Period, RewardSettings, UserProfile, Merchant } from '../types';
-import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod } from '../utils';
+import type { DashboardData, Period, RewardSettings, UserProfile, Merchant, Order } from '../types';
+import { dateInput, formatCurrency, formatPoints, rangeForChartPeriod, rangeForPeriod, formatDate, formatTime, initials } from '../utils';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 
 const emptyDashboard: DashboardData = {
@@ -58,6 +58,14 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
 
   const dashboard = useDashboard(period, from, to);
+  const data = dashboard.data || emptyDashboard;
+  
+  const recentOrders = useQuery({
+    queryKey: ['recent-orders'],
+    queryFn: ({ signal }) => apiFetch<{ orders: Order[] }>(`/api/orders?page=1&pageSize=5`, { signal }),
+    enabled: user.role === 'merchant',
+  });
+
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
   
@@ -73,7 +81,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
     enabled: user.role === 'merchant' && Boolean(scannerMode),
   });
 
-  const data = dashboard.data || emptyDashboard;
   const chartData = chart.data || emptyDashboard;
   const retentionData = retention.data || emptyDashboard;
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
@@ -180,49 +187,6 @@ export function Dashboard({ user }: { user: UserProfile }) {
         </div>
       </div>
 
-      {/* Recent Transactions */}
-      <div className="mobile-section">
-        <div className="mobile-section-header">
-          <h3>{t('dashboard.recentTransactions', 'Recent Transactions')}</h3>
-          <Link to="/orders">{t('common.viewAll', 'View all')}</Link>
-        </div>
-        <div className="mobile-transactions">
-          <div className="mobile-transaction-item">
-            <div className="mobile-transaction-avatar green">R</div>
-            <div className="mobile-transaction-info">
-              <h4>Rahul Kumar</h4>
-              <p>Today, 10:30 AM</p>
-            </div>
-            <div className="mobile-transaction-amount">
-              <strong>₹500.00</strong>
-              <span>+5.00 pts</span>
-            </div>
-          </div>
-          <div className="mobile-transaction-item">
-            <div className="mobile-transaction-avatar pink">A</div>
-            <div className="mobile-transaction-info">
-              <h4>Anu Stores</h4>
-              <p>Today, 10:15 AM</p>
-            </div>
-            <div className="mobile-transaction-amount">
-              <strong>₹800.00</strong>
-              <span>+8.00 pts</span>
-            </div>
-          </div>
-          <div className="mobile-transaction-item">
-            <div className="mobile-transaction-avatar blue">S</div>
-            <div className="mobile-transaction-info">
-              <h4>Shyam Traders</h4>
-              <p>Today, 09:45 AM</p>
-            </div>
-            <div className="mobile-transaction-amount">
-              <strong>₹1,200.00</strong>
-              <span>+12.00 pts</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Scanner Modal */}
       {Boolean(scannerMode) ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerMode(null); }}>
@@ -237,6 +201,34 @@ export function Dashboard({ user }: { user: UserProfile }) {
 
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
       
+      {/* Recent Transactions */}
+      {user.role === 'merchant' ? (
+        <div className="mobile-section">
+          <div className="mobile-section-header">
+            <h3>{t('dashboard.recentTransactions', 'Recent Transactions')}</h3>
+            <Link to="/orders">{t('common.viewAll', 'View all')}</Link>
+          </div>
+          <div className="mobile-transactions">
+            {recentOrders.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> : 
+             !recentOrders.data?.orders?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>No recent transactions.</p> :
+              recentOrders.data?.orders.slice(0, 5).map((order) => (
+              <Link to={`/orders?search=${order.orderNo}`} key={order.id} className="mobile-transaction-item" style={{ textDecoration: 'none' }}>
+                <div className="mobile-transaction-avatar blue">{initials(order.customer?.name || '?')}</div>
+                <div className="mobile-transaction-info">
+                  <h4>{order.customer?.name || 'Walk-in Customer'}</h4>
+                  <p>{formatDate(order.date)} • {formatTime(order.date)}</p>
+                </div>
+                <div className="mobile-transaction-amount">
+                  <strong>₹{formatCurrency(order.amount)}</strong>
+                  {order.rewardPoints ? <span>+{formatPoints(order.rewardPoints)}</span> : null}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Subscription Callout */}
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
         <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
       )}
