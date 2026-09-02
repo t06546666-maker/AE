@@ -24,7 +24,7 @@
   --danger-soft: #ffedef;
   --shadow: 0 8px 24px rgba(43, 72, 112, .08);
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], body.dark {
   --bg: #10131a;
   --surface: #191e28;
   --surface-alt: #151922;

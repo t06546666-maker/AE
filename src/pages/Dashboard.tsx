@@ -275,7 +275,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
                   <p>{formatDate(order.timestamp)} • {formatTime(order.timestamp)}</p>
                 </div>
                 <div className="mobile-transaction-amount">
-                  <strong>₹{formatCurrency(order.amount)}</strong>
+                  <strong>{formatCurrency(order.amount)}</strong>
                   {order.rewardPoints ? <span>+{formatPoints(order.rewardPoints)}</span> : null}
                 </div>
               </Link>
@@ -360,7 +360,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Pending Liability</span>
-              <strong style={{ fontSize: 14, color: '#ea580c' }}>₹{formatCurrency((data.summary.rewardPointsIssued || 0) * 0.1)}</strong>
+              <strong style={{ fontSize: 14, color: '#ea580c' }}>{formatCurrency((data.summary.rewardPointsIssued || 0) * 0.1)}</strong>
             </div>
           </div>
         </div>
