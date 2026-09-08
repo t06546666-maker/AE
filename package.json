@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build --configLoader runner",
     "preview": "vite preview",
-    "check": "node --check server.js && tsc -b --pretty false"
+    "check": "node --check server.js && tsc -b --pretty false",
+    "cap:sync": "npm run build && npx cap sync"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +18,9 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.1",
     "@supabase/supabase-js": "^2.110.0",
     "@tanstack/react-query": "^5.90.21",
     "@vercel/functions": "^3.4.3",
@@ -40,6 +44,8 @@
     "resend": "*"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.1",
     "@types/node": "^24.10.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.2",

@@ -1,6 +1,7 @@
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
 import { apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
@@ -55,10 +56,25 @@ export function App() {
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
   const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
 
   function logout() {
     clearAccessToken(); setUser(null); queryClient.clear();
   }
+
+  useEffect(() => {
+    const listener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      const isRoot = location.pathname === '/dashboard' || location.pathname === '/' || location.pathname === '/login';
+      if (!canGoBack || isRoot) {
+        CapacitorApp.exitApp();
+      } else {
+        navigate(-1);
+      }
+    });
+    return () => {
+      listener.then((l: any) => l.remove()).catch(() => {});
+    };
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const unauthorized = () => logout();

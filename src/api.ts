@@ -1,4 +1,5 @@
 const TOKEN_KEY = 'ae_access_token';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export class ApiError extends Error {
   status: number;
@@ -24,6 +25,7 @@ export function clearAccessToken() {
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const url = path.startsWith('/') ? `${API_BASE_URL}${path}` : path;
   const headers = new Headers(init.headers);
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -33,7 +35,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   let response: Response;
   try {
-    response = await fetch(path, { ...init, headers });
+    response = await fetch(url, { ...init, headers });
   } catch {
     throw new ApiError('Cannot reach the server. Check your connection and try again.', 0);
   }
@@ -71,8 +73,9 @@ export function queryString(values: Record<string, string | number | undefined>)
 }
 
 export async function downloadExport(path: string) {
+  const apiUrl = path.startsWith('/') ? `${API_BASE_URL}${path}` : path;
   const token = getAccessToken();
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) {

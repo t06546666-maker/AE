@@ -46,7 +46,7 @@
   --shadow: 0 10px 28px rgba(0, 0, 0, .24);
 }
 html, body, #root { min-height: 100%; margin: 0; }
-body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; }
+body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 25%, transparent); outline-offset: 2px; }
