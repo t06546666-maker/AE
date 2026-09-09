@@ -60,6 +60,14 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
           </label>
           {error ? <div className="form-error">{error}</div> : null}
           <button className="button primary login-button" disabled={busy}>{busy ? t('login.signingIn') : t('login.signIn')}</button>
+          
+          <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>Are you a customer?</p>
+            <Link to="/customer/login" className="button secondary" style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}>
+              Customer Login
+            </Link>
+          </div>
+
           <div className="login-links"><button type="button" onClick={() => setInfo('about')}>{t('login.about')}</button><button type="button" onClick={() => setInfo('contact')}>{t('login.contact')}</button></div>
         </form>
       </div>

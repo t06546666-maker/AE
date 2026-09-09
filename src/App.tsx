@@ -143,7 +143,7 @@ export function App() {
             <Route path="/customer/explore" element={<CustomerExplore />} />
             <Route path="/customer/scan" element={<CustomerScan user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
-            <Route path="/customer/profile" element={<CustomerProfile user={user} />} />
+            <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
           </Routes>
         </PageErrorBoundary>

@@ -1,7 +1,7 @@
 import { UserProfile } from '../../types';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, UserPlus, Shield } from 'lucide-react';
 
-export function CustomerProfile({ user }: { user: UserProfile }) {
+export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const getInitials = (name?: string) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -74,7 +74,7 @@ export function CustomerProfile({ user }: { user: UserProfile }) {
         </div>
       </div>
 
-      <button className="w-full bg-white rounded-3xl p-4 flex items-center justify-center space-x-2 text-red-500 font-bold hover:bg-red-50 transition-colors shadow-sm border border-gray-100">
+      <button onClick={onLogout} className="w-full bg-white rounded-3xl p-4 flex items-center justify-center space-x-2 text-red-500 font-bold hover:bg-red-50 transition-colors shadow-sm border border-gray-100">
         <LogOut size={20} />
         <span>Sign Out</span>
       </button>

@@ -109,6 +109,16 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
             </button>
           </form>
         )}
+
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-500 mb-3">Are you a merchant?</p>
+          <button 
+            onClick={() => window.location.href = '/login'} 
+            className="text-[#0d9254] font-bold text-sm hover:underline"
+          >
+            Merchant Login
+          </button>
+        </div>
       </div>
     </div>
   );

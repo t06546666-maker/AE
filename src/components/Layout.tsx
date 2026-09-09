@@ -125,8 +125,11 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               </NavLink>
             ))}
           </nav>
-          <div className="sidebar-foot">
-            <span className="status-dot online" /> {t('layout.secureWorkspace')}
+          <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
+            <button className="button secondary signout desktop-view-hidden" onClick={onLogout} style={{ width: '100%', justifyContent: 'center' }}>
+              <LogOut size={15} />{t('layout.signOut')}
+            </button>
           </div>
         </aside>
         <main className="main-content">
