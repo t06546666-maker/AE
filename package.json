@@ -32,6 +32,7 @@
     "form-data": "*",
     "html5-qrcode": "^2.3.8",
     "i18next": "^26.3.6",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
     "multer": "^2.2.0",
     "pdfkit": "^0.19.1",
@@ -46,11 +47,15 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.1",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.10.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.5.5",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^7.2.2"
   }

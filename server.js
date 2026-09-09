@@ -13,6 +13,7 @@ const multer   = require('multer');
 const { Resend } = require('resend');
 const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
+const jwt      = require('jsonwebtoken');
 
 // --- Affiliate AE Settlement Engine ---
 const { recordRewardEarned } = require('./src/modules/affiliate/rewards');
@@ -187,6 +188,32 @@ async function requireAuth(req, res, next) {
     });
   }
   next();
+}
+
+const CUSTOMER_JWT_SECRET = process.env.CUSTOMER_JWT_SECRET || '07899040657f592d4f4d71c954e7977d7090e5e51e2c6cd44c1069c8ee06794c';
+const customerOtps = new Map();
+
+async function requireCustomerAuth(req, res, next) {
+  if (!requireSupabase(res)) return;
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  if (!token) return res.status(401).json({ success: false, error: 'Authentication required' });
+
+  try {
+    const payload = jwt.verify(token, CUSTOMER_JWT_SECRET);
+    if (!payload.customerId) return res.status(401).json({ success: false, error: 'Invalid token' });
+    
+    const { data: customer, error } = await supabaseAdmin
+      .from('customers')
+      .select('*')
+      .eq('id', payload.customerId)
+      .single();
+      
+    if (error || !customer) return res.status(401).json({ success: false, error: 'Customer not found' });
+    req.customer = customer;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, error: 'Invalid or expired session' });
+  }
 }
 
 function requireRole(role) {
@@ -1191,6 +1218,58 @@ app.use('/api/redemptions', requireAuth, redemptionsRouter);
 app.use('/api/settlements', requireAuth, settlementsRouter);
 app.use('/api/payments', paymentsRouter);
 // ----------------------------------------------
+
+app.post('/api/auth/customer/request-otp', async (req, res) => {
+  const phone = cleanText(req.body.phone, 20);
+  if (!phone) return res.status(400).json({ success: false, error: 'Phone number is required' });
+  
+  // Clean phone to only digits
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.length < 8) return res.status(400).json({ success: false, error: 'Invalid phone number' });
+
+  // Optional: check if customer exists first to prevent spam to random numbers
+  const { data: existing } = await supabaseAdmin.from('customers').select('id').eq('phone', cleanPhone).limit(1);
+  if (!existing || existing.length === 0) {
+    return res.status(404).json({ success: false, error: 'Customer not found. Please register by scanning a merchant QR code first.' });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  customerOtps.set(cleanPhone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+  
+  // Send via WhatsApp
+  await sendWhatsAppText(cleanPhone, `Your Affiliate AE login code is: ${otp}. It expires in 5 minutes.`);
+  res.json({ success: true });
+});
+
+app.post('/api/auth/customer/verify-otp', async (req, res) => {
+  const phone = cleanText(req.body.phone, 20);
+  const otp = cleanText(req.body.otp, 10);
+  const cleanPhone = phone.replace(/\D/g, '');
+  
+  const record = customerOtps.get(cleanPhone);
+  if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
+    return res.status(400).json({ success: false, error: 'Invalid or expired code' });
+  }
+  
+  customerOtps.delete(cleanPhone);
+  
+  const { data: customer } = await supabaseAdmin.from('customers').select('*').eq('phone', cleanPhone).single();
+  if (!customer) {
+    return res.status(404).json({ success: false, error: 'Customer not found.' });
+  }
+
+  const token = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
+  
+  res.json({
+    success: true,
+    accessToken: token,
+    user: customer,
+  });
+});
+
+app.get('/api/auth/customer/me', requireCustomerAuth, (req, res) => {
+  res.json({ success: true, user: req.customer });
+});
 
 app.post('/api/auth/login', async (req, res) => {
   if (!requireSupabase(res)) return;

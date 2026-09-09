@@ -1,10 +1,12 @@
-export type Role = 'admin' | 'merchant';
+export type Role = 'admin' | 'merchant' | 'customer';
 export type Period = 'today' | 'week' | 'month' | 'custom';
 
 export interface UserProfile {
   id: string;
   email: string;
-  full_name: string;
+  full_name: string; // Used by admin/merchant
+  name?: string;     // Used by customer
+  phone?: string;    // Used by customer
   role: Role;
   merchant_id: string | null;
   must_change_password?: boolean;

@@ -22,6 +22,13 @@ import { CustomerOrders } from './pages/CustomerOrders';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import { More } from './pages/More';
 import { Rewards } from './pages/Rewards';
+import { CustomerLayout } from './components/CustomerLayout';
+import { CustomerLogin } from './pages/customer/CustomerLogin';
+import { CustomerHome } from './pages/customer/Home';
+import { CustomerExplore } from './pages/customer/Explore';
+import { CustomerScan } from './pages/customer/Scan';
+import { CustomerRewards } from './pages/customer/Rewards';
+import { CustomerProfile } from './pages/customer/Profile';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -90,8 +97,20 @@ export function App() {
   });
 
   useEffect(() => {
-    if (!getAccessToken()) { setRestoring(false); return; }
-    apiFetch<{ user: UserProfile }>('/api/auth/me')
+    const token = getAccessToken();
+    if (!token) { setRestoring(false); return; }
+    
+    // Check if it's a customer JWT (has 3 parts) or Supabase token
+    const isCustomerToken = token.split('.').length === 3 && (() => {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.role === 'customer';
+      } catch (e) { return false; }
+    })();
+
+    const endpoint = isCustomerToken ? '/api/auth/customer/me' : '/api/auth/me';
+
+    apiFetch<{ user: UserProfile }>(endpoint)
       .then((data) => setUser(data.user))
       .catch(() => logout())
       .finally(() => setRestoring(false));
@@ -103,6 +122,7 @@ export function App() {
       <Routes>
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/customer/login" element={<CustomerLogin onLogin={setUser} />} />
         <Route path="*" element={<Login onLogin={setUser} />} />
       </Routes>
     );
@@ -112,6 +132,23 @@ export function App() {
       setUser({ ...user, must_change_password: false });
       void queryClient.invalidateQueries();
     }} />;
+  }
+
+  if (user.role === 'customer') {
+    return (
+      <CustomerLayout user={user} onLogout={logout}>
+        <PageErrorBoundary key={location.pathname}>
+          <Routes>
+            <Route path="/customer/home" element={<CustomerHome user={user} />} />
+            <Route path="/customer/explore" element={<CustomerExplore />} />
+            <Route path="/customer/scan" element={<CustomerScan user={user} />} />
+            <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
+            <Route path="/customer/profile" element={<CustomerProfile user={user} />} />
+            <Route path="*" element={<Navigate to="/customer/home" replace />} />
+          </Routes>
+        </PageErrorBoundary>
+      </CustomerLayout>
+    );
   }
 
   return (
