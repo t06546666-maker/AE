@@ -28,6 +28,10 @@
   --danger-soft: #ffedef;
   --shadow: 0 8px 24px rgba(43, 72, 112, .08);
 }
+.theme-green {
+  --primary: var(--green);
+  --primary-soft: var(--green-soft);
+}
 :root[data-theme="dark"], body.dark {
   --bg: #10131a;
   --surface: #191e28;
