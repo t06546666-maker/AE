@@ -22,7 +22,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
 
   return (
     <div className="app-shell theme-green">
-      <header className="topbar">
+      <header className="topbar hidden md:flex">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
           <div className="brand"><span>Affiliate</span><small>AE</small></div>
@@ -49,20 +49,20 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
       </header>
       <div className="shell-body">
         {sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <aside className={`sidebar hidden md:flex ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'active' : ''}>
               <Home size={18} /><span>Home</span>
             </NavLink>
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
-              <MapPin size={18} /><span>Explore</span>
+              <Search size={18} /><span>Explore</span>
             </NavLink>
             <NavLink to="/customer/scan" className={({ isActive }) => isActive ? 'active' : ''}>
-              <QrCode size={18} /><span>Scan QR</span>
+              <Scan size={18} /><span>Scan QR</span>
             </NavLink>
             <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Gift size={18} /><span>Rewards</span>
+              <Star size={18} /><span>Rewards</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>Profile</span>
@@ -75,11 +75,11 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             </button>
           </div>
         </aside>
-        <main className="main-content max-w-[430px] mx-auto bg-white relative min-h-screen border-x border-gray-100 shadow-[0_0_40px_rgba(0,0,0,0.05)] w-full" style={{ padding: 0 }}>
+        <main className="main-content max-w-[430px] mx-auto bg-white relative min-h-screen border-x border-gray-100 shadow-[0_0_40px_rgba(0,0,0,0.05)] w-full !p-0">
           {children}
         </main>
       </div>
-      <div className="mobile-bottom-nav desktop-view-hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100">
+      <div className="mobile-bottom-nav md:hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100 bg-white">
         <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Home />
           <span>Home</span>
