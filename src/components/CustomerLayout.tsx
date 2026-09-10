@@ -75,23 +75,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             </button>
           </div>
         </aside>
-        <main className="main-content">
-          <div className="mobile-topbar desktop-view-hidden" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'white' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
-                <Menu size={28} color="#1a1a1a" strokeWidth={2} />
-              </button>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.5px' }}>AE</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title="Change Language">
-                <Languages size={24} color="#1a1a1a" strokeWidth={2} />
-              </button>
-              <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => document.body.classList.toggle('dark')} title="Toggle Dark Mode">
-                <Moon size={24} color="#1a1a1a" strokeWidth={2} />
-              </button>
-            </div>
-          </div>
+        <main className="main-content" style={{ padding: 0 }}>
           {children}
         </main>
       </div>
