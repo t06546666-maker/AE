@@ -91,6 +91,14 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
       if (!window.isSecureContext) throw new Error(t('scanner.secureError'));
       if (!navigator.mediaDevices?.getUserMedia) throw new Error(t('scanner.unsupported'));
 
+      // Explicitly ask for camera permission first to ensure the prompt appears
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        throw new Error(t('scanner.permission'));
+      }
+
       instance = new Html5Qrcode('react-qr-reader', {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,

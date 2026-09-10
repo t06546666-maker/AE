@@ -1,47 +1,64 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Keyboard } from 'lucide-react';
+import QRCode from 'qrcode';
+import { ArrowLeft, QrCode } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 export function CustomerScan({ user }: { user: UserProfile }) {
+  const [qrSrc, setQrSrc] = useState<string>('');
+
+  useEffect(() => {
+    if (user?.id) {
+      QRCode.toDataURL(user.id, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#087a4b', // Primary green color
+          light: '#ffffff',
+        },
+      })
+      .then((url) => setQrSrc(url))
+      .catch((err) => console.error(err));
+    }
+  }, [user]);
+
   return (
-    <div className="bg-zinc-900 min-h-screen flex flex-col relative pb-[100px]">
+    <div className="bg-white min-h-screen flex flex-col relative pb-[100px]">
       {/* Header */}
-      <header className="flex items-center px-5 py-4 sticky top-0 z-20">
-        <div className="flex items-center gap-4 text-white">
+      <header className="flex items-center px-5 py-4 sticky top-0 z-20 bg-white">
+        <div className="flex items-center gap-4 text-gray-800">
           <Link to="/customer/home"><ArrowLeft size={24} /></Link>
-          <h1 className="text-lg font-bold">Scan & Earn</h1>
+          <h1 className="text-lg font-bold">My QR Code</h1>
         </div>
       </header>
 
-      {/* Simulated Camera View Overlay */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 -mt-10">
-        {/* Scanning Frame */}
-        <div className="relative w-64 h-64 mb-8">
-          {/* Corner borders */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-          
-          {/* Simulated QR Code (Placeholder for camera feed) */}
-          <div className="absolute inset-2 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center overflow-hidden">
-             <div className="w-full h-1 bg-green-400 absolute top-1/2 left-0 animate-bounce shadow-[0_0_10px_#4ade80]"></div>
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-10">
+        <div className="text-center mb-8">
+          <h2 className="text-[22px] font-bold text-gray-900 mb-2 tracking-tight">Your Unique Code</h2>
+          <p className="text-[14px] text-gray-500 font-medium">Show this to the merchant to earn<br/>or redeem AE Points.</p>
         </div>
 
-        <p className="text-white text-center font-medium text-lg mb-12">
-          Scan the merchant's<br/>AE QR code
-        </p>
+        {/* QR Code Card */}
+        <div className="bg-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 mb-10">
+          {qrSrc ? (
+            <img src={qrSrc} alt="Your QR Code" className="w-64 h-64" />
+          ) : (
+            <div className="w-64 h-64 flex items-center justify-center bg-gray-50 rounded-2xl">
+              <QrCode size={48} className="text-[#087a4b] animate-pulse opacity-50" />
+            </div>
+          )}
+        </div>
 
-        {/* Enter Code Manually Button */}
-        <button className="bg-white text-gray-900 font-bold py-3.5 px-6 w-full max-w-sm rounded-full flex items-center justify-center gap-2 shadow-lg hover:bg-gray-50 active:scale-[0.98] transition-transform">
-          <Keyboard size={20} className="text-gray-500" />
-          Enter Code Manually
-        </button>
+        {/* Customer ID Pill */}
+        <div className="text-center">
+          <p className="text-[12px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Customer ID</p>
+          <div className="bg-gray-50 py-3 px-6 rounded-full border border-gray-100 flex items-center gap-2 shadow-sm">
+            <span className="text-[16px] font-mono font-bold tracking-wider text-gray-800">
+              {user.id?.substring(0, 8) || 'AE-USER'}
+            </span>
+          </div>
+        </div>
       </div>
-      
-      {/* Dark overlay gradients for camera realism */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/80 z-0 pointer-events-none"></div>
     </div>
   );
 }
