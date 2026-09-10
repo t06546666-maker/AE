@@ -32,7 +32,7 @@ function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; fro
   return period === 'custom' ? <CustomDates from={from} to={to} onFrom={setFrom} onTo={setTo} /> : null;
 }
 
-export function More({ user }: { user: UserProfile }) {
+export function More({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const { t } = useTranslation();
   const today = dateInput();
   const [chartPeriod, setChartPeriod] = useState<Period>('today');
@@ -110,6 +110,22 @@ export function More({ user }: { user: UserProfile }) {
           </div>
           <ChevronRight size={20} color="#94a3b8" />
         </Link>
+      </div>
+
+      {/* Logout */}
+      <div style={{ marginTop: 32, marginBottom: 16, padding: '0 4px' }}>
+        <button
+          onClick={onLogout}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+            padding: '16px 20px', borderRadius: 14, border: '1.5px solid #fee2e2',
+            background: '#fff5f5', cursor: 'pointer', color: '#ef4444',
+            fontSize: 15, fontWeight: 600,
+          }}
+        >
+          <LogOut size={20} color="#ef4444" />
+          Sign out
+        </button>
       </div>
 
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />

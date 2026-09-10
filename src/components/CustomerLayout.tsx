@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Home, QrCode, Gift, User, MapPin } from 'lucide-react';
 import { UserProfile } from '../types';
 
-export function CustomerLayout({ user, children }: { user: UserProfile; children: ReactNode }) {
+export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans relative overflow-hidden w-full">
       <main className="flex-1 overflow-y-auto pb-[80px] w-full h-full">

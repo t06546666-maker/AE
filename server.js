@@ -23,6 +23,31 @@ const redemptionsRouter = require('./src/modules/affiliate/redemptions');
 const { router: rewardsRouter } = require('./src/modules/affiliate/rewards');
 const { router: settlementsRouter } = require('./src/modules/affiliate/settlements');
 const paymentsRouter = require('./src/modules/affiliate/payments');
+
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${derivedKey}`;
+}
+
+function verifyPassword(password, hash) {
+  if (!hash || typeof hash !== 'string' || !hash.includes(':')) return false;
+  const [salt, key] = hash.split(':');
+  try {
+    const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
+    return key === derivedKey;
+  } catch {
+    return false;
+  }
+}
+
+function generateCustomerPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let pwd = '';
+  for(let i=0; i<6; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  return pwd;
+}
 // --------------------------------------
 
 let vercelWaitUntil = null;
@@ -102,6 +127,7 @@ const WA_CUSTOMER_ORDER_STATUS_TEMPLATE = cleanText(
   process.env.WA_CUSTOMER_ORDER_STATUS_TEMPLATE || 'customer_order_status_v1',
   512,
 );
+const WA_OTP_TEMPLATE = cleanText(process.env.WA_OTP_TEMPLATE || 'customer_login_otp', 512);
 const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
 const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
 const OFFER_QUEUE_SECRET = process.env.OFFER_QUEUE_SECRET;
@@ -736,11 +762,15 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
   const templateName = WA_QR_TEMPLATE || WA_REGISTRATION_TEMPLATE;
+  const tempPwdParam = purchase.temporary_password
+    ? [{ type: 'text', text: purchase.temporary_password }]
+    : [];
   const bodyParameters = WA_QR_TEMPLATE
     ? [
       { type: 'text', text: purchase.customer_name },
       { type: 'text', text: purchase.customer_code },
       { type: 'text', text: formatPoints(purchase.total_points) },
+      ...tempPwdParam,
     ]
     : [
       { type: 'text', text: purchase.customer_name },
@@ -749,6 +779,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
       { type: 'text', text: formatPoints(purchase.points_earned) },
       { type: 'text', text: formatPoints(purchase.total_points) },
+      ...tempPwdParam,
     ];
   const bodyComponent = {
     type: 'body',
@@ -1219,32 +1250,38 @@ app.use('/api/settlements', requireAuth, settlementsRouter);
 app.use('/api/payments', paymentsRouter);
 // ----------------------------------------------
 
-app.post('/api/auth/customer/request-otp', async (req, res) => {
+app.post('/api/auth/customer/forgot-password/request-otp', async (req, res) => {
   const phone = cleanText(req.body.phone, 20);
   if (!phone) return res.status(400).json({ success: false, error: 'Phone number is required' });
-  
-  // Clean phone to only digits
   const cleanPhone = phone.replace(/\D/g, '');
   if (cleanPhone.length < 8) return res.status(400).json({ success: false, error: 'Invalid phone number' });
 
-  // Optional: check if customer exists first to prevent spam to random numbers
   const { data: existing } = await supabaseAdmin.from('customers').select('id').eq('phone', cleanPhone).limit(1);
   if (!existing || existing.length === 0) {
-    return res.status(404).json({ success: false, error: 'Customer not found. Please register by scanning a merchant QR code first.' });
+    return res.status(404).json({ success: false, error: 'Customer not found. Please register first.' });
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   customerOtps.set(cleanPhone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
   
-  // Send via WhatsApp
-  await sendWhatsAppText(cleanPhone, `Your Affiliate AE login code is: ${otp}. It expires in 5 minutes.`);
+  const templateResult = await sendWhatsAppTemplate({
+    recipient: cleanPhone,
+    templateName: WA_OTP_TEMPLATE,
+    components: [{ type: 'body', parameters: [{ type: 'text', text: otp }] }, { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: otp }] }],
+  });
+  if (!templateResult.sent) {
+    await sendWhatsAppText(cleanPhone, `Your Affiliate AE password reset code is: ${otp}. It expires in 5 minutes.`);
+  }
   res.json({ success: true });
 });
 
-app.post('/api/auth/customer/verify-otp', async (req, res) => {
+app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
   const phone = cleanText(req.body.phone, 20);
   const otp = cleanText(req.body.otp, 10);
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
   const cleanPhone = phone.replace(/\D/g, '');
+  
+  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
   
   const record = customerOtps.get(cleanPhone);
   if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
@@ -1254,17 +1291,57 @@ app.post('/api/auth/customer/verify-otp', async (req, res) => {
   customerOtps.delete(cleanPhone);
   
   const { data: customer } = await supabaseAdmin.from('customers').select('*').eq('phone', cleanPhone).single();
-  if (!customer) {
-    return res.status(404).json({ success: false, error: 'Customer not found.' });
+  if (!customer) return res.status(404).json({ success: false, error: 'Customer not found.' });
+
+  const passwordHash = hashPassword(password);
+  await supabaseAdmin.from('customers').update({ 
+    password_hash: passwordHash, 
+    must_change_password: false,
+    password_reset_at: new Date().toISOString()
+  }).eq('id', customer.id);
+
+  res.json({ success: true });
+});
+
+app.post('/api/auth/customer/login', async (req, res) => {
+  const phone = cleanText(req.body.phone, 20);
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const cleanPhone = phone.replace(/\D/g, '');
+  
+  if (cleanPhone.length < 8 || !password) return res.status(400).json({ success: false, error: 'Phone and password are required' });
+  
+  const { data: customer } = await supabaseAdmin.from('customers').select('*').eq('phone', cleanPhone).single();
+  if (!customer) return res.status(401).json({ success: false, error: 'Invalid phone or password' });
+  
+  if (!customer.password_hash || !verifyPassword(password, customer.password_hash)) {
+    return res.status(401).json({ success: false, error: 'Invalid phone or password' });
   }
 
   const token = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
+  
+  // Ensure the object has the role defined explicitly for the frontend
+  customer.role = 'customer';
   
   res.json({
     success: true,
     accessToken: token,
     user: customer,
   });
+});
+
+app.post('/api/auth/customer/change-password', requireCustomerAuth, async (req, res) => {
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  
+  const passwordHash = hashPassword(password);
+  const { error } = await supabaseAdmin.from('customers').update({ 
+    password_hash: passwordHash, 
+    must_change_password: false,
+    password_reset_at: new Date().toISOString()
+  }).eq('id', req.customer.id);
+  
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true });
 });
 
 app.get('/api/auth/customer/me', requireCustomerAuth, (req, res) => {
@@ -2594,6 +2671,9 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     const networkId = merchantData?.network_id;
 
     const customerCode = `C${Date.now().toString(36).toUpperCase()}`;
+    const temporaryPassword = phone.replace(/\D/g, '').slice(-6).padStart(6, '0');
+    const passwordHash = hashPassword(temporaryPassword);
+    
     const created = await supabaseAdmin.from('customers').insert({
       customer_code: customerCode,
       name,
@@ -2602,9 +2682,12 @@ app.post('/api/customers', requireAuth, async (req, res) => {
       merchant_id: merchantId,
       network_id: networkId,
       whatsapp_opt_in_at: new Date().toISOString(),
+      password_hash: passwordHash,
+      must_change_password: true,
     }).select('id,customer_code,name,phone,email,created_at').single();
     if (created.error) return res.status(400).json({ success: false, error: created.error.message });
     customer = created.data;
+    customer.temporaryPassword = temporaryPassword;
     createdCustomer = true;
   } else if (!customer.email && email) {
     await supabaseAdmin.from('customers').update({ email }).eq('id', customer.id);
@@ -2635,6 +2718,10 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     });
   }
   const purchase = purchases[0];
+  // Attach temporary password to purchase so it is included in the welcome QR template
+  if (customer.temporaryPassword) {
+    purchase.temporary_password = customer.temporaryPassword;
+  }
   const whatsapp = await queueWhatsApp(purchase, 'registration');
   const emailResult = purchase.customer_email && resend && process.env.RESEND_FROM_EMAIL
     ? { queued: true, sent: false }
@@ -2653,6 +2740,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
       name: customer.name,
       phone: customer.phone,
       email: customer.email || '',
+      temporaryPassword: customer.temporaryPassword,
       registeredAt: purchase.created_at,
       qrScans: purchase.qr_scans,
       merchantId,

@@ -9,6 +9,7 @@ export interface UserProfile {
   phone?: string;    // Used by customer
   role: Role;
   merchant_id: string | null;
+  reward_points?: number;
   must_change_password?: boolean;
   password_reset_at?: string | null;
   password_changed_at?: string | null;

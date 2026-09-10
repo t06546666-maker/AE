@@ -23,9 +23,11 @@ import { RewardSettingsPage } from './pages/RewardSettings';
 import { More } from './pages/More';
 import { Rewards } from './pages/Rewards';
 import { CustomerLayout } from './components/CustomerLayout';
-import { CustomerLogin } from './pages/customer/CustomerLogin';
 import { CustomerHome } from './pages/customer/Home';
 import { CustomerExplore } from './pages/customer/Explore';
+import { CustomerLogin } from './pages/customer/CustomerLogin';
+import { CustomerChangePassword } from './pages/customer/CustomerChangePassword';
+import { CustomerForgotPassword } from './pages/customer/CustomerForgotPassword';
 import { CustomerScan } from './pages/customer/Scan';
 import { CustomerRewards } from './pages/customer/Rewards';
 import { CustomerProfile } from './pages/customer/Profile';
@@ -122,16 +124,22 @@ export function App() {
       <Routes>
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/customer/forgot-password" element={<CustomerForgotPassword />} />
         <Route path="/customer/login" element={<CustomerLogin onLogin={setUser} />} />
         <Route path="*" element={<Login onLogin={setUser} />} />
       </Routes>
     );
   }
-  if (user.role === 'merchant' && user.must_change_password) {
-    return <ChangePassword onChanged={() => {
-      setUser({ ...user, must_change_password: false });
-      void queryClient.invalidateQueries();
-    }} />;
+  if (user.must_change_password) {
+    return user.role === 'customer' 
+      ? <CustomerChangePassword onChanged={() => {
+          setUser({ ...user, must_change_password: false });
+          void queryClient.invalidateQueries();
+        }} />
+      : <ChangePassword onChanged={() => {
+          setUser({ ...user, must_change_password: false });
+          void queryClient.invalidateQueries();
+        }} />;
   }
 
   if (user.role === 'customer') {
@@ -163,7 +171,7 @@ export function App() {
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/rewards" element={<Rewards user={user} />} />
-          <Route path="/more" element={<More user={user} />} />
+          <Route path="/more" element={<More user={user} onLogout={logout} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />

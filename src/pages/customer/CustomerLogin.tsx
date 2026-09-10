@@ -1,123 +1,120 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch, setAccessToken } from '../../api';
 import { UserProfile } from '../../types';
 
 export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const requestOtp = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await apiFetch('/api/auth/customer/request-otp', {
+      const fullPhone = '+91' + phone.replace(/\D/g, '');
+      const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/login', {
         method: 'POST',
-        body: JSON.stringify({ phone }),
-      });
-      setStep('otp');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send code.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/verify-otp', {
-        method: 'POST',
-        body: JSON.stringify({ phone, otp }),
+        body: JSON.stringify({ phone: fullPhone, password }),
       });
       setAccessToken(data.accessToken);
       onLogin(data.user);
     } catch (err: any) {
-      setError(err.message || 'Invalid code.');
+      setError(err.message || 'Invalid phone or password.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 font-sans">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm p-8 space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Affiliate <span className="text-[#0d9254]">AE</span></h1>
-          <p className="text-gray-500 text-sm mt-2 font-medium">Log in to view your rewards</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium text-center">
-            {error}
+    <div className="login-screen">
+      <div className="login-brand-panel">
+        <div className="login-brand"><span>Affiliate</span><small>AE</small></div>
+        <h1>Welcome Back</h1>
+        <p>Log in to your Customer account to view your rewards and order history.</p>
+        <div className="login-features">
+          {/* Decorative features similar to Merchant login */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '24px' }}>🎁</span>
+            <span style={{ fontSize: '15px' }}><strong>Earn Rewards</strong><br/><span style={{ color: '#a7f3d0' }}>Get points for every purchase at participating merchants.</span></span>
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '24px' }}>📱</span>
+            <span style={{ fontSize: '15px' }}><strong>WhatsApp Ordering</strong><br/><span style={{ color: '#a7f3d0' }}>Order directly via WhatsApp and track your status.</span></span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="login-form-panel">
+        <div className="login-form">
+          <div className="login-mobile-brand">Affiliate <span>AE</span></div>
+          <h2>Customer Login</h2>
+          <p>Please enter your mobile number to receive a login code via WhatsApp.</p>
+          
+          {error && <div className="form-error">{error}</div>}
 
-        {step === 'phone' ? (
-          <form onSubmit={requestOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+971 50 123 4567"
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg rounded-xl focus:ring-[#0d9254] focus:border-[#0d9254] block p-3 font-medium transition-all"
-                required
-              />
-            </div>
+          <form onSubmit={submit}>
+            <label>
+              <span>Phone Number</span>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: '16px', fontWeight: 'bold', color: '#6b7280' }}>+91</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="Enter 10-digit number"
+                  style={{ width: '100%', paddingLeft: '54px' }}
+                  required
+                />
+              </div>
+            </label>
+            <label>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Password</span>
+                <Link to="/customer/forgot-password" style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--brand-color)', textDecoration: 'none' }}>Forgot password?</Link>
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  style={{ width: '100%', paddingRight: '40px' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <span style={{ fontSize: '12px', fontWeight: 600 }}>HIDE</span> : <span style={{ fontSize: '12px', fontWeight: 600 }}>SHOW</span>}
+                </button>
+              </div>
+            </label>
             <button
               type="submit"
               disabled={loading}
-              className="w-full text-white bg-[#0d9254] hover:bg-[#0a7a46] focus:ring-4 focus:ring-green-300 font-bold rounded-xl text-lg px-5 py-4 text-center transition-all disabled:opacity-50"
+              className="button primary login-button"
+              style={{ marginTop: '24px' }}
             >
-              {loading ? 'Sending...' : 'Continue'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
-        ) : (
-          <form onSubmit={verifyOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Enter 6-digit Code</label>
-              <input
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-center text-2xl tracking-[0.5em] rounded-xl focus:ring-[#0d9254] focus:border-[#0d9254] block p-3 font-bold transition-all"
-                required
-                maxLength={6}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full text-white bg-[#0d9254] hover:bg-[#0a7a46] focus:ring-4 focus:ring-green-300 font-bold rounded-xl text-lg px-5 py-4 text-center transition-all disabled:opacity-50"
-            >
-              {loading ? 'Verifying...' : 'Verify & Login'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep('phone')}
-              className="w-full text-gray-500 font-medium text-sm mt-4 hover:text-gray-900 transition-colors"
-            >
-              Use a different number
-            </button>
-          </form>
-        )}
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-sm text-gray-500 mb-3">Are you a merchant?</p>
-          <button 
-            onClick={() => window.location.href = '/login'} 
-            className="text-[#0d9254] font-bold text-sm hover:underline"
-          >
-            Merchant Login
-          </button>
+          <div style={{ marginTop: '30px', textAlign: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>Are you a merchant?</p>
+            <button 
+              onClick={() => window.location.href = '/login'} 
+              className="button secondary" 
+              style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}
+            >
+              Merchant Login
+            </button>
+          </div>
         </div>
       </div>
     </div>

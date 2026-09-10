@@ -17,7 +17,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <div className="bg-[#ffd263] w-10 h-10 rounded-full flex items-center justify-center shadow-inner">
             <span className="text-amber-700 font-bold text-xl">★</span>
           </div>
-          <span className="text-4xl font-black tracking-tight">{user.rewardPoints || 0}</span>
+          <span className="text-4xl font-black tracking-tight">{user.reward_points || 0}</span>
         </div>
       </div>
 
