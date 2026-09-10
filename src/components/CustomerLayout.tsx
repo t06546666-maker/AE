@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, QrCode, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages } from 'lucide-react';
+import { Home, QrCode, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, Star } from 'lucide-react';
 import { UserProfile } from '../types';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
@@ -75,26 +75,26 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             </button>
           </div>
         </aside>
-        <main className="main-content" style={{ padding: 0 }}>
+        <main className="main-content max-w-[430px] mx-auto bg-white relative min-h-screen border-x border-gray-100 shadow-[0_0_40px_rgba(0,0,0,0.05)] w-full" style={{ padding: 0 }}>
           {children}
         </main>
       </div>
-      <div className="mobile-bottom-nav desktop-view-hidden">
+      <div className="mobile-bottom-nav desktop-view-hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100">
         <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Home />
           <span>Home</span>
         </NavLink>
         <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <MapPin />
+          <Search />
           <span>Explore</span>
         </NavLink>
         <div className="mobile-bottom-nav-item" style={{ position: 'relative' }}>
           <NavLink to="/customer/scan" className="bg-[#087a4b] text-white rounded-full p-[12px] shadow-lg shadow-green-600/30 hover:bg-[#0a7a46] transition-all transform hover:scale-105 active:scale-95" style={{ position: 'absolute', top: '-24px' }}>
-            <QrCode size={26} strokeWidth={2} />
+            <Scan size={26} strokeWidth={2} />
           </NavLink>
         </div>
         <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Gift />
+          <Star />
           <span>Rewards</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
