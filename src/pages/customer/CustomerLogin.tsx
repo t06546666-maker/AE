@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { apiFetch, setAccessToken } from '../../api';
 import { UserProfile } from '../../types';
 
@@ -30,91 +31,96 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
   };
 
   return (
-    <div className="login-screen">
-      <div className="login-brand-panel">
-        <div className="login-brand"><span>Affiliate</span><small>AE</small></div>
-        <h1>Welcome Back</h1>
-        <p>Log in to your Customer account to view your rewards and order history.</p>
-        <div className="login-features">
-          {/* Decorative features similar to Merchant login */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <span style={{ fontSize: '24px' }}>🎁</span>
-            <span style={{ fontSize: '15px' }}><strong>Earn Rewards</strong><br/><span style={{ color: '#a7f3d0' }}>Get points for every purchase at participating merchants.</span></span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <span style={{ fontSize: '24px' }}>📱</span>
-            <span style={{ fontSize: '15px' }}><strong>WhatsApp Ordering</strong><br/><span style={{ color: '#a7f3d0' }}>Order directly via WhatsApp and track your status.</span></span>
-          </div>
+    <div className="bg-white min-h-screen flex flex-col font-sans text-gray-900">
+      {/* Decorative Top Background */}
+      <div className="bg-[#087a4b] h-[30vh] w-full rounded-b-[40px] flex flex-col items-center justify-center relative overflow-hidden shrink-0">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2"></div>
+        <div className="relative z-10 flex flex-col items-center">
+          <h1 className="text-5xl font-black text-white tracking-tighter drop-shadow-md mb-2">AE</h1>
+          <p className="text-green-50/90 font-medium tracking-wide">Customer Portal</p>
         </div>
       </div>
-      
-      <div className="login-form-panel">
-        <div className="login-form">
-          <div className="login-mobile-brand">Affiliate <span>AE</span></div>
-          <h2>Customer Login</h2>
-          <p>Please enter your mobile number to receive a login code via WhatsApp.</p>
-          
-          {error && <div className="form-error">{error}</div>}
 
-          <form onSubmit={submit}>
-            <label>
-              <span>Phone Number</span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ position: 'absolute', left: '16px', fontWeight: 'bold', color: '#6b7280' }}>+91</span>
+      {/* Login Form Container */}
+      <div className="flex-1 px-6 -mt-10 relative z-10 pb-10">
+        <div className="bg-white rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
+          <h2 className="text-[24px] font-bold text-gray-900 mb-2">Welcome Back</h2>
+          <p className="text-[14px] text-gray-500 mb-8 leading-snug">
+            Enter your mobile number and temporary password to access your rewards.
+          </p>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-[13px] font-medium mb-6 flex items-start gap-2 border border-red-100">
+              <span className="mt-0.5">⚠️</span>
+              <span className="leading-snug">{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={submit} className="space-y-5">
+            {/* Phone Number Input */}
+            <div>
+              <label className="block text-[13px] font-bold text-gray-700 mb-2 uppercase tracking-wide">Phone Number</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 font-bold text-gray-800 pointer-events-none">+91</div>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="Enter 10-digit number"
-                  style={{ width: '100%', paddingLeft: '54px' }}
+                  placeholder="Enter 10 digits"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-[16px] py-4 pl-[52px] pr-4 focus:outline-none focus:ring-2 focus:ring-[#087a4b] focus:border-transparent transition-all text-[16px] font-medium"
                   required
                 />
               </div>
-            </label>
-            <label>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Password</span>
-                <Link to="/customer/forgot-password" style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--brand-color)', textDecoration: 'none' }}>Forgot password?</Link>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-[13px] font-bold text-gray-700 uppercase tracking-wide">Password</label>
+                <Link to="/customer/forgot-password" className="text-[13px] font-bold text-[#087a4b] hover:underline">
+                  Forgot?
+                </Link>
               </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div className="relative flex items-center">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  style={{ width: '100%', paddingRight: '40px' }}
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-[16px] py-4 pl-4 pr-[70px] focus:outline-none focus:ring-2 focus:ring-[#087a4b] focus:border-transparent transition-all text-[16px] font-medium"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }}
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-4 text-[12px] font-bold text-gray-500 hover:text-gray-800 uppercase tracking-wider"
                 >
-                  {showPassword ? <span style={{ fontSize: '12px', fontWeight: 600 }}>HIDE</span> : <span style={{ fontSize: '12px', fontWeight: 600 }}>SHOW</span>}
+                  {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
-            </label>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="button primary login-button"
-              style={{ marginTop: '24px' }}
+              className="w-full bg-[#087a4b] text-white font-bold rounded-[20px] py-4 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform mt-8 shadow-[0_8px_20px_rgba(8,122,75,0.25)] disabled:opacity-70 disabled:active:scale-100"
             >
               {loading ? 'Signing In...' : 'Sign In'}
+              {!loading && <ChevronRight size={20} />}
             </button>
           </form>
+        </div>
 
-          <div style={{ marginTop: '30px', textAlign: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>Are you a merchant?</p>
-            <button 
-              onClick={() => window.location.href = '/login'} 
-              className="button secondary" 
-              style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}
-            >
-              Merchant Login
-            </button>
-          </div>
+        {/* Merchant Link */}
+        <div className="mt-8 text-center px-4">
+          <p className="text-[14px] text-gray-500 mb-3">Are you a merchant?</p>
+          <a
+            href="/login"
+            className="inline-block w-full py-3.5 px-6 bg-white border border-gray-200 text-gray-700 font-bold rounded-[16px] active:scale-[0.98] transition-transform shadow-sm"
+          >
+            Merchant Login
+          </a>
         </div>
       </div>
     </div>
