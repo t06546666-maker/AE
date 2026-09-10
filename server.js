@@ -1304,13 +1304,10 @@ app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
 });
 
 app.post('/api/auth/customer/login', async (req, res) => {
-  const phone = cleanText(req.body.phone, 20);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  // Normalise: keep leading '+' then digits only, e.g. "+919446147945"
-  const digits = phone.replace(/\D/g, '');
-  const cleanPhone = phone.trim().startsWith('+') ? `+${digits}` : digits;
+  const cleanPhone = normalizePhone(req.body.phone);
   
-  if (digits.length < 8 || !password) return res.status(400).json({ success: false, error: 'Phone and password are required' });
+  if (!cleanPhone || !password) return res.status(400).json({ success: false, error: 'Phone and password are required' });
   
   const { data: customer } = await supabaseAdmin.from('customers').select('*').eq('phone', cleanPhone).single();
   if (!customer) return res.status(401).json({ success: false, error: 'Invalid phone or password' });
