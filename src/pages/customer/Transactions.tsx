@@ -1,8 +1,32 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { useCustomerTransactions } from '../../hooks/useCustomerData';
+import { useState } from 'react';
+
+type Tab = 'transactions' | 'summary';
 
 export function CustomerTransactions({ user }: { user: UserProfile }) {
+  const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<Tab>('transactions');
+  const { data, isLoading } = useCustomerTransactions(page);
+  const transactions = data?.transactions ?? [];
+
+  const allEarned = transactions.filter(t => t.type === 'earn').reduce((sum, t) => sum + t.points, 0);
+  const allRedeemed = transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + t.points, 0);
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'AE';
+    const parts = name.trim().split(' ');
+    if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getAvatarColor = (index: number) => {
+    const colors = ['bg-[#e9f8f0] text-[#087a4b]', 'bg-[#fff5dc] text-[#a86100]', 'bg-[#e8f5fb] text-[#0876a9]', 'bg-[#ffedef] text-[#c43745]'];
+    return colors[index % colors.length];
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
@@ -34,11 +58,11 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
         {/* Stats Row */}
         <div className="flex justify-between px-2">
           <div className="text-center">
-            <p className="text-[16px] font-bold text-gray-900">{(user.reward_points || 0) + 250}</p>
+            <p className="text-[16px] font-bold text-gray-900">{allEarned}</p>
             <p className="text-[12px] font-medium text-gray-500">Earned</p>
           </div>
           <div className="text-center">
-            <p className="text-[16px] font-bold text-gray-900">250</p>
+            <p className="text-[16px] font-bold text-gray-900">{allRedeemed}</p>
             <p className="text-[12px] font-medium text-gray-500">Redeemed</p>
           </div>
           <div className="text-center">
@@ -49,81 +73,135 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
-          <button className="flex-1 pb-3 text-[14px] font-bold text-[#087a4b] border-b-2 border-[#087a4b]">
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`flex-1 pb-3 text-[14px] font-bold transition-colors ${
+              activeTab === 'transactions'
+                ? 'text-[#087a4b] border-b-2 border-[#087a4b]'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
             Transactions
           </button>
-          <button className="flex-1 pb-3 text-[14px] font-bold text-gray-400 hover:text-gray-600">
+          <button
+            onClick={() => setActiveTab('summary')}
+            className={`flex-1 pb-3 text-[14px] font-bold transition-colors ${
+              activeTab === 'summary'
+                ? 'text-[#087a4b] border-b-2 border-[#087a4b]'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
             Summary
           </button>
         </div>
 
-        {/* Transactions List */}
-        <div className="space-y-0 divide-y divide-gray-100 bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-xs">
-                FRESH
-              </div>
-              <div>
-                <p className="font-bold text-[15px] text-gray-900 leading-tight">Fresh Mart</p>
-                <p className="text-[11px] text-gray-500 mt-1">Today, 10:24 AM</p>
-              </div>
+        {/* Tab Content */}
+        {activeTab === 'transactions' ? (
+          <>
+            {/* Transactions List */}
+            <div className="space-y-0 divide-y divide-gray-100 bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden mt-6">
+              {isLoading ? (
+                <div className="py-12 text-center text-gray-400">Loading transactions...</div>
+              ) : transactions.length === 0 ? (
+                <div className="py-12 text-center text-gray-400">No transactions found.</div>
+              ) : (
+                transactions.map((t, idx) => (
+                  <div key={t.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 ${getAvatarColor(idx)} rounded-full flex items-center justify-center font-bold text-sm tracking-tighter`}>
+                        {getInitials(t.merchant_name)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[16px] text-gray-900 leading-tight">{t.merchant_name || 'Store'}</p>
+                        <p className="text-[12px] text-gray-400 mt-1">
+                          {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold text-[16px] ${t.type === 'earn' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
+                        {t.type === 'earn' ? '+' : '-'}{t.points}
+                      </p>
+                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-            <p className="font-bold text-[#087a4b] text-[15px]">+25</p>
-          </div>
-          
-          <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-bold text-xs">
-                BAKER
-              </div>
-              <div>
-                <p className="font-bold text-[15px] text-gray-900 leading-tight">Baker's Hut</p>
-                <p className="text-[11px] text-gray-500 mt-1">Yesterday, 5:12 PM</p>
-              </div>
-            </div>
-            <p className="font-bold text-[#087a4b] text-[15px]">+10</p>
-          </div>
 
-          <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center font-bold text-xs">
-                AE
+            {data?.pagination && data.pagination.totalPages > 1 && (
+              <div className="flex justify-between items-center pt-4 pb-6 px-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-500 font-medium">Page {page} of {data.pagination.totalPages}</span>
+                <button
+                  disabled={page === data.pagination.totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
+                >
+                  Next
+                </button>
               </div>
-              <div>
-                <p className="font-bold text-[15px] text-gray-900 leading-tight">AE Welcome Bonus</p>
-                <p className="text-[11px] text-gray-500 mt-1">Aug 30, 2026</p>
+            )}
+          </>
+        ) : (
+          /* Summary Tab */
+          <div className="space-y-3 mt-2">
+            <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
+              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">Points Breakdown</p>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-[#087a4b] font-bold text-[13px]">+</div>
+                    <div>
+                      <p className="font-bold text-[14px] text-gray-900">Total Earned</p>
+                      <p className="text-[12px] text-gray-500">From purchases</p>
+                    </div>
+                  </div>
+                  <p className="font-bold text-[18px] text-[#087a4b]">+{allEarned}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center text-red-500 font-bold text-[13px]">-</div>
+                    <div>
+                      <p className="font-bold text-[14px] text-gray-900">Total Redeemed</p>
+                      <p className="text-[12px] text-gray-500">Used for rewards</p>
+                    </div>
+                  </div>
+                  <p className="font-bold text-[18px] text-red-500">-{allRedeemed}</p>
+                </div>
+                <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-[#f59e0b] rounded-full flex items-center justify-center text-white font-bold text-[13px]">★</div>
+                    <div>
+                      <p className="font-bold text-[14px] text-gray-900">Available Balance</p>
+                      <p className="text-[12px] text-gray-500">Ready to use</p>
+                    </div>
+                  </div>
+                  <p className="font-bold text-[18px] text-gray-900">{user.reward_points || 0}</p>
+                </div>
               </div>
             </div>
-            <p className="font-bold text-[#087a4b] text-[15px]">+50</p>
-          </div>
-
-          <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold text-xs">
-                CITY
-              </div>
-              <div>
-                <p className="font-bold text-[15px] text-gray-900 leading-tight">City Pharmacy</p>
-                <p className="text-[11px] text-gray-500 mt-1">Aug 28, 2026</p>
-              </div>
-            </div>
-            <p className="font-bold text-[#087a4b] text-[15px]">+20</p>
-          </div>
-
-          <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-red-100 text-red-500 rounded-full flex items-center justify-center font-bold text-xs">
-                GIFT
-              </div>
-              <div>
-                <p className="font-bold text-[15px] text-gray-900 leading-tight">Redemption</p>
-                <p className="text-[11px] text-gray-500 mt-1">Aug 25, 2026</p>
+            <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
+              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">Activity Stats</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 rounded-[14px] p-4 text-center">
+                  <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'earn').length}</p>
+                  <p className="text-[12px] font-medium text-gray-500 mt-1">Purchases</p>
+                </div>
+                <div className="bg-gray-50 rounded-[14px] p-4 text-center">
+                  <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'redeem').length}</p>
+                  <p className="text-[12px] font-medium text-gray-500 mt-1">Redemptions</p>
+                </div>
               </div>
             </div>
-            <p className="font-bold text-red-500 text-[15px]">-100</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

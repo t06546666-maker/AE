@@ -1,7 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Tag, ShoppingBag, Truck } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { useCustomerOffers } from '../../hooks/useCustomerData';
+
+const CATEGORIES = ['All', 'Nearby', 'Trending', 'Favorites'];
 
 export function CustomerOffers() {
+  const [activeCategory, setActiveCategory] = useState('All');
+  const { data, isLoading } = useCustomerOffers();
+  const offers = data?.offers ?? [];
+
+  // When API provides category data, filter here. For now all categories show same list.
+  const filtered = offers.filter(() => true);
+
   return (
     <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
@@ -12,62 +23,54 @@ export function CustomerOffers() {
         </div>
       </header>
 
-      <div className="px-5 pt-6 space-y-4">
-        {/* Offer 1 */}
-        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform">
-          <div className="h-32 bg-[#087a4b] relative flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-white/10" style={{ backgroundImage: 'radial-gradient(circle, transparent 20%, #087a4b 20%, #087a4b 80%, transparent 80%, transparent)' }}></div>
-             <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-             <div className="absolute -left-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-             <h2 className="text-white text-4xl font-black italic tracking-tighter drop-shadow-md z-10">20% OFF</h2>
-          </div>
-          <div className="p-4 flex gap-4 items-center">
-             <div className="w-12 h-12 bg-green-50 text-[#087a4b] rounded-full flex items-center justify-center flex-shrink-0">
-               <Tag size={24} />
-             </div>
-             <div>
-               <h3 className="font-bold text-[16px] text-gray-900 leading-tight">Summer Sale 20% Off<br/>at Fresh Mart</h3>
-               <p className="text-[12px] font-medium text-gray-500 mt-1">Valid until Sep 30</p>
-             </div>
-          </div>
+      {/* Categories */}
+      <div className="px-5 pt-6 pb-2">
+        <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide -mx-5 px-5">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+                activeCategory === cat
+                  ? 'bg-[#087a4b] text-white shadow-md shadow-green-600/20'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Offer 2 */}
-        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform">
-          <div className="h-32 bg-[#f59e0b] relative flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-white/10" style={{ backgroundImage: 'radial-gradient(circle, transparent 20%, #f59e0b 20%, #f59e0b 80%, transparent 80%, transparent)' }}></div>
-             <div className="absolute right-0 bottom-0 w-32 h-32 bg-white/20 rounded-tl-full"></div>
-             <h2 className="text-white text-3xl font-black tracking-tight drop-shadow-md z-10 text-center leading-none">BUY 1<br/>GET 1</h2>
-          </div>
-          <div className="p-4 flex gap-4 items-center">
-             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
-               <ShoppingBag size={24} />
-             </div>
-             <div>
-               <h3 className="font-bold text-[16px] text-gray-900 leading-tight">Free Coffee<br/>at Café Corner</h3>
-               <p className="text-[12px] font-medium text-gray-500 mt-1">Valid until Oct 15</p>
-             </div>
-          </div>
-        </div>
-
-        {/* Offer 3 */}
-        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform">
-          <div className="h-32 bg-[#3b82f6] relative flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-white/10" style={{ backgroundImage: 'radial-gradient(circle, transparent 20%, #3b82f6 20%, #3b82f6 80%, transparent 80%, transparent)' }}></div>
-             <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-24 h-24 bg-white/20 rounded-full"></div>
-             <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-24 h-24 bg-white/20 rounded-full"></div>
-             <h2 className="text-white text-3xl font-black tracking-tight drop-shadow-md z-10 text-center leading-none">FREE<br/>DELIVERY</h2>
-          </div>
-          <div className="p-4 flex gap-4 items-center">
-             <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-               <Truck size={24} />
-             </div>
-             <div>
-               <h3 className="font-bold text-[16px] text-gray-900 leading-tight">Free Delivery from<br/>City Pharmacy</h3>
-               <p className="text-[12px] font-medium text-gray-500 mt-1">Min. order ₹500</p>
-             </div>
-          </div>
-        </div>
+      <div className="px-5 pt-2 space-y-4">
+        {isLoading ? (
+          <div className="py-12 text-center text-gray-400">Loading offers...</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center text-gray-400">No active offers{activeCategory !== 'All' ? ` in "${activeCategory}"` : ''}.</div>
+        ) : (
+          filtered.map((offer) => (
+            <div key={offer.id} className="bg-white rounded-[20px] shadow-sm border border-gray-100 overflow-hidden flex active:scale-[0.98] transition-transform p-3">
+              <div className="w-[100px] h-[100px] bg-gray-100 rounded-[16px] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {offer.imageUrl ? (
+                  <img src={offer.imageUrl} alt={offer.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+                )}
+              </div>
+              <div className="p-3 flex-1 flex flex-col justify-center relative">
+                <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{offer.title}</h3>
+                <p className="font-bold text-[14px] text-[#e11d48] mt-1 leading-tight line-clamp-2">{offer.description}</p>
+                <p className="font-semibold text-[13px] text-gray-700 leading-tight mt-1">at {offer.merchant_name || 'Store'}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-[11px] font-medium text-gray-500">
+                    Valid till {new Date(offer.expires_at).toLocaleDateString()}
+                  </p>
+                  <ChevronRight size={16} className="text-gray-400" />
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

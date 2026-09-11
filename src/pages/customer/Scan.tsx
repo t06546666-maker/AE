@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { ArrowLeft, QrCode } from 'lucide-react';
+import { ArrowLeft, User } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 export function CustomerScan({ user }: { user: UserProfile }) {
@@ -10,10 +10,10 @@ export function CustomerScan({ user }: { user: UserProfile }) {
   useEffect(() => {
     if (user?.id) {
       QRCode.toDataURL(user.id, {
-        width: 300,
-        margin: 2,
+        width: 250,
+        margin: 1,
         color: {
-          dark: '#087a4b', // Primary green color
+          dark: '#000000',
           light: '#ffffff',
         },
       })
@@ -22,40 +22,48 @@ export function CustomerScan({ user }: { user: UserProfile }) {
     }
   }, [user]);
 
+  const customerId = user.id?.substring(0, 8) || 'AE-USER';
+
   return (
-    <div className="bg-white min-h-screen flex flex-col relative pb-[100px]">
-      {/* Header */}
-      <header className="flex items-center px-5 py-4 sticky top-0 z-20 bg-white">
-        <div className="flex items-center gap-4 text-gray-800">
-          <Link to="/customer/home"><ArrowLeft size={24} /></Link>
-          <h1 className="text-lg font-bold">My QR Code</h1>
-        </div>
-      </header>
+    <div className="bg-[#111315] min-h-screen flex flex-col relative font-sans">
+      {/* Header - White Top */}
+      <div className="bg-white rounded-b-[32px] overflow-hidden z-20 shadow-sm relative">
+        <header className="flex items-center justify-between px-5 py-4">
+          <Link to="/customer/home" className="text-gray-800"><ArrowLeft size={24} /></Link>
+          <h1 className="text-[18px] font-bold text-gray-900">My QR Code</h1>
+          <div className="w-6" /> {/* Spacer for centering */}
+        </header>
+      </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-10">
-        <div className="text-center mb-8">
-          <h2 className="text-[22px] font-bold text-gray-900 mb-2 tracking-tight">Your Unique Code</h2>
-          <p className="text-[14px] text-gray-500 font-medium">Show this to the merchant to earn<br/>or redeem AE Points.</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10 pb-[100px]">
+        
+        {/* Viewfinder Area */}
+        <div className="relative w-[280px] h-[280px] mb-8">
+          {/* Viewfinder Corners */}
+          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white" />
+          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white" />
+          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white" />
+          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white" />
+          
+          {/* QR Code Container */}
+          <div className="absolute inset-4 bg-white rounded-xl flex items-center justify-center overflow-hidden">
+            {qrSrc ? (
+              <img src={qrSrc} alt="Your QR Code" className="w-full h-full object-cover" />
+            ) : (
+              <div className="animate-pulse bg-gray-200 w-full h-full rounded-xl"></div>
+            )}
+          </div>
         </div>
 
-        {/* QR Code Card */}
-        <div className="bg-white p-6 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 mb-10">
-          {qrSrc ? (
-            <img src={qrSrc} alt="Your QR Code" className="w-64 h-64" />
-          ) : (
-            <div className="w-64 h-64 flex items-center justify-center bg-gray-50 rounded-2xl">
-              <QrCode size={48} className="text-[#087a4b] animate-pulse opacity-50" />
-            </div>
-          )}
-        </div>
+        <p className="text-[15px] font-semibold text-white tracking-wide text-center mb-12">
+          Show this to the merchant
+        </p>
 
-        {/* Customer ID Pill */}
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Customer ID</p>
-          <div className="bg-gray-50 py-3 px-6 rounded-full border border-gray-100 flex items-center gap-2 shadow-sm">
-            <span className="text-[16px] font-mono font-bold tracking-wider text-gray-800">
-              {user.id?.substring(0, 8) || 'AE-USER'}
-            </span>
+        {/* Bottom Button (Adapted from "Enter Code Manually") */}
+        <div className="w-full max-w-[320px]">
+          <div className="w-full bg-white rounded-[16px] py-4 px-6 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg cursor-pointer">
+            <User size={20} className="text-gray-600" />
+            <span className="text-[16px] font-bold text-gray-900">ID: {customerId}</span>
           </div>
         </div>
       </div>

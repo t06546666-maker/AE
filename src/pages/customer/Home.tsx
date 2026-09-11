@@ -1,13 +1,30 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Bell, ChevronRight, Scan, Gift, Tag, MapPin, Star } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { useCustomerDashboard } from '../../hooks/useCustomerData';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
+  const { data, isLoading } = useCustomerDashboard();
+  const rewardPoints = data?.reward_points ?? user.reward_points ?? 0;
+  const activity = data?.activity ?? [];
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'AE';
+    const parts = name.trim().split(' ');
+    if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getAvatarColor = (index: number) => {
+    const colors = ['bg-[#22c55e]', 'bg-[#d97706]', 'bg-[#0ea5e9]', 'bg-[#c026d3]', 'bg-[#f43f5e]'];
+    return colors[index % colors.length];
+  };
+
   return (
     <div className="bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
-        <ArrowLeft size={24} className="text-gray-800" />
+        <div className="w-6" />
         <h1 className="text-[22px] font-black tracking-tighter absolute left-1/2 transform -translate-x-1/2">AE</h1>
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
@@ -19,7 +36,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         {/* Greeting */}
         <div>
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
-            Hi, {user.name?.split(' ')[0] || user.phone || 'Sharon'}! <span className="text-[20px]">👋</span>
+            Hi, {user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
           </h2>
           <p className="text-[13px] text-gray-500 font-medium tracking-wide">Shop Local. Earn More.</p>
         </div>
@@ -33,7 +50,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-inner">
                   <Star className="text-white fill-white" size={16} />
                 </div>
-                <span className="text-[32px] font-bold tracking-tight">{user.reward_points || '1,250'}</span>
+                <span className="text-[32px] font-bold tracking-tight">{isLoading ? '...' : rewardPoints}</span>
               </div>
             </div>
             <ChevronRight size={20} className="text-white" />
@@ -72,45 +89,33 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         <div className="pt-2">
           <div className="flex justify-between items-end mb-4">
             <h3 className="text-[16px] font-bold text-gray-900 tracking-wide">Recent Activity</h3>
-            <button className="text-[12px] font-bold text-[#22c55e]">View All</button>
+            <Link to="/customer/transactions" className="text-[12px] font-bold text-[#22c55e]">View All</Link>
           </div>
           <div className="space-y-0 divide-y divide-gray-100 border-t border-gray-100">
-            <div className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-[42px] h-[42px] bg-[#22c55e] text-white rounded-full flex items-center justify-center font-bold text-[8px] leading-tight text-center">
-                  FRESH<br/>MART
+            {isLoading ? (
+              <div className="py-8 text-center text-gray-400 text-sm">Loading activity...</div>
+            ) : activity.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-sm">No recent activity</div>
+            ) : (
+              activity.map((item, idx) => (
+                <div key={item.id} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-[42px] h-[42px] ${getAvatarColor(idx)} text-white rounded-full flex items-center justify-center font-bold text-[10px] leading-tight text-center`}>
+                      {getInitials(item.merchant_name)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-[14px] text-gray-900 leading-tight">{item.merchant_name || 'Store'}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  <p className={`font-bold text-[14px] ${item.type === 'earn' ? 'text-[#22c55e]' : 'text-gray-900'}`}>
+                    {item.type === 'earn' ? '+' : '-'}{item.points}
+                  </p>
                 </div>
-                <div>
-                  <p className="font-bold text-[14px] text-gray-900 leading-tight">Fresh Mart</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Today, 10:24 AM</p>
-                </div>
-              </div>
-              <p className="font-bold text-[#22c55e] text-[14px]">+25</p>
-            </div>
-            <div className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-[42px] h-[42px] bg-[#d97706] text-white rounded-full flex items-center justify-center font-bold text-[8px] leading-tight text-center">
-                  BAKER'S<br/>HUT
-                </div>
-                <div>
-                  <p className="font-bold text-[14px] text-gray-900 leading-tight">Baker's Hut</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Yesterday, 5:12 PM</p>
-                </div>
-              </div>
-              <p className="font-bold text-[#22c55e] text-[14px]">+10</p>
-            </div>
-            <div className="py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-[42px] h-[42px] bg-[#0ea5e9] text-white rounded-full flex items-center justify-center font-bold text-[8px] leading-tight text-center">
-                  CITY<br/>PHARM
-                </div>
-                <div>
-                  <p className="font-bold text-[14px] text-gray-900 leading-tight">City Pharmacy</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Aug 30, 2026</p>
-                </div>
-              </div>
-              <p className="font-bold text-[#22c55e] text-[14px]">+50</p>
-            </div>
+              ))
+            )}
           </div>
         </div>
 

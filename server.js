@@ -1347,6 +1347,105 @@ app.get('/api/auth/customer/me', requireCustomerAuth, (req, res) => {
   res.json({ success: true, user: req.customer });
 });
 
+app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
+  try {
+    const { data: orders } = await supabaseAdmin
+      .from('orders')
+      .select('id, created_at, points_earned, merchants(name)')
+      .eq('customer_id', req.customer.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const { data: redemptions } = await supabaseAdmin
+      .from('point_redemptions')
+      .select('id, created_at, points_redeemed, merchants(name)')
+      .eq('customer_id', req.customer.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const activity = [
+      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, points: o.points_earned })),
+      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, points: r.points_redeemed }))
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+
+    res.json({
+      success: true,
+      reward_points: req.customer.reward_points,
+      activity
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
+  const paging = paginationFromRequest(req, 20, 100);
+  try {
+    const { data: orders } = await supabaseAdmin
+      .from('orders')
+      .select('id, created_at, points_earned, merchants(name)')
+      .eq('customer_id', req.customer.id)
+      .order('created_at', { ascending: false });
+
+    const { data: redemptions } = await supabaseAdmin
+      .from('point_redemptions')
+      .select('id, created_at, points_redeemed, merchants(name)')
+      .eq('customer_id', req.customer.id)
+      .order('created_at', { ascending: false });
+
+    let transactions = [
+      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, points: o.points_earned })),
+      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, points: r.points_redeemed }))
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const total = transactions.length;
+    if (paging.enabled) {
+      transactions = transactions.slice(paging.from, paging.to + 1);
+    }
+    
+    res.json({ success: true, transactions, pagination: paginationMeta(paging, total) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
+  const paging = paginationFromRequest(req, 20, 100);
+  let query = supabaseAdmin.from('merchants').select('id, name, created_at', { count: 'exact' });
+  if (paging.enabled && paging.search) {
+    query = query.or(`name.ilike.%${paging.search}%,merchant_code.ilike.%${paging.search}%`);
+  }
+  query = query.order('created_at', { ascending: false });
+  if (paging.enabled) query = query.range(paging.from, paging.to);
+
+  const { data: merchants, count, error } = await query;
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, merchants, pagination: paginationMeta(paging, count) });
+});
+
+app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
+  const { data: offers, error } = await supabaseAdmin
+    .from('offers')
+    .select('*, merchants(name)')
+    .eq('status', 'approved')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(50);
+    
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  
+  const mappedOffers = await Promise.all((offers || []).map(async o => ({
+    id: o.id,
+    title: o.title,
+    description: o.description,
+    imageUrl: await signedOfferImageUrl(o.image_path),
+    merchant_name: o.merchants?.name,
+    expires_at: o.expires_at
+  })));
+  
+  res.json({ success: true, offers: mappedOffers });
+});
+
 app.post('/api/auth/login', async (req, res) => {
   if (!requireSupabase(res)) return;
   const email = cleanText(req.body.email, 254).toLowerCase();

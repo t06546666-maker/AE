@@ -34,6 +34,7 @@ import { CustomerProfile } from './pages/customer/Profile';
 import { CustomerTransactions } from './pages/customer/Transactions';
 import { CustomerOffers } from './pages/customer/Offers';
 import { CustomerNotifications } from './pages/customer/Notifications';
+import { CustomerReferral } from './pages/customer/Referral';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -158,6 +159,7 @@ export function App() {
             <Route path="/customer/transactions" element={<CustomerTransactions user={user} />} />
             <Route path="/customer/offers" element={<CustomerOffers />} />
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
+            <Route path="/customer/referral" element={<CustomerReferral user={user} />} />
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
           </Routes>
         </PageErrorBoundary>
