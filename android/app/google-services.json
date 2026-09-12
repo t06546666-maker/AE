@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "51093633292",
+    "project_id": "ae2026-27134",
+    "storage_bucket": "ae2026-27134.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:51093633292:android:0086dcbe5bc4587db27129",
+        "android_client_info": {
+          "package_name": "com.affiliateae.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLwMVS1K7OmUdHGnF9-AYWJ2HOnw35C-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

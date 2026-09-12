@@ -2,6 +2,7 @@ import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from '
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
@@ -101,6 +102,29 @@ export function App() {
       window.removeEventListener('ae:password-change-required', passwordRequired);
     };
   });
+
+  useEffect(() => {
+    if (user?.role === 'customer' && CapacitorApp && Capacitor.isNativePlatform()) {
+      import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+        PushNotifications.addListener('registration', (token) => {
+          apiFetch('/api/customer/preferences', {
+            method: 'PUT',
+            body: JSON.stringify({ push_token: token.value })
+          }).catch(console.error);
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push notification received: ', notification);
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+          if (notification.notification.data?.url) {
+            navigate(notification.notification.data.url);
+          }
+        });
+      }).catch(console.error);
+    }
+  }, [user?.role, navigate]);
 
   useEffect(() => {
     const token = getAccessToken();

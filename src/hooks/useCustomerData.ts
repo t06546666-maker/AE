@@ -94,3 +94,22 @@ export function useCustomerApplyReferral() {
     },
   });
 }
+
+export function useUpdateCustomerPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (updates: {
+      push_token?: string;
+      push_enabled?: boolean;
+      whatsapp_enabled?: boolean;
+      location_enabled?: boolean;
+    }) =>
+      apiFetch<{ success: boolean }>('/api/customer/preferences', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['customer'] });
+    },
+  });
+}

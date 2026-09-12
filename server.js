@@ -14,6 +14,34 @@ const { Resend } = require('resend');
 const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
+const admin    = require('firebase-admin');
+
+let firebaseInitialized = false;
+try {
+  const serviceAccount = require('./firebase-service-account.json');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  firebaseInitialized = true;
+  console.log('Firebase Admin initialized successfully.');
+} catch (e) {
+  console.warn('Firebase Admin could not be initialized:', e.message);
+}
+
+async function sendPushNotification(token, title, body, data = {}) {
+  if (!firebaseInitialized || !token) return false;
+  try {
+    await admin.messaging().send({
+      token,
+      notification: { title, body },
+      data
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending push notification:', error.message);
+    return false;
+  }
+}
 
 // --- Affiliate AE Settlement Engine ---
 const { recordRewardEarned } = require('./src/modules/affiliate/rewards');
@@ -603,6 +631,26 @@ async function processOfferRecipient(recipientRow, mediaCache) {
       );
       mediaCache.set(recipientRow.campaign_id, mediaId);
     }
+    
+    // Attempt to send a Push Notification
+    try {
+      const { data: customer } = await supabaseAdmin.from('customers')
+        .select('push_token, push_enabled')
+        .eq('id', recipientRow.customer_id)
+        .single();
+        
+      if (customer?.push_enabled && customer?.push_token) {
+        await sendPushNotification(
+          customer.push_token,
+          `New Offer from ${recipientRow.merchant_name || 'Store'}!`,
+          recipientRow.title || 'Tap to claim your exclusive offer.',
+          { url: '/customer/offers' }
+        );
+      }
+    } catch (e) {
+      console.warn('Failed to send push notification:', e.message);
+    }
+
     const delivery = await sendOfferWhatsApp(recipientRow, mediaId);
     if (delivery.sent) {
       await supabaseAdmin.from('offer_recipients').update({
@@ -1445,6 +1493,38 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   
   res.json({ success: true, offers: mappedOffers });
 });
+
+app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
+  const customerId = req.auth.customerId;
+  const { push_token, push_enabled, whatsapp_enabled, location_enabled } = req.body;
+  
+  const updates = {};
+  if (push_token !== undefined) updates.push_token = push_token;
+  if (push_enabled !== undefined) updates.push_enabled = Boolean(push_enabled);
+  if (whatsapp_enabled !== undefined) updates.whatsapp_enabled = Boolean(whatsapp_enabled);
+  if (location_enabled !== undefined) updates.location_enabled = Boolean(location_enabled);
+  
+  if (Object.keys(updates).length === 0) {
+    return res.json({ success: true, message: 'No updates provided' });
+  }
+
+  const { error } = await supabaseAdmin
+    .from('customers')
+    .update(updates)
+    .eq('id', customerId);
+
+  if (error) {
+    // If the columns don't exist yet, we just gracefully succeed or log it
+    // because the SQL patch might not be run yet.
+    if (error.code === '42703') { // undefined_column
+       return res.json({ success: true, warning: 'Columns not available in DB yet.' });
+    }
+    return res.status(500).json({ success: false, error: error.message });
+  }
+
+  res.json({ success: true });
+});
+
 
 app.post('/api/auth/login', async (req, res) => {
   if (!requireSupabase(res)) return;

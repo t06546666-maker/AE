@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, UserPlus, Shield, ArrowLeft, Star, X, Phone, Mail } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
@@ -9,6 +10,9 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   const [showSettings, setShowSettings] = useState(false);
   const [editName, setEditName] = useState(user.name || '');
   const [editMode, setEditMode] = useState(false);
+  
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const { pushEnabled, locationEnabled, requestPush, requestLocation, setWhatsApp } = usePermissions();
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -217,8 +221,11 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <p className="font-bold text-[14px] text-gray-900">Push Notifications</p>
                   <p className="text-[12px] text-gray-500">Earn alerts & offers</p>
                 </div>
-                <button className="w-12 h-6 bg-[#087a4b] rounded-full relative transition-colors">
-                  <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow" />
+                <button 
+                  onClick={() => requestPush()}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${pushEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pushEnabled ? 'right-1' : 'left-1'}`} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
@@ -226,8 +233,15 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <p className="font-bold text-[14px] text-gray-900">WhatsApp Alerts</p>
                   <p className="text-[12px] text-gray-500">Point updates via WhatsApp</p>
                 </div>
-                <button className="w-12 h-6 bg-[#087a4b] rounded-full relative transition-colors">
-                  <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow" />
+                <button 
+                  onClick={() => {
+                    const next = !whatsappEnabled;
+                    setWhatsappEnabled(next);
+                    setWhatsApp(next);
+                  }}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${whatsappEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${whatsappEnabled ? 'right-1' : 'left-1'}`} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
@@ -235,8 +249,11 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <p className="font-bold text-[14px] text-gray-900">Location Services</p>
                   <p className="text-[12px] text-gray-500">Find nearby merchants</p>
                 </div>
-                <button className="w-12 h-6 bg-gray-300 rounded-full relative transition-colors">
-                  <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow" />
+                <button 
+                  onClick={() => requestLocation()}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${locationEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${locationEnabled ? 'right-1' : 'left-1'}`} />
                 </button>
               </div>
             </div>
