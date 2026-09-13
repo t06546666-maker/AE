@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, MapPin as MapPinIcon, ChevronRight, X } from 'lucide-react';
-import { useCustomerMerchants } from '../../hooks/useCustomerData';
+import { ArrowLeft, Search, ChevronRight, X } from 'lucide-react';
+import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useState } from 'react';
+import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
 
-const CATEGORIES = ['All', 'Food', 'Retail', 'Health', 'More'];
+
 
 export function CustomerExplore() {
   const [page, setPage] = useState(1);
@@ -11,9 +12,11 @@ export function CustomerExplore() {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const navigate = useNavigate();
 
-  const { data, isLoading } = useCustomerMerchants(page, search);
+  const categoriesQuery = useCustomerCategories();
+  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
   const merchants = data?.merchants ?? [];
 
   const getInitials = (name?: string) => {
@@ -87,58 +90,33 @@ export function CustomerExplore() {
       {/* Categories */}
       <div className="px-5 pt-6 pb-2">
         <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide -mx-5 px-5">
-          {CATEGORIES.map((cat) => (
+          <button
+            onClick={() => handleCategoryChange('All')}
+            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+              activeCategory === 'All'
+                ? 'bg-[#087a4b] text-white shadow-md shadow-green-600/20'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            All
+          </button>
+          {categoriesQuery.data?.categories?.map((cat) => (
             <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
+              key={cat.id}
+              onClick={() => handleCategoryChange(cat.id)}
               className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
-                activeCategory === cat
+                activeCategory === cat.id
                   ? 'bg-[#087a4b] text-white shadow-md shadow-green-600/20'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}
             >
-              {cat}
+              {cat.name}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Map Area */}
-      <div className="px-5 mb-6">
-        <div className="bg-gray-100 rounded-3xl h-56 relative overflow-hidden shadow-inner border border-gray-200">
-          {/* Map Grid Pattern */}
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#087a4b 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-
-          {/* You Marker */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full border-4 border-white shadow-md">
-            <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-50"></div>
-          </div>
-
-          {/* Merchant Markers */}
-          {merchants.slice(0, 4).map((m, i) => {
-            const positions = [
-              { top: '10px', left: '10px' },
-              { top: '12px', right: '80px' },
-              { bottom: '48px', right: '48px' },
-              { bottom: '32px', left: '80px' },
-            ];
-            const pos = positions[i] || positions[0];
-            return (
-              <div key={m.id} className="absolute cursor-pointer" style={pos} onClick={() => navigate(`/customer/explore`)}>
-                <MapPinIcon size={28} className="text-[#087a4b] fill-white" />
-              </div>
-            );
-          })}
-          {merchants.length === 0 && (
-            <>
-              <MapPinIcon size={28} className="absolute top-10 left-10 text-[#087a4b] fill-white" />
-              <MapPinIcon size={28} className="absolute top-12 right-20 text-[#087a4b] fill-white" />
-              <MapPinIcon size={28} className="absolute bottom-12 right-12 text-[#087a4b] fill-white" />
-              <MapPinIcon size={28} className="absolute bottom-8 left-20 text-[#087a4b] fill-white" />
-            </>
-          )}
-        </div>
-      </div>
+      <CustomerNearbyMap merchants={merchants} />
 
       {/* Merchant List */}
       <div className="px-5 space-y-3">
@@ -155,10 +133,11 @@ export function CustomerExplore() {
             >
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 ${getAvatarColor(idx)} rounded-full flex items-center justify-center font-bold text-xs`}>
-                  {getInitials(merchant.name)}
+                  {getInitials(merchant.merchant_name)}
                 </div>
                 <div>
-                  <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{merchant.name}</h3>
+                  <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{merchant.merchant_name}</h3>
+                  {merchant.category && <p className="text-[11px] text-gray-500 font-medium mt-0.5">{merchant.category}</p>}
                   <p className="text-[12px] font-bold text-[#087a4b] mt-1">Accepts AE Points</p>
                 </div>
               </div>

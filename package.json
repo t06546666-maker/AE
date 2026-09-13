@@ -1,7 +1,7 @@
 {
   "name": "rewardhub",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "description": "",
   "main": "server.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "dotenv": "*",
     "exceljs": "^4.4.0",
     "express": "*",
+    "firebase": "^12.19.0",
     "firebase-admin": "^14.4.0",
     "form-data": "*",
     "html5-qrcode": "^2.3.8",

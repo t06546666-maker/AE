@@ -32,13 +32,13 @@ export function ForgotPassword() {
   return (
     <div className="login-screen">
       <div className="login-brand-panel">
-        <div className="login-brand"><span>Affiliate</span><small>AE</small></div>
+        <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
         <h1>Password Reset</h1>
         <p>Recover access to your account by entering your email address below.</p>
       </div>
       <div className="login-form-panel">
         <form className="login-form" onSubmit={submit}>
-          <div className="login-mobile-brand">Affiliate <span>AE</span></div>
+          <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <h2>Forgot Password?</h2>
           <p>We'll send a password reset link to your email.</p>
 

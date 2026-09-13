@@ -22,12 +22,32 @@ export interface Pagination {
   totalPages: number;
 }
 
+export interface User {
+  id: string;
+  email?: string;
+  phone?: string;
+  role: 'admin' | 'merchant' | 'customer';
+  fullName?: string;
+  merchantId?: string;
+  name?: string;
+  merchantCode?: string;
+  mustChangePassword?: boolean;
+}
+
+export interface MerchantCategory {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Merchant {
   id: string;
   merchantCode: string;
   name: string;
   email: string;
   phone: string;
+  category?: string;
+  categoryId?: string;
   joined: string;
   orderCount?: number;
   mustChangePassword?: boolean;

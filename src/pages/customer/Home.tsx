@@ -25,7 +25,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <div className="w-6" />
-        <h1 className="text-[22px] font-black tracking-tighter absolute left-1/2 transform -translate-x-1/2">AE</h1>
+        <img src="/logo.png" alt="Affiliate AE" className="absolute left-1/2 -translate-x-1/2 object-contain" style={{ width: 72, height: 40 }} />
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>

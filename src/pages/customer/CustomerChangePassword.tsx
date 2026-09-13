@@ -47,7 +47,7 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
             </select>
           </label>
         </div>
-        <div className="login-mobile-brand password-brand">Affiliate <span>AE</span></div>
+        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
         <h1>Setup Your Password</h1>
         <p>You must set a permanent password for your customer account to continue.</p>
         <label>

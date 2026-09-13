@@ -16,6 +16,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Locations } from './pages/Locations';
 import { LocationProfile } from './pages/LocationProfile';
 import { MerchantProfile, Merchants } from './pages/Merchants';
+import { MerchantCategories } from './pages/MerchantCategories';
 import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
 import { Products } from './pages/Products';
@@ -146,7 +147,7 @@ export function App() {
       .finally(() => setRestoring(false));
   }, []);
 
-  if (restoring) return <div className="boot-screen"><div className="boot-brand">Affiliate <span>AE</span></div><div className="boot-line" /></div>;
+  if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate" style={{ height: '48px' }} /></div><div className="boot-line" /></div>;
   if (!user) {
     return (
       <Routes>
@@ -154,7 +155,8 @@ export function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/customer/forgot-password" element={<CustomerForgotPassword />} />
         <Route path="/customer/login" element={<CustomerLogin onLogin={setUser} />} />
-        <Route path="*" element={<Login onLogin={setUser} />} />
+        <Route path="/login" element={<Login onLogin={setUser} />} />
+        <Route path="*" element={<Navigate to="/customer/login" replace />} />
       </Routes>
     );
   }
@@ -206,6 +208,7 @@ export function App() {
           <Route path="/more" element={<More user={user} onLogout={logout} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
+          <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />
           <Route path="/locations" element={<RoleRoute user={user} role="admin"><Locations /></RoleRoute>} />
           <Route path="/locations/:id" element={<RoleRoute user={user} role="admin"><LocationProfile /></RoleRoute>} />

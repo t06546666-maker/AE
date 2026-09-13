@@ -50,6 +50,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 </div>
                 <span className="text-[32px] font-bold tracking-tight">{user.reward_points || 0}</span>
               </div>
+              <p className="text-[11px] text-green-50/70 mt-1">Points expire 1 year from issue date</p>
             </div>
             <ChevronRight size={24} className="text-white/80" />
           </div>

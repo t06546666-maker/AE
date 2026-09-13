@@ -6,4 +6,5 @@ dist/
 !.env.example
 *.log
 .vercel/
+firebase-service-account.json
 start-rewardhub.bat

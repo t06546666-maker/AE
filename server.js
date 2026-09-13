@@ -1351,6 +1351,64 @@ app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
   res.json({ success: true });
 });
 
+
+// Background job to expire points dynamically
+async function cleanupExpiredPoints(customerId) {
+  try {
+    const { data: expiredLots } = await supabaseAdmin
+      .from('reward_lots')
+      .select('id, available_amount_paise, funding_merchant_id')
+      .eq('customer_id', customerId)
+      .eq('status', 'AVAILABLE')
+      .lt('expires_at', new Date().toISOString());
+
+    if (!expiredLots || expiredLots.length === 0) return;
+
+    let totalExpiredPaise = 0;
+    const expiredByMerchant = {};
+
+    for (const lot of expiredLots) {
+      totalExpiredPaise += parseInt(lot.available_amount_paise, 10);
+      expiredByMerchant[lot.funding_merchant_id] = (expiredByMerchant[lot.funding_merchant_id] || 0) + parseInt(lot.available_amount_paise, 10);
+      
+      await supabaseAdmin.from('reward_lots')
+        .update({ status: 'EXPIRED' })
+        .eq('id', lot.id);
+        
+      await supabaseAdmin.from('reward_ledger').insert({
+        network_id: '00000000-0000-0000-0000-000000000000',
+        customer_id: customerId,
+        merchant_id: lot.funding_merchant_id,
+        amount_paise: lot.available_amount_paise,
+        event_type: 'REWARD_EXPIRED'
+      });
+    }
+
+    const totalExpiredPoints = Math.floor(totalExpiredPaise / 100);
+    if (totalExpiredPoints > 0) {
+      // Deduct from global
+      const { data: cust } = await supabaseAdmin.from('customers').select('reward_points').eq('id', customerId).single();
+      if (cust) {
+        await supabaseAdmin.from('customers')
+          .update({ reward_points: Math.max(0, cust.reward_points - totalExpiredPoints) })
+          .eq('id', customerId);
+      }
+      // Deduct from specific merchants
+      for (const merchantId of Object.keys(expiredByMerchant)) {
+        const points = Math.floor(expiredByMerchant[merchantId] / 100);
+        const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customerId).eq('merchant_id', merchantId).single();
+        if (cm) {
+          await supabaseAdmin.from('customer_merchants')
+            .update({ reward_points: Math.max(0, cm.reward_points - points) })
+            .eq('customer_id', customerId).eq('merchant_id', merchantId);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to cleanup expired points for customer', customerId, error);
+  }
+}
+
 app.post('/api/auth/customer/login', async (req, res) => {
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const cleanPhone = normalizePhone(req.body.phone);
@@ -1376,6 +1434,59 @@ app.post('/api/auth/customer/login', async (req, res) => {
   });
 });
 
+app.post('/api/auth/customer/reset-password-otp', async (req, res) => {
+  const idToken = req.body.idToken;
+  const newPassword = req.body.newPassword;
+  
+  if (!idToken || !newPassword) {
+    return res.status(400).json({ success: false, error: 'Token and new password are required' });
+  }
+  
+  if (newPassword.length < 8) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  }
+  
+  try {
+    // 1. Verify the Firebase ID Token
+    if (!firebaseInitialized) {
+      throw new Error("Firebase Admin is not configured. Cannot verify OTP.");
+    }
+    
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let phoneNumber = decodedToken.phone_number;
+    
+    if (!phoneNumber) {
+      return res.status(400).json({ success: false, error: 'Token does not contain a verified phone number' });
+    }
+    
+    // Normalize phone to match DB format (strip + if needed, or ensure +91 is there)
+    // Our DB seems to store phone numbers dynamically. normalizePhone handles it.
+    const cleanPhone = normalizePhone(phoneNumber);
+    if (!cleanPhone) {
+      return res.status(400).json({ success: false, error: 'Invalid phone number format in token' });
+    }
+    
+    // 2. Find Customer
+    const { data: customer } = await supabaseAdmin.from('customers').select('id').eq('phone', cleanPhone).single();
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'No account found for this verified phone number' });
+    }
+    
+    // 3. Update Password
+    const passwordHash = hashPassword(newPassword);
+    const { error } = await supabaseAdmin.from('customers')
+      .update({ password_hash: passwordHash })
+      .eq('id', customer.id);
+      
+    if (error) throw error;
+    
+    res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    console.error("Firebase OTP verification failed:", error);
+    res.status(401).json({ success: false, error: 'Invalid or expired token', details: error.message });
+  }
+});
+
 app.post('/api/auth/customer/change-password', requireCustomerAuth, async (req, res) => {
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
@@ -1392,6 +1503,7 @@ app.post('/api/auth/customer/change-password', requireCustomerAuth, async (req, 
 });
 
 app.get('/api/auth/customer/me', requireCustomerAuth, (req, res) => {
+  cleanupExpiredPoints(req.customer.id);
   res.json({ success: true, user: req.customer });
 });
 
@@ -1457,9 +1569,22 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
   }
 });
 
+app.get('/api/customer/categories', async (req, res) => {
+  try {
+    const { data: categories, error } = await supabaseAdmin.from('merchant_categories').select('id, name').order('name');
+    if (error) throw error;
+    res.json({ success: true, categories });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
-  let query = supabaseAdmin.from('merchants').select('id, name, created_at', { count: 'exact' });
+  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, created_at, merchant_categories(name)', { count: 'exact' });
+  if (req.query.categoryId && req.query.categoryId !== 'all') {
+    query = query.eq('category_id', req.query.categoryId);
+  }
   if (paging.enabled && paging.search) {
     query = query.or(`name.ilike.%${paging.search}%,merchant_code.ilike.%${paging.search}%`);
   }
@@ -1468,7 +1593,19 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
 
   const { data: merchants, count, error } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
-  res.json({ success: true, merchants, pagination: paginationMeta(paging, count) });
+  res.json({
+    success: true,
+    merchants: (merchants || []).map((merchant) => ({
+      id: merchant.id,
+      merchant_name: merchant.name,
+      category: merchant.merchant_categories?.name || '',
+      address: merchant.address || '',
+      latitude: merchant.latitude === null ? null : Number(merchant.latitude),
+      longitude: merchant.longitude === null ? null : Number(merchant.longitude),
+      created_at: merchant.created_at,
+    })),
+    pagination: paginationMeta(paging, count),
+  });
 });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
@@ -1765,16 +1902,22 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const address = cleanText(req.body.address, 300) || null;
+  const latitude = req.body.latitude === undefined || req.body.latitude === '' ? null : Number(req.body.latitude);
+  const longitude = req.body.longitude === undefined || req.body.longitude === '' ? null : Number(req.body.longitude);
   if (!name || !email || !isEmail(email) || !phone || !isStrongPassword(password)) {
     return res.status(400).json({
       success: false,
       error: 'Name, valid email/phone, and a strong temporary password are required',
     });
   }
+  if ((latitude === null) !== (longitude === null) || (latitude !== null && (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180))) {
+    return res.status(400).json({ success: false, error: 'Enter both valid latitude and longitude values, or leave both blank' });
+  }
 
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({ name, email, phone, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
+    .insert({ name, email, phone, address, latitude, longitude, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });

@@ -68,8 +68,9 @@ create table if not exists public.reward_lots (
     transaction_id uuid not null references public.orders(id) on delete restrict,
     initial_amount_paise bigint not null check (initial_amount_paise >= 0),
     available_amount_paise bigint not null check (available_amount_paise >= 0),
-    status text not null default 'AVAILABLE', -- AVAILABLE, RESERVED, EXHAUSTED, REVERSED
-    created_at timestamptz not null default now()
+    status text not null default 'AVAILABLE', -- AVAILABLE, RESERVED, EXHAUSTED, REVERSED, EXPIRED
+    created_at timestamptz not null default now(),
+    expires_at timestamptz not null default (now() + interval '1 year')
 );
 
 -- 8. REWARD LEDGER (IMMUTABLE EVENT LOG)

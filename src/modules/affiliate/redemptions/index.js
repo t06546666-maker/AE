@@ -24,7 +24,8 @@ async function allocateFIFO(redemptionId, customerId, networkId, amountToConsume
     .eq('customer_id', customerId)
     .eq('network_id', networkId)
     .eq('status', 'AVAILABLE')
-    .order('created_at', { ascending: true });
+    .gt('expires_at', new Date().toISOString())
+    .order('expires_at', { ascending: true });
 
   if (error) throw new Error(`Failed to fetch lots: ${error.message}`);
 

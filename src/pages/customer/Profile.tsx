@@ -200,7 +200,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             <div className="space-y-4 text-[13px] text-gray-600 leading-relaxed">
               <p><strong className="text-gray-900">Privacy Policy</strong><br />We collect your phone number and transaction history solely to operate the AE Rewards program. We do not sell your data to third parties.</p>
               <p><strong className="text-gray-900">Data Storage</strong><br />Your data is stored securely and encrypted at rest. You can request deletion at any time by contacting support.</p>
-              <p><strong className="text-gray-900">Terms of Use</strong><br />AE Points have no cash value and cannot be transferred. Points expire after 12 months of inactivity. AE reserves the right to modify the program at any time.</p>
+              <p><strong className="text-gray-900">Terms of Use</strong><br />AE Points have no cash value and cannot be transferred. Points expire 1 year from the date they are issued. AE reserves the right to modify the program at any time.</p>
               <p><strong className="text-gray-900">Contact</strong><br />For questions, email support@affiliateae.com.</p>
             </div>
           </div>

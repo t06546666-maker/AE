@@ -47,13 +47,13 @@ export function ResetPassword() {
   return (
     <div className="login-screen">
       <div className="login-brand-panel">
-        <div className="login-brand"><span>Affiliate</span><small>AE</small></div>
+        <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
         <h1>Create New Password</h1>
         <p>Enter your new secure password below to regain access.</p>
       </div>
       <div className="login-form-panel">
         <form className="login-form" onSubmit={submit}>
-          <div className="login-mobile-brand">Affiliate <span>AE</span></div>
+          <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <h2>Reset Password</h2>
           
           <label>

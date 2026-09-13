@@ -33,7 +33,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
     <div className="theme-green h-full w-full">
       <div className="login-screen">
         <div className="login-brand-panel">
-          <div className="login-brand"><span>Affiliate</span><small>AE</small></div>
+          <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
           <h1>Welcome Back</h1>
           <p>Log in to your Customer account to view your rewards and order history.</p>
           <div className="login-features">
@@ -51,7 +51,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
         
         <div className="login-form-panel">
           <div className="login-form">
-            <div className="login-mobile-brand">Affiliate <span>AE</span></div>
+            <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>Customer Login</h2>
             <p>Please enter your mobile number and temporary password.</p>
             

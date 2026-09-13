@@ -14,9 +14,18 @@ export type CustomerDashboard = {
   activity: ActivityItem[];
 };
 
-export type CustomerMerchant = {
+export type CustomerMerchantCategory = {
   id: string;
   name: string;
+};
+
+export type CustomerMerchant = {
+  id: string;
+  merchant_name: string;
+  category?: string;
+  address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
 };
 
@@ -51,10 +60,18 @@ export function useCustomerTransactions(page: number) {
   });
 }
 
-export function useCustomerMerchants(page: number, search?: string) {
+export function useCustomerCategories() {
   return useQuery({
-    queryKey: ['customer', 'merchants', page, search],
-    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search })}`, { signal }),
+    queryKey: ['customer', 'categories'],
+    queryFn: ({ signal }) => apiFetch<{ categories: CustomerMerchantCategory[] }>('/api/customer/categories', { signal }),
+    staleTime: 300000,
+  });
+}
+
+export function useCustomerMerchants(page: number, search?: string, categoryId?: string) {
+  return useQuery({
+    queryKey: ['customer', 'merchants', page, search, categoryId],
+    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId })}`, { signal }),
     staleTime: 60000
   });
 }

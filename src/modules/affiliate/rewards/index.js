@@ -67,7 +67,8 @@ async function getCustomerEntitlement(networkId, customerId) {
     .select('available_amount_paise')
     .eq('network_id', networkId)
     .eq('customer_id', customerId)
-    .eq('status', 'AVAILABLE');
+    .eq('status', 'AVAILABLE')
+    .gt('expires_at', new Date().toISOString());
     
   if (error) throw error;
   
@@ -81,6 +82,7 @@ router.get('/:id/reward-lots', async (req, res) => {
     .from('reward_lots')
     .select('*')
     .eq('customer_id', req.params.id)
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: true });
 
   if (error) return res.status(500).json({ error: error.message });

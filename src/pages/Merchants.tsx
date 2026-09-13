@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { EmptyState, ErrorState, ExportModal, LoadingState, PageHeader, PaginationBar } from '../components/Common';
-import type { Merchant, MerchantSummaryResponse, Pagination } from '../types';
+import type { Merchant, MerchantSummaryResponse, Pagination, MerchantCategory } from '../types';
 import { formatDate, formatPoints } from '../utils';
 import { useToast } from '../toast';
 
@@ -31,6 +31,10 @@ export function Merchants() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [networkId, setNetworkId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
@@ -39,6 +43,11 @@ export function Merchants() {
 
   useEffect(() => setPage(1), [deferredSearch]);
 
+
+  const categoriesQuery = useQuery({
+    queryKey: ['merchant-categories'],
+    queryFn: ({ signal }) => apiFetch<{ categories: MerchantCategory[] }>('/api/merchant-categories', { signal }),
+  });
   const networksQuery = useQuery({
     queryKey: ['networks'],
     queryFn: ({ signal }) => apiFetch<{ networks: { id: string; code: string; name: string }[] }>('/api/networks', { signal }),
@@ -63,7 +72,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, network_id: networkId }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, network_id: networkId, category_id: categoryId || undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -76,6 +85,9 @@ export function Merchants() {
       setEmail('');
       setPhone('');
       setPassword('');
+      setAddress('');
+      setLatitude('');
+      setLongitude('');
       showToast(t('merchants.created'));
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
     },
@@ -144,6 +156,19 @@ export function Merchants() {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required />
             <small>{t('merchants.passwordHelp')}</small>
           </label>
+          
+          <label>
+            Category (Optional)
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">No Category</option>
+              {categoriesQuery.data?.categories?.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
+          <label>Latitude <input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>
+          <label>Longitude <input type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="e.g. 76.2673" /></label>
           {networksQuery.data?.networks && networksQuery.data.networks.length > 0 && (
             <label>
               Location / Network
@@ -170,12 +195,13 @@ export function Merchants() {
         <section className="table-panel">
           <div className="table-scroll">
             <table>
-              <thead><tr><th>{t('merchants.code')}</th><th>{t('merchants.storeName')}</th><th>{t('login.email')}</th><th>{t('merchants.phone')}</th><th>{t('merchants.joined')}</th><th>{t('dashboard.orders')}</th><th>{t('merchants.actions')}</th></tr></thead>
+              <thead><tr><th>{t('merchants.code')}</th><th>{t('merchants.storeName')}</th><th>Category</th><th>{t('login.email')}</th><th>{t('merchants.phone')}</th><th>{t('merchants.joined')}</th><th>{t('dashboard.orders')}</th><th>{t('merchants.actions')}</th></tr></thead>
               <tbody>
                 {merchants.data?.merchants.map((merchant) => (
                   <tr key={merchant.id}>
                     <td><strong>{merchant.merchantCode}</strong>{merchant.mustChangePassword ? <small className="table-note">Password change required</small> : null}</td>
                     <td><strong>{merchant.name}</strong></td>
+                    <td>{merchant.category || <span className="text-gray-400">None</span>}</td>
                     <td>{merchant.email}</td>
                     <td>{merchant.phone}</td>
                     <td>{formatDate(merchant.joined)}</td>
