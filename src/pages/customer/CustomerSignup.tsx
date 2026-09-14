@@ -59,6 +59,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
         ? 'Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains.'
         : code === 'auth/too-many-requests'
           ? 'Too many attempts. Please wait a few minutes and try again.'
+          : code === 'auth/code-expired'
+            ? 'This OTP has expired. Tap Resend OTP and enter the newest code.'
           : cause?.message || 'Unable to send the verification code.';
       setError(message);
       window.recaptchaVerifier?.clear();
@@ -102,14 +104,16 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
             <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>{step === 'details' ? 'Create Customer Account' : 'Verify Your Phone'}</h2>
             <p>{step === 'details' ? 'Enter your details to get started.' : `We sent a 6-digit code to +91 ${phone}.`}</p>
-            {step === 'details' ? (
-              <div style={{ margin: '18px 0 4px' }}>
-                <div id="signup-recaptcha-container" />
+            <div style={{ margin: '18px 0 4px' }}>
+              {/* Keep this mounted during OTP entry so Firebase can reuse the
+                  verifier safely when the user requests a resend. */}
+              <div id="signup-recaptcha-container" />
+              {step === 'details' ? (
                 <small style={{ display: 'block', marginTop: '8px', color: '#6b7280' }}>
                   Complete the security check when it appears, then the OTP will be sent.
                 </small>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
             {error ? <div className="form-error">{error}</div> : null}
             {step === 'details' ? (
               <form onSubmit={(event) => { event.preventDefault(); void sendOtp(); }}>
