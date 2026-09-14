@@ -14,7 +14,9 @@ const { Resend } = require('resend');
 const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
-const admin    = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getMessaging } = require('firebase-admin/messaging');
 
 let firebaseInitialized = false;
 try {
@@ -25,8 +27,7 @@ try {
       ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
       : null;
   if (!serviceAccount) throw new Error('Firebase service account is not configured');
-  const cert = admin.credential?.cert || admin.cert;
-  admin.initializeApp({
+  initializeApp({
     credential: cert(serviceAccount)
   });
   firebaseInitialized = true;
@@ -38,7 +39,7 @@ try {
 async function sendPushNotification(token, title, body, data = {}) {
   if (!firebaseInitialized || !token) return false;
   try {
-    await admin.messaging().send({
+    await getMessaging().send({
       token,
       notification: { title, body },
       data
@@ -1455,7 +1456,7 @@ app.post('/api/auth/customer/signup', async (req, res) => {
 
   let decodedToken;
   try {
-    decodedToken = await admin.auth().verifyIdToken(idToken);
+    decodedToken = await getAuth().verifyIdToken(idToken);
   } catch (error) {
     console.error('Customer signup token verification failed:', error.code);
     return res.status(401).json({ success: false, code: 'PHONE_VERIFICATION_FAILED', error: 'Phone verification could not be confirmed. Please request a new code.' });
@@ -1513,7 +1514,7 @@ app.post('/api/auth/customer/reset-password-otp', async (req, res) => {
       throw new Error("Firebase Admin is not configured. Cannot verify OTP.");
     }
     
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await getAuth().verifyIdToken(idToken);
     let phoneNumber = decodedToken.phone_number;
     
     if (!phoneNumber) {
