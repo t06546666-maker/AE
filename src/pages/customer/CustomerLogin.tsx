@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, setAccessToken } from '../../api';
 import { UserProfile } from '../../types';
+import { Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   const [phone, setPhone] = useState('');
@@ -9,6 +11,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { t, i18n } = useTranslation();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +56,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
           <div className="login-form">
             <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>Customer Login</h2>
+            <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
             <p>Please enter your mobile number and temporary password.</p>
             
             {error && <div className="form-error">{error}</div>}

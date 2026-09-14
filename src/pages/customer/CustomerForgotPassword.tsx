@@ -9,6 +9,8 @@ import { useRef, useState } from 'react';
 import { apiFetch } from '../../api';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerForgotPassword() {
   const [phone, setPhone] = useState('');
@@ -20,6 +22,7 @@ export function CustomerForgotPassword() {
   const [success, setSuccess] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const sendingRef = useRef(false);
+  const { t, i18n } = useTranslation();
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
@@ -128,6 +131,7 @@ export function CustomerForgotPassword() {
         <div className="login-form">
           <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <h2>Reset Password</h2>
+          <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
           <p>We'll send a 6-digit SMS code to your number.</p>
           {step === 'phone' && (
             <div style={{ margin: '18px 0 4px' }}>

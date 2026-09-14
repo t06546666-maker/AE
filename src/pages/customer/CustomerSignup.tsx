@@ -6,6 +6,8 @@ import { apiFetch, setAccessToken } from '../../api';
 import type { UserProfile } from '../../types';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
@@ -24,6 +26,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { t, i18n } = useTranslation();
   const nativeAuth = Capacitor.isNativePlatform();
   const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
 
@@ -140,6 +143,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
           <div className="login-form">
             <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>{step === 'details' ? 'Create Customer Account' : 'Verify Your Phone'}</h2>
+            <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
             <p>{step === 'details' ? 'Enter your details to get started.' : `We sent a 6-digit code to +91 ${phone}.`}</p>
             <div style={{ margin: '18px 0 4px' }}>
               {/* Keep this mounted during OTP entry so Firebase can reuse the
