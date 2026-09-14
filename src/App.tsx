@@ -152,11 +152,18 @@ export function App() {
 
     const endpoint = isCustomerToken ? '/api/auth/customer/me' : '/api/auth/me';
 
+    let active = true;
     apiFetch<{ user: UserProfile }>(endpoint)
-      .then((data) => setUser(data.user))
-      .catch(() => logout())
-      .finally(() => setRestoring(false));
-  }, [location.pathname]);
+      .then((data) => {
+        if (!active || getAccessToken() !== token) return;
+        // The customer-only endpoint has already authenticated this identity.
+        // Keep older deployments that omit role out of the merchant routes.
+        setUser(isCustomerToken ? { ...data.user, role: 'customer' } : data.user);
+      })
+      .catch(() => { if (active && getAccessToken() === token) logout(); })
+      .finally(() => { if (active) setRestoring(false); });
+    return () => { active = false; };
+  }, []);
 
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate AE" /></div></div>;
   if (!user) {

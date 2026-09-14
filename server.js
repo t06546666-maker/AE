@@ -270,7 +270,7 @@ async function requireCustomerAuth(req, res, next) {
       .single();
       
     if (error || !customer) return res.status(401).json({ success: false, error: 'Customer not found' });
-    req.customer = customer;
+    req.customer = { ...customer, role: 'customer' };
     next();
   } catch (err) {
     return res.status(401).json({ success: false, error: 'Invalid or expired session' });
