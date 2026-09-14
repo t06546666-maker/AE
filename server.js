@@ -1453,8 +1453,14 @@ app.post('/api/auth/customer/signup', async (req, res) => {
   if (email && !isEmail(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
   if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
 
+  let decodedToken;
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    decodedToken = await admin.auth().verifyIdToken(idToken);
+  } catch (error) {
+    console.error('Customer signup token verification failed:', error.code);
+    return res.status(401).json({ success: false, code: 'PHONE_VERIFICATION_FAILED', error: 'Phone verification could not be confirmed. Please request a new code.' });
+  }
+  try {
     const cleanPhone = normalizePhone(decodedToken.phone_number);
     if (!cleanPhone) return res.status(400).json({ success: false, error: 'Verified phone number is invalid' });
 
@@ -1484,7 +1490,8 @@ app.post('/api/auth/customer/signup', async (req, res) => {
     return res.status(201).json({ success: true, accessToken, user: customer });
   } catch (error) {
     console.error('Customer signup failed:', error);
-    return res.status(401).json({ success: false, error: 'Phone verification failed or expired' });
+    if (error.code === '23505') return res.status(409).json({ success: false, error: 'An account with these details already exists. Please log in.' });
+    return res.status(503).json({ success: false, code: 'SIGNUP_STORAGE_FAILED', error: 'Your phone was verified, but we could not save your account. Please retry shortly; you do not need another SMS code.' });
   }
 });
 

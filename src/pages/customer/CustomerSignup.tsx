@@ -29,6 +29,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const { t, i18n } = useTranslation();
   const nativeAuth = Capacitor.isNativePlatform();
   const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
+  const verifiedUserRef = useRef<import('firebase/auth').User | null>(null);
+  const nativeVerifiedRef = useRef(false);
 
   useEffect(() => {
     if (!nativeAuth) return;
@@ -69,6 +71,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   }
 
   async function sendOtp() {
+    verifiedUserRef.current = null;
+    nativeVerifiedRef.current = false;
     setError('');
     const cleanPhone = phone.replace(/\D/g, '');
     if (name.trim().length < 2) return setError('Please enter your full name.');
@@ -112,11 +116,17 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     try {
       let idToken: string;
       if (nativeAuth) {
-        await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
+        if (!nativeVerifiedRef.current) {
+          await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
+          nativeVerifiedRef.current = true;
+        }
         idToken = (await FirebaseAuthentication.getIdToken()).token;
       } else {
-        const result = await confirmationResult!.confirm(otp.trim());
-        idToken = await result.user.getIdToken();
+        if (!verifiedUserRef.current) {
+          const result = await confirmationResult!.confirm(otp.trim());
+          verifiedUserRef.current = result.user;
+        }
+        idToken = await verifiedUserRef.current.getIdToken();
       }
       const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/signup', {
         method: 'POST',
