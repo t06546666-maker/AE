@@ -140,13 +140,23 @@ export function App() {
       } catch (e) { return false; }
     })();
 
+    // Never reuse an admin/merchant session when opening a customer URL.
+    // This can happen when the same browser previously used the merchant portal.
+    // Clear that session and let the customer login page render instead of
+    // restoring the merchant dashboard and navigating away from the customer area.
+    if (location.pathname.startsWith('/customer/') && !isCustomerToken) {
+      clearAccessToken();
+      setRestoring(false);
+      return;
+    }
+
     const endpoint = isCustomerToken ? '/api/auth/customer/me' : '/api/auth/me';
 
     apiFetch<{ user: UserProfile }>(endpoint)
       .then((data) => setUser(data.user))
       .catch(() => logout())
       .finally(() => setRestoring(false));
-  }, []);
+  }, [location.pathname]);
 
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate AE" /></div></div>;
   if (!user) {
