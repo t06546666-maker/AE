@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ConfirmationResult, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { apiFetch, setAccessToken } from '../../api';
 import type { UserProfile } from '../../types';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
@@ -18,9 +20,33 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [verificationId, setVerificationId] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const nativeAuth = Capacitor.isNativePlatform();
+  const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
+
+  useEffect(() => {
+    if (!nativeAuth) return;
+    let active = true;
+    FirebaseAuthentication.addListener('phoneCodeSent', ({ verificationId: id }) => {
+      if (!active) return;
+      setVerificationId(id);
+      setStep('otp');
+      setCooldown(30);
+      setLoading(false);
+    }).then((handle) => {
+      if (active) nativeListenerRef.current = handle;
+      else void handle.remove();
+    }).catch(() => {});
+    return () => {
+      active = false;
+      const handle = nativeListenerRef.current;
+      nativeListenerRef.current = null;
+      if (handle) void handle.remove();
+    };
+  }, [nativeAuth]);
 
   useEffect(() => {
     if (!cooldown) return;
@@ -49,10 +75,15 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     if (password !== confirmPassword) return setError('Passwords do not match.');
     setLoading(true);
     try {
-      const result = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, setupRecaptcha());
-      setConfirmationResult(result);
-      setStep('otp');
-      setCooldown(30);
+      if (nativeAuth) {
+        setVerificationId('');
+        await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: `+91${cleanPhone}` });
+      } else {
+        const result = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, setupRecaptcha());
+        setConfirmationResult(result);
+        setStep('otp');
+        setCooldown(30);
+      }
     } catch (cause: any) {
       const code = cause?.code || '';
       const message = code === 'auth/network-request-failed'
@@ -72,12 +103,18 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
 
   async function verifyOtp(event: React.FormEvent) {
     event.preventDefault();
-    if (!confirmationResult) return;
+    if (!confirmationResult && !(nativeAuth && verificationId)) return;
     setError('');
     setLoading(true);
     try {
-      const result = await confirmationResult.confirm(otp.trim());
-      const idToken = await result.user.getIdToken();
+      let idToken: string;
+      if (nativeAuth) {
+        await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
+        idToken = (await FirebaseAuthentication.getIdToken()).token;
+      } else {
+        const result = await confirmationResult!.confirm(otp.trim());
+        idToken = await result.user.getIdToken();
+      }
       const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/signup', {
         method: 'POST',
         body: JSON.stringify({ idToken, name: name.trim(), email: email.trim(), password }),
