@@ -80,7 +80,7 @@ export interface OfferCampaign {
 
 export interface Offer {
   id: string;
-  merchantId: string;
+  merchantId: string | null;
   merchant: string;
   merchantCode: string;
   title: string;
@@ -110,6 +110,7 @@ export interface Customer {
   name: string;
   phone: string;
   email: string;
+  registrationSource?: 'merchant' | 'self';
   registeredAt: string;
   qrScans: number;
   rewardPoints: number;

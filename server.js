@@ -18,9 +18,16 @@ const admin    = require('firebase-admin');
 
 let firebaseInitialized = false;
 try {
-  const serviceAccount = require('./firebase-service-account.json');
+  const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
+  const serviceAccount = fs.existsSync(serviceAccountPath)
+    ? require(serviceAccountPath)
+    : process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+      : null;
+  if (!serviceAccount) throw new Error('Firebase service account is not configured');
+  const cert = admin.credential?.cert || admin.cert;
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: cert(serviceAccount)
   });
   firebaseInitialized = true;
   console.log('Firebase Admin initialized successfully.');
@@ -1434,6 +1441,53 @@ app.post('/api/auth/customer/login', async (req, res) => {
   });
 });
 
+app.post('/api/auth/customer/signup', async (req, res) => {
+  if (!requireSupabase(res)) return;
+  const idToken = cleanText(req.body.idToken, 8192);
+  const name = cleanText(req.body.name, 100);
+  const email = cleanText(req.body.email, 254).toLowerCase();
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+
+  if (!firebaseInitialized || !idToken) return res.status(400).json({ success: false, error: 'Phone verification is required' });
+  if (!name || name.length < 2) return res.status(400).json({ success: false, error: 'Please enter your full name' });
+  if (email && !isEmail(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
+  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const cleanPhone = normalizePhone(decodedToken.phone_number);
+    if (!cleanPhone) return res.status(400).json({ success: false, error: 'Verified phone number is invalid' });
+
+    const existing = await supabaseAdmin.from('customers').select('id').eq('phone', cleanPhone).maybeSingle();
+    if (existing.error) throw existing.error;
+    if (existing.data) return res.status(409).json({ success: false, error: 'This phone number is already registered. Please log in.' });
+
+    const network = await supabaseAdmin.from('networks').select('id').eq('code', 'LEGACY-001').maybeSingle();
+    if (network.error) throw network.error;
+    const customerCode = `C${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+    const created = await supabaseAdmin.from('customers').insert({
+      customer_code: customerCode,
+      merchant_id: null,
+      network_id: network.data?.id || '00000000-0000-0000-0000-000000000000',
+      name,
+      phone: cleanPhone,
+      email: email || null,
+      password_hash: hashPassword(password),
+      must_change_password: false,
+      password_reset_at: new Date().toISOString(),
+      registration_source: 'self',
+    }).select('*').single();
+    if (created.error) throw created.error;
+
+    const customer = { ...created.data, role: 'customer' };
+    const accessToken = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
+    return res.status(201).json({ success: true, accessToken, user: customer });
+  } catch (error) {
+    console.error('Customer signup failed:', error);
+    return res.status(401).json({ success: false, error: 'Phone verification failed or expired' });
+  }
+});
+
 app.post('/api/auth/customer/reset-password-otp', async (req, res) => {
   const idToken = req.body.idToken;
   const newPassword = req.body.newPassword;
@@ -2644,7 +2698,7 @@ async function pagedCustomers(req, res, paging) {
 
   if (isAdmin) {
     let customerQuery = supabaseAdmin.from('customers')
-      .select('id,customer_code,name,phone,email,created_at', { count: 'exact' })
+      .select('id,customer_code,name,phone,email,registration_source,created_at', { count: 'exact' })
       .order('created_at', { ascending: false });
     if (paging.search) {
       const pattern = `%${paging.search}%`;
@@ -2688,7 +2742,7 @@ async function pagedCustomers(req, res, paging) {
     total = membershipResult.count || 0;
     if (memberships.length) {
       const customerResult = await supabaseAdmin.from('customers')
-        .select('id,customer_code,name,phone,email,created_at')
+        .select('id,customer_code,name,phone,email,registration_source,created_at')
         .in('id', memberships.map((row) => row.customer_id));
       if (customerResult.error) throw customerResult.error;
       customerRows = customerResult.data || [];
@@ -2751,6 +2805,7 @@ async function pagedCustomers(req, res, paging) {
           name: customer.name,
           phone: customer.phone,
           email: customer.email || '',
+          registrationSource: customer.registration_source || 'merchant',
           registeredAt: customer.created_at,
           qrScans: customerMemberships.reduce((sum, row) => sum + row.qrScans, 0),
           rewardPoints: totalRewardPoints,

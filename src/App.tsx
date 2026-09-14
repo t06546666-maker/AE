@@ -28,6 +28,7 @@ import { CustomerLayout } from './components/CustomerLayout';
 import { CustomerHome } from './pages/customer/Home';
 import { CustomerExplore } from './pages/customer/Explore';
 import { CustomerLogin } from './pages/customer/CustomerLogin';
+import { CustomerSignup } from './pages/customer/CustomerSignup';
 import { CustomerChangePassword } from './pages/customer/CustomerChangePassword';
 import { CustomerForgotPassword } from './pages/customer/CustomerForgotPassword';
 import { CustomerScan } from './pages/customer/Scan';
@@ -147,7 +148,7 @@ export function App() {
       .finally(() => setRestoring(false));
   }, []);
 
-  if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate" style={{ height: '48px' }} /></div><div className="boot-line" /></div>;
+  if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate AE" /></div></div>;
   if (!user) {
     return (
       <Routes>
@@ -155,6 +156,7 @@ export function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/customer/forgot-password" element={<CustomerForgotPassword />} />
         <Route path="/customer/login" element={<CustomerLogin onLogin={setUser} />} />
+        <Route path="/customer/signup" element={<CustomerSignup onLogin={setUser} />} />
         <Route path="/login" element={<Login onLogin={setUser} />} />
         <Route path="*" element={<Navigate to="/customer/login" replace />} />
       </Routes>

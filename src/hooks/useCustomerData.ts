@@ -48,7 +48,9 @@ export type PaginationMeta = {
 export function useCustomerDashboard() {
   return useQuery({
     queryKey: ['customer', 'dashboard'],
-    queryFn: ({ signal }) => apiFetch<CustomerDashboard>('/api/customer/dashboard', { signal })
+    queryFn: ({ signal }) => apiFetch<CustomerDashboard>('/api/customer/dashboard', { signal }),
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 

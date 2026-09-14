@@ -1,11 +1,11 @@
 
 declare global {
   interface Window {
-    recaptchaVerifier: any;
+    recaptchaVerifier: RecaptchaVerifier | null | undefined;
   }
 }
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiFetch } from '../../api';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -19,35 +19,57 @@ export function CustomerForgotPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const sendingRef = useRef(false);
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible'
+        // A visible challenge is more reliable on localhost and lets the user
+        // complete verification when browser privacy settings block the
+        // invisible challenge.
+        size: 'normal'
       });
     }
   };
 
-  const requestOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendOtp = async () => {
+    if (sendingRef.current) return;
     setError('');
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setError('Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+    sendingRef.current = true;
     setLoading(true);
     try {
       setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const fullPhone = '+91' + phone.replace(/\D/g, '');
+      const appVerifier = window.recaptchaVerifier!;
+      const fullPhone = '+91' + cleanPhone;
       const confirmation = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
       setConfirmationResult(confirmation);
       setStep('otp');
     } catch (err: any) {
-      setError(err.message || 'Failed to send SMS code.');
+      const code = err?.code || '';
+      const message = code === 'auth/network-request-failed'
+        ? 'Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains.'
+        : code === 'auth/too-many-requests'
+          ? 'Too many attempts. Please wait a few minutes and try again.'
+          : err?.message || 'Failed to send SMS code.';
+      setError(message);
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
       }
     } finally {
+      sendingRef.current = false;
       setLoading(false);
     }
+  };
+
+  const requestOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    void sendOtp();
   };
 
   const resetPassword = async (e: React.FormEvent) => {
@@ -107,7 +129,14 @@ export function CustomerForgotPassword() {
           <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <h2>Reset Password</h2>
           <p>We'll send a 6-digit SMS code to your number.</p>
-          <div id="recaptcha-container"></div>
+          {step === 'phone' && (
+            <div style={{ margin: '18px 0 4px' }}>
+              <div id="recaptcha-container"></div>
+              <small style={{ display: 'block', marginTop: '8px', color: '#6b7280' }}>
+                Complete the security check when it appears, then the SMS code will be sent.
+              </small>
+            </div>
+          )}
           
           {error && <div className="form-error">{error}</div>}
 
@@ -121,6 +150,9 @@ export function CustomerForgotPassword() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    onBlur={() => {
+                      if (/^[6-9]\d{9}$/.test(phone) && !loading) void sendOtp();
+                    }}
                     placeholder="Enter 10-digit number"
                     style={{ width: '100%', paddingLeft: '54px' }}
                     required

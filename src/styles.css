@@ -78,14 +78,14 @@ h1, h2, h3 { letter-spacing: 0; }
 .danger-icon { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 34%, var(--border)); background: var(--danger-soft); }
 .whatsapp-icon { color: var(--green); background: var(--green-soft); }
 
-.boot-screen { min-height: 100vh; display: grid; place-content: center; gap: 16px; background: var(--bg); }
+.boot-screen { min-height: 100vh; display: grid; place-content: center; background: var(--bg); }
 .root-crash-state { justify-items: center; padding: 28px; text-align: center; color: var(--muted); }
 .root-crash-state strong { color: var(--text); font-size: 18px; }
-.boot-brand { font-size: 28px; font-weight: 800; color: var(--primary); }
+.boot-brand { width: 148px; height: 148px; display: grid; place-items: center; position: relative; }
+.boot-brand::before { content: ""; position: absolute; inset: 0; border: 4px solid var(--border); border-top-color: var(--primary); border-right-color: var(--primary); border-radius: 50%; animation: boot-spin .9s linear infinite; }
+.boot-brand img { width: 108px; height: 84px; object-fit: contain; }
 .boot-brand span { color: var(--pink); font-size: 13px; }
-.boot-line { width: 180px; height: 4px; background: var(--border); overflow: hidden; position: relative; }
-.boot-line::after { content: ""; position: absolute; inset: 0; width: 45%; background: var(--primary); animation: boot 1s infinite ease-in-out; }
-@keyframes boot { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@keyframes boot-spin { to { transform: rotate(360deg); } }
 
 .login-screen { min-height: 100vh; display: grid; grid-template-columns: minmax(420px, 1.05fr) minmax(420px, .95fr); background: #eef5ff; }
 .login-brand-panel { background: #26337d; color: #fff; padding: 72px max(60px, 8vw); display: flex; flex-direction: column; justify-content: center; }

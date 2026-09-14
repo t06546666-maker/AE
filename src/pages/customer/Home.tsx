@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bell, ChevronRight, Scan, Gift, Tag, MapPin, Star } from 'lucide-react';
+import { Bell, ChevronRight, Gift, MapPin, Star } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard } from '../../hooks/useCustomerData';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const { data, isLoading } = useCustomerDashboard();
-  const rewardPoints = data?.reward_points ?? user.reward_points ?? 0;
+  const rewardPoints = data?.reward_points ?? 0;
+  const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
 
   const getInitials = (name?: string) => {
@@ -50,38 +51,25 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-inner">
                   <Star className="text-white fill-white" size={16} />
                 </div>
-                <span className="text-[32px] font-bold tracking-tight">{isLoading ? '...' : rewardPoints}</span>
+                <span className="text-[36px] font-bold tracking-tight">{isLoading ? '...' : formattedPoints}</span>
               </div>
+              <p className="mt-1 text-[11px] text-green-50/80">Live balance from your account</p>
             </div>
             <ChevronRight size={20} className="text-white" />
           </div>
         </Link>
 
-        {/* Action Grid */}
-        <div className="flex justify-between items-start pt-1">
-          <Link to="/customer/scan" className="flex flex-col items-center gap-2">
-            <div className="w-[60px] h-[60px] bg-[#e6fcf2] rounded-[18px] flex items-center justify-center text-[#087a4b] active:scale-[0.95] transition-transform">
-              <Scan size={26} strokeWidth={2} />
-            </div>
-            <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">Scan &<br/>Earn</span>
+        {/* Primary customer actions */}
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <Link to="/customer/rewards" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#087a4b] p-4 text-white shadow-md active:scale-[0.98] transition-transform">
+            <Gift size={30} strokeWidth={2} />
+            <span className="text-[16px] font-bold">Redeem</span>
+            <span className="text-[11px] text-green-50">Use your points</span>
           </Link>
-          <Link to="/customer/rewards" className="flex flex-col items-center gap-2">
-            <div className="w-[60px] h-[60px] bg-[#fdf2f8] rounded-[18px] flex items-center justify-center text-[#c026d3] active:scale-[0.95] transition-transform">
-              <Gift size={26} strokeWidth={2} />
-            </div>
-            <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">Rewards</span>
-          </Link>
-          <Link to="/customer/offers" className="flex flex-col items-center gap-2">
-            <div className="w-[60px] h-[60px] bg-[#eff6ff] rounded-[18px] flex items-center justify-center text-[#3b82f6] active:scale-[0.95] transition-transform">
-              <Tag size={26} strokeWidth={2} />
-            </div>
-            <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">Offers</span>
-          </Link>
-          <Link to="/customer/explore" className="flex flex-col items-center gap-2">
-            <div className="w-[60px] h-[60px] bg-[#f0fdf4] rounded-[18px] flex items-center justify-center text-[#22c55e] active:scale-[0.95] transition-transform">
-              <MapPin size={26} strokeWidth={2} />
-            </div>
-            <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">Nearby</span>
+          <Link to="/customer/explore" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+            <MapPin size={30} strokeWidth={2} />
+            <span className="text-[16px] font-bold">Nearby Shops</span>
+            <span className="text-[11px] text-gray-600">Earn points around you</span>
           </Link>
         </div>
 

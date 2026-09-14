@@ -33,7 +33,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
     <div className="theme-green h-full w-full">
       <div className="login-screen">
         <div className="login-brand-panel">
-          <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
+          <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 320, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
           <h1>Welcome Back</h1>
           <p>Log in to your Customer account to view your rewards and order history.</p>
           <div className="login-features">
@@ -51,7 +51,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
         
         <div className="login-form-panel">
           <div className="login-form">
-            <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+            <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>Customer Login</h2>
             <p>Please enter your mobile number and temporary password.</p>
             
@@ -107,11 +107,13 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
             </form>
 
             <div style={{ marginTop: '30px', textAlign: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>New to Affiliate AE?</p>
+              <Link to="/customer/signup" className="button primary" style={{ width: '100%', textDecoration: 'none', textAlign: 'center', marginBottom: '18px', background: '#087a4b', color: '#fff' }}>Create Customer Account</Link>
               <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>Are you a merchant?</p>
               <button 
                 onClick={() => window.location.href = '/login'} 
-                className="button secondary" 
-                style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}
+                className="button primary" 
+                style={{ width: '100%', textDecoration: 'none', textAlign: 'center', background: '#26337d', color: '#fff' }}
               >
                 Merchant Login
               </button>

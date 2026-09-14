@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { UserProfile } from '../../types';
-import { useCustomerTransactions } from '../../hooks/useCustomerData';
+import { useCustomerDashboard, useCustomerTransactions } from '../../hooks/useCustomerData';
 import { useState } from 'react';
 
 type Tab = 'transactions' | 'summary';
@@ -10,7 +10,9 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
   const { data, isLoading } = useCustomerTransactions(page);
+  const { data: dashboard } = useCustomerDashboard();
   const transactions = data?.transactions ?? [];
+  const availablePoints = dashboard?.reward_points ?? 0;
 
   const allEarned = transactions.filter(t => t.type === 'earn').reduce((sum, t) => sum + t.points, 0);
   const allRedeemed = transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + t.points, 0);
@@ -48,7 +50,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-inner">
                   <span className="text-white font-bold text-lg leading-none">★</span>
                 </div>
-                <span className="text-[32px] font-bold tracking-tight">{user.reward_points || 0}</span>
+                <span className="text-[32px] font-bold tracking-tight">{availablePoints}</span>
               </div>
               <p className="text-[11px] text-green-50/70 mt-1">Points expire 1 year from issue date</p>
             </div>
@@ -67,7 +69,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
             <p className="text-[12px] font-medium text-gray-500">Redeemed</p>
           </div>
           <div className="text-center">
-            <p className="text-[16px] font-bold text-[#087a4b]">{user.reward_points || 0}</p>
+            <p className="text-[16px] font-bold text-[#087a4b]">{availablePoints}</p>
             <p className="text-[12px] font-medium text-gray-500">Available</p>
           </div>
         </div>
@@ -184,7 +186,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                       <p className="text-[12px] text-gray-500">Ready to use</p>
                     </div>
                   </div>
-                  <p className="font-bold text-[18px] text-gray-900">{user.reward_points || 0}</p>
+                  <p className="font-bold text-[18px] text-gray-900">{availablePoints}</p>
                 </div>
               </div>
             </div>
