@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Bell, ChevronRight, Gift, MapPin, Star } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, MapPin, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard } from '../../hooks/useCustomerData';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const { data, isLoading } = useCustomerDashboard();
+  const { t, i18n } = useTranslation();
   const rewardPoints = data?.reward_points ?? 0;
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
@@ -25,7 +27,18 @@ export function CustomerHome({ user }: { user: UserProfile }) {
     <div className="bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
-        <div className="w-6" />
+        <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
+          <Languages size={16} />
+          <select
+            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
+            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
+            onChange={(event) => void i18n.changeLanguage(event.target.value)}
+            aria-label={t('language.malayalam')}
+          >
+            <option value="en">EN</option>
+            <option value="ml">മ</option>
+          </select>
+        </label>
         <img src="/logo.png" alt="Affiliate AE" className="absolute left-1/2 -translate-x-1/2 object-contain" style={{ width: 72, height: 40 }} />
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
