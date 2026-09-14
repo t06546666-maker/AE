@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, UserPlus, Shield, ArrowLeft, Star, X, Phone, Mail } from 'lucide-react';
+import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, Shield, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
+  const [selectedFaq, setSelectedFaq] = useState<string | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editName, setEditName] = useState(user.name || '');
@@ -112,17 +113,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
         {/* Section 2 */}
         <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
-          <Link to="/customer/referral" className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
-            <div className="flex items-center space-x-4">
-              <UserPlus size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">Refer a Friend</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="bg-[#087a4b] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">Earn 100 Points</span>
-              <ChevronRight size={18} className="text-gray-400" />
-            </div>
-          </Link>
-          <button onClick={handleWhatsAppHelp} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+          <button onClick={() => { setSelectedFaq(null); setShowHelp(true); }} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <HelpCircle size={20} className="text-gray-400" />
               <span className="font-semibold text-[15px] text-gray-800">Help & Support</span>
@@ -162,8 +153,27 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowHelp(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[18px] font-bold text-gray-900">Help & Support</h2>
+              <div className="flex items-center gap-2"><MessageCircle size={20} className="text-[#087a4b]" /><h2 className="text-[18px] font-bold text-gray-900">Help & Support</h2></div>
               <button onClick={() => setShowHelp(false)}><X size={22} className="text-gray-500" /></button>
+            </div>
+            <div className="mb-5 rounded-[16px] bg-gray-50 p-4">
+              <p className="mb-3 text-[13px] font-bold text-gray-800">Quick answers</p>
+              {[
+                ['points', 'How do I earn AE Points?', 'Scan your AE QR at a participating shop after purchase. Points are added to your account once the transaction is confirmed.'],
+                ['redeem', 'How do I redeem points?', 'Open Rewards, choose an available reward, and tap Redeem. Your points balance will update after confirmation.'],
+                ['login', 'I cannot sign in or receive an OTP.', 'Check your phone number and internet connection, then request a new OTP. Wait for the resend timer before trying again.'],
+                ['missing', 'My points or transaction is missing.', 'Please keep your purchase details and contact AE support so we can check the transaction.'],
+              ].map(([id, question, answer]) => (
+                <div key={id} className="border-b border-gray-200 last:border-0">
+                  <button onClick={() => setSelectedFaq(selectedFaq === id ? null : id)} className="w-full py-2.5 text-left text-[13px] font-semibold text-gray-800">{question}</button>
+                  {selectedFaq === id && <p className="pb-3 text-[12px] leading-relaxed text-gray-600">{answer}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="mb-4 rounded-[16px] border border-[#bfe8d2] bg-[#effaf4] p-4">
+              <p className="text-[13px] font-bold text-gray-900">Still need help?</p>
+              <p className="mt-1 text-[12px] text-gray-600">Chat with AE support on WhatsApp or email us. Add your official support number as <code>VITE_AE_SUPPORT_PHONE</code> in your deployment settings to show a Call AE option here.</p>
+              {import.meta.env.VITE_AE_SUPPORT_PHONE && <a href={`tel:${import.meta.env.VITE_AE_SUPPORT_PHONE}`} className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#087a4b] px-4 py-2 text-[12px] font-bold text-white"><Phone size={14} /> Call AE support</a>}
             </div>
             <div className="space-y-3">
               <button onClick={handleWhatsAppHelp} className="w-full flex items-center gap-4 p-4 bg-green-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
