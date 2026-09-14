@@ -109,7 +109,7 @@ export function CustomerForgotPassword() {
       <div className="login-screen">
         <div className="login-form-panel" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
           <div className="login-form" style={{ textAlign: 'center' }}>
-            <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+            <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>Password Reset!</h2>
             <p>Your customer password has been successfully reset.</p>
             <button 
@@ -129,7 +129,7 @@ export function CustomerForgotPassword() {
     <div className="login-screen">
       <div className="login-form-panel" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
         <div className="login-form">
-          <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+          <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <h2>Reset Password</h2>
           <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
           <p>We'll send a 6-digit SMS code to your number.</p>

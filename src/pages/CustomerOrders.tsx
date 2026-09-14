@@ -31,7 +31,7 @@ export function CustomerOrders({ user }: { user: UserProfile }) {
   });
 
   return <>
-    <PageHeader title="Customer orders" subtitle={user.role === 'merchant' ? 'Orders customers request through Affiliate AE WhatsApp.' : 'All customer requests across the Affiliate AE merchant network.'} />
+    <PageHeader title="Customer orders" subtitle={user.role === 'merchant' ? 'Orders customers request through AE WhatsApp.' : 'All customer requests across the AE merchant network.'} />
     <section className="panel">
       <div className="list-toolbar customer-order-toolbar"><label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Search customer orders" /></label><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{statuses.map((value) => <option key={value} value={value}>{value}</option>)}</select></div>
       {orders.isPending ? <LoadingState /> : orders.isError ? <ErrorState error={orders.error} retry={() => orders.refetch()} /> : !orders.data?.orders.length ? <EmptyState>No WhatsApp customer orders yet.</EmptyState> : <>

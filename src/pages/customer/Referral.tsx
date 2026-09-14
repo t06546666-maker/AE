@@ -27,7 +27,7 @@ export function CustomerReferral({ user }: { user: UserProfile }) {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Join Affiliate AE',
+        title: 'Join AE',
         text: `Use my referral code ${referralCode} to get 100 AE Points when you sign up!`,
         url: window.location.origin,
       }).catch(console.error);

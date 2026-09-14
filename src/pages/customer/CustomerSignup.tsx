@@ -135,13 +135,13 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     <div className="theme-green h-full w-full">
       <div className="login-screen">
         <div className="login-brand-panel">
-          <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 320, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
-          <h1>Join Affiliate AE</h1>
+          <div className="login-brand"><img src="/logo.png" alt="AE" style={{ width: 320, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
+          <h1>Join AE</h1>
           <p>Create your account, earn rewards, and discover participating merchants.</p>
         </div>
         <div className="login-form-panel">
           <div className="login-form">
-            <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
+            <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
             <h2>{step === 'details' ? 'Create Customer Account' : 'Verify Your Phone'}</h2>
             <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
             <p>{step === 'details' ? 'Enter your details to get started.' : `We sent a 6-digit code to +91 ${phone}.`}</p>

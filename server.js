@@ -50,7 +50,7 @@ async function sendPushNotification(token, title, body, data = {}) {
   }
 }
 
-// --- Affiliate AE Settlement Engine ---
+// --- AE Settlement Engine ---
 const { recordRewardEarned } = require('./src/modules/affiliate/rewards');
 const { toPaise } = require('./src/modules/affiliate/common/money');
 const networksRouter = require('./src/modules/affiliate/networks');
@@ -363,7 +363,7 @@ async function processPurchase(params, idempotencyKey) {
     result = await supabaseAdmin.rpc('process_purchase', params);
   }
   
-  // -- Affiliate AE Reward Engine Hook --
+  // -- AE Reward Engine Hook --
   if (!result.error && result.data && result.data.length > 0) {
     try {
       const orderData = result.data[0];
@@ -384,7 +384,7 @@ async function processPurchase(params, idempotencyKey) {
         await recordRewardEarned(tx, rewardPaise);
       }
     } catch (engineError) {
-      console.error('Affiliate AE Reward Engine Hook Failed:', engineError);
+      console.error('AE Reward Engine Hook Failed:', engineError);
     }
   }
   // -------------------------------------
@@ -1053,7 +1053,7 @@ function sendCustomerOrderList(recipient, body, button, rows) {
     body: { text: body.slice(0, 1024) },
     action: {
       button: button.slice(0, 20),
-      sections: [{ title: 'Affiliate AE', rows: rows.slice(0, 10).map((row) => ({
+      sections: [{ title: 'AE', rows: rows.slice(0, 10).map((row) => ({
         id: row.id.slice(0, 200),
         title: row.title.slice(0, 24),
         description: cleanText(row.description, 72) || undefined,
@@ -1159,7 +1159,7 @@ async function showMerchantChoices(customer, session, page = 0) {
   if (start + pageSize < (merchants || []).length) rows.push({ id: `merchant-page:${page + 1}`, title: 'More merchants' });
   if (page > 0) rows.push({ id: `merchant-page:${page - 1}`, title: 'Previous merchants' });
   await saveCustomerOrderSession(session, { merchant_id: null, state: 'merchant', cart: [], pending_item: null });
-  return sendCustomerOrderList(customer.phone, 'Welcome to Affiliate AE. Choose the shop you want to order from.', 'Choose shop', rows);
+  return sendCustomerOrderList(customer.phone, 'Welcome to AE. Choose the shop you want to order from.', 'Choose shop', rows);
 }
 
 async function showProductChoices(customer, session, page = 0) {
@@ -1201,7 +1201,7 @@ async function handleIncomingCustomerWhatsApp(message) {
   const { data: customer } = await supabaseAdmin.from('customers')
     .select('id,name,phone').eq('phone', from).maybeSingle();
   if (!customer) {
-    await sendWhatsAppText(from, 'This WhatsApp number is not registered with Affiliate AE. Please register at a participating merchant first.');
+    await sendWhatsAppText(from, 'This WhatsApp number is not registered with AE. Please register at a participating merchant first.');
     return;
   }
   const session = await getCustomerOrderSession(customer);
@@ -1285,7 +1285,7 @@ async function sendWelcomeEmail(purchase) {
     return { sent: false, error: 'Email not configured or not provided' };
   }
   const { data, error } = await resend.emails.send({
-    from: `Affiliate AE <${process.env.RESEND_FROM_EMAIL}>`,
+    from: `AE <${process.env.RESEND_FROM_EMAIL}>`,
     to: [purchase.customer_email],
     subject: `Welcome to ${purchase.merchant_name}`,
     html: `<h2>Welcome, ${purchase.customer_name}</h2>
@@ -1297,7 +1297,7 @@ async function sendWelcomeEmail(purchase) {
   return { sent: true, id: data?.id };
 }
 
-// --- Affiliate AE Settlement Engine Modules ---
+// --- AE Settlement Engine Modules ---
 app.use('/api/networks', requireAuth, networksRouter);
 app.use('/api/customers', requireAuth, rewardsRouter); 
 app.use('/api/redemptions', requireAuth, redemptionsRouter);
@@ -1325,7 +1325,7 @@ app.post('/api/auth/customer/forgot-password/request-otp', async (req, res) => {
     components: [{ type: 'body', parameters: [{ type: 'text', text: otp }] }, { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: otp }] }],
   });
   if (!templateResult.sent) {
-    await sendWhatsAppText(cleanPhone, `Your Affiliate AE password reset code is: ${otp}. It expires in 5 minutes.`);
+    await sendWhatsAppText(cleanPhone, `Your AE password reset code is: ${otp}. It expires in 5 minutes.`);
   }
   res.json({ success: true });
 });
@@ -4248,12 +4248,12 @@ if (false) app.post('/api/send-qr-legacy-disabled', requireAuth, async (req, res
       if (mediaId) {
         await axios.post(WA_URL, {
           messaging_product: 'whatsapp', to: toPhone, type: 'image',
-          image: { id: mediaId, caption: `🎉 Welcome to *${merchant}*, ${name}!\n\nYour ID: *${cid}*\n\n📲 Save the QR and show it at checkout for instant recognition!\n\n— Affiliate AE` },
+          image: { id: mediaId, caption: `🎉 Welcome to *${merchant}*, ${name}!\n\nYour ID: *${cid}*\n\n📲 Save the QR and show it at checkout for instant recognition!\n\n— AE` },
         }, { headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' } });
       } else {
         await axios.post(WA_URL, {
           messaging_product: 'whatsapp', to: toPhone, type: 'text',
-          text: { body: `🎉 Welcome to *${merchant}*, ${name}!\n\nYour Customer ID: *${cid}*\n\n📲 Show the ID at checkout for instant recognition.\n\n— Affiliate AE` },
+          text: { body: `🎉 Welcome to *${merchant}*, ${name}!\n\nYour Customer ID: *${cid}*\n\n📲 Show the ID at checkout for instant recognition.\n\n— AE` },
         }, { headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' } });
       }
 
@@ -4272,12 +4272,12 @@ if (false) app.post('/api/send-qr-legacy-disabled', requireAuth, async (req, res
   if (resend && process.env.RESEND_FROM_EMAIL && email) {
     try {
       const { data, error } = await resend.emails.send({
-        from: `Affiliate AE <${process.env.RESEND_FROM_EMAIL}>`,
+        from: `AE <${process.env.RESEND_FROM_EMAIL}>`,
         to:   [email],
         subject: `Welcome to ${merchant} — Your AE ID: ${cid}`,
         html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;background:#0a0a0f;color:#f0f0fa;border-radius:16px;overflow:hidden">
           <div style="background:linear-gradient(135deg,#7c6ef7,#e84d8a);padding:30px;text-align:center">
-            <h1 style="margin:0;font-size:22px;color:#fff">Welcome to Affiliate AE</h1>
+            <h1 style="margin:0;font-size:22px;color:#fff">Welcome to AE</h1>
             <p style="margin:5px 0 0;color:rgba(255,255,255,.75);font-size:13px">${merchant}</p>
           </div>
           <div style="padding:28px">
@@ -4298,10 +4298,10 @@ if (false) app.post('/api/send-qr-legacy-disabled', requireAuth, async (req, res
             </div>
           </div>
           <div style="background:#13131a;padding:14px;text-align:center">
-            <p style="color:#8888aa;font-size:11px;margin:0">© ${new Date().getFullYear()} Affiliate AE</p>
+            <p style="color:#8888aa;font-size:11px;margin:0">© ${new Date().getFullYear()} AE</p>
           </div>
         </div>`,
-        text: `Hi ${name}, welcome to ${merchant}!\nYour ID: ${cid}\nQR sent to WhatsApp: ${phone}\n\n— Affiliate AE`,
+        text: `Hi ${name}, welcome to ${merchant}!\nYour ID: ${cid}\nQR sent to WhatsApp: ${phone}\n\n— AE`,
       });
       if (error) throw new Error(error.message);
       results.email = { sent: true, to: email, id: data?.id };
@@ -4468,7 +4468,7 @@ module.exports = app;
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) app.listen(PORT, () => {
-  console.log(`\n🚀  Affiliate AE → http://localhost:${PORT}`);
+  console.log(`\n🚀  AE → http://localhost:${PORT}`);
   console.log(`    Resend   : ${process.env.RESEND_API_KEY ? '✅' : '❌ RESEND_API_KEY not set'}`);
   console.log(`    WhatsApp : ${WA_TOKEN && WA_PHONE_ID    ? '✅' : '❌ WA_TOKEN / WA_PHONE_ID not set'}\n`);
 });

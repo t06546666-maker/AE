@@ -165,7 +165,7 @@ export function App() {
     return () => { active = false; };
   }, []);
 
-  if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="Affiliate AE" /></div></div>;
+  if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (!user) {
     return (
       <Routes>

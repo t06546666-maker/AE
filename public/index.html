@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Affiliate (AE)</title>
+<title>AE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/vendor/html5-qrcode/html5-qrcode.min.js"></script>
 <style>
@@ -434,7 +434,7 @@ select option{background:var(--card)}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-wrap">
-    <div class="login-logo">Affiliate</div>
+    <div class="login-logo">AE</div>
     <div class="login-ae">AE — Customer Management System</div>
     <form class="login-form" onsubmit="login(event)">
       <div class="form-group"><label>Email</label><input id="login-email" type="email" autocomplete="username" required></div>
@@ -462,7 +462,7 @@ select option{background:var(--card)}
       <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
-      <div class="topbar-brand">Affiliate <span style="font-size:11px;color:var(--muted);font-family:var(--fb);font-weight:400;background:none;-webkit-text-fill-color:var(--muted)">AE</span></div>
+      <div class="topbar-brand">AE</div>
     </div>
     <div class="topbar-right">
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle night mode" aria-label="Toggle night mode">◐</button>
@@ -1891,7 +1891,7 @@ function renderApiSetup(){
 <span class="c"># Install dependencies</span>
 npm install express cors resend axios dotenv
 
-<span class="c"># Endpoints used by Affiliate AE</span>
+<span class="c"># Endpoints used by AE</span>
 POST /api/send-qr     → sends WhatsApp message + email on registration
 GET  /api/status      → returns { resend: bool, whatsapp: bool }
 

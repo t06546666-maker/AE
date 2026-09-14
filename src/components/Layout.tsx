@@ -85,7 +85,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
       <header className="topbar">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
-          <div className="brand"><img src="/logo.png" alt="Affiliate AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
         </div>
         <div className="topbar-right">
           <div className="integration-health" title={t('layout.integrationStatus')}>

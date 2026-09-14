@@ -34,7 +34,7 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
     if (!this.state.error) return this.props.children;
     return (
       <div className="boot-screen root-crash-state">
-        <div className="boot-brand"><img src="/logo.png" alt="Affiliate" style={{ height: '48px' }} /></div>
+        <div className="boot-brand"><img src="/logo.png" alt="AE" style={{ height: '48px' }} /></div>
         <strong>The application could not finish loading.</strong>
         <span>{this.state.error.message || 'An unexpected startup error occurred.'}</span>
         <button className="button primary" onClick={() => {

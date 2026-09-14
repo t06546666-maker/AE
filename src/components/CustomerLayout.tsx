@@ -25,7 +25,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
       <header className="topbar hidden md:flex">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
-          <div className="brand"><img src="/logo.png" alt="Affiliate AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
         </div>
         <div className="topbar-right">
           <label className="language-control" title={t('language.malayalam')}>

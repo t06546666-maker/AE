@@ -48,7 +48,7 @@ export function ChangePassword({ onChanged }: { onChanged: () => void }) {
             </select>
           </label>
         </div>
-        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
         <h1>{t('password.title')}</h1>
         <p>{t('password.subtitle')}</p>
         <label>

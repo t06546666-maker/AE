@@ -30,7 +30,7 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   return (
     <div className="login-screen">
       <div className="login-brand-panel">
-        <div className="login-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
+        <div className="login-brand"><img src="/logo.png" alt="AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
         <h1>{t('login.headline')}</h1>
         <p>{t('login.description')}</p>
         <div className="login-features">
@@ -41,7 +41,7 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
       </div>
       <div className="login-form-panel">
         <form className="login-form" onSubmit={submit}>
-          <div className="login-mobile-brand"><img src="/logo.png" alt="Affiliate AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+          <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
           <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
           <h2>{t('login.welcome')}</h2>
           <p>{t('login.prompt')}</p>
