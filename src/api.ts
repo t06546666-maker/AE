@@ -1,5 +1,10 @@
 const TOKEN_KEY = 'ae_access_token';
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Vercel serves the API from the same deployment. Use relative requests on
+// the live domain so www and non-www hosts never trigger cross-origin issues.
+const configuredApiUrl = import.meta.env.VITE_API_URL || '';
+const isLiveAffiliateDomain = typeof window !== 'undefined'
+  && window.location.hostname.endsWith('affiliateae.co.in');
+const API_BASE_URL = isLiveAffiliateDomain ? '' : configuredApiUrl;
 
 export class ApiError extends Error {
   status: number;
