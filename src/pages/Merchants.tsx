@@ -128,7 +128,14 @@ export function Merchants() {
       if (!google?.maps || !pickerRef.current) { if (pickerRef.current) pickerRef.current.textContent = 'Google Maps did not initialize. Enable Maps JavaScript API for this key.'; return; }
       const map = new google.maps.Map(pickerRef.current, { center: { lat: Number(latitude) || 10, lng: Number(longitude) || 76.3 }, zoom: 12 });
       mapRef.current = map;
-      map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
+      const placePin = (position: any) => {
+        setLatitude(position.lat().toFixed(6));
+        setLongitude(position.lng().toFixed(6));
+        markerRef.current?.setMap(null);
+        markerRef.current = new google.maps.Marker({ map, position, draggable: true, title: 'Merchant location' });
+        markerRef.current.addListener('dragend', (dragEvent: any) => { if (dragEvent.latLng) placePin(dragEvent.latLng); });
+      };
+      map.addListener('click', (event: any) => { if (event.latLng) placePin(event.latLng); });
     };
     if ((window as any).google?.maps) start();
     else {
