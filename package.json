@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "vite",
-    "build": "tsc -b && vite build --configLoader runner",
+    "build": "npm run check:firebase && tsc -b && vite build --configLoader runner",
+    "check:firebase": "node --no-experimental-require-module scripts/check-firebase-compat.cjs",
     "preview": "vite preview",
     "check": "node --check server.js && tsc -b --pretty false",
     "cap:sync": "npm run build && npx cap sync"
@@ -49,6 +50,11 @@
     "react-i18next": "^17.0.11",
     "react-router-dom": "^7.13.1",
     "resend": "*"
+  },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "5.10.0"
+    }
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
