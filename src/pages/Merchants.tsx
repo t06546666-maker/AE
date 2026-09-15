@@ -121,12 +121,21 @@ export function Merchants() {
     if (!key) { pickerRef[0].textContent = 'Map key is not available in this deployment.'; return; }
     const start = () => {
       const google = (window as any).google;
-      if (!google?.maps || !pickerRef[0]) return;
+      if (!google?.maps || !pickerRef[0]) { if (pickerRef[0]) pickerRef[0].textContent = 'Google Maps did not initialize. Enable Maps JavaScript API for this key.'; return; }
       const map = new google.maps.Map(pickerRef[0], { center: { lat: Number(latitude) || 10, lng: Number(longitude) || 76.3 }, zoom: 12 });
       map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
     };
     if ((window as any).google?.maps) start();
-    else { const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`; script.async = true; script.onload = start; document.head.appendChild(script); }
+    else {
+      const callbackName = `aeMapsReady_${Date.now()}`;
+      (window as any)[callbackName] = start;
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=${callbackName}`;
+      script.async = true;
+      script.onerror = () => { if (pickerRef[0]) pickerRef[0].textContent = 'Google Maps could not load. Check API enablement, billing, and domain restrictions.'; };
+      document.head.appendChild(script);
+      window.setTimeout(() => { if (pickerRef[0] && !(window as any).google?.maps) pickerRef[0].textContent = 'Google Maps is still loading or blocked. Check the browser console and API key restrictions.'; }, 8000);
+    }
   }, [mapPickerOpen]);
 
   function deleteMerchant(merchant: Merchant) {
