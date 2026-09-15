@@ -132,7 +132,10 @@ export function Merchants() {
   useEffect(() => {
     if (!mapPickerOpen || !pickerRef[0]) return;
     const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!key) return;
+    if (!key) {
+      pickerRef[0].innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#64748b">Map selection is unavailable because the Google Maps key is not configured. Add VITE_GOOGLE_MAPS_API_KEY to the production environment, then redeploy.</div>';
+      return;
+    }
     const start = () => {
       const google = (window as any).google;
       if (!google?.maps || !pickerRef[0]) return;
@@ -140,7 +143,7 @@ export function Merchants() {
       map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
     };
     if ((window as any).google?.maps) start();
-    else { const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`; script.async = true; script.onload = start; document.head.appendChild(script); }
+    else { const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`; script.async = true; script.onerror = () => { if (pickerRef[0]) pickerRef[0].innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#b91c1c">Google Maps could not load. Check the API key and Maps JavaScript API billing/settings.</div>'; }; script.onload = start; document.head.appendChild(script); }
   }, [mapPickerOpen]);
 
   function deleteMerchant(merchant: Merchant) {

@@ -16,10 +16,7 @@ const adminNav = [
   ['/customers', 'nav.customers', Users],
   ['/merchants', 'nav.merchants', Building2],
     ['/merchant-categories', 'Categories', Building2],
-  ['/locations', 'Locations', MapPin],
-  ['/products', 'Product catalogues', Package],
   ['/offers', 'nav.offers', Gift],
-  ['/administrators', 'nav.administrators', UserCog],
   ['/reward-settings', 'nav.rewardSettings', Settings2],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
