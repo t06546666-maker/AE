@@ -14,12 +14,16 @@ const { Resend } = require('resend');
 const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getAuth } = require('firebase-admin/auth');
-const { getMessaging } = require('firebase-admin/messaging');
+let initializeApp;
+let cert;
+let getAuth;
+let getMessaging;
 
 let firebaseInitialized = false;
 try {
+  ({ initializeApp, cert } = require('firebase-admin/app'));
+  ({ getAuth } = require('firebase-admin/auth'));
+  ({ getMessaging } = require('firebase-admin/messaging'));
   const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
   const serviceAccount = fs.existsSync(serviceAccountPath)
     ? require(serviceAccountPath)
