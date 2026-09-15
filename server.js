@@ -20,10 +20,12 @@ let getAuth;
 let getMessaging;
 
 let firebaseInitialized = false;
-try {
-  ({ initializeApp, cert } = require('firebase-admin/app'));
-  ({ getAuth } = require('firebase-admin/auth'));
-  ({ getMessaging } = require('firebase-admin/messaging'));
+let firebaseInitializationPromise;
+async function initializeFirebaseAdmin() {
+  try {
+  ({ initializeApp, cert } = await import('firebase-admin/app'));
+  ({ getAuth } = await import('firebase-admin/auth'));
+  ({ getMessaging } = await import('firebase-admin/messaging'));
   const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
   const serviceAccount = fs.existsSync(serviceAccountPath)
     ? require(serviceAccountPath)
@@ -36,9 +38,11 @@ try {
   });
   firebaseInitialized = true;
   console.log('Firebase Admin initialized successfully.');
-} catch (e) {
+  } catch (e) {
   console.warn('Firebase Admin could not be initialized:', e.message);
+  }
 }
+firebaseInitializationPromise = initializeFirebaseAdmin();
 
 async function sendPushNotification(token, title, body, data = {}) {
   if (!firebaseInitialized || !token) return false;
@@ -1436,6 +1440,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
 });
 
 app.post('/api/auth/customer/signup', async (req, res) => {
+  await firebaseInitializationPromise;
   if (!requireSupabase(res)) return;
   const idToken = cleanText(req.body.idToken || req.body.id_token || req.body.token, 8192);
   const name = cleanText(req.body.name, 100);
