@@ -59,7 +59,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
               <Search size={18} /><span>Explore</span>
             </NavLink>
             <NavLink to="/customer/scan" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Scan size={18} /><span>Scan QR</span>
+              <QrCode size={18} /><span>{t('customer.myQr')}</span>
             </NavLink>
             <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'active' : ''}>
               <Star size={18} /><span>Rewards</span>
