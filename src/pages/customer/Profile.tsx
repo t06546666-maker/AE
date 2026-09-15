@@ -222,7 +222,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       {showFeedback && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowFeedback(false)}>
-          <form onSubmit={submitFeedback} className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
+          <form onSubmit={submitFeedback} className="feedback-modal bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center"><h2 className="text-[18px] font-bold text-gray-900">Feedback & Reviews</h2><button type="button" onClick={() => setShowFeedback(false)}><X size={22} className="text-gray-500" /></button></div>
             <div className="flex gap-2"><button type="button" onClick={() => setFeedbackType('app')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'app' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>App feedback</button><button type="button" onClick={() => setFeedbackType('merchant')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'merchant' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>Merchant review</button></div>
             {feedbackType === 'merchant' && <select value={feedbackMerchant} onChange={e => setFeedbackMerchant(e.target.value)} required className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select a merchant</option>{(merchantData?.merchants || []).map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>}
