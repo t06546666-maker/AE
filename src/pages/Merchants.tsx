@@ -36,6 +36,9 @@ export function Merchants() {
   const [longitude, setLongitude] = useState('');
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [locationMessage, setLocationMessage] = useState('');
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
@@ -123,6 +126,7 @@ export function Merchants() {
       const google = (window as any).google;
       if (!google?.maps || !pickerRef.current) { if (pickerRef.current) pickerRef.current.textContent = 'Google Maps did not initialize. Enable Maps JavaScript API for this key.'; return; }
       const map = new google.maps.Map(pickerRef.current, { center: { lat: Number(latitude) || 10, lng: Number(longitude) || 76.3 }, zoom: 12 });
+      mapRef.current = map;
       map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
     };
     if ((window as any).google?.maps) start();
@@ -227,7 +231,7 @@ export function Merchants() {
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
-      {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Click the exact store location on the map.</p><div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div></div></div> : null}
+      {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Click the exact store location on the map.</p><div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button secondary" onClick={() => { setLocationMessage(''); if (!navigator.geolocation) { setLocationMessage('Location is not supported by this browser.'); return; } setLocationMessage('Finding your location...'); navigator.geolocation.getCurrentPosition(({ coords }) => { const lat = coords.latitude.toFixed(6); const lng = coords.longitude.toFixed(6); setLatitude(lat); setLongitude(lng); const position = { lat: coords.latitude, lng: coords.longitude }; mapRef.current?.setCenter(position); mapRef.current?.setZoom(16); const google = (window as any).google; if (google?.maps && mapRef.current) { markerRef.current?.setMap(null); markerRef.current = new google.maps.Marker({ map: mapRef.current, position, title: 'Your current location' }); } setLocationMessage('Current location selected.'); }, () => setLocationMessage('Unable to get your location. Allow location access and try again.'), { enableHighAccuracy: true, timeout: 10000 }); }}>Use my current location</button><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div>{locationMessage ? <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>{locationMessage}</p> : null}</div></div> : null}
     </>
   );
 }
