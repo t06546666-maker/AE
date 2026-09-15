@@ -126,8 +126,13 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
           const result = await confirmationResult!.confirm(otp.trim());
           verifiedUserRef.current = result.user;
         }
-        idToken = await verifiedUserRef.current.getIdToken();
+        idToken = await verifiedUserRef.current.getIdToken(true);
       }
+      if (!idToken) {
+        const currentUser = auth.currentUser;
+        if (currentUser) idToken = await currentUser.getIdToken(true);
+      }
+      if (!idToken) throw new Error('Phone verification did not return a secure token. Please request a new OTP.');
       const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/signup', {
         method: 'POST',
         body: JSON.stringify({ idToken, name: name.trim(), email: email.trim(), password }),

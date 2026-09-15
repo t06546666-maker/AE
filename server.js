@@ -1437,7 +1437,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
 
 app.post('/api/auth/customer/signup', async (req, res) => {
   if (!requireSupabase(res)) return;
-  const idToken = cleanText(req.body.idToken, 8192);
+  const idToken = cleanText(req.body.idToken || req.body.id_token || req.body.token, 8192);
   const name = cleanText(req.body.name, 100);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
