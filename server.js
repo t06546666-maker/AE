@@ -25,7 +25,6 @@ async function initializeFirebaseAdmin() {
   try {
   ({ initializeApp, cert } = await import('firebase-admin/app'));
   ({ getAuth } = await import('firebase-admin/auth'));
-  ({ getMessaging } = await import('firebase-admin/messaging'));
   const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
   const serviceAccount = fs.existsSync(serviceAccountPath)
     ? require(serviceAccountPath)
@@ -45,8 +44,10 @@ async function initializeFirebaseAdmin() {
 firebaseInitializationPromise = initializeFirebaseAdmin();
 
 async function sendPushNotification(token, title, body, data = {}) {
+  await firebaseInitializationPromise;
   if (!firebaseInitialized || !token) return false;
   try {
+    ({ getMessaging } = await import('firebase-admin/messaging'));
     await getMessaging().send({
       token,
       notification: { title, body },
@@ -1447,7 +1448,14 @@ app.post('/api/auth/customer/signup', async (req, res) => {
   const email = cleanText(req.body.email, 254).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
 
-  if (!firebaseInitialized || !idToken) return res.status(400).json({ success: false, error: 'Phone verification is required' });
+  if (!firebaseInitialized) {
+    console.error('Customer signup blocked: FIREBASE_ADMIN_UNAVAILABLE');
+    return res.status(503).json({ success: false, code: 'FIREBASE_ADMIN_UNAVAILABLE', error: 'Account creation is temporarily unavailable because server verification could not start. Please contact AE support.' });
+  }
+  if (!idToken) {
+    console.warn('Customer signup blocked: PHONE_TOKEN_MISSING');
+    return res.status(400).json({ success: false, code: 'PHONE_TOKEN_MISSING', error: 'Phone verification token was not received. Please retry verification.' });
+  }
   if (!name || name.length < 2) return res.status(400).json({ success: false, error: 'Please enter your full name' });
   if (email && !isEmail(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
   if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
