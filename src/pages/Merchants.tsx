@@ -31,6 +31,9 @@ export function Merchants() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
@@ -57,7 +60,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId || undefined }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId || undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -70,6 +73,7 @@ export function Merchants() {
       setEmail('');
       setPhone('');
       setPassword('');
+      setAddress(''); setLatitude(''); setLongitude('');
       showToast(t('merchants.created'));
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
     },
@@ -148,6 +152,9 @@ export function Merchants() {
               ))}
             </select>
           </label>
+          <label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
+          <label>Latitude <input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>
+          <label>Longitude <input type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="e.g. 76.2673" /></label>
         </div>
         <button className="button primary" disabled={create.isPending}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : t('merchants.add')}
