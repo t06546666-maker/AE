@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -10,6 +12,15 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const rewardPoints = data?.reward_points ?? 0;
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
+  const [qrSrc, setQrSrc] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    QRCode.toDataURL(user.id, { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
+      .then((src) => { if (active) setQrSrc(src); })
+      .catch(() => { if (active) setQrSrc(''); });
+    return () => { active = false; };
+  }, [user.id]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -79,12 +90,16 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <span className="text-[16px] font-bold">Redeem</span>
             <span className="text-[11px] text-green-50">Use your points</span>
           </Link>
-          <Link to="/customer/explore" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
-            <MapPin size={30} strokeWidth={2} />
-            <span className="text-[16px] font-bold">Nearby Shops</span>
-            <span className="text-[11px] text-gray-600">Earn points around you</span>
+          <Link to="/customer/scan" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+            {qrSrc ? <img src={qrSrc} alt="Your AE customer QR code" className="h-[72px] w-[72px] rounded-lg bg-white p-1" /> : <Star size={34} />}
+            <span className="text-[16px] font-bold">My QR Code</span>
+            <span className="text-[11px] text-gray-600">Show to earn points</span>
           </Link>
         </div>
+        <Link to="/customer/explore" className="flex items-center justify-between rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+          <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
+          <ChevronRight size={20} />
+        </Link>
 
         {/* Recent Activity */}
         <div className="pt-2">
