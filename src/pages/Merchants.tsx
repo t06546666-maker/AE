@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X, MapPinned } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +35,7 @@ export function Merchants() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
-  const pickerRef = useState<HTMLDivElement | null>(null);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
@@ -116,13 +116,13 @@ export function Merchants() {
   }
 
   useEffect(() => {
-    if (!mapPickerOpen || !pickerRef[0]) return;
+    if (!mapPickerOpen || !pickerRef.current) return;
     const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!key) { pickerRef[0].textContent = 'Map key is not available in this deployment.'; return; }
+    if (!key) { pickerRef.current.textContent = 'Map key is not available in this deployment.'; return; }
     const start = () => {
       const google = (window as any).google;
-      if (!google?.maps || !pickerRef[0]) { if (pickerRef[0]) pickerRef[0].textContent = 'Google Maps did not initialize. Enable Maps JavaScript API for this key.'; return; }
-      const map = new google.maps.Map(pickerRef[0], { center: { lat: Number(latitude) || 10, lng: Number(longitude) || 76.3 }, zoom: 12 });
+      if (!google?.maps || !pickerRef.current) { if (pickerRef.current) pickerRef.current.textContent = 'Google Maps did not initialize. Enable Maps JavaScript API for this key.'; return; }
+      const map = new google.maps.Map(pickerRef.current, { center: { lat: Number(latitude) || 10, lng: Number(longitude) || 76.3 }, zoom: 12 });
       map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
     };
     if ((window as any).google?.maps) start();
@@ -132,9 +132,9 @@ export function Merchants() {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=${callbackName}`;
       script.async = true;
-      script.onerror = () => { if (pickerRef[0]) pickerRef[0].textContent = 'Google Maps could not load. Check API enablement, billing, and domain restrictions.'; };
+      script.onerror = () => { if (pickerRef.current) pickerRef.current.textContent = 'Google Maps could not load. Check API enablement, billing, and domain restrictions.'; };
       document.head.appendChild(script);
-      window.setTimeout(() => { if (pickerRef[0] && !(window as any).google?.maps) pickerRef[0].textContent = 'Google Maps is still loading or blocked. Check the browser console and API key restrictions.'; }, 8000);
+      window.setTimeout(() => { if (pickerRef.current && !(window as any).google?.maps) pickerRef.current.textContent = 'Google Maps is still loading or blocked. Check the browser console and API key restrictions.'; }, 8000);
     }
   }, [mapPickerOpen]);
 
@@ -227,7 +227,7 @@ export function Merchants() {
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
-      {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Click the exact store location on the map.</p><div ref={(node) => { pickerRef[1](node); }} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div></div></div> : null}
+      {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Click the exact store location on the map.</p><div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div></div></div> : null}
     </>
   );
 }
