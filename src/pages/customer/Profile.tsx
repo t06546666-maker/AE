@@ -3,17 +3,26 @@ import { Link } from 'react-router-dom';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, Shield, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useCustomerMerchants } from '../../hooks/useCustomerData';
+import { apiFetch } from '../../api';
 
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
   const [selectedFaq, setSelectedFaq] = useState<string | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'app' | 'merchant'>('app');
+  const [feedbackMerchant, setFeedbackMerchant] = useState('');
+  const [feedbackRating, setFeedbackRating] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackStatus, setFeedbackStatus] = useState('');
   const [editName, setEditName] = useState(user.name || '');
   const [editMode, setEditMode] = useState(false);
   
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const { pushEnabled, locationEnabled, requestPush, requestLocation, setWhatsApp } = usePermissions();
+  const { data: merchantData } = useCustomerMerchants(1);
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -23,6 +32,15 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   const handleWhatsAppHelp = () => {
     const msg = encodeURIComponent('Hi, I need help with my AE Rewards account.');
     window.open(`https://wa.me/?text=${msg}`, '_blank');
+  };
+
+  const submitFeedback = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFeedbackStatus('');
+    try {
+      await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: feedbackType, merchant_id: feedbackMerchant || undefined, rating: feedbackRating || undefined, message: feedbackMessage }) });
+      setFeedbackMessage(''); setFeedbackRating(''); setFeedbackStatus('Thank you. Your feedback was sent.');
+    } catch (error: any) { setFeedbackStatus(error.message || 'Unable to send feedback.'); }
   };
 
   return (
@@ -120,6 +138,9 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
+          <button onClick={() => { setFeedbackStatus(''); setShowFeedback(true); }} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+            <div className="flex items-center space-x-4"><MessageCircle size={20} className="text-gray-400" /><span className="font-semibold text-[15px] text-gray-800">Feedback & Reviews</span></div><ChevronRight size={18} className="text-gray-400" />
+          </button>
           <button onClick={() => setShowSettings(true)} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Settings size={20} className="text-gray-400" />
@@ -196,6 +217,20 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               </a>
             </div>
           </div>
+        </div>
+      )}
+
+      {showFeedback && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowFeedback(false)}>
+          <form onSubmit={submitFeedback} className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center"><h2 className="text-[18px] font-bold text-gray-900">Feedback & Reviews</h2><button type="button" onClick={() => setShowFeedback(false)}><X size={22} className="text-gray-500" /></button></div>
+            <div className="flex gap-2"><button type="button" onClick={() => setFeedbackType('app')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'app' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>App feedback</button><button type="button" onClick={() => setFeedbackType('merchant')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'merchant' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>Merchant review</button></div>
+            {feedbackType === 'merchant' && <select value={feedbackMerchant} onChange={e => setFeedbackMerchant(e.target.value)} required className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select a merchant</option>{(merchantData?.merchants || []).map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>}
+            {feedbackType === 'merchant' && <select value={feedbackRating} onChange={e => setFeedbackRating(e.target.value)} className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Rating (optional)</option>{[5,4,3,2,1].map(value => <option key={value} value={value}>{value} / 5</option>)}</select>}
+            <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} required minLength={2} maxLength={2000} rows={4} placeholder={feedbackType === 'app' ? 'Tell us about the AE app' : 'Review your experience with this merchant'} className="w-full rounded-xl border border-gray-200 p-3 text-sm" />
+            {feedbackStatus && <p className="text-sm text-[#087a4b]">{feedbackStatus}</p>}
+            <button type="submit" className="w-full rounded-xl bg-[#087a4b] p-3 font-bold text-white">Send feedback</button>
+          </form>
         </div>
       )}
 

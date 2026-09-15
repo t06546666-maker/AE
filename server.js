@@ -147,7 +147,8 @@ const WA_API_VERSION = process.env.WA_API_VERSION || 'v23.0';
 const WA_URL      = `https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_ID}/messages`;
 const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN;
 const WA_APP_SECRET = process.env.WA_APP_SECRET;
-const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'customer_welcome_qr';
+const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'welcome';
+const WA_TEMPORARY_TEMPLATE = cleanText(process.env.WA_TEMPORARY_TEMPLATE || 'temporary', 512);
 const WA_QR_TEMPLATE = cleanText(process.env.WA_QR_TEMPLATE, 512);
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
 const WA_REDEEM_TEMPLATE = process.env.WA_REDEEM_TEMPLATE || 'redeem_receipt';
@@ -822,25 +823,9 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
   const templateName = WA_QR_TEMPLATE || WA_REGISTRATION_TEMPLATE;
-  const tempPwdParam = purchase.temporary_password
-    ? [{ type: 'text', text: purchase.temporary_password }]
-    : [];
-  const bodyParameters = WA_QR_TEMPLATE
-    ? [
-      { type: 'text', text: purchase.customer_name },
-      { type: 'text', text: purchase.customer_code },
-      { type: 'text', text: formatPoints(purchase.total_points) },
-      ...tempPwdParam,
-    ]
-    : [
-      { type: 'text', text: purchase.customer_name },
-      { type: 'text', text: purchase.merchant_name },
-      { type: 'text', text: purchase.customer_code },
-      { type: 'text', text: `${Number(purchase.reward_percentage)}%` },
-      { type: 'text', text: formatPoints(purchase.points_earned) },
-      { type: 'text', text: formatPoints(purchase.total_points) },
-      ...tempPwdParam,
-    ];
+  const bodyParameters = templateName === 'welcome'
+    ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.customer_phone.replace(/^\+91/, '') }]
+    : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.merchant_name }, { type: 'text', text: purchase.customer_code }, { type: 'text', text: `${Number(purchase.reward_percentage)}%` }, { type: 'text', text: formatPoints(purchase.points_earned) }, { type: 'text', text: formatPoints(purchase.total_points) }];
   const bodyComponent = {
     type: 'body',
     parameters: bodyParameters,
@@ -851,7 +836,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       name: purchase.customer_name,
       phone: purchase.customer_phone,
     });
-    return sendWhatsAppTemplate({
+    const welcomeResult = await sendWhatsAppTemplate({
       customerId: purchase.customer_id,
       orderId: purchase.order_id,
       recipient: purchase.customer_phone,
@@ -862,6 +847,10 @@ async function sendRegistrationWhatsApp(purchase, logId) {
         bodyComponent,
       ],
     });
+    if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE) {
+      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [] });
+    }
+    return welcomeResult;
   } catch (error) {
     if (WA_QR_TEMPLATE) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1672,6 +1661,67 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
     })),
     pagination: paginationMeta(paging, count),
   });
+});
+
+app.post('/api/customer/feedback', requireCustomerAuth, async (req, res) => {
+  const feedbackType = req.body.feedback_type === 'merchant' ? 'merchant' : 'app';
+  const message = cleanText(req.body.message, 2000);
+  const rating = req.body.rating ? Number(req.body.rating) : null;
+  const merchantId = feedbackType === 'merchant' ? cleanText(req.body.merchant_id, 80) : null;
+  if (message.length < 2) return res.status(400).json({ success: false, error: 'Please enter your feedback' });
+  if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
+  if (feedbackType === 'merchant' && !merchantId) return res.status(400).json({ success: false, error: 'Please select a merchant' });
+  const created = await supabaseAdmin.from('customer_feedback').insert({ customer_id: req.customer.id, merchant_id: merchantId, feedback_type: feedbackType, rating, message }).select('id,feedback_type,rating,message,created_at').single();
+  if (created.error) return res.status(500).json({ success: false, error: 'Unable to save feedback right now' });
+  res.status(201).json({ success: true, feedback: created.data });
+});
+
+app.get('/api/feedback', requireAuth, async (req, res) => {
+  let query = supabaseAdmin.from('customer_feedback')
+    .select('id,feedback_type,rating,message,created_at,merchant_id,customers(name,phone),merchants(name)')
+    .order('created_at', { ascending: false }).limit(200);
+  if (req.auth.profile.role === 'merchant') {
+    query = query.eq('merchant_id', req.auth.profile.merchant_id).eq('feedback_type', 'merchant');
+  } else if (req.auth.profile.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Not authorized' });
+  }
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ success: false, error: 'Unable to load feedback' });
+  res.json({ success: true, feedback: (data || []).map((row) => ({
+    id: row.id, type: row.feedback_type, rating: row.rating, message: row.message,
+    createdAt: row.created_at, merchantId: row.merchant_id,
+    customerName: row.customers?.name || 'Customer', customerPhone: row.customers?.phone || '',
+    merchantName: row.merchants?.name || '',
+  })) });
+});
+
+app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageMiddleware, async (req, res) => {
+  const merchantId = cleanText(req.body.merchant_id, 100);
+  const productList = cleanText(req.body.product_list, 5000);
+  if (!merchantId || (!productList && !req.file)) return res.status(400).json({ success: false, error: 'Select a merchant and add a product list or image' });
+  const { data: merchant } = await supabaseAdmin.from('merchants').select('id').eq('id', merchantId).maybeSingle();
+  if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+  let imagePath = null;
+  if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath }).select('id,status,created_at').single();
+  if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
+  res.status(201).json({ success: true, request: data });
+});
+
+app.get('/api/product-list-requests', requireAuth, async (req, res) => {
+  let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  else if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
+  res.json({ success: true, requests: data || [] });
+});
+
+app.post('/api/product-list-requests/:id/approve', requireAuth, requireRole('admin'), async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), rejection_reason: null }).eq('id', cleanText(req.params.id, 100)).eq('status', 'pending').select('id,status').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: 'Unable to approve request' });
+  if (!data) return res.status(404).json({ success: false, error: 'Request not found or already reviewed' });
+  res.json({ success: true, request: data });
 });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   BadgeIndianRupee, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal, Package,
-  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X,
+  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
@@ -21,6 +21,7 @@ const adminNav = [
   ['/offers', 'nav.offers', Gift],
   ['/administrators', 'nav.administrators', UserCog],
   ['/reward-settings', 'nav.rewardSettings', Settings2],
+  ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 
 const merchantNav = [
@@ -33,6 +34,7 @@ const merchantNav = [
   ['/rewards', 'nav.rewards', Gift],
   ['/offers', 'nav.offers', BadgeIndianRupee],
   ['/more', 'Business & Settings', PieChart],
+  ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 
 export function Layout({ user, onLogout, children }: { user: UserProfile; onLogout: () => void; children: ReactNode }) {

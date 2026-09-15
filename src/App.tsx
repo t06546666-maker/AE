@@ -23,6 +23,7 @@ import { Products } from './pages/Products';
 import { CustomerOrders } from './pages/CustomerOrders';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import { More } from './pages/More';
+import { Feedback } from './pages/Feedback';
 import { Rewards } from './pages/Rewards';
 import { CustomerLayout } from './components/CustomerLayout';
 import { CustomerHome } from './pages/customer/Home';
@@ -225,6 +226,7 @@ export function App() {
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/rewards" element={<Rewards user={user} />} />
           <Route path="/more" element={<More user={user} onLogout={logout} />} />
+          <Route path="/feedback" element={<Feedback user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
