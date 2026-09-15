@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
