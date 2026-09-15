@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X, MapPinned } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
@@ -35,6 +35,8 @@ export function Merchants() {
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const pickerRef = useState<HTMLDivElement | null>(null);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
@@ -127,6 +129,20 @@ export function Merchants() {
     create.mutate();
   }
 
+  useEffect(() => {
+    if (!mapPickerOpen || !pickerRef[0]) return;
+    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+    if (!key) return;
+    const start = () => {
+      const google = (window as any).google;
+      if (!google?.maps || !pickerRef[0]) return;
+      const map = new google.maps.Map(pickerRef[0], { center: { lat: Number(latitude) || 10.0, lng: Number(longitude) || 76.3 }, zoom: 12 });
+      map.addListener('click', (event: any) => { if (event.latLng) { setLatitude(event.latLng.lat().toFixed(6)); setLongitude(event.latLng.lng().toFixed(6)); } });
+    };
+    if ((window as any).google?.maps) start();
+    else { const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`; script.async = true; script.onload = start; document.head.appendChild(script); }
+  }, [mapPickerOpen]);
+
   function deleteMerchant(merchant: Merchant) {
     if (window.confirm(`Delete ${merchant.name} fully?\n\nThis removes the merchant login, orders, links, and customers that belong only to this merchant.`)) {
       remove.mutate(merchant);
@@ -180,6 +196,7 @@ export function Merchants() {
             </label>
           )}
         </div>
+        <button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}><MapPinned size={16} /> Select location on map</button>
         <button className="button primary" disabled={create.isPending}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : t('merchants.add')}
         </button>
@@ -224,6 +241,7 @@ export function Merchants() {
       )}
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
+      {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Click the exact store location on the map.</p><div ref={(node) => { pickerRef[1](node); }} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div></div></div> : null}
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
     </>
   );

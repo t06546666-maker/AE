@@ -489,6 +489,12 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
   .product-form-grid { grid-template-columns: 1fr; }
   .customer-order-toolbar { align-items: stretch; flex-direction: column; }
   .customer-order-toolbar .search-field { margin-left: 0; width: 100%; }
+  .merchant-form { margin: 12px; padding: 18px 14px; border-radius: 20px; }
+  .merchant-form .button { width: 100%; min-height: 48px; justify-content: center; }
+  .merchant-form input, .merchant-form select { min-height: 46px; font-size: 16px; }
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal-backdrop > .modal { width: 100%; max-width: none; max-height: 92vh; overflow: auto; border-radius: 24px 24px 0 0; padding: 20px 16px 28px; }
+  .modal-backdrop > .modal [style*="height: 360px"] { height: 52vh !important; min-height: 280px; }
 }
 
 @media (max-width: 820px) {

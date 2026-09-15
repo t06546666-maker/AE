@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, setAccessToken } from '../../api';
 import { UserProfile } from '../../types';
-import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Languages } from 'lucide-react';
 
 export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   const [phone, setPhone] = useState('');
@@ -37,13 +37,13 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
       <div className="login-screen">
         <div className="login-brand-panel">
           <div className="login-brand"><img src="/logo.png" alt="AE" style={{ width: 320, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
-          <h1>Welcome Back</h1>
-          <p>Log in to your Customer account to view your rewards and order history.</p>
+          <h1>{t('customer.welcome')}</h1>
+          <p>{t('customer.loginPrompt')}</p>
           <div className="login-features">
             {/* Decorative features similar to Merchant login */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <span style={{ fontSize: '24px' }}>🎁</span>
-              <span style={{ fontSize: '15px' }}><strong>Earn Rewards</strong><br/><span style={{ color: 'var(--brand-text)' }}>Get points for every purchase at participating merchants.</span></span>
+                <span style={{ fontSize: '15px' }}><strong>{t('customer.earnRewards')}</strong><br/><span style={{ color: 'var(--brand-text)' }}>{t('customer.earnRewardsText')}</span></span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <span style={{ fontSize: '24px' }}>📱</span>
@@ -55,7 +55,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
         <div className="login-form-panel">
           <div className="login-form">
             <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
-            <h2>Customer Login</h2>
+            <h2>{t('customer.loginTitle')}</h2>
             <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
             <p>Please enter your mobile number and temporary password.</p>
             
@@ -63,7 +63,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
 
             <form onSubmit={submit}>
               <label>
-                <span>Phone Number</span>
+                <span>{t('customer.phone')}</span>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <span style={{ position: 'absolute', left: '16px', fontWeight: 'bold', color: '#6b7280' }}>+91</span>
                   <input
@@ -78,7 +78,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
               </label>
               <label>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Password</span>
+                  <span>{t('customer.password')}</span>
                   <Link to="/customer/forgot-password" style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--brand-color)', textDecoration: 'none' }}>Forgot password?</Link>
                 </div>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -106,7 +106,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
                 className="button primary login-button"
                 style={{ marginTop: '24px' }}
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? t('customer.signingIn') : t('customer.signIn')}
               </button>
             </form>
 
