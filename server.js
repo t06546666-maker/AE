@@ -1637,8 +1637,41 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
   }
 });
 
+const DEFAULT_MERCHANT_CATEGORIES = ['Medicine', 'Hotel', 'Restaurant', 'Clothing', 'Cinema', 'Grocery', 'Electronics', 'Beauty & Salon', 'Travel', 'Education', 'Services', 'Other'];
+
+async function ensureDefaultMerchantCategories() {
+  await supabaseAdmin.from('merchant_categories').upsert(DEFAULT_MERCHANT_CATEGORIES.map(name => ({ name })), { onConflict: 'name', ignoreDuplicates: true });
+}
+
+app.get('/api/merchant-categories', requireAuth, async (req, res) => {
+  try {
+    if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+    await ensureDefaultMerchantCategories();
+    const { data: categories, error } = await supabaseAdmin.from('merchant_categories').select('id, name').order('name');
+    if (error) throw error;
+    res.json({ success: true, categories: categories || [] });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+app.post('/api/merchant-categories', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+  const name = cleanText(req.body.name, 80);
+  if (!name) return res.status(400).json({ success: false, error: 'Category name is required' });
+  const { data, error } = await supabaseAdmin.from('merchant_categories').insert({ name }).select('id, name').single();
+  if (error) return res.status(409).json({ success: false, error: 'Category already exists or could not be created' });
+  res.status(201).json({ success: true, category: data });
+});
+
+app.delete('/api/merchant-categories/:id', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+  const { error } = await supabaseAdmin.from('merchant_categories').delete().eq('id', cleanText(req.params.id, 100));
+  if (error) return res.status(500).json({ success: false, error: 'Unable to delete category' });
+  res.json({ success: true });
+});
+
 app.get('/api/customer/categories', async (req, res) => {
   try {
+    await ensureDefaultMerchantCategories();
     const { data: categories, error } = await supabaseAdmin.from('merchant_categories').select('id, name').order('name');
     if (error) throw error;
     res.json({ success: true, categories });
