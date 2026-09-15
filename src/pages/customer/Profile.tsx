@@ -171,7 +171,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       {/* Help & Support Modal */}
       {showHelp && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowHelp(false)}>
+        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowHelp(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2"><MessageCircle size={20} className="text-[#087a4b]" /><h2 className="text-[18px] font-bold text-gray-900">Help & Support</h2></div>
@@ -221,7 +221,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
       )}
 
       {showFeedback && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowFeedback(false)}>
+        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowFeedback(false)}>
           <form onSubmit={submitFeedback} className="feedback-modal bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center"><h2 className="text-[18px] font-bold text-gray-900">Feedback & Reviews</h2><button type="button" onClick={() => setShowFeedback(false)}><X size={22} className="text-gray-500" /></button></div>
             <div className="flex gap-2"><button type="button" onClick={() => setFeedbackType('app')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'app' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>App feedback</button><button type="button" onClick={() => setFeedbackType('merchant')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'merchant' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>Merchant review</button></div>
@@ -236,7 +236,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       {/* Privacy & Terms Modal */}
       {showPrivacy && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowPrivacy(false)}>
+        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowPrivacy(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-gray-900">Privacy & Terms</h2>
@@ -254,7 +254,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       {/* App Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowSettings(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-gray-900">App Settings</h2>
