@@ -158,7 +158,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
         </div>
       </div>
-      {productListOpen ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="w-full max-w-[430px] rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
+      {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="w-full max-w-[430px] rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Send Product List</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
         <p className="mb-3 text-xs text-gray-500">Choose a merchant and send a text list or photo. Admin approval is required.</p>
         <select value={merchantId} onChange={event => setMerchantId(event.target.value)} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select merchant</option>{merchants.map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>
