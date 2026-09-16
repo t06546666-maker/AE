@@ -21,6 +21,7 @@ import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
 import { Products } from './pages/Products';
 import { CustomerOrders } from './pages/CustomerOrders';
+import { ProductLists } from './pages/ProductLists';
 import { RewardSettingsPage } from './pages/RewardSettings';
 import { More } from './pages/More';
 import { Feedback } from './pages/Feedback';
@@ -221,6 +222,7 @@ export function App() {
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
+          <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={<Customers user={user} />} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />

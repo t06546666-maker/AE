@@ -12,7 +12,7 @@ import type { UserProfile } from '../types';
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/add-customer', 'nav.addCustomer', Plus],
-  ['/orders', 'nav.orders', ReceiptText],
+  ['/customer-product-lists', 'Product Lists', ReceiptText],
   ['/customers', 'nav.customers', Users],
   ['/merchants', 'nav.merchants', Building2],
     ['/merchant-categories', 'Categories', Building2],
