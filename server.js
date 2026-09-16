@@ -3124,7 +3124,11 @@ app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, 
 
   if (orderIds.length) await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orderIds);
   await supabaseAdmin.from('whatsapp_messages').delete().eq('customer_id', customer.id);
-  await supabaseAdmin.from('orders').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('customer_product_list_requests').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('customer_feedback').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('customer_orders').delete().eq('customer_id', customer.id);
+  const { error: orderDeleteError } = await supabaseAdmin.from('orders').delete().eq('customer_id', customer.id);
+  if (orderDeleteError) return res.status(400).json({ success: false, error: orderDeleteError.message });
   await supabaseAdmin.from('customer_merchants').delete().eq('customer_id', customer.id);
   const { error: deleteError } = await supabaseAdmin.from('customers').delete().eq('id', customer.id);
   if (deleteError) return res.status(400).json({ success: false, error: deleteError.message });
