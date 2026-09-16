@@ -1749,7 +1749,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   let imagePath = null;
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath }).select('id,status,created_at').single();
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'approved' }).select('id,status,created_at').single();
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
   res.status(201).json({ success: true, request: data });
 });
@@ -1761,13 +1761,6 @@ app.get('/api/product-list-requests', requireAuth, async (req, res) => {
   const { data, error } = await query;
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
   res.json({ success: true, requests: data || [] });
-});
-
-app.post('/api/product-list-requests/:id/approve', requireAuth, requireRole('admin'), async (req, res) => {
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), rejection_reason: null }).eq('id', cleanText(req.params.id, 100)).eq('status', 'pending').select('id,status').maybeSingle();
-  if (error) return res.status(500).json({ success: false, error: 'Unable to approve request' });
-  if (!data) return res.status(404).json({ success: false, error: 'Request not found or already reviewed' });
-  res.json({ success: true, request: data });
 });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
