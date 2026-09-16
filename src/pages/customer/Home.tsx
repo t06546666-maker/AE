@@ -110,8 +110,8 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
           <ChevronRight size={20} />
         </Link>
-        <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-green-100 bg-white p-4 text-left text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span><span className="text-[11px] text-gray-600">Ask a selected merchant for products</span></div></div><ChevronRight size={20} />
+        <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
+          <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span><span className="text-[11px] text-blue-600">Ask a selected merchant for products</span></div></div><ChevronRight size={20} />
         </button>
 
         {/* Recent Activity */}
