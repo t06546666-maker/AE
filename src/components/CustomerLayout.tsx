@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, QrCode, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, Star, ListPlus } from 'lucide-react';
+import { Home, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, Star, ListPlus } from 'lucide-react';
 import { UserProfile } from '../types';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
@@ -58,8 +58,8 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
               <Search size={18} /><span>Explore</span>
             </NavLink>
-            <NavLink to="/customer/scan" className={({ isActive }) => isActive ? 'active' : ''}>
-              <QrCode size={18} /><span>{t('customer.myQr')}</span>
+            <NavLink to="/customer/home?productList=1" className={({ isActive }) => isActive ? 'active' : ''}>
+              <ListPlus size={18} /><span>Product List</span>
             </NavLink>
             <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'active' : ''}>
               <Star size={18} /><span>Rewards</span>
