@@ -1762,7 +1762,8 @@ app.get('/api/customer/product-list-requests', requireCustomerAuth, async (req, 
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product list history' });
-  res.json({ success: true, requests: data || [] });
+  const requests = await Promise.all((data || []).map(async (request) => ({ ...request, image_url: request.image_path ? await signedOfferImageUrl(request.image_path) : '' })));
+  res.json({ success: true, requests });
 });
 
 app.get('/api/product-list-requests', requireAuth, async (req, res) => {
