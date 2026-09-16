@@ -106,13 +106,6 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
-          <Link to="/customer/rewards" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
-            <div className="flex items-center space-x-4">
-              <Gift size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">My Rewards</span>
-            </div>
-            <ChevronRight size={18} className="text-gray-400" />
-          </Link>
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Clock size={20} className="text-gray-400" />

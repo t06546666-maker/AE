@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
@@ -14,6 +14,7 @@ export function CustomerExplore() {
   const [inputValue, setInputValue] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
+  const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
 
   const categoriesQuery = useCustomerCategories();
   const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
@@ -58,6 +59,7 @@ export function CustomerExplore() {
     }
     setPage(1);
   };
+  const toggleFavorite = (id: string) => setFavorites(current => { const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]; localStorage.setItem('ae_favorite_merchants', JSON.stringify(next)); return next; });
 
   return (
     <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
@@ -141,8 +143,8 @@ export function CustomerExplore() {
                   <p className="text-[12px] font-bold text-[#087a4b] mt-1">Accepts AE Points</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <p className="text-[12px] font-medium text-gray-500">Nearby</p>
+              <div className="flex items-center gap-2">
+                <button type="button" aria-label={favorites.includes(merchant.id) ? 'Remove from favorites' : 'Add to favorites'} onClick={(event) => { event.stopPropagation(); toggleFavorite(merchant.id); }} className="rounded-full p-2"><Heart size={21} className={favorites.includes(merchant.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'} /></button>
                 <ChevronRight size={18} className="text-gray-400" />
               </div>
             </button>
