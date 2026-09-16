@@ -1754,6 +1754,17 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   res.status(201).json({ success: true, request: data });
 });
 
+app.get('/api/customer/product-list-requests', requireCustomerAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('customer_product_list_requests')
+    .select('id,merchant_id,product_list,image_path,status,created_at,merchants(name)')
+    .eq('customer_id', req.customer.id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) return res.status(500).json({ success: false, error: 'Unable to load product list history' });
+  res.json({ success: true, requests: data || [] });
+});
+
 app.get('/api/product-list-requests', requireAuth, async (req, res) => {
   let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);

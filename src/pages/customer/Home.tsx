@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerMerchants } from '../../hooks/useCustomerData';
@@ -11,6 +11,7 @@ import { apiFetch } from '../../api';
 export function CustomerHome({ user }: { user: UserProfile }) {
   const { data, isLoading } = useCustomerDashboard();
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const rewardPoints = data?.reward_points ?? 0;
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
@@ -24,7 +25,8 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const merchants = merchantData?.merchants || [];
   const location = useLocation();
   useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
-  const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); } });
+  const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] }); } });
+  const { data: productHistory } = useQuery({ queryKey: ['customer-product-lists'], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen });
 
   useEffect(() => {
     let active = true;
@@ -160,8 +162,10 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
         </div>
       </div>
-      {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="w-full max-w-[430px] rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
-        <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Send Product List</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
+      {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Product Lists</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
+        <div className="mb-5 rounded-2xl bg-gray-50 p-3"><h3 className="mb-2 text-sm font-bold text-gray-900">Sent to merchants</h3>{productHistory?.requests?.length ? <div className="space-y-2">{productHistory.requests.map(request => <div key={request.id} className="rounded-xl bg-white p-3 text-xs shadow-sm"><div className="flex items-center justify-between gap-2"><span className="font-bold text-gray-900">{request.merchants?.name || 'Merchant'}</span><span className="rounded-full bg-green-100 px-2 py-1 font-semibold capitalize text-green-700">{request.status}</span></div><p className="mt-1 line-clamp-2 text-gray-600">{request.product_list || 'Photo product list'}</p><p className="mt-1 text-gray-400">{new Date(request.created_at).toLocaleDateString()}</p></div>)}</div> : <p className="text-xs text-gray-500">No product lists sent yet.</p>}</div>
+        <h3 className="mb-2 text-sm font-bold text-gray-900">Send a new product list</h3>
         <p className="mb-3 text-xs text-gray-500">Choose a merchant and send a text list or photo directly to them.</p>
         <select value={merchantId} onChange={event => setMerchantId(event.target.value)} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select merchant</option>{merchants.map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>
         <textarea value={productList} onChange={event => setProductList(event.target.value)} rows={4} maxLength={5000} placeholder="Type the products you need..." className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm" />
