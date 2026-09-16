@@ -1,8 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, ChevronRight, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Search, ChevronRight, X, Star } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
+import { apiFetch } from '../../api';
 
 
 
@@ -13,7 +14,10 @@ export function CustomerExplore() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const navigate = useNavigate();
+  const [reviewMerchant, setReviewMerchant] = useState<any>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewStatus, setReviewStatus] = useState('');
 
   const categoriesQuery = useCustomerCategories();
   const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
@@ -128,7 +132,7 @@ export function CustomerExplore() {
           merchants.map((merchant, idx) => (
             <button
               key={merchant.id}
-              onClick={() => navigate('/customer/scan')}
+              onClick={() => { setReviewMerchant(merchant); setReviewRating(5); setReviewMessage(''); setReviewStatus(''); }}
               className="w-full bg-white rounded-[20px] p-4 flex items-center justify-between shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left"
             >
               <div className="flex items-center gap-3">
@@ -169,6 +173,7 @@ export function CustomerExplore() {
           </button>
         </div>
       )}
+      {reviewMerchant ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={() => setReviewMerchant(null)}><form className="w-full max-w-[430px] rounded-t-3xl bg-white p-5 sm:rounded-3xl" onClick={event => event.stopPropagation()} onSubmit={async event => { event.preventDefault(); setReviewStatus('Sending...'); try { await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: 'merchant', merchant_id: reviewMerchant.id, rating: reviewRating, message: reviewMessage.trim() }) }); setReviewStatus('Review submitted successfully.'); setReviewMessage(''); } catch (error: any) { setReviewStatus(error.message || 'Unable to submit review.'); } }}><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Review {reviewMerchant.merchant_name}</h2><button type="button" onClick={() => setReviewMerchant(null)}><X /></button></div><p className="mb-2 text-sm font-semibold">Your rating</p><div className="mb-4 flex gap-2">{[1,2,3,4,5].map(value => <button type="button" key={value} aria-label={`${value} stars`} onClick={() => setReviewRating(value)}><Star size={30} className={value <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} /></button>)}</div><textarea required minLength={2} maxLength={2000} rows={4} value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder="Write your review..." className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm" />{reviewStatus ? <p className="mb-3 text-sm text-gray-600">{reviewStatus}</p> : null}<button type="submit" disabled={reviewStatus === 'Sending...'} className="w-full rounded-xl bg-[#087a4b] p-3 font-bold text-white disabled:opacity-50">Submit review</button></form></div> : null}
     </div>
   );
 }
