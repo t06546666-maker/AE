@@ -36,7 +36,7 @@ async function getCurrentLocation(): Promise<Coordinates> {
   ));
 }
 
-export function CustomerNearbyMap({ merchants }: { merchants: CustomerMerchant[] }) {
+export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants: CustomerMerchant[]; selectedMerchantId?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [status, setStatus] = useState(mapsKey ? 'Tap Locate AE to find merchants near you.' : 'Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.');
@@ -51,15 +51,19 @@ export function CustomerNearbyMap({ merchants }: { merchants: CustomerMerchant[]
         center: { lat: 20.5937, lng: 78.9629 }, zoom: 5, disableDefaultUI: true, zoomControl: true,
       });
       locatedMerchants.forEach((merchant) => {
-        new google.maps.Marker({
+        const marker = new google.maps.Marker({
           map: mapRef.current,
           position: { lat: merchant.latitude!, lng: merchant.longitude! },
           title: merchant.merchant_name,
         });
+        marker.addListener('click', () => { mapRef.current?.panTo({ lat: merchant.latitude!, lng: merchant.longitude! }); mapRef.current?.setZoom(16); });
       });
+      getCurrentLocation().then((location) => { if (!active || !mapRef.current) return; mapRef.current.setCenter({ lat: location.latitude, lng: location.longitude }); mapRef.current.setZoom(13); new google.maps.Marker({ map: mapRef.current, position: { lat: location.latitude, lng: location.longitude }, title: 'You are here', icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }); setStatus('Showing your current location.'); }).catch(() => undefined);
     }).catch(() => active && setStatus('Google Maps could not load. Check your API key and allowed domains.'));
     return () => { active = false; };
   }, [locatedMerchants]);
+
+  useEffect(() => { const merchant = locatedMerchants.find((item) => item.id === selectedMerchantId); if (merchant && mapRef.current) { mapRef.current.panTo({ lat: merchant.latitude!, lng: merchant.longitude! }); mapRef.current.setZoom(16); } }, [selectedMerchantId, locatedMerchants]);
 
   async function locate() {
     try {

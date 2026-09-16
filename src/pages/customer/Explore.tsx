@@ -18,6 +18,7 @@ export function CustomerExplore() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewStatus, setReviewStatus] = useState('');
+  const [selectedMerchantId, setSelectedMerchantId] = useState('');
 
   const categoriesQuery = useCustomerCategories();
   const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
@@ -120,7 +121,7 @@ export function CustomerExplore() {
         </div>
       </div>
 
-      <CustomerNearbyMap merchants={merchants} />
+      <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} />
 
       {/* Merchant List */}
       <div className="px-5 space-y-3">
@@ -132,7 +133,7 @@ export function CustomerExplore() {
           merchants.map((merchant, idx) => (
             <button
               key={merchant.id}
-              onClick={() => { setReviewMerchant(merchant); setReviewRating(5); setReviewMessage(''); setReviewStatus(''); }}
+              onClick={() => { setSelectedMerchantId(merchant.id); setReviewMerchant(merchant); setReviewRating(5); setReviewMessage(''); setReviewStatus(''); }}
               className="w-full bg-white rounded-[20px] p-4 flex items-center justify-between shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left"
             >
               <div className="flex items-center gap-3">
