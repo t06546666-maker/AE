@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { LocateFixed, MapPin, Navigation } from 'lucide-react';
+import { LocateFixed, MapPin } from 'lucide-react';
 import type { CustomerMerchant } from '../hooks/useCustomerData';
 
 type Coordinates = { latitude: number; longitude: number };
@@ -87,6 +87,5 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants
       <button type="button" onClick={() => void locate()} className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#087a4b] shadow-lg"><LocateFixed size={16} /> Locate AE</button>
     </div>
     <p className="mt-2 text-xs text-gray-500">{status}</p>
-    {locatedMerchants.map((merchant) => <a key={merchant.id} className="mt-2 flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm" href={`https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`} target="_blank" rel="noreferrer"><span><strong>{merchant.merchant_name}</strong>{merchant.address ? ` · ${merchant.address}` : ''}</span><Navigation size={16} className="text-[#087a4b]" /></a>)}
   </section>;
 }
