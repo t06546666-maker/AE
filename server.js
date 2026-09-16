@@ -1749,7 +1749,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   let imagePath = null;
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'approved' }).select('id,status,created_at').single();
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
   res.status(201).json({ success: true, request: data });
 });
@@ -1772,6 +1772,15 @@ app.get('/api/product-list-requests', requireAuth, async (req, res) => {
   const { data, error } = await query;
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
   res.json({ success: true, requests: data || [] });
+});
+
+app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('merchant'), async (req, res) => {
+  const status = cleanText(req.body.status, 20).toLowerCase();
+  if (!['pending', 'accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid status' });
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status }).eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).select('id,status').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: 'Unable to update product list status' });
+  if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
+  res.json({ success: true, request: data });
 });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {

@@ -24,6 +24,8 @@ export function CustomerOrders({ user }: { user: UserProfile }) {
     placeholderData: (previous) => previous,
     refetchInterval: 15_000,
   });
+  const productLists = useQuery({ queryKey: ['merchant-product-lists'], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; status: string; created_at: string; customers?: { name?: string } }> }>('/api/product-list-requests'), enabled: user.role === 'merchant', refetchInterval: 15000 });
+  const updateProductList = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => apiFetch(`/api/product-list-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }), onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['merchant-product-lists'] }); showToast('Product list status updated.'); } });
   const updateStatus = useMutation({
     mutationFn: ({ order, nextStatus }: { order: CustomerOrder; nextStatus: CustomerOrderStatus }) => apiFetch(`/api/customer-orders/${order.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: nextStatus }) }),
     onSuccess() { showToast('Customer order updated. The customer will be notified on WhatsApp.'); void queryClient.invalidateQueries({ queryKey: ['customer-orders'] }); void queryClient.invalidateQueries({ queryKey: ['notifications'] }); },
@@ -41,6 +43,7 @@ export function CustomerOrders({ user }: { user: UserProfile }) {
         <PaginationBar pagination={orders.data.pagination} onPage={setPage} />
       </>}
     </section>
+    {user.role === 'merchant' ? <section className="panel"><PageHeader title="Product lists" subtitle="Requests sent directly by customers." />{productLists.data?.requests?.length ? <div className="table-scroll"><table><thead><tr><th>Customer</th><th>Products</th><th>Sent</th><th>Status</th><th>Update</th></tr></thead><tbody>{productLists.data.requests.map((request) => <tr key={request.id}><td>{request.customers?.name || 'Customer'}</td><td>{request.product_list || 'Photo product list'}</td><td>{formatDate(request.created_at)}</td><td><span className="tag info">{request.status}</span></td><td><select value={request.status} onChange={(event) => updateProductList.mutate({ id: request.id, status: event.target.value })}><option value="pending">pending</option><option value="accepted">accepted</option><option value="rejected">rejected</option></select></td></tr>)}</tbody></table></div> : <EmptyState>No product lists received yet.</EmptyState>}</section> : null}
     {user.role === 'merchant' ? <section className="customer-order-help"><MessageCircleMore size={18} /><span>New WhatsApp orders appear here automatically. Updating a request sends the customer a status message.</span><CheckCheck size={18} /></section> : null}
   </>;
 }
