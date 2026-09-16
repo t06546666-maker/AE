@@ -3127,6 +3127,20 @@ app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, 
   await supabaseAdmin.from('customer_product_list_requests').delete().eq('customer_id', customer.id);
   await supabaseAdmin.from('customer_feedback').delete().eq('customer_id', customer.id);
   await supabaseAdmin.from('customer_orders').delete().eq('customer_id', customer.id);
+  // Settlement tables use restrictive foreign keys, so clear them before orders/customers.
+  const { data: customerLots } = await supabaseAdmin.from('reward_lots').select('id').eq('customer_id', customer.id);
+  const lotIds = (customerLots || []).map((row) => row.id).filter(Boolean);
+  if (lotIds.length) {
+    await supabaseAdmin.from('reversals').delete().in('reward_lot_id', lotIds);
+    await supabaseAdmin.from('redemption_allocations').delete().in('reward_lot_id', lotIds);
+    await supabaseAdmin.from('merchant_funding_obligations').delete().in('reward_lot_id', lotIds);
+  }
+  await supabaseAdmin.from('vouchers').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('merchant_funding_obligations').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('refunds').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('redemptions').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('reward_ledger').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('reward_lots').delete().eq('customer_id', customer.id);
   const { error: orderDeleteError } = await supabaseAdmin.from('orders').delete().eq('customer_id', customer.id);
   if (orderDeleteError) return res.status(400).json({ success: false, error: orderDeleteError.message });
   await supabaseAdmin.from('customer_merchants').delete().eq('customer_id', customer.id);
