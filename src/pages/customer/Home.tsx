@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
@@ -22,7 +22,9 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const [productListMessage, setProductListMessage] = useState('');
   const { data: merchantData } = useCustomerMerchants(1);
   const merchants = merchantData?.merchants || [];
-  const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Product list sent for approval.'); setProductList(''); setProductImage(null); setMerchantId(''); } });
+  const location = useLocation();
+  useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
+  const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); } });
 
   useEffect(() => {
     let active = true;
@@ -160,7 +162,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       </div>
       {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="w-full max-w-[430px] rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Send Product List</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
-        <p className="mb-3 text-xs text-gray-500">Choose a merchant and send a text list or photo. Admin approval is required.</p>
+        <p className="mb-3 text-xs text-gray-500">Choose a merchant and send a text list or photo directly to them.</p>
         <select value={merchantId} onChange={event => setMerchantId(event.target.value)} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select merchant</option>{merchants.map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>
         <textarea value={productList} onChange={event => setProductList(event.target.value)} rows={4} maxLength={5000} placeholder="Type the products you need..." className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm" />
         <label className="mb-4 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-600"><Upload size={18} />{productImage ? productImage.name : 'Upload a product-list photo'}<input type="file" accept="image/*" className="hidden" onChange={event => setProductImage(event.target.files?.[0] || null)} /></label>
