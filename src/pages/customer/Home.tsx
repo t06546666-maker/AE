@@ -79,7 +79,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
             Hi, {user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
           </h2>
-          <p className="text-[13px] text-gray-500 font-medium tracking-wide">Shop Local. Earn More.</p>
+          <p className="text-[13px] text-gray-500 font-medium tracking-wide">Where customers meet businesses, beyond</p>
         </div>
 
         {/* Points Card */}
