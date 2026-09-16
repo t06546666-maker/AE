@@ -4,7 +4,7 @@ create table if not exists public.customer_product_list_requests (
   merchant_id uuid not null references public.merchants(id) on delete cascade,
   product_list text,
   image_path text,
-  status text not null default 'approved' check (status in ('pending','approved','rejected')),
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
   rejection_reason text,
   reviewed_at timestamptz,
   created_at timestamptz not null default now(),

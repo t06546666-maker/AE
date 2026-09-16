@@ -1768,11 +1768,21 @@ app.get('/api/customer/product-list-requests', requireCustomerAuth, async (req, 
 
 app.get('/api/product-list-requests', requireAuth, async (req, res) => {
   let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
-  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
+  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'approved');
   else if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
   const { data, error } = await query;
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
   res.json({ success: true, requests: data || [] });
+});
+
+app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('admin'), async (req, res) => {
+  const status = cleanText(req.body.status, 20).toLowerCase();
+  if (!['approved', 'rejected', 'pending'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid review status' });
+  const rejectionReason = cleanText(req.body.rejection_reason, 500) || null;
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status, rejection_reason: status === 'rejected' ? rejectionReason : null, reviewed_at: status === 'pending' ? null : new Date().toISOString() }).eq('id', cleanText(req.params.id, 100)).select('id,status,rejection_reason').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
+  if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
+  res.json({ success: true, request: data });
 });
 
 app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('merchant'), async (req, res) => {
