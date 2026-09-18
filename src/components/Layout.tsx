@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  BadgeIndianRupee, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal, Package,
+  BadgeIndianRupee, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
   PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare,
 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -27,7 +27,6 @@ const merchantNav = [
   ['/orders', 'nav.orders', ReceiptText],
   ['/customer-orders', 'Customer orders', ShoppingBag],
   ['/customers', 'nav.customers', Users],
-  ['/products', 'Product catalogue', Package],
   ['/rewards', 'nav.rewards', Gift],
   ['/offers', 'nav.offers', BadgeIndianRupee],
   ['/more', 'Business & Settings', PieChart],
