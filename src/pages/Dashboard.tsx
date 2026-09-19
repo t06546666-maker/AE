@@ -232,9 +232,9 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <div className="mobile-quick-action-icon"><Users size={24} /></div>
             <span>{t('nav.customers', 'Customers')}</span>
           </Link>
-          <Link to="/offers" className="mobile-quick-action">
+          <Link to="/offers?create=1" className="mobile-quick-action">
             <div className="mobile-quick-action-icon"><Tag size={24} /></div>
-            <span>{t('nav.offers', 'Offers')}</span>
+            <span>{t('dashboard.createOffer')}</span>
           </Link>
           <Link to="/orders" className="mobile-quick-action">
             <div className="mobile-quick-action-icon"><ReceiptText size={24} /></div>
@@ -372,7 +372,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
           <div style={{ background: '#f5f3ff', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Create offers and attract<br/>more customers</h3>
-              <Link to="/offers" className="button" style={{ background: 'white', color: '#3b28cc', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'inline-block', textDecoration: 'none' }}>Create Offer</Link>
+              <Link to="/offers?create=1" className="button" style={{ background: 'white', color: '#3b28cc', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'inline-block', textDecoration: 'none' }}>Create Offer</Link>
             </div>
             <div style={{ background: '#3b28cc', width: 64, height: 64, borderRadius: 16, display: 'grid', placeItems: 'center' }}>
               <Gift size={32} color="white" />

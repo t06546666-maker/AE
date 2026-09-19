@@ -1,10 +1,15 @@
+import { Capacitor } from '@capacitor/core';
+
 const TOKEN_KEY = 'ae_access_token';
 // Vercel serves the API from the same deployment. Use relative requests on
 // the live domain so www and non-www hosts never trigger cross-origin issues.
 const configuredApiUrl = import.meta.env.VITE_API_URL || '';
 const isLiveAffiliateDomain = typeof window !== 'undefined'
   && window.location.hostname.endsWith('affiliateae.co.in');
-const API_BASE_URL = isLiveAffiliateDomain ? '' : configuredApiUrl;
+// Installed apps must reach the hosted backend, never the phone's localhost.
+const API_BASE_URL = Capacitor.isNativePlatform()
+  ? 'https://www.affiliateae.co.in'
+  : isLiveAffiliateDomain ? '' : configuredApiUrl;
 
 export class ApiError extends Error {
   status: number;

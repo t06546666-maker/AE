@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, Check, Gift, ImagePlus, Pencil, Search, Send, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Offer, OfferStatus, Pagination, UserProfile } from '../types';
@@ -17,6 +18,7 @@ function tomorrowInput() {
 }
 
 export function Offers({ user }: { user: UserProfile }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -34,6 +36,15 @@ export function Offers({ user }: { user: UserProfile }) {
   const deferredSearch = useDeferredValue(search.trim());
 
   useEffect(() => setPage(1), [deferredSearch, status]);
+
+  useEffect(() => {
+    if (user.role === 'merchant' && searchParams.get('create') === '1') {
+      setFormOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('create');
+      setSearchParams(next, { replace: true });
+    }
+  }, [user.role, searchParams, setSearchParams]);
 
   const offers = useQuery({
     queryKey: ['offers', page, deferredSearch, status],
