@@ -45,10 +45,10 @@ export function Rewards({ user }: { user: UserProfile }) {
       {user.role === 'merchant' ? (
         <section className="panel" style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Create a reward</h2>
-            <p style={{ margin: '6px 0 0', color: 'var(--muted)' }}>Add a reward offer for your customers with an image, details and expiry date.</p>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Create an offer</h2>
+            <p style={{ margin: '6px 0 0', color: 'var(--muted)' }}>Add an offer for your customers with an image, details and expiry date.</p>
           </div>
-          <Link to="/offers?create=1" className="button primary" style={{ flexShrink: 0 }}><Plus size={16} />Add reward</Link>
+          <Link to="/offers?create=1" className="button primary" style={{ flexShrink: 0 }}><Plus size={16} />Add offer</Link>
         </section>
       ) : null}
 
