@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  BadgeIndianRupee, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
+  BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
   PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare,
 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -79,7 +79,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
 
   const nav = user.role === 'admin' ? adminNav : merchantNav;
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : ''}`}>
       <header className="topbar">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
@@ -144,7 +144,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
                 <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title="Change Language">
                   <Languages size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
-                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => document.body.classList.toggle('dark')} title="Toggle Dark Mode">
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle Dark Mode">
                   <Moon size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
                 <div className="notification-menu">
@@ -162,22 +162,19 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
       </div>
       {user.role === 'merchant' && (
         <div className="mobile-bottom-nav desktop-view-hidden">
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <NavLink to="/dashboard" className={({ isActive }) => isActive && new URLSearchParams(location.search).get('view') !== 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Home />
             <span>Home</span>
-          </NavLink>
-          <NavLink to="/orders" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-            <ReceiptText />
-            <span>Orders</span>
           </NavLink>
           <NavLink to="/customers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Users />
             <span>Customers</span>
           </NavLink>
-          <NavLink to="/rewards" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <NavLink to="/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Gift />
-            <span>Rewards</span>
+            <span>Offers</span>
           </NavLink>
+          <Link to="/dashboard?view=reports" aria-current={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'page' : undefined} className={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><BarChartIcon /><span>Reports</span></Link>
           <NavLink to="/more" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <MoreHorizontal />
             <span>More</span>

@@ -83,7 +83,7 @@ export function App() {
 
   useEffect(() => {
     const listener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-      const isRoot = location.pathname === '/dashboard' || location.pathname === '/' || location.pathname === '/login';
+      const isRoot = (location.pathname === '/dashboard' && !location.search) || location.pathname === '/' || location.pathname === '/login';
       if (!canGoBack || isRoot) {
         CapacitorApp.exitApp();
       } else {
@@ -93,7 +93,7 @@ export function App() {
     return () => {
       listener.then((l: any) => l.remove()).catch(() => {});
     };
-  }, [location.pathname, navigate]);
+  }, [location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const unauthorized = () => logout();
@@ -224,7 +224,7 @@ export function App() {
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
-          <Route path="/customers" element={<Customers user={user} />} />
+          <Route path="/customers" element={user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/rewards" element={<Rewards user={user} />} />
