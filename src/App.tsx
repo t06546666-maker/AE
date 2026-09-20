@@ -10,6 +10,7 @@ import { Administrators } from './pages/Administrators';
 import { ChangePassword } from './pages/ChangePassword';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
+import { MerchantOverview } from './pages/MerchantOverview';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
@@ -218,7 +219,7 @@ export function App() {
     <Layout user={user} onLogout={logout}>
       <PageErrorBoundary key={location.pathname}>
         <Routes>
-          <Route path="/dashboard" element={<Dashboard user={user} />} />
+          <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : <Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
