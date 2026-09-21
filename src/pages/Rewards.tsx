@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Gift, Plus, ScanLine, Tag, X } from 'lucide-react';
+import { ChevronRight, ScanLine, Tag, X } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
@@ -42,16 +42,6 @@ export function Rewards({ user }: { user: UserProfile }) {
   return (
     <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
       <PageHeader title={t('nav.rewards', 'Rewards')} subtitle="Manage points and offers" />
-
-      {user.role === 'merchant' ? (
-        <section className="panel" style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Create an offer</h2>
-            <p style={{ margin: '6px 0 0', color: 'var(--muted)' }}>Add an offer for your customers with an image, details and expiry date.</p>
-          </div>
-          <Link to="/offers?create=1" className="button primary" style={{ flexShrink: 0 }}><Plus size={16} />Add offer</Link>
-        </section>
-      ) : null}
 
       {/* Main Action - Redeem */}
       <button className="mobile-main-action" style={{ marginTop: 16 }} onClick={() => setScannerMode('redeem')}>
@@ -103,15 +93,6 @@ export function Rewards({ user }: { user: UserProfile }) {
         </div>
       </div>
       
-      {/* Create Offers Banner */}
-      <div className="mobile-create-offer-banner" style={{ marginTop: 16 }}>
-        <div className="mobile-create-offer-text">
-          <h4>{t('dashboard.createOffersBannerTitle', 'Create offers and attract more customers')}</h4>
-          <Link to="/offers" className="mobile-create-offer-btn">{t('dashboard.createOfferBtn', 'Create Offer')}</Link>
-        </div>
-        <Gift size={64} color="#f59e0b" style={{ opacity: 0.8 }} />
-      </div>
-
       {/* Scanner Modal */}
       {Boolean(scannerMode) ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerMode(null); }}>
