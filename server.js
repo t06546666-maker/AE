@@ -320,7 +320,7 @@ function formatPoints(value) {
 }
 
 async function getAdminRewardConfig() {
-  const { data } = await supabaseAdmin.from('app_settings').select('key,value').in('key', ['earn_options', 'redeem_options']);
+  const { data } = await supabaseAdmin.from('app_settings').select('key,value').in('key', ['earn_options', 'redeem_options', 'subscription_price', 'subscription_points', 'subscription_days']);
   let earn = EARN_OPTIONS;
   let redeem = REDEEM_OPTIONS;
   if (data) {
@@ -329,7 +329,20 @@ async function getAdminRewardConfig() {
     if (earnStr) earn = JSON.parse(earnStr);
     if (redeemStr) redeem = JSON.parse(redeemStr);
   }
-  return { earnOptions: earn, redeemOptions: redeem };
+  const valueFor = (key, fallback) => {
+    const raw = data?.find(r => r.key === key)?.value;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  };
+  return {
+    earnOptions: earn,
+    redeemOptions: redeem,
+    subscription: {
+      price: valueFor('subscription_price', 200),
+      points: valueFor('subscription_points', 10000),
+      days: valueFor('subscription_days', 30),
+    },
+  };
 }
 
 async function getMerchantEarnRateWithCap(merchantId) {
@@ -4124,7 +4137,7 @@ app.get('/api/settings/reward', requireAuth, async (req, res) => {
     const adminConfig = await getAdminRewardConfig();
     
     if (req.auth.profile.role === 'admin') {
-      res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions });
+      res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions, subscription: adminConfig.subscription });
     } else {
       const merchantSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
       res.json({ 
@@ -4133,6 +4146,7 @@ app.get('/api/settings/reward', requireAuth, async (req, res) => {
         redeemOptions: adminConfig.redeemOptions,
         merchantEarnPoints: merchantSettings.earn_points_per_100,
         merchantRedeemDiscount: merchantSettings.redeem_discount_per_100
+        ,subscription: adminConfig.subscription
       });
     }
   } catch (error) {
@@ -4149,8 +4163,19 @@ app.put('/api/settings/reward', requireAuth, requireRole('admin'), async (req, r
     if (redeemOptions) {
       await supabaseAdmin.from('app_settings').upsert({ key: 'redeem_options', value: JSON.stringify(redeemOptions) });
     }
+    const subscription = req.body.subscription || {};
+    const subscriptionValues = {
+      subscription_price: subscription.price,
+      subscription_points: subscription.points,
+      subscription_days: subscription.days,
+    };
+    for (const [key, value] of Object.entries(subscriptionValues)) {
+      if (value !== undefined && Number(value) > 0) {
+        await supabaseAdmin.from('app_settings').upsert({ key, value: String(Number(value)) });
+      }
+    }
     const adminConfig = await getAdminRewardConfig();
-    res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions });
+    res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions, subscription: adminConfig.subscription });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -4516,6 +4541,7 @@ app.post('/api/payments/create-subscription', requireAuth, async (req, res) => {
 app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
   try {
     const { payment_reference, mandate_id, signature } = req.body;
+    const adminConfig = await getAdminRewardConfig();
     const merchantId = req.params.id;
     
     if (!payment_reference) return res.status(400).json({ success: false, error: 'Payment reference required' });
@@ -4545,10 +4571,10 @@ app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
     const expiryDate = merchant.subscription_expires_at && new Date(merchant.subscription_expires_at) > now
       ? new Date(merchant.subscription_expires_at)
       : now;
-    expiryDate.setDate(expiryDate.getDate() + 30);
+    expiryDate.setDate(expiryDate.getDate() + adminConfig.subscription.days);
     
     const updatePayload = {
-      point_balance: currentPoints + 10000,
+      point_balance: currentPoints + adminConfig.subscription.points,
       subscription_expires_at: expiryDate.toISOString(),
     };
     if (mandate_id) updatePayload.subscription_mandate_id = mandate_id;
@@ -4560,7 +4586,7 @@ app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
 
     if (updateError) throw updateError;
     
-    res.json({ success: true, message: 'Subscription purchased successfully. 10000 points added.' });
+    res.json({ success: true, message: `Subscription purchased successfully. ${adminConfig.subscription.points} points added.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message || 'Failed to process subscription' });
   }

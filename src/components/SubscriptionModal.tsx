@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Check, X as XIcon, Loader2 } from 'lucide-react';
 import { Merchant } from '../types';
@@ -17,6 +17,13 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
   const [error, setError] = useState('');
 
   const [success, setSuccess] = useState(false);
+  const [plan, setPlan] = useState({ price: 200, points: 10000, days: 30 });
+
+  useEffect(() => {
+    apiFetch<{ subscription?: typeof plan }>('/api/settings/reward')
+      .then((result) => { if (result.subscription) setPlan(result.subscription); })
+      .catch(() => undefined);
+  }, []);
 
   const handlePurchaseSubscription = async () => {
     try {
@@ -111,13 +118,13 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
             </div>
             
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              ₹{billing === 'monthly' ? '200' : '2000'}
+              ₹{billing === 'monthly' ? plan.price : plan.price * 10}
             </div>
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>
-              ₹{billing === 'monthly' ? '499' : '4990'}
+              Coming soon
             </div>
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>
-              ₹{billing === 'monthly' ? '999' : '9990'}
+              Coming soon
             </div>
           </div>
 

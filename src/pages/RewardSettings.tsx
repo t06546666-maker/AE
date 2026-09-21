@@ -20,11 +20,15 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
   
   const [earnPoints, setEarnPoints] = useState(10);
   const [redeemDiscount, setRedeemDiscount] = useState(5);
+  const [earnOptions, setEarnOptions] = useState('5, 10, 20, 30, 50');
+  const [subscription, setSubscription] = useState({ price: 200, points: 10000, days: 30 });
 
   useEffect(() => { 
     if (settings.data) { 
       setEarnPoints(settings.data.merchantEarnPoints || 10);
       setRedeemDiscount(settings.data.merchantRedeemDiscount || 5);
+      if (settings.data.earnOptions) setEarnOptions(settings.data.earnOptions.join(', '));
+      if (settings.data.subscription) setSubscription(settings.data.subscription);
     } 
   }, [settings.data]);
   
@@ -40,6 +44,21 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
     onError(error: Error) { 
       showToast(error.message, 'error'); 
     } 
+  });
+
+  const saveAdmin = useMutation({
+    mutationFn: () => apiFetch('/api/settings/reward', {
+      method: 'PUT',
+      body: JSON.stringify({
+        earnOptions: earnOptions.split(',').map(value => Number(value.trim())).filter(value => Number.isFinite(value) && value > 0),
+        subscription,
+      }),
+    }),
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ['reward-settings'] });
+      showToast('Admin settings saved');
+    },
+    onError(error: Error) { showToast(error.message, 'error'); },
   });
 
   if (settings.isPending) return <LoadingState />;
@@ -61,14 +80,12 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
         
         {user.role === 'admin' ? (
           <div className="settings-fields">
-            <div style={{ padding: '20px', background: 'var(--bg-inset)', borderRadius: '8px' }}>
-               <h4 style={{ margin: '0 0 10px 0' }}>Admin Configuration</h4>
-               <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--text-muted)' }}>
-                 Global options are configured directly in the database (`app_settings`).<br/>
-                 Earn options: {data?.earnOptions.join(', ')}<br/>
-                 Redeem options: {data?.redeemOptions.join(', ')}
-               </p>
-            </div>
+            <label>Points options per ₹100 purchase<input value={earnOptions} onChange={(e) => setEarnOptions(e.target.value)} placeholder="5, 10, 20" /></label>
+            <label>Subscription price (₹)<input type="number" min="1" value={subscription.price} onChange={(e) => setSubscription({ ...subscription, price: Number(e.target.value) })} /></label>
+            <label>Points added per subscription<input type="number" min="1" value={subscription.points} onChange={(e) => setSubscription({ ...subscription, points: Number(e.target.value) })} /></label>
+            <label>Subscription duration (days)<input type="number" min="1" value={subscription.days} onChange={(e) => setSubscription({ ...subscription, days: Number(e.target.value) })} /></label>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>These values apply to new merchant subscriptions and the point choices shown to merchants.</p>
+            <button className="button primary" disabled={saveAdmin.isPending} onClick={() => saveAdmin.mutate()}><Save size={16} />{saveAdmin.isPending ? 'Saving...' : 'Save Admin Settings'}</button>
           </div>
         ) : (
           <>
