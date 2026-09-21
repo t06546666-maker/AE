@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Gift, Plus, ScanLine, Tag, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
 import QrScanner from '../components/QrScanner';
@@ -27,7 +27,8 @@ function useDashboard(period: Period, from: string, to: string) {
 export function Rewards({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const today = dateInput();
-  const [scannerMode, setScannerMode] = useState<'redeem' | null>(null);
+  const [searchParams] = useSearchParams();
+  const [scannerMode, setScannerMode] = useState<'redeem' | null>(searchParams.get('scan') === '1' ? 'redeem' : null);
 
   const dashboard = useDashboard('month', today, today);
   const data = dashboard.data || emptyDashboard;
