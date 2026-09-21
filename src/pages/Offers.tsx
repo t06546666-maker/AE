@@ -190,6 +190,13 @@ export function Offers({ user }: { user: UserProfile }) {
         </form>
       ) : null}
 
+      {user.role === 'merchant' && !formOpen ? (
+        <button className="mobile-offer-create" onClick={() => { resetForm(); setFormOpen(true); }}>
+          <ImagePlus size={19} />
+          <span><strong>{t('offers.create')}</strong><small>Add an image, details and expiry date</small></span>
+        </button>
+      ) : null}
+
       <div className="list-toolbar offer-toolbar">
         <label className="search-field">
           <Search size={17} />
