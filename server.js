@@ -320,7 +320,7 @@ function formatPoints(value) {
 }
 
 async function getAdminRewardConfig() {
-  const { data } = await supabaseAdmin.from('app_settings').select('key,value').in('key', ['earn_options', 'redeem_options', 'subscription_price', 'subscription_points', 'subscription_days']);
+  const { data } = await supabaseAdmin.from('app_settings').select('key,value').in('key', ['earn_options', 'redeem_options', 'subscription_price', 'subscription_points', 'subscription_days', 'subscription_plans']);
   let earn = EARN_OPTIONS;
   let redeem = REDEEM_OPTIONS;
   if (data) {
@@ -334,6 +334,13 @@ async function getAdminRewardConfig() {
     const value = Number(raw);
     return Number.isFinite(value) && value > 0 ? value : fallback;
   };
+  let plans = [
+    { id: 'standard', name: 'Standard', monthly: 200, yearly: 2000, points: 10000, days: 30 },
+    { id: 'pro', name: 'Pro', monthly: 499, yearly: 4990, points: 30000, days: 30 },
+    { id: 'premium', name: 'Premium', monthly: 999, yearly: 9990, points: 75000, days: 30 },
+  ];
+  const plansStr = data?.find(r => r.key === 'subscription_plans')?.value;
+  if (plansStr) { try { const parsed = JSON.parse(plansStr); if (Array.isArray(parsed) && parsed.length) plans = parsed; } catch (_) {} }
   return {
     earnOptions: earn,
     redeemOptions: redeem,
@@ -341,6 +348,7 @@ async function getAdminRewardConfig() {
       price: valueFor('subscription_price', 200),
       points: valueFor('subscription_points', 10000),
       days: valueFor('subscription_days', 30),
+      plans,
     },
   };
 }
@@ -4173,6 +4181,9 @@ app.put('/api/settings/reward', requireAuth, requireRole('admin'), async (req, r
       if (value !== undefined && Number(value) > 0) {
         await supabaseAdmin.from('app_settings').upsert({ key, value: String(Number(value)) });
       }
+    }
+    if (Array.isArray(subscription.plans) && subscription.plans.length) {
+      await supabaseAdmin.from('app_settings').upsert({ key: 'subscription_plans', value: JSON.stringify(subscription.plans) });
     }
     const adminConfig = await getAdminRewardConfig();
     res.json({ success: true, rewardOptions: adminConfig.earnOptions, redeemOptions: adminConfig.redeemOptions, subscription: adminConfig.subscription });

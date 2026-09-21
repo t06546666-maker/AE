@@ -148,7 +148,7 @@ export interface RewardSettings {
   redeemOptions: number[];
   merchantEarnPoints?: number;
   merchantRedeemDiscount?: number;
-  subscription?: { price: number; points: number; days: number };
+  subscription?: { price: number; points: number; days: number; plans?: Array<{ id: string; name: string; monthly: number; yearly: number; points: number; days: number }> };
 }
 
 export interface DashboardData {

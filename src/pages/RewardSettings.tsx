@@ -22,6 +22,11 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
   const [redeemDiscount, setRedeemDiscount] = useState(5);
   const [earnOptions, setEarnOptions] = useState('5, 10, 20, 30, 50');
   const [subscription, setSubscription] = useState({ price: 200, points: 10000, days: 30 });
+  const [plans, setPlans] = useState([
+    { id: 'standard', name: 'Standard', monthly: 200, yearly: 2000, points: 10000, days: 30 },
+    { id: 'pro', name: 'Pro', monthly: 499, yearly: 4990, points: 30000, days: 30 },
+    { id: 'premium', name: 'Premium', monthly: 999, yearly: 9990, points: 75000, days: 30 },
+  ]);
 
   useEffect(() => { 
     if (settings.data) { 
@@ -29,6 +34,7 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
       setRedeemDiscount(settings.data.merchantRedeemDiscount || 5);
       if (settings.data.earnOptions) setEarnOptions(settings.data.earnOptions.join(', '));
       if (settings.data.subscription) setSubscription(settings.data.subscription);
+      if (settings.data.subscription?.plans) setPlans(settings.data.subscription.plans);
     } 
   }, [settings.data]);
   
@@ -51,7 +57,7 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
       method: 'PUT',
       body: JSON.stringify({
         earnOptions: earnOptions.split(',').map(value => Number(value.trim())).filter(value => Number.isFinite(value) && value > 0),
-        subscription,
+        subscription: { ...subscription, plans },
       }),
     }),
     onSuccess() {
@@ -84,6 +90,18 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
             <label>Subscription price (₹)<input type="number" min="1" value={subscription.price} onChange={(e) => setSubscription({ ...subscription, price: Number(e.target.value) })} /></label>
             <label>Points added per subscription<input type="number" min="1" value={subscription.points} onChange={(e) => setSubscription({ ...subscription, points: Number(e.target.value) })} /></label>
             <label>Subscription duration (days)<input type="number" min="1" value={subscription.days} onChange={(e) => setSubscription({ ...subscription, days: Number(e.target.value) })} /></label>
+            <div style={{ overflowX: 'auto' }}>
+              <h4 style={{ marginBottom: 8 }}>Subscription plan grid</h4>
+              <table style={{ width: '100%', minWidth: 620 }}><thead><tr><th>Plan</th><th>Monthly ₹</th><th>Yearly ₹</th><th>Points</th><th>Days</th></tr></thead><tbody>
+                {plans.map((plan, index) => <tr key={plan.id}>
+                  <td><input value={plan.name} onChange={(e) => setPlans(plans.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} /></td>
+                  <td><input type="number" min="0" value={plan.monthly} onChange={(e) => setPlans(plans.map((item, i) => i === index ? { ...item, monthly: Number(e.target.value) } : item))} /></td>
+                  <td><input type="number" min="0" value={plan.yearly} onChange={(e) => setPlans(plans.map((item, i) => i === index ? { ...item, yearly: Number(e.target.value) } : item))} /></td>
+                  <td><input type="number" min="0" value={plan.points} onChange={(e) => setPlans(plans.map((item, i) => i === index ? { ...item, points: Number(e.target.value) } : item))} /></td>
+                  <td><input type="number" min="1" value={plan.days} onChange={(e) => setPlans(plans.map((item, i) => i === index ? { ...item, days: Number(e.target.value) } : item))} /></td>
+                </tr>)}
+              </tbody></table>
+            </div>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>These values apply to new merchant subscriptions and the point choices shown to merchants.</p>
             <button className="button primary" disabled={saveAdmin.isPending} onClick={() => saveAdmin.mutate()}><Save size={16} />{saveAdmin.isPending ? 'Saving...' : 'Save Admin Settings'}</button>
           </div>

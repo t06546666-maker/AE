@@ -18,10 +18,15 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
 
   const [success, setSuccess] = useState(false);
   const [plan, setPlan] = useState({ price: 200, points: 10000, days: 30 });
+  const [plans, setPlans] = useState([
+    { id: 'standard', name: 'Standard', monthly: 200, yearly: 2000, points: 10000, days: 30 },
+    { id: 'pro', name: 'Pro', monthly: 499, yearly: 4990, points: 30000, days: 30 },
+    { id: 'premium', name: 'Premium', monthly: 999, yearly: 9990, points: 75000, days: 30 },
+  ]);
 
   useEffect(() => {
-    apiFetch<{ subscription?: typeof plan }>('/api/settings/reward')
-      .then((result) => { if (result.subscription) setPlan(result.subscription); })
+    apiFetch<{ subscription?: typeof plan & { plans?: typeof plans } }>('/api/settings/reward')
+      .then((result) => { if (result.subscription) { setPlan(result.subscription); if (result.subscription.plans) setPlans(result.subscription.plans); } })
       .catch(() => undefined);
   }, []);
 
@@ -79,9 +84,7 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
           {/* Header Row */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: 'var(--bg-inset)', padding: '20px 16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontWeight: 'bold' }}>Package Details</div>
-            <div style={{ textAlign: 'center', fontWeight: 'bold' }}>Standard</div>
-            <div style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>Pro</div>
-            <div style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>Premium</div>
+            {plans.map((item) => <div key={item.id} style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.name}</div>)}
           </div>
 
           {/* Feature Rows */}
@@ -118,13 +121,13 @@ export function SubscriptionModal({ merchant, onClose, onUpdate }: SubscriptionM
             </div>
             
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              ₹{billing === 'monthly' ? plan.price : plan.price * 10}
+              ₹{billing === 'monthly' ? plans[0].monthly : plans[0].yearly}
             </div>
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>
-              Coming soon
+              ₹{billing === 'monthly' ? plans[1].monthly : plans[1].yearly}
             </div>
             <div style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>
-              Coming soon
+              ₹{billing === 'monthly' ? plans[2].monthly : plans[2].yearly}
             </div>
           </div>
 
