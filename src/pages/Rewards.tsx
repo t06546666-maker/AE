@@ -66,7 +66,7 @@ export function Rewards({ user }: { user: UserProfile }) {
             </div>
             <div className="mobile-rewards-summary-item">
               <span>{t('dashboard.totalPointsRedeemed', 'Total Points Redeemed')}</span>
-              <strong>0 pts</strong> {/* Note: the API doesn't expose redeemed yet in DashboardData, mocking for UI demo as requested */}
+              <strong>{formatPoints(data.summary.totalPointsRedeemed || 0)} pts</strong>
             </div>
             <div className="mobile-rewards-summary-item liability">
               <span>{t('dashboard.pendingLiability', 'Pending Liability')}</span>

@@ -4059,13 +4059,17 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   const merchantId = req.auth.profile.role === 'merchant'
     ? req.auth.profile.merchant_id
     : null;
+  const redeemedQuery = supabaseAdmin.from('point_redemptions').select('points_redeemed').gte('created_at', from.toISOString()).lt('created_at', to.toISOString());
+  if (merchantId) redeemedQuery.eq('merchant_id', merchantId);
+  const redeemedResult = await redeemedQuery;
+  const totalPointsRedeemed = (redeemedResult.data || []).reduce((sum, row) => sum + Number(row.points_redeemed || 0), 0);
   const analyticsResult = await supabaseAdmin.rpc('get_dashboard_analytics', {
     p_from: from.toISOString(),
     p_to: to.toISOString(),
     p_merchant_id: merchantId,
   });
   if (!analyticsResult.error && analyticsResult.data) {
-    if (bucket === 'six-hour') return res.json(analyticsResult.data);
+    if (bucket === 'six-hour') return res.json({ ...analyticsResult.data, summary: { ...analyticsResult.data.summary, totalPointsRedeemed } });
 
     let dailyOrdersQuery = supabaseAdmin.from('orders')
       .select('amount,created_at')
@@ -4079,6 +4083,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     }
     return res.json({
       ...analyticsResult.data,
+      summary: { ...analyticsResult.data.summary, totalPointsRedeemed },
       intervals: bucket === 'weekly'
         ? weeklyDashboardIntervals(dailyOrdersResult.data || [], from, to)
         : dailyDashboardIntervals(dailyOrdersResult.data || [], from, to),
@@ -4173,6 +4178,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
       totalOrders: orders.length,
       totalRevenue: orders.reduce((sum, order) => sum + Number(order.amount), 0),
       rewardPointsIssued: orders.reduce((sum, order) => sum + Number(order.reward_points), 0),
+      totalPointsRedeemed,
       totalCustomers: customersResult.data?.length || 0,
     },
     intervals: responseIntervals,

@@ -156,6 +156,7 @@ export interface DashboardData {
     totalOrders: number;
     totalRevenue: number;
     rewardPointsIssued: number;
+    totalPointsRedeemed?: number;
     totalCustomers: number;
   };
   intervals: Array<{ label: string; orders: number; revenue: number }>;

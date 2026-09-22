@@ -356,7 +356,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Redeemed</span>
-              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>0 pts</strong>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.totalPointsRedeemed || 0)} pts</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Pending Liability</span>
