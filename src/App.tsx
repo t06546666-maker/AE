@@ -110,7 +110,20 @@ export function App() {
 
   useEffect(() => {
     if (user && CapacitorApp && Capacitor.isNativePlatform()) {
-      import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+      Promise.all([
+        import('@capacitor/push-notifications'),
+        import('@capacitor/geolocation'),
+      ]).then(async ([{ PushNotifications }, { Geolocation }]) => {
+        // Ask for the permissions needed by the native app at first use.
+        // Android controls the actual system prompts; GPS cannot be enabled silently.
+        const locationStatus = await Geolocation.checkPermissions();
+        if (locationStatus.location !== 'granted') await Geolocation.requestPermissions();
+
+        const pushStatus = await PushNotifications.checkPermissions();
+        if (pushStatus.receive !== 'granted') await PushNotifications.requestPermissions();
+        const finalPushStatus = await PushNotifications.checkPermissions();
+        if (finalPushStatus.receive === 'granted') await PushNotifications.register();
+
         PushNotifications.addListener('registration', (token) => {
           apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
@@ -127,7 +140,7 @@ export function App() {
             navigate(notification.notification.data.url);
           }
         });
-      }).catch(console.error);
+      }).catch((error) => console.error('Native permission setup failed', error));
     }
   }, [user?.role, navigate]);
 
