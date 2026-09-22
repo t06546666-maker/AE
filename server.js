@@ -353,6 +353,29 @@ async function getAdminRewardConfig() {
   };
 }
 
+async function pushToProfile(profileId, title, body, data = {}) {
+  if (!profileId) return false;
+  const { data: profile } = await supabaseAdmin.from('profiles').select('push_token,push_enabled').eq('id', profileId).maybeSingle();
+  return profile?.push_enabled !== false && profile?.push_token
+    ? sendPushNotification(profile.push_token, title, body, data) : false;
+}
+
+async function pushToRole(role, title, body, data = {}) {
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', role).eq('push_enabled', true).not('push_token', 'is', null);
+  await Promise.all((profiles || []).map((profile) => sendPushNotification(profile.push_token, title, body, data)));
+}
+
+async function pushToMerchant(merchantId, title, body, data = {}) {
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('push_token').eq('role', 'merchant').eq('merchant_id', merchantId).eq('push_enabled', true).not('push_token', 'is', null);
+  await Promise.all((profiles || []).map((profile) => sendPushNotification(profile.push_token, title, body, data)));
+}
+
+async function pushToCustomer(customerId, title, body, data = {}) {
+  const { data: customer } = await supabaseAdmin.from('customers').select('push_token,push_enabled').eq('id', customerId).maybeSingle();
+  return customer?.push_enabled !== false && customer?.push_token
+    ? sendPushNotification(customer.push_token, title, body, data) : false;
+}
+
 async function getMerchantEarnRateWithCap(merchantId) {
   const settings = await getMerchantRewardSettings(merchantId);
   const earnRate = settings.earn_points_per_100;
@@ -1772,6 +1795,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
+  await pushToRole('admin', 'New product list request', 'A customer sent a product list for admin review.', { url: '/customer-product-lists', requestId: data.id });
   res.status(201).json({ success: true, request: data });
 });
 
@@ -1800,9 +1824,12 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
   const status = cleanText(req.body.status, 20).toLowerCase();
   if (!['approved', 'rejected', 'pending'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid review status' });
   const rejectionReason = cleanText(req.body.rejection_reason, 500) || null;
+  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,merchant_id').eq('id', cleanText(req.params.id, 100)).maybeSingle();
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status, rejection_reason: status === 'rejected' ? rejectionReason : null, reviewed_at: status === 'pending' ? null : new Date().toISOString() }).eq('id', cleanText(req.params.id, 100)).select('id,status,rejection_reason').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
+  if (existing && status !== 'pending') await pushToMerchant(existing.merchant_id, `Product list ${status}`, `A customer product list was ${status} by admin.`, { url: '/customer-orders', requestId: data.id });
+  if (existing && status !== 'pending') await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/product-lists', requestId: data.id });
   res.json({ success: true, request: data });
 });
 
@@ -1812,6 +1839,8 @@ app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('mer
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status }).eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).select('id,status').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: 'Unable to update product list status' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
+  const { data: request } = await supabaseAdmin.from('customer_product_list_requests').select('customer_id').eq('id', data.id).maybeSingle();
+  if (request) await pushToCustomer(request.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/product-lists', requestId: data.id });
   res.json({ success: true, request: data });
 });
 
@@ -1866,6 +1895,16 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 
+  res.json({ success: true });
+});
+
+app.put('/api/profile/preferences', requireAuth, async (req, res) => {
+  const updates = {};
+  if (req.body.push_token !== undefined) updates.push_token = cleanText(req.body.push_token, 4096);
+  if (req.body.push_enabled !== undefined) updates.push_enabled = Boolean(req.body.push_enabled);
+  if (!Object.keys(updates).length) return res.json({ success: true });
+  const { error } = await supabaseAdmin.from('profiles').update(updates).eq('id', req.auth.user.id);
+  if (error) return res.status(400).json({ success: false, error: error.message });
   res.json({ success: true });
 });
 
@@ -2542,6 +2581,7 @@ app.post(
         'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
+      await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
       return res.status(201).json({ success: true, offer: await offerDto(offer) });
     } catch (error) {
       if (imagePath) {
@@ -2624,6 +2664,7 @@ app.put(
 
 app.post('/api/offers/:id/approve', requireAuth, requireRole('admin'), async (req, res) => {
   const offerId = cleanText(req.params.id, 100);
+  const { data: pendingOffer } = await supabaseAdmin.from('offers').select('merchant_id,title').eq('id', offerId).maybeSingle();
   const { data: offer, error } = await supabaseAdmin.from('offers').update({
     status: 'approved',
     rejection_reason: null,
@@ -2642,11 +2683,13 @@ app.post('/api/offers/:id/approve', requireAuth, requireRole('admin'), async (re
       error: 'Only pending, unexpired offers can be approved',
     });
   }
+  if (pendingOffer) await pushToMerchant(pendingOffer.merchant_id, 'Offer approved', `${pendingOffer.title} is now approved and visible to customers.`, { url: '/offers', offerId });
   return res.json({ success: true, offer });
 });
 
 app.post('/api/offers/:id/reject', requireAuth, requireRole('admin'), async (req, res) => {
   const offerId = cleanText(req.params.id, 100);
+  const { data: pendingOffer } = await supabaseAdmin.from('offers').select('merchant_id,title').eq('id', offerId).maybeSingle();
   const reason = cleanText(req.body.reason, 500);
   if (!reason) {
     return res.status(400).json({ success: false, error: 'A rejection reason is required' });
@@ -2665,6 +2708,7 @@ app.post('/api/offers/:id/reject', requireAuth, requireRole('admin'), async (req
   if (!offer) {
     return res.status(409).json({ success: false, error: 'Only pending offers can be rejected' });
   }
+  if (pendingOffer) await pushToMerchant(pendingOffer.merchant_id, 'Offer rejected', `${pendingOffer.title} needs changes before it can be published.`, { url: '/offers', offerId });
   return res.json({ success: true, offer });
 });
 
@@ -3363,6 +3407,8 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     return res.status(400).json({ success: false, error: error?.message || 'Checkout failed' });
   }
   const purchase = data[0];
+  await pushToCustomer(purchase.customer_id, 'Purchase recorded', `Your purchase was recorded and ${purchase.points_earned || 0} points were added.`, { url: '/customer/home', orderId: purchase.id });
+  await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
   const whatsapp = await queueWhatsApp(purchase, 'reward');
   scheduleBackground(() => runPurchaseNotifications(purchase, 'reward', whatsapp));
   res.status(201).json({ success: true, purchase, whatsapp });

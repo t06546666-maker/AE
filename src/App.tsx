@@ -109,10 +109,10 @@ export function App() {
   });
 
   useEffect(() => {
-    if (user?.role === 'customer' && CapacitorApp && Capacitor.isNativePlatform()) {
+    if (user && CapacitorApp && Capacitor.isNativePlatform()) {
       import('@capacitor/push-notifications').then(({ PushNotifications }) => {
         PushNotifications.addListener('registration', (token) => {
-          apiFetch('/api/customer/preferences', {
+          apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
             body: JSON.stringify({ push_token: token.value })
           }).catch(console.error);
