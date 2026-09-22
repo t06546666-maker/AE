@@ -70,7 +70,7 @@ export function Rewards({ user }: { user: UserProfile }) {
             </div>
             <div className="mobile-rewards-summary-item liability">
               <span>{t('dashboard.pendingLiability', 'Pending Liability')}</span>
-              <strong>₹{formatCurrency(data.summary.rewardPointsIssued)}</strong>
+              <strong>{formatCurrency(data.summary.rewardPointsIssued)}</strong>
             </div>
           </div>
         )}
