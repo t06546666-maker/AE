@@ -7,7 +7,7 @@ import { apiFetch, queryString } from '../api';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
 import QrScanner from '../components/QrScanner';
 import type { DashboardData, Period, RewardSettings, UserProfile } from '../types';
-import { dateInput, formatCurrency, rangeForPeriod } from '../utils';
+import { dateInput, formatCurrency, formatPoints, rangeForPeriod } from '../utils';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -62,7 +62,7 @@ export function Rewards({ user }: { user: UserProfile }) {
           <div className="mobile-rewards-summary">
             <div className="mobile-rewards-summary-item">
               <span>{t('dashboard.totalPointsIssued', 'Total Points Issued')}</span>
-              <strong>{formatCurrency(data.summary.rewardPointsIssued)} pts</strong>
+              <strong>{formatPoints(data.summary.rewardPointsIssued)} pts</strong>
             </div>
             <div className="mobile-rewards-summary-item">
               <span>{t('dashboard.totalPointsRedeemed', 'Total Points Redeemed')}</span>
