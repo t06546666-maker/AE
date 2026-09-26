@@ -174,6 +174,10 @@ const WA_CUSTOMER_ORDER_STATUS_TEMPLATE = cleanText(
   512,
 );
 const WA_OTP_TEMPLATE = cleanText(process.env.WA_OTP_TEMPLATE || 'customer_login_otp', 512);
+// Keep WhatsApp limited to onboarding when the app uses Firebase push notifications
+// for ongoing events. Set WA_REGISTRATION_ONLY=false only if additional WhatsApp
+// templates are intentionally enabled later.
+const WA_REGISTRATION_ONLY = String(process.env.WA_REGISTRATION_ONLY || 'true').toLowerCase() === 'true';
 const WA_TEMPLATE_LANGUAGE = process.env.WA_TEMPLATE_LANGUAGE || 'en';
 const WA_REQUEST_TIMEOUT_MS = Math.max(3000, Number(process.env.WA_REQUEST_TIMEOUT_MS || 8000));
 const OFFER_QUEUE_SECRET = process.env.OFFER_QUEUE_SECRET;
@@ -792,6 +796,9 @@ async function sendWhatsAppTemplate({
   components,
   logId,
 }) {
+  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password'].includes(messageType)) {
+    return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
+  }
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
@@ -890,6 +897,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       orderId: purchase.order_id,
       recipient: purchase.customer_phone,
       templateName,
+      messageType: 'registration',
       logId,
       components: [
         { type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] },
@@ -1038,6 +1046,7 @@ async function sendOfferWhatsApp(recipientRow, mediaId) {
 }
 
 async function sendWhatsAppInteractive(recipient, interactive) {
+  if (WA_REGISTRATION_ONLY) return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
@@ -1058,6 +1067,7 @@ async function sendWhatsAppInteractive(recipient, interactive) {
 }
 
 async function sendWhatsAppText(recipient, body) {
+  if (WA_REGISTRATION_ONLY) return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
