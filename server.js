@@ -154,7 +154,6 @@ const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN;
 const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'welcome';
 const WA_TEMPORARY_TEMPLATE = cleanText(process.env.WA_TEMPORARY_TEMPLATE || 'temporary', 512);
-const WA_QR_TEMPLATE = cleanText(process.env.WA_QR_TEMPLATE, 512);
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
 const WA_REDEEM_TEMPLATE = process.env.WA_REDEEM_TEMPLATE || 'redeem_receipt';
 const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
@@ -878,7 +877,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
-  const templateName = WA_QR_TEMPLATE || WA_REGISTRATION_TEMPLATE;
+  const templateName = WA_REGISTRATION_TEMPLATE;
   const bodyParameters = templateName === 'welcome'
     ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.customer_phone.replace(/^\+91/, '') }]
     : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.merchant_name }, { type: 'text', text: purchase.customer_code }, { type: 'text', text: `${Number(purchase.reward_percentage)}%` }, { type: 'text', text: formatPoints(purchase.points_earned) }, { type: 'text', text: formatPoints(purchase.total_points) }];
@@ -887,14 +886,12 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     parameters: bodyParameters,
   };
   try {
-    const mediaId = WA_QR_TEMPLATE ? await uploadQrMedia({
+    const mediaId = await uploadQrMedia({
       id: purchase.customer_code,
       name: purchase.customer_name,
       phone: purchase.customer_phone,
-    }) : null;
-    const welcomeComponents = WA_QR_TEMPLATE
-      ? [{ type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] }, bodyComponent]
-      : [bodyComponent];
+    });
+    const welcomeComponents = [{ type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] }, bodyComponent];
     const welcomeResult = await sendWhatsAppTemplate({
       customerId: purchase.customer_id,
       orderId: purchase.order_id,
@@ -909,7 +906,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     }
     return welcomeResult;
   } catch (error) {
-    if (WA_QR_TEMPLATE) {
+    {
       const errorMessage = error instanceof Error ? error.message : String(error);
       await supabaseAdmin.from('whatsapp_messages').update({
         status: 'failed',
@@ -919,16 +916,6 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       }).eq('id', logId);
       return { sent: false, error: errorMessage };
     }
-    const fallback = await sendWhatsAppTemplate({
-      customerId: purchase.customer_id,
-      orderId: purchase.order_id,
-      recipient: purchase.customer_phone,
-      templateName,
-      logId,
-      components: [bodyComponent],
-    });
-    if (fallback.sent) return fallback;
-    return { sent: false, error: `${error.message}; fallback: ${fallback.error}` };
   }
 }
 
@@ -3482,7 +3469,7 @@ async function queueWhatsApp(purchase, kind) {
     return { queued: false, sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
   const templateName = kind === 'registration'
-    ? WA_QR_TEMPLATE || WA_REGISTRATION_TEMPLATE
+    ? WA_REGISTRATION_TEMPLATE
     : (kind === 'redeem' ? WA_REDEEM_TEMPLATE : WA_REWARD_TEMPLATE);
   const { data, error } = await supabaseAdmin.from('whatsapp_messages').insert({
     customer_id: purchase.customer_id,
@@ -4584,7 +4571,6 @@ app.get('/api/status', (_req, res) => {
     fromEmail: process.env.RESEND_FROM_EMAIL || null,
     waPhoneId: WA_PHONE_ID || null,
     waRegistrationTemplate: WA_REGISTRATION_TEMPLATE,
-    waQrTemplate: WA_QR_TEMPLATE || null,
     waRewardTemplate: WA_REWARD_TEMPLATE,
     waMerchantCredentialsTemplate: WA_MERCHANT_CREDENTIALS_TEMPLATE,
     waOfferTemplate: WA_OFFER_TEMPLATE,
