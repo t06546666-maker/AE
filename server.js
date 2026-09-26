@@ -887,11 +887,14 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     parameters: bodyParameters,
   };
   try {
-    const mediaId = await uploadQrMedia({
+    const mediaId = WA_QR_TEMPLATE ? await uploadQrMedia({
       id: purchase.customer_code,
       name: purchase.customer_name,
       phone: purchase.customer_phone,
-    });
+    }) : null;
+    const welcomeComponents = WA_QR_TEMPLATE
+      ? [{ type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] }, bodyComponent]
+      : [bodyComponent];
     const welcomeResult = await sendWhatsAppTemplate({
       customerId: purchase.customer_id,
       orderId: purchase.order_id,
@@ -899,10 +902,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       templateName,
       messageType: 'registration',
       logId,
-      components: [
-        { type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] },
-        bodyComponent,
-      ],
+      components: welcomeComponents,
     });
     if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE) {
       await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [] });
