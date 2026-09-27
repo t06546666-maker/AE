@@ -58,6 +58,21 @@ function GrowthChart({ model }: { model: MerchantAnalytics }) {
   </section>;
 }
 
+function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
+  const weeks = Array.from({ length: 4 }, (_, index) => {
+    const start = index * Math.ceil(model.days / 4) + 1;
+    const end = Math.min(model.days, (index + 1) * Math.ceil(model.days / 4));
+    const sales = model.current.orders.filter(order => { const day = Number(indiaDate(order.timestamp).slice(8)); return day >= start && day <= end; }).reduce((sum, order) => sum + order.amount, 0);
+    return { label: `W${index + 1}`, sales };
+  });
+  const max = Math.max(1, ...weeks.map(week => week.sales));
+  const total = model.current.sales;
+  const newShare = total ? Math.round(model.newSpend / total * 100) : 0;
+  return <div className="mo-columns mo-visuals"><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Sales overview</h2><p>Weekly sales in INR</p></div><BarChart3 size={21} /></div><div className="mo-bars">{weeks.map(week => <div className="mo-bar-item" key={week.label}><strong>{formatCurrency(week.sales)}</strong><span style={{ height: `${Math.max(6, week.sales / max * 130)}px` }} /><small>{week.label}</small></div>)}</div></section><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Customer mix</h2><p>New vs returning</p></div><Users size={21} /></div><div className="mo-donut-wrap"><div className="mo-donut" style={{ background: `conic-gradient(#1875eb 0 ${newShare}%, #8055d5 ${newShare}% 100%)` }}><strong>{currentCount(model)}<small>customers</small></strong></div><div className="mo-donut-legend"><span><i className="new" />New customers <b>{newShare}%</b></span><span><i className="returning" />Returning <b>{100 - newShare}%</b></span></div></div></section></div>;
+}
+
+function currentCount(model: MerchantAnalytics) { return model.current.active.length.toLocaleString('en-IN'); }
+
 function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -134,6 +149,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     <div className="mo-content" key={view}>
     {view === 'overview' && <>
       <div className="mo-stats">{metrics.map(({ label, value, before, icon: Icon, color, hint }) => <article key={label} className={`mo-stat ${color}`}><div className="mo-stat-label"><span className={`mo-icon ${color}`}><Icon size={21} /></span><span>{label}</span></div><strong className="mo-stat-value">{label === 'Total sales' ? formatCurrency(value) : value.toLocaleString('en-IN')}</strong><span className="mo-stat-hint">{hint}</span><Change value={value} previous={before} label={model.comparisonLabel} /></article>)}</div>
+      <SalesSnapshot model={model} />
       <div className="mo-columns"><GrowthChart key={month} model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Quick insights</h2><p>Small insights. Better decisions.</p></div><Lightbulb size={21} /></div><div className="mo-quick-list">
         <div><span className="mo-icon green"><RefreshCw size={20} /></span><p><strong>{percent(current.returning.length)}% returned</strong><small>Had purchased before this month</small></p></div>
         <div><span className="mo-icon violet"><IndianRupee size={20} /></span><p><strong>{formatCurrency(current.average)}</strong><small>Average spend per recorded visit</small></p></div>
