@@ -9,7 +9,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
 
   useEffect(() => {
     if (user?.id) {
-      QRCode.toDataURL(user.id, {
+      QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id }), {
         width: 250,
         margin: 1,
         color: {
@@ -22,7 +22,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
     }
   }, [user]);
 
-  const customerId = user.id?.substring(0, 8) || 'AE-USER';
+  const customerId = user.customer_code || user.id || 'AE-USER';
 
   return (
     <div className="bg-[#111315] min-h-screen flex flex-col relative font-sans">

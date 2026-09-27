@@ -32,11 +32,11 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
   useEffect(() => {
     let active = true;
-    QRCode.toDataURL(user.id, { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
+    QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id }), { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
       .then((src) => { if (active) setQrSrc(src); })
       .catch(() => { if (active) setQrSrc(''); });
     return () => { active = false; };
-  }, [user.id]);
+  }, [user.id, user.customer_code]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';

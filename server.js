@@ -3344,12 +3344,19 @@ app.post('/api/customers', requireAuth, async (req, res) => {
 });
 
 app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async (req, res) => {
+  const identifier = cleanText(req.params.code, 100);
+  // Older customer apps encoded the full database UUID instead of customer_code.
+  // Match an exact identifier only; abbreviated display IDs are not unique.
+  const isDatabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
   const { data, error } = await supabaseAdmin
     .from('customers')
     .select('id,customer_code,name,phone,email')
-    .eq('customer_code', cleanText(req.params.code, 100))
-    .single();
-  if (error || !data) {
+    .eq(isDatabaseId ? 'id' : 'customer_code', identifier)
+    .maybeSingle();
+  if (error) {
+    return res.status(500).json({ success: false, error: 'Customer verification is temporarily unavailable. Please try again.' });
+  }
+  if (!data) {
     return res.status(404).json({ success: false, error: 'Customer not found' });
   }
   const [{ data: membership }, { data: merchant }] = await Promise.all([

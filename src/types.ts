@@ -3,6 +3,7 @@ export type Period = 'today' | 'week' | 'month' | 'custom';
 
 export interface UserProfile {
   id: string;
+  customer_code?: string;
   email: string;
   full_name: string; // Used by admin/merchant
   name?: string;     // Used by customer
