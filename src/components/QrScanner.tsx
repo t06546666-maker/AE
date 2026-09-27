@@ -36,6 +36,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [amount, setAmount] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState('');
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
+  const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem'>(mode);
 
   const [percentage, setPercentage] = useState(settings.merchantEarnPoints || (settings.earnOptions?.[0] || 10));
   const locked = useRef(false);
@@ -207,6 +208,12 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
               <div className="verified-title"><CheckCircle2 /><div><h3>{customer.name}</h3><p>{formatPhone(customer.phone)} · {customer.id}</p></div></div>
               {customer.isNewToMerchant ? <span className="tag info">{t('scanner.newConnection')}</span> : null}
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
+              <label className="scanner-mode-field">Transaction type
+                <select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem'); setRedeemResult(null); }}>
+                  <option value="earn">Purchase &amp; issue points</option>
+                  <option value="redeem">Redeem points for discount</option>
+                </select>
+              </label>
               {redeemResult ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <CheckCircle2 size={48} color="var(--success)" style={{ margin: '0 auto 16px' }} />
@@ -221,13 +228,13 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   </div>
                   <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); }}>Done</button>
                 </div>
-              ) : mode === 'redeem' ? (
+              ) : transactionMode === 'redeem' ? (
                 <>
                   <div className="purchase-fields">
                     <label>Transaction Amount (₹)<input className="amount-input" type="number" min="100" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                    <label>Points to Redeem<input className="amount-input" type="number" min="100" max="1000" value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
+                    <label>Points to Redeem<input className="amount-input" type="number" min="100" max={Math.min(1000, customer.rewardPoints)} value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
                   </div>
-                  <p className="amount-rule" style={{marginBottom: 10}}>Min 100, Max 1000 Points</p>
+                  <p className="amount-rule" style={{marginBottom: 10}}>Available: {formatPoints(customer.rewardPoints)} pts · 100 pts = ₹{formatPoints((Number(amount || 0) / 100) * (Number(pointsToRedeem || 0) / 100) * Number(settings.merchantRedeemDiscount || 5))} discount</p>
                   <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || Number(pointsToRedeem) < 100 || redeem.isPending} onClick={() => redeem.mutate()}>{redeem.isPending ? 'Processing...' : 'Calculate & Redeem'}</button>
                 </>
               ) : (
