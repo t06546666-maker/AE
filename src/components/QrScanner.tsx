@@ -152,7 +152,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     mutationFn: () => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, location: 'In-store' }),
+      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: Number(pointsToRedeem || 0), location: 'In-store' }),
     }),
     onSuccess(data) {
       showToast(t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }));
@@ -242,6 +242,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                     <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).map((option: number) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
+                    <label>Points to Redeem (optional)<input className="amount-input" type="number" min="0" max={Math.min(1000, customer.rewardPoints)} value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
                   <p className="amount-rule">{t('registration.minimum')}</p>

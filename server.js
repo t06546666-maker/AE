@@ -3388,6 +3388,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
   const selectedPoints = Number(req.body.rewardPercentage);
+  const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
@@ -3397,6 +3398,18 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       success: false,
       error: `Purchase must be at least 100.`,
     });
+  }
+  if (!Number.isFinite(pointsToRedeem) || pointsToRedeem < 0 || (pointsToRedeem > 0 && (pointsToRedeem < 100 || pointsToRedeem > 1000))) {
+    return res.status(400).json({ success: false, error: 'Redeem points must be 0 or between 100 and 1000.' });
+  }
+  let redemptionContext = null;
+  if (pointsToRedeem > 0) {
+    const { data: customer } = await supabaseAdmin.from('customers').select('id, reward_points').or(`customer_code.eq.${customerCode},id.eq.${customerCode}`).maybeSingle();
+    const { data: membership } = customer ? await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle() : { data: null };
+    if (!customer || !membership || Number(membership.reward_points || 0) < pointsToRedeem) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
+    const rewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
+    const discountPercentage = (pointsToRedeem / 100) * Number(rewardSettings.redeem_discount_per_100 || 5);
+    redemptionContext = { customer, membership, discountPercentage, discountAmount: amount * (discountPercentage / 100) };
   }
   
   const earnRateWithCap = await getMerchantEarnRateWithCap(req.auth.profile.merchant_id);
@@ -3414,11 +3427,19 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     return res.status(400).json({ success: false, error: error?.message || 'Checkout failed' });
   }
   const purchase = data[0];
+  let redemption = null;
+  if (redemptionContext) {
+    const { data: redemptionRow, error: redemptionError } = await supabaseAdmin.from('point_redemptions').insert({ customer_id: redemptionContext.customer.id, merchant_id: req.auth.profile.merchant_id, transaction_amount: amount, points_redeemed: pointsToRedeem, discount_percentage: redemptionContext.discountPercentage, discount_amount: redemptionContext.discountAmount }).select().single();
+    if (redemptionError) return res.status(500).json({ success: false, error: redemptionError.message });
+    redemption = redemptionRow;
+    await supabaseAdmin.from('customers').update({ reward_points: Math.max(0, Number(redemptionContext.customer.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('id', redemptionContext.customer.id);
+    await supabaseAdmin.from('customer_merchants').update({ reward_points: Math.max(0, Number(redemptionContext.membership.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('customer_id', redemptionContext.customer.id).eq('merchant_id', req.auth.profile.merchant_id);
+  }
   await pushToCustomer(purchase.customer_id, 'Purchase recorded', `Your purchase was recorded and ${purchase.points_earned || 0} points were added.`, { url: '/customer/home', orderId: purchase.id });
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
   const whatsapp = await queueWhatsApp(purchase, 'reward');
   scheduleBackground(() => runPurchaseNotifications(purchase, 'reward', whatsapp));
-  res.status(201).json({ success: true, purchase, whatsapp });
+  res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, whatsapp });
 });
 
 app.get('/api/orders', requireAuth, async (req, res) => {
