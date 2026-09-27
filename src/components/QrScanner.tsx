@@ -66,7 +66,16 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   async function handleDecoded(decoded: string, instance: ScannerInstance) {
     if (locked.current) return;
     let payload: { id?: string };
-    try { payload = JSON.parse(decoded) as { id?: string }; } catch { setMessage(t('scanner.invalid')); return; }
+    try {
+      payload = JSON.parse(decoded) as { id?: string };
+    } catch {
+      // Customer QR screens use the compact customer ID directly. Accept
+      // that legacy/plain format as well as the JSON payload used by the
+      // merchant-generated QR codes.
+      const plainId = decoded.trim();
+      if (!plainId) { setMessage(t('scanner.invalid')); return; }
+      payload = { id: plainId };
+    }
     if (!payload.id) { setMessage(t('scanner.missingId')); return; }
     locked.current = true;
     setMessage(t('scanner.verifying'));
