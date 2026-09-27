@@ -3414,8 +3414,8 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       error: `Purchase must be at least 100.`,
     });
   }
-  if (!Number.isFinite(pointsToRedeem) || pointsToRedeem < 0 || (pointsToRedeem > 0 && (pointsToRedeem < 100 || pointsToRedeem > 1000))) {
-    return res.status(400).json({ success: false, error: 'Redeem points must be 0 or between 100 and 1000.' });
+  if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
+    return res.status(400).json({ success: false, error: 'Redeem points must be exactly 100, or 0 when no redemption is selected.' });
   }
   let redemptionContext = null;
   if (pointsToRedeem > 0) {
@@ -4769,8 +4769,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     }
     
     if (transactionAmount < 100) return res.status(400).json({ success: false, error: 'Minimum transaction for redemption is ₹100' });
-    if (pointsToRedeem < 100) return res.status(400).json({ success: false, error: 'Minimum points to redeem is 100' });
-    if (pointsToRedeem > 1000) return res.status(400).json({ success: false, error: 'Maximum points to redeem is 1000' });
+    if (pointsToRedeem !== 100) return res.status(400).json({ success: false, error: 'Redemption is fixed at exactly 100 points' });
 
     // 1. Get Merchant settings
     const settings = await getMerchantRewardSettings(merchantId);
