@@ -879,7 +879,10 @@ async function sendRegistrationWhatsApp(purchase, logId) {
   }
   const templateName = WA_REGISTRATION_TEMPLATE;
   const bodyParameters = templateName === 'welcome'
-    ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.customer_phone.replace(/^\+91/, '') }]
+    // The active Meta `welcome` template has three body placeholders.
+    // Keep these in the same order as the approved template: name, phone,
+    // then the customer code shown under the QR image.
+    ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.customer_phone.replace(/^\+91/, '') }, { type: 'text', text: purchase.customer_code }]
     : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.merchant_name }, { type: 'text', text: purchase.customer_code }, { type: 'text', text: `${Number(purchase.reward_percentage)}%` }, { type: 'text', text: formatPoints(purchase.points_earned) }, { type: 'text', text: formatPoints(purchase.total_points) }];
   const bodyComponent = {
     type: 'body',
@@ -901,8 +904,8 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       logId,
       components: welcomeComponents,
     });
-    if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE) {
-      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [] });
+    if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
+      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [{ type: 'body', parameters: [{ type: 'text', text: purchase.temporary_password }] }] });
     }
     return welcomeResult;
   } catch (error) {
