@@ -410,12 +410,13 @@ async function getMerchantRewardSettings(merchantId) {
 
 // Fixed network reward rule: small purchases use fixed tiers, larger purchases
 // earn 10 points per completed INR 100, capped at 100 points.
-function calculateFixedPurchasePoints(amount) {
+function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
   const value = Number(amount || 0);
   if (value < 10) return 0;
   if (value < 50) return 2;
   if (value < 100) return 5;
-  return Math.min(100, Math.floor(value / 100) * 10);
+  const rate = Math.max(0, Math.min(100, Number(pointsPer100) || 10));
+  return Math.min(100, Math.floor(value / 100) * rate);
 }
 
 async function processPurchase(params, idempotencyKey) {
@@ -3397,7 +3398,11 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
-  const selectedPoints = calculateFixedPurchasePoints(amount);
+  const requestedRate = Number(req.body.rewardPercentage || 10);
+  if (!Number.isFinite(requestedRate) || requestedRate < 1 || requestedRate > 100) {
+    return res.status(400).json({ success: false, error: 'Points per INR 100 must be between 1 and 100.' });
+  }
+  const selectedPoints = calculateFixedPurchasePoints(amount, requestedRate);
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
   if (
     !customerCode ||
