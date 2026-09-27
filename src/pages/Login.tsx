@@ -1,17 +1,17 @@
+import { AuthShell } from '../components/AuthShell';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Eye, EyeOff, Languages, Mail, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Languages, LockKeyhole, Store } from 'lucide-react';
 import { apiFetch, setAccessToken } from '../api';
 import type { UserProfile } from '../types';
 import { Link } from 'react-router-dom';
 
 export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState<'about' | 'contact' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent) {
@@ -27,58 +27,16 @@ export function Login({ onLogin }: { onLogin: (user: UserProfile) => void }) {
     } finally { setBusy(false); }
   }
 
-  return (
-    <div className="login-screen">
-      <div className="login-brand-panel">
-        <div className="login-brand"><img src="/logo.png" alt="AE" style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
-        <h1>{t('login.headline')}</h1>
-        <p>{t('login.description')}</p>
-        <div className="login-features">
-          <div><ShieldCheck /><span><strong>{t('login.roleTitle')}</strong>{t('login.roleText')}</span></div>
-          <div><Sparkles /><span><strong>{t('login.rewardsTitle')}</strong>{t('login.rewardsText')}</span></div>
-          <div><Building2 /><span><strong>{t('login.networkTitle')}</strong>{t('login.networkText')}</span></div>
-        </div>
-      </div>
-      <div className="login-form-panel">
-        <form className="login-form" onSubmit={submit}>
-          <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
-          <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
-          <h2>{t('login.welcome')}</h2>
-          <p>{t('login.prompt')}</p>
-          <label>{t('login.email')}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required /></label>
-          <label>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>{t('login.password')}</span>
-              <Link to="/forgot-password" style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--brand-color)', textDecoration: 'none' }}>Forgot password?</Link>
-            </div>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" minLength={8} required style={{ width: '100%', paddingRight: '40px' }} />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }} title={showPassword ? 'Hide password' : 'Show password'}>
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </label>
-          {error ? <div className="form-error">{error}</div> : null}
-          <button className="button primary login-button" disabled={busy}>{busy ? t('login.signingIn') : t('login.signIn')}</button>
-          
-          <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>Are you a customer?</p>
-            <Link to="/customer/login" className="button secondary" style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}>
-              Customer Login
-            </Link>
-          </div>
-
-          <div className="login-links"><button type="button" onClick={() => setInfo('about')}>{t('login.about')}</button><button type="button" onClick={() => setInfo('contact')}>{t('login.contact')}</button></div>
-        </form>
-      </div>
-      {info ? (
-        <div className="modal-backdrop">
-          <div className="modal info-modal">
-            <button className="icon-button modal-close" title={t('common.close')} onClick={() => setInfo(null)}><X /></button>
-            {info === 'about' ? <><h2>{t('login.aboutTitle')}</h2><p>{t('login.aboutText')}</p></> : <><h2>{t('login.contactTitle')}</h2><p>{t('login.contactText')}</p><a className="contact-link" href="mailto:safar@affiliateae.co.in"><Mail size={17} />safar@affiliateae.co.in</a></>}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+  return <AuthShell merchant>
+    <div className="ae-auth-language"><Languages size={16}/><select aria-label="Language" value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={e => void i18n.changeLanguage(e.target.value)}><option value="en">English</option><option value="ml">മലയാളം</option></select></div>
+    <h1>Merchant Login</h1><p className="ae-auth-subtitle">Manage your store, customers & rewards</p>
+    <form onSubmit={submit}>
+      <label className="ae-auth-field"><Store /><input aria-label="Email" type="email" autoComplete="username" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required /></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label="Password" placeholder="Password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
+      <Link className="ae-auth-forgot" to="/forgot-password">Forgot password?</Link>
+      {error && <div role="alert" className="form-error">{error}</div>}
+      <button className="ae-auth-primary" disabled={busy}>{busy ? 'Signing in…' : 'Login'}<ArrowRight/></button>
+    </form>
+    <p className="ae-auth-bottom">Need a merchant account? <a href="mailto:safar@affiliateae.co.in">Contact AE</a></p>
+  </AuthShell>;
 }

@@ -6,14 +6,15 @@ import { apiFetch, setAccessToken } from '../../api';
 import type { UserProfile } from '../../types';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import { Languages } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
+import { RoleSwitch } from '../../components/AuthShell';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
 }
 
 export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => void }) {
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -26,7 +27,6 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { t, i18n } = useTranslation();
   const nativeAuth = Capacitor.isNativePlatform();
   const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
   const verifiedUserRef = useRef<import('firebase/auth').User | null>(null);
@@ -146,51 +146,26 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     }
   }
 
-  return (
-    <div className="theme-green h-full w-full">
-      <div className="login-screen">
-        <div className="login-brand-panel">
-          <div className="login-brand"><img src="/logo.png" alt="AE" style={{ width: 320, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
-          <h1>Join AE</h1>
-          <p>Create your account, earn rewards, and discover participating merchants.</p>
-        </div>
-        <div className="login-form-panel">
-          <div className="login-form">
-            <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 220, height: 'auto', margin: '0 auto 20px' }} /></div>
-            <h2>{step === 'details' ? 'Create Customer Account' : 'Verify Your Phone'}</h2>
-            <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
-            <p>{step === 'details' ? 'Enter your details to get started.' : `We sent a 6-digit code to +91 ${phone}.`}</p>
-            <div style={{ margin: '18px 0 4px' }}>
-              {/* Keep this mounted during OTP entry so Firebase can reuse the
-                  verifier safely when the user requests a resend. */}
-              <div id="signup-recaptcha-container" />
-              {step === 'details' ? (
-                <small style={{ display: 'block', marginTop: '8px', color: '#6b7280' }}>
-                  Complete the security check when it appears, then the OTP will be sent.
-                </small>
-              ) : null}
-            </div>
-            {error ? <div className="form-error">{error}</div> : null}
-            {step === 'details' ? (
-              <form onSubmit={(event) => { event.preventDefault(); void sendOtp(); }}>
-                <label><span>Full Name</span><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></label>
-                <label><span>Phone Number</span><div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}><span style={{ position: 'absolute', left: 16, fontWeight: 'bold', color: '#6b7280' }}>+91</span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit number" style={{ width: '100%', paddingLeft: 54 }} required /></div></label>
-                <label><span>Email (optional)</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
-                <label><span>Password</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-                <label><span>Confirm Password</span><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-                <button className="button primary login-button" disabled={loading}>{loading ? 'Sending code...' : 'Send OTP'}</button>
-              </form>
-            ) : (
-              <form onSubmit={verifyOtp}>
-                <label><span>6-Digit OTP</span><input inputMode="numeric" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} autoComplete="one-time-code" required /></label>
-                <button className="button primary login-button" disabled={loading || otp.length !== 6}>{loading ? 'Creating account...' : 'Verify & Create Account'}</button>
-                <button type="button" className="button secondary login-button" disabled={loading || cooldown > 0} onClick={() => void sendOtp()}>{cooldown ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}</button>
-              </form>
-            )}
-            <div className="login-links"><Link to="/customer/login">Back to Customer Login</Link></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <main className="ae-auth-page"><section className="ae-auth-signup">
+    <Link className="ae-auth-back" to="/customer/login" aria-label="Back to login"><ArrowLeft/></Link>
+    <header><img src="/logo.png" alt="AE"/><h1>Create an Account</h1><p>Where customers meet businesses, beyond</p></header>
+    <RoleSwitch/>
+    <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>Account Details</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>Verify &amp; Join</li></ol>
+    <h2>{step === 'details' ? 'Your Details' : 'Verify your phone'}</h2><p className="ae-auth-subtitle">{step === 'details' ? 'Let’s create your AE account' : `Enter the code sent to +91 ${phone}`}</p>
+    {error && <div className="form-error" role="alert">{error}</div>}
+    {step === 'details' ? <form onSubmit={e => {e.preventDefault(); void sendOtp();}}>
+      <label className="ae-auth-field"><UserRound/><input aria-label="Full name" placeholder="Full Name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} required/></label>
+      <label className="ae-auth-field"><Mail/><input aria-label="Email (optional)" placeholder="Email (optional)" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}/></label>
+      <label className="ae-auth-field"><Phone/><input aria-label="Mobile number" placeholder="+91 · Mobile Number" type="tel" autoComplete="tel-national" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} required/></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label="Create password" placeholder="Create Password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} required/><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label="Confirm password" placeholder="Confirm Password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
+      <button className="ae-auth-primary" disabled={loading}>{loading ? 'Sending code…' : 'Continue'}<ArrowRight/></button>
+    </form> : <form onSubmit={verifyOtp}>
+      <label className="ae-auth-field"><Phone/><input aria-label="6-digit OTP" placeholder="6-digit OTP" inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>
+      <button className="ae-auth-primary" disabled={loading || otp.length !== 6}>{loading ? 'Creating account…' : 'Verify & Create Account'}<ArrowRight/></button>
+      <button type="button" className="ae-auth-secondary" disabled={loading || cooldown > 0} onClick={() => void sendOtp()}>{cooldown ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}</button>
+    </form>}
+    <div id="signup-recaptcha-container"/>
+    <p className="ae-auth-bottom">Already have an account? <Link to="/customer/login">Login</Link></p>
+  </section></main>;
 }
