@@ -36,7 +36,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [amount, setAmount] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState('');
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
-  const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem'>(mode);
+  const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
 
   const [percentage, setPercentage] = useState(settings.merchantEarnPoints || (settings.earnOptions?.[0] || 10));
   const locked = useRef(false);
@@ -209,9 +209,10 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
               {customer.isNewToMerchant ? <span className="tag info">{t('scanner.newConnection')}</span> : null}
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
               <label className="scanner-mode-field">Transaction type
-                <select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem'); setRedeemResult(null); }}>
+                <select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
                   <option value="earn">Purchase &amp; issue points</option>
                   <option value="redeem">Redeem points for discount</option>
+                  <option value="combined">Do both: redeem + issue points</option>
                 </select>
               </label>
               {redeemResult ? (
@@ -242,11 +243,11 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                     <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).map((option: number) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
-                    <label>Points to Redeem (optional)<input className="amount-input" type="number" min="0" max={Math.min(1000, customer.rewardPoints)} value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
+                    <label>{transactionMode === 'combined' ? 'Points to Redeem' : 'Points to Redeem (optional)'}<input className="amount-input" type="number" min="0" max={Math.min(1000, customer.rewardPoints)} value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
                   <p className="amount-rule">{t('registration.minimum')}</p>
-                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || checkout.isPending} onClick={() => checkout.mutate()}>{t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
+                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || (transactionMode === 'combined' && Number(pointsToRedeem) < 100) || checkout.isPending} onClick={() => checkout.mutate()}>{transactionMode === 'combined' ? 'Complete Purchase, Redeem & Issue Points' : t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
                 </>
               )}
             </div>
