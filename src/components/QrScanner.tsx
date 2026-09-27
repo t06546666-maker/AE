@@ -164,8 +164,8 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     onError(error) { showToast(error.message, 'error'); },
   });
 
-  const eligibleAmount = Number(amount) < 100 ? 0 : Math.min(Number(amount), 10000);
-  const points = Math.floor((eligibleAmount / 100) * percentage);
+  const eligibleAmount = Number(amount);
+  const points = eligibleAmount < 10 ? 0 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * 10);
 
   const redeem = useMutation({
     mutationFn: () => apiFetch<{ discountAmount: number; newBalance: number }>(`/api/merchants/${merchantId}/redeem`, {
@@ -242,7 +242,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                 <>
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                    <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).map((option: number) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
+                    <label>Fixed reward rule<input className="amount-input" value="INR 10-49: 2 pts | INR 50-99: 5 pts | INR 100+: 10 pts/100 (max 100)" readOnly /></label>
                     <label>{transactionMode === 'combined' ? 'Points to Redeem' : 'Points to Redeem (optional)'}<input className="amount-input" type="number" min="0" max={Math.min(1000, customer.rewardPoints)} value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>

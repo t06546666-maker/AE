@@ -408,6 +408,16 @@ async function getMerchantRewardSettings(merchantId) {
   return data;
 }
 
+// Fixed network reward rule: small purchases use fixed tiers, larger purchases
+// earn 10 points per completed INR 100, capped at 100 points.
+function calculateFixedPurchasePoints(amount) {
+  const value = Number(amount || 0);
+  if (value < 10) return 0;
+  if (value < 50) return 2;
+  if (value < 100) return 5;
+  return Math.min(100, Math.floor(value / 100) * 10);
+}
+
 async function processPurchase(params, idempotencyKey) {
   const withIdempotency = {
     ...params,
@@ -3387,7 +3397,7 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
-  const selectedPoints = Number(req.body.rewardPercentage);
+  const selectedPoints = calculateFixedPurchasePoints(amount);
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
   if (
     !customerCode ||
@@ -3412,8 +3422,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     redemptionContext = { customer, membership, discountPercentage, discountAmount: amount * (discountPercentage / 100) };
   }
   
-  const earnRateWithCap = await getMerchantEarnRateWithCap(req.auth.profile.merchant_id);
-  const pointsToIssue = earnRateWithCap === 0 ? 0 : selectedPoints;
+  const pointsToIssue = selectedPoints;
 
   const { data, error } = await processPurchase({
     p_customer_code: customerCode,
