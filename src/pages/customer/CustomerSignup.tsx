@@ -7,7 +7,7 @@ import type { UserProfile } from '../../types';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
-import { RoleSwitch } from '../../components/AuthShell';
+import '../../components/auth.css';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
@@ -149,7 +149,6 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   return <main className="ae-auth-page"><section className="ae-auth-signup">
     <Link className="ae-auth-back" to="/customer/login" aria-label="Back to login"><ArrowLeft/></Link>
     <header><img src="/logo.png" alt="AE"/><h1>Create an Account</h1><p>Where customers meet businesses, beyond</p></header>
-    <RoleSwitch/>
     <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>Account Details</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>Verify &amp; Join</li></ol>
     <h2>{step === 'details' ? 'Your Details' : 'Verify your phone'}</h2><p className="ae-auth-subtitle">{step === 'details' ? 'Let’s create your AE account' : `Enter the code sent to +91 ${phone}`}</p>
     {error && <div className="form-error" role="alert">{error}</div>}

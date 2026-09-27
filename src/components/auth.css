@@ -1,4 +1,4 @@
-.ae-auth-page{min-height:100dvh;padding:28px 16px;background:radial-gradient(ellipse at 80% 90%,#e3faf1,transparent 60%),#f1f5f9;color:#071326;font-family:Inter,Arial,sans-serif}
+.ae-auth-page{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding:28px 16px;background:radial-gradient(ellipse at 80% 90%,#e3faf1,transparent 60%),#f1f5f9;color:#071326;font-family:Inter,Arial,sans-serif}
 .ae-auth-window{max-width:490px;margin:auto;border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 20px 60px #14293820}
 .ae-auth-hero{aspect-ratio:866/660;background-image:url('/auth-customer-reference.png');background-size:118.25% auto;background-position:49.4% -15px;background-repeat:no-repeat}
 .is-merchant .ae-auth-hero{aspect-ratio:810/620;background-image:url('/auth-merchant-reference.png');background-size:126.42% auto;background-position:45.2% -6px}
@@ -37,3 +37,18 @@
 #signup-recaptcha-container{margin-top:14px;max-width:100%;overflow-x:auto}
 @media(min-width:1000px){.ae-auth-page{display:grid;align-items:center;padding:44px}.ae-auth-window{display:grid;grid-template-columns:1fr 1fr;max-width:960px;width:100%}.ae-auth-hero{align-self:start}.ae-auth-sheet{margin:0;border-radius:0;padding:32px}.ae-auth-signup{width:100%}}
 @media(max-width:420px){.ae-auth-page{padding:0}.ae-auth-window,.ae-auth-signup{border-radius:0;box-shadow:none}.ae-auth-sheet{padding:18px 24px 28px}.ae-auth-signup{padding:22px 24px}.ae-auth-page h1{font-size:27px}.ae-auth-roles a{font-size:16px}}
+/* Fit login to the available phone height; allow real content to scroll
+   when the keyboard, validation messages or larger text need more room. */
+@media(max-width:999px){
+  .ae-auth-login{padding:0;}
+  .ae-auth-login .ae-auth-window{display:flex;flex-direction:column;width:100%;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-radius:0;box-shadow:none;overflow:visible;container-type:inline-size;}
+  /* Keep the artwork proportional to its width, with its embedded form
+     below the crop. Let the real sheet fill any remaining screen height. */
+  .ae-auth-login .ae-auth-hero{flex:0 0 auto;height:76.21cqw;min-height:0;aspect-ratio:866/660;background-size:118.25% auto;}
+  .ae-auth-login.is-merchant .ae-auth-hero{height:76.54cqw;aspect-ratio:810/620;background-size:126.42% auto;}
+  .ae-auth-login .ae-auth-sheet{flex:1 0 auto;padding:16px 24px 18px;}
+  .ae-auth-login .ae-auth-roles{margin-bottom:14px;}
+  .ae-auth-login .ae-auth-roles a{padding-block:10px;}
+  .ae-auth-login .ae-auth-subtitle{margin-bottom:14px;}
+  .ae-auth-login .ae-auth-bottom{margin-top:16px;}
+}
