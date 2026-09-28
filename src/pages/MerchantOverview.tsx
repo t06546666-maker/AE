@@ -73,6 +73,13 @@ function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
 
 function currentCount(model: MerchantAnalytics) { return model.current.active.length.toLocaleString('en-IN'); }
 
+function ActivitySnapshot({ model }: { model: MerchantAnalytics }) {
+  const days = model.heat.map(row => row.reduce((sum, value) => sum + value, 0));
+  const max = Math.max(1, ...days);
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return <section className="mo-panel mo-activity-snapshot"><div className="mo-panel-heading"><div><h2>Purchase rhythm</h2><p>Recorded visits by weekday</p></div><TrendingUp size={21} /></div><div className="mo-week-bars">{days.map((value, index) => <div className="mo-week-bar" key={labels[index]}><strong>{value}</strong><span style={{ height: `${Math.max(8, value / max * 112)}px` }} /><small>{labels[index]}</small></div>)}</div><div className="mo-activity-foot"><span>Peak day</span><b>{labels[days.indexOf(Math.max(...days))]}</b><span>{model.current.orders.length.toLocaleString('en-IN')} total visits</span></div></section>;
+}
+
 function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -150,6 +157,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     {view === 'overview' && <>
       <div className="mo-stats">{metrics.map(({ label, value, before, icon: Icon, color, hint }) => <article key={label} className={`mo-stat ${color}`}><div className="mo-stat-label"><span className={`mo-icon ${color}`}><Icon size={21} /></span><span>{label}</span></div><strong className="mo-stat-value">{label === 'Total sales' ? formatCurrency(value) : value.toLocaleString('en-IN')}</strong><span className="mo-stat-hint">{hint}</span><Change value={value} previous={before} label={model.comparisonLabel} /></article>)}</div>
       <SalesSnapshot model={model} />
+      <div className="mo-columns mo-extra-visuals"><ActivitySnapshot model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Reward activity</h2><p>Sales value behind recorded visits</p></div><IndianRupee size={21} /></div><div className="mo-reward-meter"><div><span>Average purchase</span><strong>{formatCurrency(current.average)}</strong></div><div className="mo-meter-track"><span style={{ width: `${Math.min(100, current.average ? Math.max(8, current.average / Math.max(1, current.sales) * 100 * 4) : 0)}%` }} /></div><small>{current.orders.length ? `${current.orders.length} purchase events recorded this month` : 'Record purchases to unlock this insight'}</small></div></section></div>
       <div className="mo-columns"><GrowthChart key={month} model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Quick insights</h2><p>Small insights. Better decisions.</p></div><Lightbulb size={21} /></div><div className="mo-quick-list">
         <div><span className="mo-icon green"><RefreshCw size={20} /></span><p><strong>{percent(current.returning.length)}% returned</strong><small>Had purchased before this month</small></p></div>
         <div><span className="mo-icon violet"><IndianRupee size={20} /></span><p><strong>{formatCurrency(current.average)}</strong><small>Average spend per recorded visit</small></p></div>
