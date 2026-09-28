@@ -131,15 +131,21 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
   useEffect(() => setCustomerPage(1), [deferredSearch, filter]);
   const href = (section: string) => section === 'customers' ? `/customers?month=${month}` : `/dashboard?view=${section}&month=${month}`;
   function selectCustomer(id: string | null) { const next = new URLSearchParams(params); if (id) next.set('customer', id); else next.delete('customer'); setParams(next, { replace: !id }); }
-  function exportReport(kind: string) {
+  async function exportReport(kind: string) {
     const summary = [['Month', 'Sales (INR)', 'Recorded visits', 'Purchasing customers', 'New customers', 'Returning customers', 'Average purchase (INR)'], [month, current.sales, current.orders.length, current.active.length, current.fresh.length, current.returning.length, current.average]];
     const customers = [['Customer ID', 'Name', 'Recorded visits (lifetime)', 'Total spent (INR, lifetime)'], ...model.customers.map(c => [c.id, c.name, c.visits.length, c.spend])];
     const frequency = [['Weekday', 'Start hour (IST)', 'End hour (IST)', 'Recorded purchases'], ...model.heat.flatMap((row, i) => row.map((n, j) => [weekdays[i], j * 3, (j + 1) * 3, n]))];
     const comparison = [['Metric', month, model.priorMonth], ['Purchasing customers', current.active.length, previous.active.length], ['Sales (INR)', current.sales, previous.sales], ['Recorded visits', current.orders.length, previous.orders.length], ['Comparison', model.comparisonLabel, '']];
     const rows = kind === 'customers' ? customers : kind === 'visits' ? frequency : kind === 'comparison' ? comparison : summary;
     const escape = (value: string | number) => { const text = String(value); return `"${(typeof value === 'string' && /^[=+\-@\t\r]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`; };
-    const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(row => row.map(escape).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8;' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `AE-${kind}-${month}.csv`; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setDownloaded('CSV export requested.');
+    const csv = '\uFEFF' + rows.map(row => row.map(escape).join(',')).join('\r\n');
+    const filename = `AE-${kind}-${month}.csv`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    try {
+      const file = new File([blob], filename, { type: 'text/csv' });
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) { await navigator.share({ title: 'AE report', text: 'Merchant report', files: [file] }); setDownloaded('Report ready to share or save.'); return; }
+    } catch { /* User may cancel sharing; fall back to download. */ }
+    const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setDownloaded('Report download started.');
   }
   if (query.isPending) return <div className="merchant-overview"><LoadingState label="Loading your business activity…" /></div>;
   if (query.isError) return <div className="merchant-overview"><ErrorState error={query.error} retry={() => query.refetch()} /></div>;
