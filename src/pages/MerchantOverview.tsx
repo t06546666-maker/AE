@@ -1,6 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarDays, ChevronRight, Crown, Download, Gift, Heart, IndianRupee, Lightbulb, Mail, Phone, Plus, RefreshCw, Search, TrendingUp, Users, UserPlus, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
@@ -141,6 +144,13 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     const csv = '\uFEFF' + rows.map(row => row.map(escape).join(',')).join('\r\n');
     const filename = `AE-${kind}-${month}.csv`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const saved = await Filesystem.writeFile({ path: filename, data: csv, directory: Directory.Documents, encoding: Encoding.UTF8, recursive: true });
+        await Share.share({ title: 'AE report', text: 'Merchant report', url: saved.uri, dialogTitle: 'Save or share report' });
+        setDownloaded('Report saved to Documents and ready to share.'); return;
+      } catch { setDownloaded('Unable to open the phone share sheet. Please try again.'); return; }
+    }
     try {
       const file = new File([blob], filename, { type: 'text/csv' });
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) { await navigator.share({ title: 'AE report', text: 'Merchant report', files: [file] }); setDownloaded('Report ready to share or save.'); return; }
