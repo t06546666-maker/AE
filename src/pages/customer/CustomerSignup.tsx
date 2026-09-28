@@ -148,7 +148,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
 
   return <main className="ae-auth-page"><section className="ae-auth-signup">
     <Link className="ae-auth-back" to="/customer/login" aria-label="Back to login"><ArrowLeft/></Link>
-    <header><img src="/logo.png" alt="AE"/><h1>Create an Account</h1><p>Where trust meets business</p></header>
+    <header><img src="/logo.png" alt="AE"/><h1>Create an Account</h1><p>Where customers meet business and beyond</p></header>
     <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>Account Details</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>Verify &amp; Join</li></ol>
     <h2>{step === 'details' ? 'Your Details' : 'Verify your phone'}</h2><p className="ae-auth-subtitle">{step === 'details' ? 'Let’s create your AE account' : `Enter the code sent to +91 ${phone}`}</p>
     {error && <div className="form-error" role="alert">{error}</div>}
