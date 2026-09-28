@@ -80,7 +80,8 @@
 .merchant-shell { --primary: #3158f5; --primary-soft: #e9edff; --blue-soft: #eef7ff; }
 .merchant-overview::before { content: ''; display: block; height: 168px; margin: -10px -24px -128px; border-radius: 0 0 34px 34px; background: radial-gradient(circle at 84% 18%, #6e5cff 0, transparent 32%), linear-gradient(120deg, #101934 0%, #243b84 48%, #4269f5 100%); box-shadow: 0 18px 40px #1b2d6b22; }
 .mo-heading { padding: 26px 24px 22px; color: #fff; }
-.mo-heading > div:first-child::before { content: ''; display: block; width: 92px; height: 42px; margin-bottom: 12px; background: url('/logo.png') center / contain no-repeat; filter: brightness(0) invert(1); opacity: .96; }
+.mo-heading > div:first-child::before { display: none; }
+.mo-eyebrow { font-size: 0; letter-spacing: 0; }.mo-eyebrow::after { content: 'Where customers meet business and beyond'; font-size: 10px; letter-spacing: .16em; }
 .mo-heading p { color: #dbe5ff; }
 .mo-eyebrow { color: #9fe8ff; }
 .mo-stat, .mo-panel { border-radius: 22px; box-shadow: 0 12px 34px #17265c12; }
