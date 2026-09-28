@@ -137,7 +137,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
                 <Menu size={28} color="#1a1a1a" strokeWidth={2} />
               </button>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#3b28cc', letterSpacing: '0.5px' }}>AE</div>
+              <img src="/logo.png" alt="Affiliate AE" style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
             </div>
             {user.role === 'merchant' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
