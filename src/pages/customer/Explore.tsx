@@ -3,6 +3,7 @@ import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
+import { Geolocation } from '@capacitor/geolocation';
 
 
 
@@ -15,10 +16,29 @@ export function CustomerExplore() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const categoriesQuery = useCustomerCategories();
   const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
   const merchants = data?.merchants ?? [];
+  const distanceKm = (latitude?: number | null, longitude?: number | null) => {
+    if (!userLocation || latitude == null || longitude == null) return null;
+    const rad = Math.PI / 180;
+    const dLat = (latitude - userLocation.latitude) * rad;
+    const dLon = (longitude - userLocation.longitude) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.latitude * rad) * Math.cos(latitude * rad) * Math.sin(dLon / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+  const sortedMerchants = [...merchants].sort((a, b) => (distanceKm(a.latitude, a.longitude) ?? Number.POSITIVE_INFINITY) - (distanceKm(b.latitude, b.longitude) ?? Number.POSITIVE_INFINITY));
+  const locateUser = async () => {
+    try {
+      const permission = await Geolocation.requestPermissions();
+      if (permission.location !== 'granted') return;
+      const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 12000 });
+      setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch { /* location is optional; merchants remain visible without distances */ }
+  };
+  useEffect(() => { void locateUser(); }, []);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -119,6 +139,10 @@ export function CustomerExplore() {
       </div>
 
       <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} />
+      <div className="mx-5 mb-3 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <div><p className="text-[13px] font-bold text-[#087a4b]">Merchants near you</p><p className="text-[11px] text-gray-500">Sorted by distance from your current location</p></div>
+        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">Update location</button>
+      </div>
 
       {/* Merchant List */}
       <div className="px-5 space-y-3">
@@ -127,7 +151,7 @@ export function CustomerExplore() {
         ) : merchants.length === 0 ? (
           <div className="py-12 text-center text-gray-400">No merchants found{search ? ` for "${search}"` : ''}.</div>
         ) : (
-          merchants.map((merchant, idx) => (
+          sortedMerchants.map((merchant, idx) => (
             <button
               key={merchant.id}
               onClick={() => setSelectedMerchantId(merchant.id)}
@@ -140,6 +164,7 @@ export function CustomerExplore() {
                 <div>
                   <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{merchant.merchant_name}</h3>
                   {merchant.category && <p className="text-[11px] text-gray-500 font-medium mt-0.5">{merchant.category}</p>}
+                  {distanceKm(merchant.latitude, merchant.longitude) !== null && <p className="text-[12px] font-bold text-[#3158f5] mt-1">{distanceKm(merchant.latitude, merchant.longitude)!.toFixed(1)} km away</p>}
                   <p className="text-[12px] font-bold text-[#087a4b] mt-1">Accepts AE Points</p>
                 </div>
               </div>
