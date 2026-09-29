@@ -47,6 +47,9 @@ export interface Merchant {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   category?: string;
   categoryId?: string;
   joined: string;

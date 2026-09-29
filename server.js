@@ -2018,6 +2018,23 @@ app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
   return res.json({ success: true, data });
 });
 
+// Admins can maintain the merchant's business profile from the merchant detail screen.
+app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const merchantId = cleanText(req.params.id, 100);
+  const updates = {};
+  if (req.body.name !== undefined) updates.name = cleanText(req.body.name, 120);
+  if (req.body.email !== undefined) updates.email = cleanText(req.body.email, 254).toLowerCase();
+  if (req.body.phone !== undefined) updates.phone = normalizePhone(req.body.phone);
+  if (req.body.address !== undefined) updates.address = cleanText(req.body.address, 300) || null;
+  if (req.body.category_id !== undefined) updates.category_id = cleanText(req.body.category_id, 100) || null;
+  for (const key of ['latitude', 'longitude']) if (req.body[key] !== undefined) updates[key] = req.body[key] === '' || req.body[key] === null ? null : Number(req.body[key]);
+  if (!updates.name || !updates.email || !isEmail(updates.email) || !updates.phone) return res.status(400).json({ success: false, error: 'Name, valid email, and phone are required' });
+  if ((updates.latitude === null) !== (updates.longitude === null) || (updates.latitude !== undefined && (!Number.isFinite(updates.latitude) || !Number.isFinite(updates.longitude)))) return res.status(400).json({ success: false, error: 'Latitude and longitude must be valid together' });
+  const { data, error } = await supabaseAdmin.from('merchants').update(updates).eq('id', merchantId).select('*').single();
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  return res.json({ success: true, data });
+});
+
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')

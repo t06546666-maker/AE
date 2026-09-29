@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X, MapPinned } from 'lucide-react';
+import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X, MapPinned, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
@@ -251,6 +251,8 @@ export function MerchantProfile() {
   const navigate = useNavigate();
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [credentials, setCredentials] = useState<CredentialResult | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', address: '', latitude: '', longitude: '' });
   const summary = useQuery({
     queryKey: ['merchant-summary', id],
     queryFn: ({ signal }) => apiFetch<MerchantSummaryResponse>(`/api/merchants/${encodeURIComponent(id)}/summary`, { signal }),
@@ -261,6 +263,7 @@ export function MerchantProfile() {
     onSuccess(data) { setCredentials(data); showToast(t('merchants.resetDone')); },
     onError(error) { showToast(error.message, 'error'); },
   });
+  const update = useMutation({ mutationFn: () => apiFetch(`/api/merchants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(editForm) }), onSuccess: () => { setEditing(false); void summary.refetch(); showToast('Merchant details updated.'); }, onError: error => showToast(error.message, 'error') });
 
   if (summary.isPending) return <LoadingState label="Loading merchant profile" />;
   if (summary.isError) return <ErrorState error={summary.error} retry={() => summary.refetch()} />;
@@ -277,6 +280,7 @@ export function MerchantProfile() {
             <button className="button secondary" onClick={() => {
               if (window.confirm(t('merchants.resetConfirm'))) reset.mutate();
             }}><KeyRound size={16} />{t('merchants.reset')}</button>
+            <button className="button primary" onClick={() => { setEditForm({ name: data.merchant.name || '', email: data.merchant.email || '', phone: data.merchant.phone || '', address: data.merchant.address || '', latitude: data.merchant.latitude?.toString() || '', longitude: data.merchant.longitude?.toString() || '' }); setEditing(true); }}><Pencil size={16} />Edit merchant</button>
             <button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />Excel</button>
             <button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />PDF</button>
             <button className="button secondary" onClick={() => navigate('/merchants')}><ArrowLeft size={16} />Back</button>
@@ -305,6 +309,7 @@ export function MerchantProfile() {
       </section>
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} merchantId={id} isAdmin onClose={() => setExportFormat(null)} />
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
+      {editing ? <div className="modal-backdrop" onClick={() => setEditing(false)}><form className="modal" onClick={event => event.stopPropagation()} onSubmit={event => { event.preventDefault(); update.mutate(); }}><button type="button" className="icon-button modal-close" onClick={() => setEditing(false)}><X /></button><h2>Edit merchant details</h2><div className="form-grid"><label>Business name<input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required /></label><label>Email<input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} required /></label><label>Phone<input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} required /></label><label>Address<input value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></label><label>Latitude<input value={editForm.latitude} onChange={e => setEditForm({ ...editForm, latitude: e.target.value })} /></label><label>Longitude<input value={editForm.longitude} onChange={e => setEditForm({ ...editForm, longitude: e.target.value })} /></label></div><div className="form-actions"><button type="button" className="button secondary" onClick={() => setEditing(false)}>Cancel</button><button className="button primary" disabled={update.isPending}>{update.isPending ? 'Saving…' : 'Save changes'}</button></div></form></div> : null}
     </>
   );
 }
