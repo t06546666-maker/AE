@@ -58,6 +58,14 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants
         });
         marker.addListener('click', () => { mapRef.current?.panTo({ lat: merchant.latitude!, lng: merchant.longitude! }); mapRef.current?.setZoom(16); });
       });
+      // Always frame saved merchant locations first. This keeps pins visible even
+      // when the user denies location permission or the device cannot locate them.
+      if (locatedMerchants.length) {
+        const bounds = new google.maps.LatLngBounds();
+        locatedMerchants.forEach((merchant) => bounds.extend({ lat: merchant.latitude!, lng: merchant.longitude! }));
+        mapRef.current.fitBounds(bounds, 48);
+        if (locatedMerchants.length === 1) mapRef.current.setZoom(14);
+      }
       getCurrentLocation().then((location) => { if (!active || !mapRef.current) return; mapRef.current.setCenter({ lat: location.latitude, lng: location.longitude }); mapRef.current.setZoom(13); new google.maps.Marker({ map: mapRef.current, position: { lat: location.latitude, lng: location.longitude }, title: 'You are here', icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }); setStatus('Showing your current location.'); }).catch(() => undefined);
     }).catch(() => active && setStatus('Google Maps could not load. Check your API key and allowed domains.'));
     return () => { active = false; };
