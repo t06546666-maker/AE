@@ -603,6 +603,7 @@ async function offerDto(row, failure) {
     merchantCode: row.merchants?.merchant_code || '',
     title: row.title,
     description: row.description,
+    category: row.category || null,
     imageUrl: await signedOfferImageUrl(row.image_path),
     expiresAt: row.expires_at,
     status: row.status,
@@ -2571,13 +2572,15 @@ app.get('/api/offers', requireAuth, async (req, res) => {
   const status = cleanText(req.query.status, 30);
   const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
   let query = supabaseAdmin.from('offers').select(
-    'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
+    'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
     { count: 'exact' },
   ).order('created_at', { ascending: false });
   if (req.auth.profile.role === 'merchant') {
     query = query.eq('merchant_id', req.auth.profile.merchant_id);
   }
   if (allowedStatuses.has(status)) query = query.eq('status', status);
+  const category = cleanText(req.query.category, 80);
+  if (category) query = query.eq('category', category);
   if (paging.search) {
     const pattern = `%${paging.search}%`;
     query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`);
@@ -2627,6 +2630,7 @@ app.post(
   async (req, res) => {
     const title = cleanText(req.body.title, 120);
     const description = cleanText(req.body.description, 1000);
+    const category = cleanText(req.body.category, 80) || null;
     const expiresAt = new Date(req.body.expiresAt);
     if (!title || !description || !Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
       return res.status(400).json({
@@ -2648,12 +2652,13 @@ app.post(
         merchant_id: req.auth.profile.merchant_id,
         title,
         description,
+        category,
         image_path: imagePath,
         expires_at: expiresAt.toISOString(),
         status: 'pending',
         submitted_by: req.auth.user.id,
       }).select(
-        'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+        'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
       await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
@@ -2688,6 +2693,7 @@ app.put(
 
     const title = cleanText(req.body.title, 120);
     const description = cleanText(req.body.description, 1000);
+    const category = cleanText(req.body.category, 80) || null;
     const expiresAt = new Date(req.body.expiresAt);
     if (!title || !description || !Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
       return res.status(400).json({
@@ -2712,6 +2718,7 @@ app.put(
       const { data: offer, error } = await supabaseAdmin.from('offers').update({
         title,
         description,
+        category,
         image_path: replacementPath,
         expires_at: expiresAt.toISOString(),
         status: 'pending',
@@ -2721,7 +2728,7 @@ app.put(
         submitted_by: req.auth.user.id,
         updated_at: new Date().toISOString(),
       }).eq('id', offerId).select(
-        'id,merchant_id,title,description,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+        'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
       if (uploadedPath) {

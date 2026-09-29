@@ -89,6 +89,7 @@ export interface Offer {
   merchantCode: string;
   title: string;
   description: string;
+  category?: string | null;
   imageUrl: string;
   expiresAt: string;
   status: OfferStatus;

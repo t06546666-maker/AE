@@ -10,6 +10,7 @@ import { formatDate } from '../utils';
 import { useToast } from '../toast';
 
 type OffersResponse = { offers: Offer[]; pagination: Pagination };
+const OFFER_CATEGORIES = ['Food & Dining', 'Fashion', 'Beauty', 'Services', 'Travel', 'Other'];
 
 function tomorrowInput() {
   const date = new Date();
@@ -29,6 +30,7 @@ export function Offers({ user }: { user: UserProfile }) {
   const [editing, setEditing] = useState<Offer | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [expiresAt, setExpiresAt] = useState(tomorrowInput());
   const [image, setImage] = useState<File | null>(null);
   const [rejecting, setRejecting] = useState<Offer | null>(null);
@@ -64,6 +66,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setEditing(null);
     setTitle('');
     setDescription('');
+    setCategory('');
     setExpiresAt(tomorrowInput());
     setImage(null);
   }
@@ -72,6 +75,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setEditing(offer);
     setTitle(offer.title);
     setDescription(offer.description);
+    setCategory(offer.category || '');
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
     setFormOpen(true);
@@ -83,6 +87,7 @@ export function Offers({ user }: { user: UserProfile }) {
       const body = new FormData();
       body.set('title', title.trim());
       body.set('description', description.trim());
+      body.set('category', category);
       body.set('expiresAt', new Date(`${expiresAt}T23:59:59+05:30`).toISOString());
       if (image) body.set('image', image);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
@@ -170,6 +175,13 @@ export function Offers({ user }: { user: UserProfile }) {
             <label>
               {t('offers.expiry')}
               <input type="date" min={tomorrowInput()} value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} required />
+            </label>
+            <label>
+              Category
+              <select value={category} onChange={(event) => setCategory(event.target.value)}>
+                <option value="">General</option>
+                {OFFER_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
             </label>
             <label className="offer-description-field">
               {t('offers.description')}
