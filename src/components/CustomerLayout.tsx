@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, Star, ListPlus } from 'lucide-react';
+import { Home, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, ListPlus } from 'lucide-react';
 import { UserProfile } from '../types';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
@@ -61,8 +61,8 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             <NavLink to="/customer/home?productList=1" className={({ isActive }) => isActive ? 'active' : ''}>
               <ListPlus size={18} /><span>Product List</span>
             </NavLink>
-            <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Star size={18} /><span>Rewards</span>
+            <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Gift size={18} /><span>Offers</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>Profile</span>
@@ -89,9 +89,9 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
           <span>Explore</span>
         </NavLink>
         <NavLink to="/customer/home?productList=1" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>Product List</span></NavLink>
-        <NavLink to="/customer/rewards" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Star />
-          <span>Rewards</span>
+        <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <Gift />
+          <span>Offers</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <User />
