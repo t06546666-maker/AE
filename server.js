@@ -915,14 +915,17 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       logId,
       components: welcomeComponents,
     });
-    if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
+    // Send the Utility password message independently. A Marketing welcome
+    // template can be blocked by Meta policy and must not prevent credentials.
+    let passwordResult = null;
+    if (WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
       // The current Meta `temporary` template is static (zero body variables):
       // it explains that the password is the last six digits of the phone.
       // Custom templates may still use the three-variable format.
       const passwordParameters = WA_TEMPORARY_TEMPLATE === 'temporary' ? [] : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.temporary_password }, { type: 'text', text: purchase.customer_code }];
-      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: passwordParameters.length ? [{ type: 'body', parameters: passwordParameters }] : [] });
+      passwordResult = await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: passwordParameters.length ? [{ type: 'body', parameters: passwordParameters }] : [] });
     }
-    return welcomeResult;
+    return { ...welcomeResult, sent: welcomeResult.sent || Boolean(passwordResult?.sent), password: passwordResult };
   } catch (error) {
     {
       const errorMessage = error instanceof Error ? error.message : String(error);
