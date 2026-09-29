@@ -916,9 +916,11 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       components: welcomeComponents,
     });
     if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
-      // The approved temporary template has three placeholders: customer name,
-      // temporary password, and the AE customer code.
-      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [{ type: 'body', parameters: [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.temporary_password }, { type: 'text', text: purchase.customer_code }] }] });
+      // The current Meta `temporary` template is static (zero body variables):
+      // it explains that the password is the last six digits of the phone.
+      // Custom templates may still use the three-variable format.
+      const passwordParameters = WA_TEMPORARY_TEMPLATE === 'temporary' ? [] : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.temporary_password }, { type: 'text', text: purchase.customer_code }];
+      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: passwordParameters.length ? [{ type: 'body', parameters: passwordParameters }] : [] });
     }
     return welcomeResult;
   } catch (error) {
