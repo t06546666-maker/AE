@@ -2058,6 +2058,30 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
   res.json({ success: true, data: value });
 });
 
+// Merchant payment settings are kept as a merchant-scoped record in app_settings
+// so they work on existing Supabase installations without a destructive migration.
+const defaultMerchantPaymentSettings = { upiId: '', displayName: '', paymentEnabled: false, provider: 'razorpay', mode: 'test' };
+function merchantPaymentKey(id) { return `merchant_payment_settings_${cleanText(id, 100)}`; }
+async function readMerchantPaymentSettings(id) {
+  const { data } = await supabaseAdmin.from('app_settings').select('value').eq('key', merchantPaymentKey(id)).maybeSingle();
+  try {
+    return { ...defaultMerchantPaymentSettings, ...(data?.value ? JSON.parse(data.value) : {}) };
+  } catch (_) { return { ...defaultMerchantPaymentSettings }; }
+}
+app.get('/api/merchants/:id/payment-settings', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
+  res.json({ success: true, data: await readMerchantPaymentSettings(req.params.id) });
+});
+app.patch('/api/merchants/:id/payment-settings', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
+  const upiId = cleanText(req.body.upiId, 120).toLowerCase();
+  if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
+  const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'razorpay', mode: req.body.mode === 'live' ? 'live' : 'test' };
+  const { error } = await supabaseAdmin.from('app_settings').upsert({ key: merchantPaymentKey(req.params.id), value: JSON.stringify(value) });
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  res.json({ success: true, data: value });
+});
+
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')
@@ -4680,6 +4704,34 @@ app.post('/api/payments/create-subscription', requireAuth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message || 'Failed to create Razorpay subscription' });
   }
+});
+
+app.post('/api/payments/create-order', requireAuth, async (req, res) => {
+  try {
+    const merchantId = cleanText(req.body.merchant_id || req.auth.profile.merchant_id, 100);
+    if (req.auth.profile.role === 'merchant' && merchantId !== req.auth.profile.merchant_id) return res.status(403).json({ success: false, error: 'Forbidden' });
+    const amount = Number(req.body.amount);
+    if (!merchantId || !Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'A valid payment amount is required' });
+    const settings = await readMerchantPaymentSettings(merchantId);
+    if (!settings.paymentEnabled || !settings.upiId) return res.status(400).json({ success: false, error: 'Merchant UPI payments are not enabled' });
+    if (!razorpay) return res.status(503).json({ success: false, error: 'Razorpay is not configured' });
+    const razorpayOrder = await razorpay.orders.create({ amount: Math.round(amount * 100), currency: 'INR', receipt: cleanText(req.body.receipt || `ae_${Date.now()}`, 40), notes: { merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) } });
+    const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) || null, order_id: cleanText(req.body.order_id, 100) || null, razorpay_order_id: razorpayOrder.id, amount, metadata: req.body.metadata || {} }).select().single();
+    if (error) return res.status(400).json({ success: false, error: error.message });
+    res.status(201).json({ success: true, payment: data, razorpay: { orderId: razorpayOrder.id, keyId: process.env.RAZORPAY_KEY_ID, amount: razorpayOrder.amount, currency: razorpayOrder.currency, upiId: settings.upiId, displayName: settings.displayName } });
+  } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not create payment order' }); }
+});
+
+app.post('/api/payments/verify', requireAuth, async (req, res) => {
+  try {
+    const { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body;
+    if (!orderId || !paymentId || !signature || !process.env.RAZORPAY_KEY_SECRET) return res.status(400).json({ success: false, error: 'Payment verification details are incomplete' });
+    const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
+    if (expected !== signature) return res.status(400).json({ success: false, error: 'Invalid payment signature' });
+    const { data, error } = await supabaseAdmin.from('payment_transactions').update({ razorpay_payment_id: paymentId, status: 'paid', updated_at: new Date().toISOString() }).eq('razorpay_order_id', orderId).neq('status', 'paid').select().maybeSingle();
+    if (error || !data) return res.status(404).json({ success: false, error: 'Payment order not found or already processed' });
+    res.json({ success: true, payment: data });
+  } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not verify payment' }); }
 });
 
 app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {

@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, User } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, CreditCard, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ExportModal, PageHeader, PeriodControl } from '../components/Common';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import type { DashboardData, Period, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, rangeForChartPeriod } from '../utils';
+import { useToast } from '../toast';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -39,6 +40,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
   const [chartFrom, setChartFrom] = useState(today); const [chartTo, setChartTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const chartData = chart.data || emptyDashboard;
@@ -49,6 +51,11 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
   const merchantQuery = useQuery({
     queryKey: ['merchant', user.merchant_id],
     queryFn: ({ signal }) => apiFetch<{ data: Merchant }>(`/api/merchants/${user.merchant_id}`, { signal }),
+    enabled: user.role === 'merchant' && !!user.merchant_id,
+  });
+  const paymentSettings = useQuery({
+    queryKey: ['merchant-payment-settings', user.merchant_id],
+    queryFn: ({ signal }) => apiFetch<{ data: { upiId: string; displayName: string; paymentEnabled: boolean; mode: 'test' | 'live' } }>(`/api/merchants/${user.merchant_id}/payment-settings`, { signal }),
     enabled: user.role === 'merchant' && !!user.merchant_id,
   });
 
@@ -97,6 +104,11 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             </div>
             <ChevronRight color="#94a3b8" />
           </Link>
+          {user.role === 'merchant' ? <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0' }} onClick={() => setPaymentOpen(true)}>
+            <div className="mobile-transaction-avatar green" style={{ width: 40, height: 40 }}><CreditCard size={20} /></div>
+            <div className="mobile-transaction-info" style={{ textAlign: 'left' }}><h4>Payment &amp; UPI Settings</h4><p>{paymentSettings.data?.data?.upiId || 'Add your UPI ID for customer payments'}</p></div>
+            <ChevronRight color="#94a3b8" />
+          </button> : null}
         </div>
       </div>
 
@@ -133,6 +145,15 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
         <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
       )}
+      {paymentOpen && user.role === 'merchant' && user.merchant_id ? <PaymentSettingsModal merchantId={user.merchant_id} initial={paymentSettings.data?.data} onClose={() => setPaymentOpen(false)} onSaved={() => { void paymentSettings.refetch(); setPaymentOpen(false); }} /> : null}
     </div>
   );
+}
+
+function PaymentSettingsModal({ merchantId, initial, onClose, onSaved }: { merchantId: string; initial?: { upiId: string; displayName: string; paymentEnabled: boolean; mode: 'test' | 'live' }; onClose: () => void; onSaved: () => void }) {
+  const { showToast } = useToast();
+  const [form, setForm] = useState({ upiId: initial?.upiId || '', displayName: initial?.displayName || '', paymentEnabled: initial?.paymentEnabled || false, mode: initial?.mode || 'test' });
+  useEffect(() => { if (initial) setForm({ upiId: initial.upiId || '', displayName: initial.displayName || '', paymentEnabled: initial.paymentEnabled, mode: initial.mode || 'test' }); }, [initial]);
+  const save = useMutation({ mutationFn: () => apiFetch(`/api/merchants/${merchantId}/payment-settings`, { method: 'PATCH', body: JSON.stringify(form) }), onSuccess: () => { showToast('Payment settings saved.'); onSaved(); }, onError: error => showToast(error.message, 'error') });
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="modal" onSubmit={event => { event.preventDefault(); save.mutate(); }}><button type="button" className="icon-button modal-close" onClick={onClose}>×</button><h2>Payment &amp; UPI Settings</h2><p>Add the UPI ID that should receive customer payments.</p><div className="form-grid"><label>UPI ID<input value={form.upiId} onChange={event => setForm({ ...form, upiId: event.target.value })} placeholder="merchant@upi" /></label><label>Display name<input value={form.displayName} onChange={event => setForm({ ...form, displayName: event.target.value })} placeholder="Your business name" /></label><label>Payment mode<select value={form.mode} onChange={event => setForm({ ...form, mode: event.target.value as 'test' | 'live' })}><option value="test">Test</option><option value="live">Live</option></select></label></div><label className="checkbox-row"><input type="checkbox" checked={form.paymentEnabled} onChange={event => setForm({ ...form, paymentEnabled: event.target.checked })} /> Enable customer UPI payments</label><p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Razorpay verification and webhook configuration are required before enabling live payments.</p><div className="form-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary" disabled={save.isPending}><Save size={16} />{save.isPending ? 'Saving…' : 'Save settings'}</button></div></form></div>;
 }
