@@ -916,7 +916,9 @@ async function sendRegistrationWhatsApp(purchase, logId) {
       components: welcomeComponents,
     });
     if (welcomeResult.sent && WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
-      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [{ type: 'body', parameters: [{ type: 'text', text: purchase.temporary_password }] }] });
+      // The approved temporary template has three placeholders: customer name,
+      // temporary password, and the AE customer code.
+      await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: [{ type: 'body', parameters: [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.temporary_password }, { type: 'text', text: purchase.customer_code }] }] });
     }
     return welcomeResult;
   } catch (error) {
