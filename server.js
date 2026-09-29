@@ -3468,6 +3468,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   }
   const selectedPoints = calculateFixedPurchasePoints(amount, requestedRate);
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
+  const paymentTransactionId = cleanText(req.body.paymentTransactionId, 100);
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
@@ -3477,6 +3478,12 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       success: false,
       error: `Purchase must be at least 100.`,
     });
+  }
+  const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);
+  if (paymentSettings.paymentEnabled) {
+    if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
+    const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,status,amount').eq('id', paymentTransactionId).maybeSingle();
+    if (!verifiedPayment || verifiedPayment.merchant_id !== req.auth.profile.merchant_id || verifiedPayment.status !== 'paid' || Number(verifiedPayment.amount) < amount) return res.status(402).json({ success: false, error: 'Payment could not be verified for this checkout.' });
   }
   if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
     return res.status(400).json({ success: false, error: 'Redeem points must be exactly 100, or 0 when no redemption is selected.' });

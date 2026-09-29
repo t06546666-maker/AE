@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, CheckCircle2, RefreshCw, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -37,12 +37,18 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [pointsToRedeem, setPointsToRedeem] = useState('');
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
 
   const [percentage, setPercentage] = useState(settings.merchantEarnPoints || (settings.earnOptions?.[0] || 10));
   const locked = useRef(false);
   const scannerRef = useRef<ScannerInstance | null>(null);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const paymentSettings = useQuery({
+    queryKey: ['merchant-payment-settings', merchantId],
+    queryFn: ({ signal }) => apiFetch<{ data: { paymentEnabled: boolean; upiId: string; displayName: string; mode: 'test' | 'live' } }>(`/api/merchants/${merchantId}/payment-settings`, { signal }),
+    enabled: Boolean(merchantId),
+  });
 
   async function stopCamera(instance = scannerRef.current) {
     if (!instance) return;
@@ -149,20 +155,42 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   }, [autoStart]);
 
   const checkout = useMutation({
-    mutationFn: () => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
+    mutationFn: (verifiedPaymentId?: string) => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: Number(pointsToRedeem || 0), location: 'In-store' }),
+      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: Number(pointsToRedeem || 0), paymentTransactionId: verifiedPaymentId || paymentTransactionId || undefined, location: 'In-store' }),
     }),
     onSuccess(data) {
       showToast(t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }));
       setCustomer(null); setAmount(''); locked.current = false;
+      setPaymentTransactionId('');
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError(error) { showToast(error.message, 'error'); },
   });
+
+  async function payAndCheckout() {
+    if (!paymentSettings.data?.data?.paymentEnabled) { checkout.mutate(undefined); return; }
+    if (!merchantId || !customer || !Number(amount)) return;
+    const script = await new Promise<boolean>((resolve) => {
+      if ((window as any).Razorpay) return resolve(true);
+      const tag = document.createElement('script'); tag.src = 'https://checkout.razorpay.com/v1/checkout.js'; tag.onload = () => resolve(true); tag.onerror = () => resolve(false); document.body.appendChild(tag);
+    });
+    if (!script) { showToast('Unable to load payment checkout. Check your connection.', 'error'); return; }
+    try {
+      const discount = Number(pointsToRedeem || 0) > 0 ? (Number(amount) * ((Number(pointsToRedeem || 0) / 100) * Number(settings.merchantRedeemDiscount || 5)) / 100) : 0;
+      const finalAmount = Math.max(0, Number(amount) - discount);
+      const created = await apiFetch<{ payment: { id: string }; razorpay: { orderId: string; keyId: string; amount: number; currency: string; displayName: string } }>('/api/payments/create-order', { method: 'POST', body: JSON.stringify({ merchant_id: merchantId, amount: finalAmount, metadata: { customerCode: customer.id } }) });
+      const Razorpay = (window as any).Razorpay;
+      const instance = new Razorpay({ key: created.razorpay.keyId, amount: created.razorpay.amount, currency: created.razorpay.currency, name: created.razorpay.displayName || 'Affiliate AE', order_id: created.razorpay.orderId, description: `AE checkout ₹${finalAmount.toFixed(2)}`, prefill: { contact: customer.phone, name: customer.name }, theme: { color: '#3158f5' }, handler: async (response: any) => {
+        try { const verified = await apiFetch<{ payment: { id: string } }>('/api/payments/verify', { method: 'POST', body: JSON.stringify(response) }); setPaymentTransactionId(verified.payment.id); checkout.mutate(verified.payment.id); } catch (error) { showToast(error instanceof Error ? error.message : 'Payment verification failed.', 'error'); }
+      } });
+      instance.on('payment.failed', () => showToast('Payment failed or was cancelled. No points were changed.', 'error'));
+      instance.open();
+    } catch (error) { showToast(error instanceof Error ? error.message : 'Could not start payment.', 'error'); }
+  }
 
   const eligibleAmount = Number(amount);
   const points = eligibleAmount < 10 ? 0 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * 10);
@@ -247,7 +275,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
                   <p className="amount-rule">INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts</p>
-                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || (transactionMode === 'combined' && Number(pointsToRedeem) < 100) || checkout.isPending} onClick={() => checkout.mutate()}>{transactionMode === 'combined' ? 'Complete Purchase, Redeem & Issue Points' : t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
+                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || (transactionMode === 'combined' && Number(pointsToRedeem) < 100) || checkout.isPending} onClick={() => void payAndCheckout()}>{paymentSettings.data?.data?.paymentEnabled ? 'Pay & Complete Checkout' : transactionMode === 'combined' ? 'Complete Purchase, Redeem & Issue Points' : t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
                 </>
               )}
             </div>
