@@ -2042,6 +2042,22 @@ app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, r
   return res.json({ success: true, data });
 });
 
+const defaultMerchantEntitlements = { plan: 'free', paid: false, expiresAt: null, features: { analytics: true, crm: false, advertising: false, offers: true, products: true, whatsapp: false, reports: false }, limits: { customers: 100, offers: 5, campaigns: 0 } };
+app.get('/api/merchants/:id/entitlements', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
+  const key = `merchant_entitlements_${cleanText(req.params.id, 100)}`;
+  const { data } = await supabaseAdmin.from('app_settings').select('value').eq('key', key).maybeSingle();
+  let value = defaultMerchantEntitlements; try { if (data?.value) value = { ...defaultMerchantEntitlements, ...JSON.parse(data.value), features: { ...defaultMerchantEntitlements.features, ...JSON.parse(data.value).features }, limits: { ...defaultMerchantEntitlements.limits, ...JSON.parse(data.value).limits } }; } catch (_) {}
+  res.json({ success: true, data: value });
+});
+app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), async (req, res) => {
+  const key = `merchant_entitlements_${cleanText(req.params.id, 100)}`;
+  const value = { plan: cleanText(req.body.plan, 40) || 'free', paid: Boolean(req.body.paid), expiresAt: req.body.expiresAt || null, features: { ...defaultMerchantEntitlements.features, ...(req.body.features || {}) }, limits: { ...defaultMerchantEntitlements.limits, ...(req.body.limits || {}) } };
+  const { error } = await supabaseAdmin.from('app_settings').upsert({ key, value: JSON.stringify(value) });
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  res.json({ success: true, data: value });
+});
+
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')
