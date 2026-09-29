@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
 import { Geolocation } from '@capacitor/geolocation';
 
