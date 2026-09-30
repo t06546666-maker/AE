@@ -129,7 +129,7 @@ export function App() {
         await PushNotifications.addListener('registration', (token) => {
           apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
-            body: JSON.stringify({ push_token: token.value })
+            body: JSON.stringify({ push_token: token.value, push_enabled: true })
           }).catch(console.error);
         });
 
