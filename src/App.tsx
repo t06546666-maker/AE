@@ -111,6 +111,10 @@ export function App() {
   });
 
   useEffect(() => {
+    let disposed = false;
+    const listeners: Array<{ remove: () => Promise<void> }> = [];
+    let registrationTimer: ReturnType<typeof setTimeout> | undefined;
+    const reportPush = (message: string) => window.dispatchEvent(new CustomEvent('ae:push-status', { detail: message }));
     if (user && CapacitorApp && Capacitor.isNativePlatform()) {
       Promise.all([
         import('@capacitor/push-notifications'),
@@ -128,28 +132,40 @@ export function App() {
         // Attach the registration listener before register(). Android may emit
         // the token immediately; registering first can lose that event and
         // leave the customer without a saved push token.
-        await PushNotifications.addListener('registration', (token) => {
-          apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
+        listeners.push(await PushNotifications.addListener('registration', (token) => {
+          if (disposed) return;
+          clearTimeout(registrationTimer);
+          void apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
             body: JSON.stringify({ push_token: token.value, push_enabled: true })
-          }).catch(console.error);
-        });
+          }).then(() => reportPush('Phone registered for notifications.')).catch(error => reportPush(`Could not save phone registration: ${error.message}`));
+        }));
+        listeners.push(await PushNotifications.addListener('registrationError', error => {
+          clearTimeout(registrationTimer);
+          reportPush(`Phone notification registration failed: ${error.error}`);
+        }));
 
         const finalPushStatus = await PushNotifications.checkPermissions();
-        if (finalPushStatus.receive === 'granted') await PushNotifications.register();
+        if (disposed) { for (const listener of listeners) void listener.remove(); return; }
+        if (finalPushStatus.receive === 'granted') {
+          registrationTimer = setTimeout(() => reportPush('Still waiting for Google notification registration. Check your connection and retry.'), 20000);
+          await PushNotifications.register();
+        } else reportPush('Allow notifications in Android settings to receive alerts.');
 
-        PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Push notification received: ', notification);
-        });
+        listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
+          void queryClient.invalidateQueries({ queryKey: ['customer'] });
+          reportPush('A notification was received on this phone.');
+        }));
 
-        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          if (notification.notification.data?.url) {
+        listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+          if (typeof notification.notification.data?.url === 'string' && notification.notification.data.url.startsWith('/') && !notification.notification.data.url.startsWith('//')) {
             navigate(notification.notification.data.url);
           }
-        });
-      }).catch((error) => console.error('Native permission setup failed', error));
+        }));
+      }).catch((error) => reportPush(`Notification setup failed: ${error.message}`));
     }
-  }, [user?.role, navigate]);
+    return () => { disposed = true; clearTimeout(registrationTimer); for (const listener of listeners) void listener.remove(); };
+  }, [user?.id, user?.role, navigate, queryClient]);
 
   useEffect(() => {
     const token = getAccessToken();
