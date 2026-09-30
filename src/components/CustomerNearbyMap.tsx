@@ -88,7 +88,7 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants
     } catch (error) { setStatus(error instanceof Error ? error.message : 'We could not determine your location.'); }
   }
 
-  return <section className="px-5 mb-6">
+  return <section id="customer-nearby-map" className="px-5 mb-6">
     <div className="bg-gray-100 rounded-3xl h-56 relative overflow-hidden shadow-inner border border-gray-200">
       <div ref={containerRef} className="absolute inset-0" />
       {!mapsKey && <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 to-blue-50 text-center px-7"><div><MapPin className="mx-auto mb-2 text-[#087a4b]" /><strong className="block text-gray-800">Nearby with Google Maps</strong><p className="mt-1 text-xs text-gray-500">Add your Maps key to show real merchant pins.</p></div></div>}

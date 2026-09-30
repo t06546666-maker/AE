@@ -154,7 +154,7 @@ export function CustomerExplore() {
           sortedMerchants.map((merchant, idx) => (
             <button
               key={merchant.id}
-              onClick={() => setSelectedMerchantId(merchant.id)}
+              onClick={() => { setSelectedMerchantId(merchant.id); void locateUser(); document.getElementById('customer-nearby-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
               className="w-full bg-white rounded-[20px] p-4 flex items-center justify-between shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left"
             >
               <div className="flex items-center gap-3">
