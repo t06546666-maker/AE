@@ -3565,9 +3565,9 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   const merchantName = merchantForNotification?.name || 'your merchant';
   await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId: purchase.id, merchantName });
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
-  const whatsapp = await queueWhatsApp(purchase, 'reward');
-  scheduleBackground(() => runPurchaseNotifications(purchase, 'reward', whatsapp));
-  res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, whatsapp });
+  // Purchases use native push notifications only. WhatsApp is reserved for
+  // onboarding (welcome and temporary-password messages).
+  res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, whatsapp: { skipped: true, reason: 'push_only' } });
 });
 
 app.get('/api/orders', requireAuth, async (req, res) => {
@@ -4989,10 +4989,6 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       total_points: newBalance
     };
 
-    const whatsapp = await queueWhatsApp(fakePurchase, 'redeem');
-    if (whatsapp.queued) {
-      scheduleBackground(() => sendRedeemWhatsApp(fakePurchase, whatsapp.logId));
-    }
     await pushToCustomer(
       customer.id,
       'Points redeemed',
@@ -5000,7 +4996,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       { url: '/customer/transactions', transactionId: redemption.id, merchantName: fakePurchase.merchant_name },
     );
     
-    res.json({ success: true, discountAmount, newBalance, whatsapp });
+    res.json({ success: true, discountAmount, newBalance, whatsapp: { skipped: true, reason: 'push_only' } });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
