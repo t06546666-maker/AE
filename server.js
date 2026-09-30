@@ -4993,6 +4993,12 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     if (whatsapp.queued) {
       scheduleBackground(() => sendRedeemWhatsApp(fakePurchase, whatsapp.logId));
     }
+    await pushToCustomer(
+      customer.id,
+      'Points redeemed',
+      `${fakePurchase.merchant_name} redeemed ${pointsToRedeem} points and gave you ₹${discountAmount.toFixed(2)} discount.`,
+      { url: '/customer/transactions', transactionId: redemption.id, merchantName: fakePurchase.merchant_name },
+    );
     
     res.json({ success: true, discountAmount, newBalance, whatsapp });
   } catch (error) {
