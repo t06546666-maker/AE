@@ -15,13 +15,14 @@ select
 from generate_series(1, 1000) as series(n)
 on conflict do nothing;
 
-insert into public.customers (customer_code, merchant_id, name, phone, email)
+insert into public.customers (customer_code, merchant_id, name, phone, email, network_id)
 select
   'LOADC' || lpad(c.n::text, 5, '0'),
   m.id,
   'Load Test Customer ' || lpad(c.n::text, 5, '0'),
   '918800' || lpad(c.n::text, 6, '0'),
-  'loadtest.customer.' || lpad(c.n::text, 5, '0') || '@example.test'
+  'loadtest.customer.' || lpad(c.n::text, 5, '0') || '@example.test',
+  '00000000-0000-0000-0000-000000000000'
 from generate_series(1, 10000) as c(n)
 join public.merchants m
   on m.merchant_code = 'LOADM' || lpad((((c.n - 1) % 1000) + 1)::text, 4, '0')
