@@ -5,12 +5,13 @@
 
 begin;
 
-insert into public.merchants (merchant_code, name, email, phone)
+insert into public.merchants (merchant_code, name, email, phone, network_id)
 select
   'LOADM' || lpad(n::text, 4, '0'),
   'Load Test Merchant ' || lpad(n::text, 4, '0'),
   'loadtest.merchant.' || lpad(n::text, 4, '0') || '@example.test',
-  '919900' || lpad(n::text, 6, '0')
+  '919900' || lpad(n::text, 6, '0'),
+  '00000000-0000-0000-0000-000000000000'
 from generate_series(1, 1000) as series(n)
 on conflict do nothing;
 
