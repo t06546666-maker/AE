@@ -3503,7 +3503,6 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   if (!Number.isFinite(requestedRate) || requestedRate < 1 || requestedRate > 100) {
     return res.status(400).json({ success: false, error: 'Points per INR 100 must be between 1 and 100.' });
   }
-  const selectedPoints = calculateFixedPurchasePoints(amount, requestedRate);
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
   const paymentTransactionId = cleanText(req.body.paymentTransactionId, 100);
   if (
@@ -3535,13 +3534,14 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     redemptionContext = { customer, membership, discountPercentage, discountAmount: amount * (discountPercentage / 100) };
   }
   
-  const pointsToIssue = selectedPoints;
-
   const { data, error } = await processPurchase({
     p_customer_code: customerCode,
     p_merchant_id: req.auth.profile.merchant_id,
     p_amount: amount,
-    p_points_per_100: pointsToIssue,
+    // The database function expects the earning rate (points per ₹100),
+    // not the already-calculated transaction total. Passing selectedPoints
+    // here caused ₹10,000 purchases to award 10,000 points.
+    p_points_per_100: requestedRate,
     p_source: 'qr',
     p_location: cleanText(req.body.location, 160) || 'In-store',
   }, req.get('Idempotency-Key'));
