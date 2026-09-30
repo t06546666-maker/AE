@@ -118,8 +118,10 @@ export function App() {
       ]).then(async ([{ PushNotifications }, { Geolocation }]) => {
         // Ask for the permissions needed by the native app at first use.
         // Android controls the actual system prompts; GPS cannot be enabled silently.
-        const locationStatus = await Geolocation.checkPermissions();
-        if (locationStatus.location !== 'granted') await Geolocation.requestPermissions();
+        // Location permission must never block push registration.
+        void Geolocation.checkPermissions().then(status => {
+          if (status.location !== 'granted') return Geolocation.requestPermissions();
+        }).catch(error => console.warn('Location permission unavailable', error));
 
         const pushStatus = await PushNotifications.checkPermissions();
         if (pushStatus.receive !== 'granted') await PushNotifications.requestPermissions();

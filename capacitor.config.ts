@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appName: 'AE',
   webDir: 'dist',
   plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    },
     FirebaseAuthentication: {
       providers: ['phone']
     }

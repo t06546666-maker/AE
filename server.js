@@ -51,7 +51,8 @@ async function sendPushNotification(token, title, body, data = {}) {
     await getMessaging().send({
       token,
       notification: { title, body },
-      data
+      data: Object.fromEntries(Object.entries(data).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)])),
+      android: { priority: 'high' }
     });
     return true;
   } catch (error) {
@@ -1893,6 +1894,16 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   res.json({ success: true, offers: mappedOffers });
 });
 
+app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, res) => {
+  if (req.customer.push_enabled === false) return res.status(400).json({ success: false, error: 'Enable notifications in your profile settings first.' });
+  if (!req.customer.push_token) return res.status(400).json({ success: false, error: 'This account has no registered phone. Open the Android app and enable notifications first.' });
+  await firebaseInitializationPromise;
+  if (!firebaseInitialized) return res.status(503).json({ success: false, error: 'The server notification service is not configured. Please contact AE support.' });
+  const sent = await sendPushNotification(req.customer.push_token, 'AE notification test', 'Your phone can receive AE notifications.', { url: '/customer/notifications' });
+  if (!sent) return res.status(502).json({ success: false, error: 'Firebase rejected the notification. The server log contains the delivery error.' });
+  res.json({ success: true });
+});
+
 app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   const customerId = req.customer.id;
   const { push_token, push_enabled, whatsapp_enabled, location_enabled } = req.body;
@@ -1913,11 +1924,6 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
     .eq('id', customerId);
 
   if (error) {
-    // If the columns don't exist yet, we just gracefully succeed or log it
-    // because the SQL patch might not be run yet.
-    if (error.code === '42703') { // undefined_column
-       return res.json({ success: true, warning: 'Columns not available in DB yet.' });
-    }
     return res.status(500).json({ success: false, error: error.message });
   }
 
