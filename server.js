@@ -2104,11 +2104,26 @@ app.post('/api/payments/create-upi-intent', requireAuth, requireRole('merchant')
   const settings = await readMerchantPaymentSettings(merchantId);
   if (!settings.paymentEnabled || !settings.upiId) return res.status(400).json({ success: false, error: 'Merchant UPI payments are not enabled' });
   if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'A valid payment amount is required' });
+  const customerCode = cleanText(req.body.customer_id, 100);
+  const { data: recipient, error: recipientError } = await supabaseAdmin.from('customers').select('id').eq('customer_code', customerCode).maybeSingle();
+  if (recipientError || !recipient) return res.status(400).json({ success: false, error: 'The payment customer could not be found.' });
   const reference = `AE${Date.now().toString(36).toUpperCase()}`;
-  const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) || null, amount, status: 'pending', metadata: { provider: 'upi', reference } }).select().single();
+  const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: recipient.id, amount, status: 'pending', metadata: { provider: 'upi', reference } }).select().single();
   if (error) return res.status(500).json({ success: false, error: error.message });
   const params = new URLSearchParams({ pa: settings.upiId, pn: settings.displayName || 'AE Merchant', am: amount.toFixed(2), cu: 'INR', tn: `AE payment ${reference}` });
+  await pushToCustomer(recipient.id, 'Payment requested', `${settings.displayName || 'AE Merchant'} requested ₹${amount.toFixed(2)}. Open AE to pay.`, { url: '/customer/home', paymentId: data.id });
   res.status(201).json({ success: true, payment: data, upiUrl: `upi://pay?${params.toString()}`, reference });
+});
+
+app.get('/api/customer/payment-requests', requireCustomerAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,amount,metadata,created_at,merchants(name)').eq('customer_id', req.customer.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(20);
+  if (error) return res.status(500).json({ success: false, error: 'Could not load payment requests.' });
+  const payments = await Promise.all((data || []).map(async payment => {
+    const settings = await readMerchantPaymentSettings(payment.merchant_id);
+    const params = new URLSearchParams({ pa: settings.upiId, pn: settings.displayName || payment.merchants?.name || 'AE Merchant', am: Number(payment.amount).toFixed(2), cu: 'INR', tn: `AE payment ${payment.metadata?.reference || payment.id}` });
+    return { id: payment.id, amount: payment.amount, merchantName: payment.merchants?.name || settings.displayName || 'AE Merchant', upiUrl: settings.paymentEnabled && settings.upiId ? `upi://pay?${params}` : null };
+  }));
+  res.json({ success: true, payments });
 });
 
 app.post('/api/payments/confirm-upi', requireAuth, requireRole('merchant'), async (req, res) => {
@@ -3524,8 +3539,10 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);
   if (paymentSettings.paymentEnabled) {
     if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
-    const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,status,amount').eq('id', paymentTransactionId).maybeSingle();
-    if (!verifiedPayment || verifiedPayment.merchant_id !== req.auth.profile.merchant_id || verifiedPayment.status !== 'paid' || Number(verifiedPayment.amount) < amount) return res.status(402).json({ success: false, error: 'Payment could not be verified for this checkout.' });
+    const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,customer_id,status,amount,customers(customer_code)').eq('id', paymentTransactionId).maybeSingle();
+    const paymentRewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
+    const payableAmount = Math.round((amount - (pointsToRedeem === 100 ? amount * Number(paymentRewardSettings.redeem_discount_per_100 || 5) / 100 : 0)) * 100);
+    if (!verifiedPayment || verifiedPayment.merchant_id !== req.auth.profile.merchant_id || verifiedPayment.customers?.customer_code !== customerCode || verifiedPayment.status !== 'paid' || Math.round(Number(verifiedPayment.amount) * 100) !== payableAmount) return res.status(402).json({ success: false, error: 'Payment does not match this customer and checkout amount.' });
   }
   if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
     return res.status(400).json({ success: false, error: 'Redeem points must be exactly 100, or 0 when no redemption is selected.' });

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerMerchants, useCustomerOffers } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
+import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const { data, isLoading } = useCustomerDashboard();
@@ -54,6 +55,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
   return (
     <div className="bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
+      <CustomerPaymentRequests />
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
