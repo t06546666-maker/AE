@@ -174,21 +174,13 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   async function payAndCheckout() {
     if (!paymentSettings.data?.data?.paymentEnabled) { checkout.mutate(undefined); return; }
     if (!merchantId || !customer || !Number(amount)) return;
-    const script = await new Promise<boolean>((resolve) => {
-      if ((window as any).Razorpay) return resolve(true);
-      const tag = document.createElement('script'); tag.src = 'https://checkout.razorpay.com/v1/checkout.js'; tag.onload = () => resolve(true); tag.onerror = () => resolve(false); document.body.appendChild(tag);
-    });
-    if (!script) { showToast('Unable to load payment checkout. Check your connection.', 'error'); return; }
     try {
       const discount = Number(pointsToRedeem || 0) > 0 ? (Number(amount) * ((Number(pointsToRedeem || 0) / 100) * Number(settings.merchantRedeemDiscount || 5)) / 100) : 0;
       const finalAmount = Math.max(0, Number(amount) - discount);
-      const created = await apiFetch<{ payment: { id: string }; razorpay: { orderId: string; keyId: string; amount: number; currency: string; displayName: string } }>('/api/payments/create-order', { method: 'POST', body: JSON.stringify({ merchant_id: merchantId, amount: finalAmount, metadata: { customerCode: customer.id } }) });
-      const Razorpay = (window as any).Razorpay;
-      const instance = new Razorpay({ key: created.razorpay.keyId, amount: created.razorpay.amount, currency: created.razorpay.currency, name: created.razorpay.displayName || 'Affiliate AE', order_id: created.razorpay.orderId, description: `AE checkout ₹${finalAmount.toFixed(2)}`, prefill: { contact: customer.phone, name: customer.name }, theme: { color: '#3158f5' }, handler: async (response: any) => {
-        try { const verified = await apiFetch<{ payment: { id: string } }>('/api/payments/verify', { method: 'POST', body: JSON.stringify(response) }); setPaymentTransactionId(verified.payment.id); checkout.mutate(verified.payment.id); } catch (error) { showToast(error instanceof Error ? error.message : 'Payment verification failed.', 'error'); }
-      } });
-      instance.on('payment.failed', () => showToast('Payment failed or was cancelled. No points were changed.', 'error'));
-      instance.open();
+      const created = await apiFetch<{ payment: { id: string }; upiUrl: string }>('/api/payments/create-upi-intent', { method: 'POST', body: JSON.stringify({ amount: finalAmount, customer_id: customer.id }) });
+      setPaymentTransactionId(created.payment.id);
+      window.location.href = created.upiUrl;
+      window.setTimeout(() => { if (window.confirm('Did the customer complete the UPI payment?')) apiFetch<{ payment: { id: string } }>('/api/payments/confirm-upi', { method: 'POST', body: JSON.stringify({ paymentId: created.payment.id }) }).then(() => checkout.mutate(created.payment.id)).catch(error => showToast(error.message, 'error')); }, 1500);
     } catch (error) { showToast(error instanceof Error ? error.message : 'Could not start payment.', 'error'); }
   }
 

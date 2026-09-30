@@ -2061,7 +2061,7 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
 
 // Merchant payment settings are kept as a merchant-scoped record in app_settings
 // so they work on existing Supabase installations without a destructive migration.
-const defaultMerchantPaymentSettings = { upiId: '', displayName: '', paymentEnabled: false, provider: 'razorpay', mode: 'test' };
+const defaultMerchantPaymentSettings = { upiId: '', displayName: '', paymentEnabled: false, provider: 'upi', mode: 'live' };
 function merchantPaymentKey(id) { return `merchant_payment_settings_${cleanText(id, 100)}`; }
 async function readMerchantPaymentSettings(id) {
   const { data } = await supabaseAdmin.from('app_settings').select('value').eq('key', merchantPaymentKey(id)).maybeSingle();
@@ -2077,10 +2077,33 @@ app.patch('/api/merchants/:id/payment-settings', requireAuth, async (req, res) =
   if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
   const upiId = cleanText(req.body.upiId, 120).toLowerCase();
   if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
-  const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'razorpay', mode: req.body.mode === 'live' ? 'live' : 'test' };
+  const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'upi', mode: 'live' };
   const { error } = await supabaseAdmin.from('app_settings').upsert({ key: merchantPaymentKey(req.params.id), value: JSON.stringify(value) });
   if (error) return res.status(400).json({ success: false, error: error.message });
   res.json({ success: true, data: value });
+});
+
+// Direct UPI intent flow. No gateway is involved; payment remains pending until
+// the merchant confirms the customer completed the transfer in their UPI app.
+app.post('/api/payments/create-upi-intent', requireAuth, requireRole('merchant'), async (req, res) => {
+  const merchantId = req.auth.profile.merchant_id;
+  const amount = Number(req.body.amount);
+  const settings = await readMerchantPaymentSettings(merchantId);
+  if (!settings.paymentEnabled || !settings.upiId) return res.status(400).json({ success: false, error: 'Merchant UPI payments are not enabled' });
+  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'A valid payment amount is required' });
+  const reference = `AE${Date.now().toString(36).toUpperCase()}`;
+  const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) || null, amount, status: 'pending', metadata: { provider: 'upi', reference } }).select().single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  const params = new URLSearchParams({ pa: settings.upiId, pn: settings.displayName || 'AE Merchant', am: amount.toFixed(2), cu: 'INR', tn: `AE payment ${reference}` });
+  res.status(201).json({ success: true, payment: data, upiUrl: `upi://pay?${params.toString()}`, reference });
+});
+
+app.post('/api/payments/confirm-upi', requireAuth, requireRole('merchant'), async (req, res) => {
+  const paymentId = cleanText(req.body.paymentId, 100);
+  const { data, error } = await supabaseAdmin.from('payment_transactions').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', paymentId).eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'pending').select('id,status').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  if (!data) return res.status(404).json({ success: false, error: 'Pending UPI payment was not found' });
+  res.json({ success: true, payment: data });
 });
 
 app.get('/api/merchants', requireAuth, async (req, res) => {
