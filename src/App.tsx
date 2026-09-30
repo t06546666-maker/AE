@@ -123,15 +123,18 @@ export function App() {
 
         const pushStatus = await PushNotifications.checkPermissions();
         if (pushStatus.receive !== 'granted') await PushNotifications.requestPermissions();
-        const finalPushStatus = await PushNotifications.checkPermissions();
-        if (finalPushStatus.receive === 'granted') await PushNotifications.register();
-
-        PushNotifications.addListener('registration', (token) => {
+        // Attach the registration listener before register(). Android may emit
+        // the token immediately; registering first can lose that event and
+        // leave the customer without a saved push token.
+        await PushNotifications.addListener('registration', (token) => {
           apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
             body: JSON.stringify({ push_token: token.value })
           }).catch(console.error);
         });
+
+        const finalPushStatus = await PushNotifications.checkPermissions();
+        if (finalPushStatus.receive === 'granted') await PushNotifications.register();
 
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push notification received: ', notification);

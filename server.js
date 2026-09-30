@@ -3557,7 +3557,13 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     await supabaseAdmin.from('customers').update({ reward_points: Math.max(0, Number(redemptionContext.customer.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('id', redemptionContext.customer.id);
     await supabaseAdmin.from('customer_merchants').update({ reward_points: Math.max(0, Number(redemptionContext.membership.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('customer_id', redemptionContext.customer.id).eq('merchant_id', req.auth.profile.merchant_id);
   }
-  await pushToCustomer(purchase.customer_id, 'Purchase recorded', `Your purchase was recorded and ${purchase.points_earned || 0} points were added.`, { url: '/customer/home', orderId: purchase.id });
+  const { data: merchantForNotification } = await supabaseAdmin
+    .from('merchants')
+    .select('name')
+    .eq('id', req.auth.profile.merchant_id)
+    .maybeSingle();
+  const merchantName = merchantForNotification?.name || 'your merchant';
+  await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId: purchase.id, merchantName });
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
   const whatsapp = await queueWhatsApp(purchase, 'reward');
   scheduleBackground(() => runPurchaseNotifications(purchase, 'reward', whatsapp));
