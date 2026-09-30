@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, Shield, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useCustomerMerchants } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
 
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
@@ -21,6 +22,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const { pushEnabled, locationEnabled, requestPush, requestLocation, setWhatsApp } = usePermissions();
+  const { data: merchantData } = useCustomerMerchants(1);
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
