@@ -169,6 +169,7 @@ export function CustomerExplore() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {merchant.latitude != null && merchant.longitude != null ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`} target="_blank" rel="noreferrer" aria-label={`Get directions to ${merchant.merchant_name}`} onClick={(event) => event.stopPropagation()} className="rounded-full bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-[#087a4b]">Directions</a> : null}
                 <button type="button" aria-label={favorites.includes(merchant.id) ? 'Remove from favorites' : 'Add to favorites'} onClick={(event) => { event.stopPropagation(); toggleFavorite(merchant.id); }} className="rounded-full p-2"><Heart size={21} className={favorites.includes(merchant.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'} /></button>
                 <ChevronRight size={18} className="text-gray-400" />
               </div>
