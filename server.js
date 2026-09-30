@@ -1785,6 +1785,13 @@ app.post('/api/customer/feedback', requireCustomerAuth, async (req, res) => {
   res.status(201).json({ success: true, feedback: created.data });
 });
 
+app.get('/api/customer/merchant-reviews/:merchantId', requireCustomerAuth, async (req, res) => {
+  const merchantId = cleanText(req.params.merchantId, 100);
+  const { data, error } = await supabaseAdmin.from('customer_feedback').select('id,rating,message,created_at,customers(name)').eq('merchant_id', merchantId).eq('feedback_type', 'merchant').order('created_at', { ascending: false }).limit(50);
+  if (error) return res.status(500).json({ success: false, error: 'Unable to load reviews' });
+  res.json({ success: true, reviews: (data || []).map(row => ({ id: row.id, rating: row.rating, message: row.message, createdAt: row.created_at, customerName: row.customers?.name || 'Customer' })) });
+});
+
 app.get('/api/feedback', requireAuth, async (req, res) => {
   let query = supabaseAdmin.from('customer_feedback')
     .select('id,feedback_type,rating,message,created_at,merchant_id,customers(name,phone),merchants(name)')

@@ -4,6 +4,7 @@ import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCust
 import { useEffect, useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
 import { Geolocation } from '@capacitor/geolocation';
+import { apiFetch } from '../../api';
 
 
 
@@ -17,6 +18,10 @@ export function CustomerExplore() {
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviews, setReviews] = useState<any[]>([]);
 
   const categoriesQuery = useCustomerCategories();
   const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
@@ -80,6 +85,8 @@ export function CustomerExplore() {
     setPage(1);
   };
   const toggleFavorite = (id: string) => setFavorites(current => { const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]; localStorage.setItem('ae_favorite_merchants', JSON.stringify(next)); return next; });
+  const openMerchant = async (merchant: typeof merchants[number]) => { setDetailMerchant(merchant); setSelectedMerchantId(merchant.id); document.getElementById('customer-nearby-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${merchant.id}`); setReviews(result.reviews || []); } catch { setReviews([]); } };
+  const submitReview = async () => { if (!detailMerchant || reviewMessage.trim().length < 2) return; await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: 'merchant', merchant_id: detailMerchant.id, rating: reviewRating, message: reviewMessage.trim() }) }); setReviewMessage(''); const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${detailMerchant.id}`); setReviews(result.reviews || []); };
 
   return (
     <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
@@ -154,7 +161,7 @@ export function CustomerExplore() {
           sortedMerchants.map((merchant, idx) => (
             <button
               key={merchant.id}
-              onClick={() => { setSelectedMerchantId(merchant.id); void locateUser(); document.getElementById('customer-nearby-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
+              onClick={() => { void locateUser(); void openMerchant(merchant); }}
               className="w-full bg-white rounded-[20px] p-4 flex items-center justify-between shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left"
             >
               <div className="flex items-center gap-3">
@@ -177,6 +184,8 @@ export function CustomerExplore() {
           ))
         )}
       </div>
+
+      {detailMerchant ? <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-5" onClick={() => setDetailMerchant(null)}><section className="max-h-[85vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 sm:rounded-3xl" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2><p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p><p className="mt-1 text-sm font-bold text-[#3158f5]">{distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'} km away</p></div><button onClick={() => setDetailMerchant(null)} className="text-2xl text-gray-400">×</button></div>{detailMerchant.latitude != null && detailMerchant.longitude != null ? <a className="mb-5 block rounded-xl bg-[#087a4b] px-4 py-3 text-center font-bold text-white" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${detailMerchant.latitude},${detailMerchant.longitude}`}>Get directions</a> : null}<h3 className="mb-2 font-bold">Write a review</h3><div className="flex gap-1">{[1,2,3,4,5].map(star => <button key={star} onClick={() => setReviewRating(star)} className={`text-2xl ${star <= reviewRating ? 'text-amber-400' : 'text-gray-300'}`}>★</button>)}</div><textarea value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder="Share your experience" className="mt-2 min-h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" /><button onClick={() => void submitReview()} className="mt-2 rounded-xl bg-[#3158f5] px-4 py-2 text-sm font-bold text-white">Submit review</button><h3 className="mb-2 mt-6 font-bold">Customer reviews</h3>{reviews.length ? reviews.map(review => <div key={review.id} className="border-b border-gray-100 py-3"><div className="text-amber-400">{'★'.repeat(review.rating || 0)}<span className="ml-2 text-xs text-gray-500">{review.customerName}</span></div><p className="mt-1 text-sm text-gray-700">{review.message}</p></div>) : <p className="text-sm text-gray-500">No reviews yet.</p>}</section></div> : null}
 
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex justify-between items-center pt-4 pb-6 px-5">
