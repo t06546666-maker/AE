@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, Shield, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
-import { useCustomerMerchants } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
 
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
@@ -19,12 +18,9 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   const [feedbackStatus, setFeedbackStatus] = useState('');
   const [editName, setEditName] = useState(user.name || '');
   const [editMode, setEditMode] = useState(false);
-  const [favoriteIds] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
   
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const { pushEnabled, locationEnabled, requestPush, requestLocation, setWhatsApp } = usePermissions();
-  const { data: merchantData } = useCustomerMerchants(1);
-  const favoriteMerchants = (merchantData?.merchants || []).filter((merchant) => favoriteIds.includes(merchant.id));
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -115,13 +111,10 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
-          <div className="p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center space-x-4"><Heart size={20} className="text-red-400" /><span className="font-semibold text-[15px] text-gray-800">My Favorite Stores</span></div>
-              <Link to="/customer/favorites" aria-label="View favorite stores"><ChevronRight size={18} className="text-gray-400" /></Link>
-            </div>
-            {favoriteMerchants.length ? <div className="space-y-2">{favoriteMerchants.map((merchant) => <Link key={merchant.id} to="/customer/favorites" className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2"><span className="text-sm font-semibold text-gray-800">{merchant.merchant_name}</span><Heart size={15} className="fill-red-500 text-red-500" /></Link>)}</div> : <p className="text-xs text-gray-500">No favorite stores yet. Tap the heart on a merchant to add one.</p>}
-          </div>
+          <Link to="/customer/favorites" className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+            <div className="flex items-center space-x-4"><Heart size={20} className="text-red-400" /><span className="font-semibold text-[15px] text-gray-800">My Favorite Stores</span></div>
+            <ChevronRight size={18} className="text-gray-400" />
+          </Link>
         </div>
 
         {/* Section 2 */}
