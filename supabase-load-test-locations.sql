@@ -9,8 +9,7 @@ with numbered as (
 update public.merchants as m
 set
   latitude = round((10.699335 + ((((numbered.n % 25) - 12)::numeric) * 0.0025))::numeric, 6),
-  longitude = round((76.7492411 + ((((floor(numbered.n / 25)::int % 25) - 12)::numeric) * 0.0025))::numeric, 6),
-  updated_at = now()
+  longitude = round((76.7492411 + ((((floor(numbered.n / 25)::int % 25) - 12)::numeric) * 0.0025))::numeric, 6)
 from numbered
 where m.id = numbered.id;
 
