@@ -42,6 +42,7 @@ import { CustomerTransactions } from './pages/customer/Transactions';
 import { CustomerOffers } from './pages/customer/Offers';
 import { CustomerNotifications } from './pages/customer/Notifications';
 import { CustomerReferral } from './pages/customer/Referral';
+import { CustomerFavorites } from './pages/customer/Favorites';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -218,6 +219,7 @@ export function App() {
             <Route path="/customer/scan" element={<CustomerScan user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
+            <Route path="/customer/favorites" element={<CustomerFavorites />} />
             <Route path="/customer/transactions" element={<CustomerTransactions user={user} />} />
             <Route path="/customer/offers" element={<CustomerOffers />} />
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
