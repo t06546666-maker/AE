@@ -1642,7 +1642,7 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
   try {
     const { data: orders } = await supabaseAdmin
       .from('orders')
-      .select('id, created_at, points_earned, merchants(name)')
+      .select('id, created_at, points_earned:reward_points, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -1674,7 +1674,7 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
   try {
     const { data: orders } = await supabaseAdmin
       .from('orders')
-      .select('id, created_at, points_earned, merchants(name)')
+      .select('id, created_at, points_earned:reward_points, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false });
 
@@ -1894,7 +1894,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
 });
 
 app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
-  const customerId = req.auth.customerId;
+  const customerId = req.customer.id;
   const { push_token, push_enabled, whatsapp_enabled, location_enabled } = req.body;
   
   const updates = {};
@@ -3526,7 +3526,9 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   }
   let redemptionContext = null;
   if (pointsToRedeem > 0) {
-    const { data: customer } = await supabaseAdmin.from('customers').select('id, reward_points').or(`customer_code.eq.${customerCode},id.eq.${customerCode}`).maybeSingle();
+    const customerIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerCode);
+    const { data: customer, error: customerError } = await supabaseAdmin.from('customers').select('id, reward_points').eq(customerIsUuid ? 'id' : 'customer_code', customerCode).maybeSingle();
+    if (customerError) return res.status(500).json({ success: false, error: 'Unable to read customer balance. Please try again.' });
     const { data: membership } = customer ? await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle() : { data: null };
     if (!customer || !membership || Number(membership.reward_points || 0) < pointsToRedeem) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
     const rewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);

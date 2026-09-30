@@ -106,7 +106,7 @@ BEGIN
 
   -- 2. Pro-rata points calculation: Floor((Amount / 100) * points_per_100)
   IF v_eligible_amount > 0 THEN
-    v_points := floor((v_eligible_amount / 100.0) * p_points_per_100);
+    v_points := least(100, floor(v_eligible_amount / 100.0) * p_points_per_100);
   ELSE
     v_points := 0;
   END IF;
