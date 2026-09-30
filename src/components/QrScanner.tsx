@@ -230,9 +230,9 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
               <label className="scanner-mode-field">Transaction type
                 <select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
-                  <option value="earn">Purchase &amp; issue points</option>
-                  <option value="redeem">Redeem points for discount</option>
-                  <option value="combined">Do both: redeem + issue points</option>
+                  <option value="earn">Issue points</option>
+                  <option value="redeem">Redeem points</option>
+                  <option value="combined">Both: redeem + issue points</option>
                 </select>
               </label>
               {redeemResult ? (
@@ -263,7 +263,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                     <label>Points per INR 100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).filter((option: number) => option >= 1 && option <= 100).map((option: number) => <option key={option} value={option}>{option} pts</option>)}</select></label>
-                    <label>{transactionMode === 'combined' ? 'Points to Redeem (fixed 100)' : 'Points to Redeem (optional)'}<input className="amount-input" type="number" min="0" max="100" value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
+                    {transactionMode === 'combined' ? <label>Points to Redeem<input className="amount-input" type="number" min="100" max="100" value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label> : null}
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
                   <p className="amount-rule">INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts</p>
