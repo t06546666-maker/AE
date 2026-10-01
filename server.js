@@ -102,10 +102,14 @@ try {
 } catch {}
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGINS || '')
+// Capacitor Android WebViews use localhost/capacitor origins, not only the
+// hosted website origin. Always allow these native origins so FCM tokens can
+// be saved automatically after login; deployment-specific origins remain env
+// configurable.
+const allowedOrigins = [...new Set(`${process.env.CORS_ORIGINS || ''},http://localhost,https://localhost,capacitor://localhost`
   .split(',')
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter(Boolean))];
 
 app.disable('x-powered-by');
 app.use(cors({
