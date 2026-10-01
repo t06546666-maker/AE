@@ -112,7 +112,7 @@ const app = express();
 // hosted website origin. Always allow these native origins so FCM tokens can
 // be saved automatically after login; deployment-specific origins remain env
 // configurable.
-const allowedOrigins = [...new Set(`${process.env.CORS_ORIGINS || ''},http://localhost,https://localhost,capacitor://localhost`
+const allowedOrigins = [...new Set(`${process.env.CORS_ORIGINS || ''},https://affiliateae.co.in,https://www.affiliateae.co.in,http://localhost,https://localhost,capacitor://localhost`
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean))];
@@ -123,9 +123,16 @@ app.use(cors({
     if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('Origin not allowed by CORS'));
+    const error = new Error('Origin not allowed by CORS');
+    error.status = 403;
+    return callback(error);
   },
 }));
+// Express forwards middleware errors through next(), not the API wrapper's catch.
+app.use((error, _req, res, next) => {
+  if (error.message !== 'Origin not allowed by CORS') return next(error);
+  return res.status(403).json({ success: false, error: 'This website origin is not allowed', code: 'ORIGIN_NOT_ALLOWED' });
+});
 app.use(express.json({
   limit: '100kb',
   verify(req, _res, buffer) {
