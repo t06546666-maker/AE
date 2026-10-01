@@ -1588,6 +1588,7 @@ async function cleanupExpiredPoints(customerId) {
 }
 
 app.post('/api/auth/customer/login', async (req, res) => {
+  if (!requireSupabase(res)) return;
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const cleanPhone = normalizePhone(req.body.phone);
   
