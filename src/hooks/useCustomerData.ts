@@ -6,6 +6,7 @@ export type ActivityItem = {
   created_at: string;
   type: 'earn' | 'redeem';
   merchant_name?: string;
+  amount?: number;
   points: number;
 };
 

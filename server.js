@@ -1643,21 +1643,21 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
   try {
     const { data: orders } = await supabaseAdmin
       .from('orders')
-      .select('id, created_at, points_earned:reward_points, merchants(name)')
+      .select('id, created_at, amount, points_earned:reward_points, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false })
       .limit(5);
 
     const { data: redemptions } = await supabaseAdmin
       .from('point_redemptions')
-      .select('id, created_at, points_redeemed, merchants(name)')
+      .select('id, created_at, transaction_amount, points_redeemed, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false })
       .limit(5);
 
     const activity = [
-      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, points: o.points_earned })),
-      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, points: r.points_redeemed }))
+      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount, points: o.points_earned })),
+      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
 
     res.json({
