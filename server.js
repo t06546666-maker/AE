@@ -1909,7 +1909,7 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   const { push_token, push_enabled, whatsapp_enabled, location_enabled } = req.body;
   
   const updates = {};
-  if (push_token !== undefined) updates.push_token = push_token;
+  if (push_token !== undefined) updates.push_token = cleanText(push_token, 4096);
   if (push_enabled !== undefined) updates.push_enabled = Boolean(push_enabled);
   if (whatsapp_enabled !== undefined) updates.whatsapp_enabled = Boolean(whatsapp_enabled);
   if (location_enabled !== undefined) updates.location_enabled = Boolean(location_enabled);
@@ -1927,7 +1927,16 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 
-  res.json({ success: true });
+  // Welcome only when a phone is newly registered or notifications re-enabled.
+  // Ordinary app opens with the same token must not generate another welcome.
+  const welcomeNeeded = updates.push_token && updates.push_enabled === true &&
+    (req.customer.push_token !== updates.push_token || req.customer.push_enabled === false);
+  const welcomeAccepted = welcomeNeeded ? await sendPushNotification(
+    updates.push_token, 'Welcome to AE!',
+    'Your phone is connected. Receive purchase, reward and payment alerts here.',
+    { url: '/customer/notifications', type: 'welcome' }
+  ) : null;
+  res.json({ success: true, welcomeAccepted });
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
@@ -1935,9 +1944,19 @@ app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   if (req.body.push_token !== undefined) updates.push_token = cleanText(req.body.push_token, 4096);
   if (req.body.push_enabled !== undefined) updates.push_enabled = Boolean(req.body.push_enabled);
   if (!Object.keys(updates).length) return res.json({ success: true });
+  const { data: previous, error: readError } = await supabaseAdmin.from('profiles')
+    .select('push_token,push_enabled').eq('id', req.auth.user.id).single();
+  if (readError) return res.status(400).json({ success: false, error: readError.message });
   const { error } = await supabaseAdmin.from('profiles').update(updates).eq('id', req.auth.user.id);
   if (error) return res.status(400).json({ success: false, error: error.message });
-  res.json({ success: true });
+  const welcomeNeeded = updates.push_token && updates.push_enabled === true &&
+    (previous.push_token !== updates.push_token || previous.push_enabled === false);
+  const welcomeAccepted = welcomeNeeded ? await sendPushNotification(
+    updates.push_token, 'Welcome to AE!',
+    'Your phone is connected. Receive your business notifications here.',
+    { url: '/', type: 'welcome' }
+  ) : null;
+  res.json({ success: true, welcomeAccepted });
 });
 
 
