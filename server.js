@@ -213,6 +213,13 @@ function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
+function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
+  const radians = (value) => value * Math.PI / 180;
+  const dLat = radians(lat2 - lat1); const dLon = radians(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function normalizePhone(value) {
   const digits = String(value || '').replace(/\D/g, '');
   const national = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
@@ -1403,6 +1410,97 @@ app.post('/api/auth/customer/forgot-password/request-otp', async (req, res) => {
   res.json({ success: true });
 });
 
+const fieldManagerRole = (req, res, next) => {
+  if (!['field_manager', 'admin'].includes(req.auth.profile.role)) return res.status(403).json({ success: false, error: 'Field manager access required' });
+  next();
+};
+
+app.post('/api/field/sessions/end', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('field_manager_sessions').update({ logout_at: new Date().toISOString() }).eq('manager_id', req.auth.profile.id).is('logout_at', null).order('login_at', { ascending: false }).limit(1).select('id').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, session: data });
+});
+
+app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,active,merchant_categories(name)').order('name');
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, merchants: data || [] });
+});
+
+app.get('/api/field/visits', requireAuth, fieldManagerRole, async (req, res) => {
+  let query = supabaseAdmin.from('field_manager_visits').select('*, merchants(id,name,merchant_code), profiles!field_manager_visits_manager_id_fkey(full_name)').order('created_at', { ascending: false }).limit(200);
+  if (req.auth.profile.role !== 'admin') query = query.eq('manager_id', req.auth.profile.id);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, visits: data || [] });
+});
+
+app.post('/api/field/visits/check-in', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const merchantId = cleanText(req.body.merchantId, 100); const lat = Number(req.body.latitude); const lng = Number(req.body.longitude); const accuracy = Number(req.body.accuracy || 0);
+  if (!merchantId || !Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ success: false, error: 'Merchant and valid GPS coordinates are required' });
+  const { data: merchant } = await supabaseAdmin.from('merchants').select('id,name,latitude,longitude').eq('id', merchantId).maybeSingle();
+  if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+  if (!Number.isFinite(Number(merchant.latitude)) || !Number.isFinite(Number(merchant.longitude))) return res.status(400).json({ success: false, error: 'This merchant has no saved GPS location' });
+  const distance = haversineDistanceMeters(lat, lng, Number(merchant.latitude), Number(merchant.longitude));
+  if (distance > 150) return res.status(400).json({ success: false, error: `You are ${Math.round(distance)}m away. Check-in is allowed within 150m.`, distance });
+  const { data: session } = await supabaseAdmin.from('field_manager_sessions').select('id').eq('manager_id', req.auth.profile.id).is('logout_at', null).order('login_at', { ascending: false }).limit(1).maybeSingle();
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').insert({ manager_id: req.auth.profile.id, merchant_id: merchantId, session_id: session?.id || null, check_in_latitude: lat, check_in_longitude: lng, accuracy_m: Number.isFinite(accuracy) ? accuracy : null, distance_m: distance }).select('*').single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, visit: data, distance });
+});
+
+app.post('/api/field/visits/:id/check-out', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const lat = Number(req.body.latitude); const lng = Number(req.body.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ success: false, error: 'Valid GPS coordinates are required' });
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  if (!data) return res.status(404).json({ success: false, error: 'Active visit not found' });
+  res.json({ success: true, visit: data });
+});
+
+app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { data: visit } = await supabaseAdmin.from('field_manager_visits').select('id,merchant_id').eq('id', req.params.id).eq('manager_id', req.auth.profile.id).maybeSingle();
+  if (!visit) return res.status(404).json({ success: false, error: 'Visit not found' });
+  const allowed = ['name','email','phone','address','latitude','longitude','category','active','follow_up_date','notes'];
+  const payload = Object.fromEntries(allowed.filter(key => Object.prototype.hasOwnProperty.call(req.body, key)).map(key => [key, req.body[key]]));
+  const { data, error } = await supabaseAdmin.from('field_manager_merchant_updates').insert({ manager_id: req.auth.profile.id, merchant_id: visit.merchant_id, visit_id: visit.id, payload }).select('*').single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, update: data });
+});
+
+app.get('/api/admin/field-managers', requireAuth, requireRole('admin'), async (_req, res) => {
+  const { data: managers, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('role', 'field_manager').order('full_name');
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  const { data: sessions } = await supabaseAdmin.from('field_manager_sessions').select('*').order('login_at', { ascending: false }).limit(200);
+  const { data: updates } = await supabaseAdmin.from('field_manager_merchant_updates').select('*, merchants(name,merchant_code), profiles!field_manager_merchant_updates_manager_id_fkey(full_name)').order('created_at', { ascending: false }).limit(200);
+  res.json({ success: true, managers: managers || [], sessions: sessions || [], updates: updates || [] });
+});
+
+app.post('/api/admin/field-managers', requireAuth, requireRole('admin'), async (req, res) => {
+  const fullName = cleanText(req.body.fullName, 120); const email = cleanText(req.body.email, 254).toLowerCase(); const password = typeof req.body.password === 'string' ? req.body.password : generateTemporaryPassword();
+  if (!fullName || !isEmail(email) || !isStrongPassword(password)) return res.status(400).json({ success: false, error: 'Name, valid email, and a strong password are required' });
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: fullName, role: 'field_manager' } });
+  if (authError || !authData.user) return res.status(400).json({ success: false, error: authError?.message || 'Could not create manager' });
+  const { data, error } = await supabaseAdmin.from('profiles').insert({ id: authData.user.id, full_name: fullName, role: 'field_manager', merchant_id: null, must_change_password: false }).select('id,full_name,role,created_at').single();
+  if (error) { await supabaseAdmin.auth.admin.deleteUser(authData.user.id); return res.status(400).json({ success: false, error: error.message }); }
+  res.status(201).json({ success: true, manager: data, temporaryPassword: password });
+});
+
+app.patch('/api/admin/field-updates/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const status = ['approved','rejected'].includes(req.body.status) ? req.body.status : null;
+  if (!status) return res.status(400).json({ success: false, error: 'Status must be approved or rejected' });
+  const { data: update } = await supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,payload').eq('id', req.params.id).eq('status', 'pending').maybeSingle();
+  if (!update) return res.status(404).json({ success: false, error: 'Pending update not found' });
+  if (status === 'approved') {
+    const allowed = ['name','email','phone','address','latitude','longitude','category','active'];
+    const patch = Object.fromEntries(allowed.filter(key => Object.prototype.hasOwnProperty.call(update.payload || {}, key)).map(key => [key, update.payload[key]]));
+    const { error } = await supabaseAdmin.from('merchants').update(patch).eq('id', update.merchant_id); if (error) return res.status(500).json({ success: false, error: error.message });
+  }
+  const { data, error } = await supabaseAdmin.from('field_manager_merchant_updates').update({ status, review_note: cleanText(req.body.reviewNote, 500) || null, reviewed_by: req.auth.profile.id, reviewed_at: new Date().toISOString() }).eq('id', req.params.id).select('*').single();
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true, update: data });
+});
+
 app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
   const phone = cleanText(req.body.phone, 20);
   const otp = cleanText(req.body.otp, 10);
@@ -1988,6 +2086,9 @@ app.post('/api/auth/login', async (req, res) => {
     .single();
   if (profileError || !profile) {
     return res.status(403).json({ success: false, error: 'Account profile is not configured' });
+  }
+  if (profile.role === 'field_manager') {
+    await supabaseAdmin.from('field_manager_sessions').insert({ manager_id: profile.id, login_ip: req.ip, user_agent: req.get('user-agent') || null });
   }
   res.json({
     success: true,

@@ -19,6 +19,7 @@ const adminNav = [
   ['/offers', 'nav.offers', Gift],
   ['/reward-settings', 'nav.rewardSettings', Settings2],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
+  ['/field-managers', 'Field Managers', UserCog],
 ] as const;
 
 const merchantNav = [
@@ -32,6 +33,7 @@ const merchantNav = [
   ['/more', 'Business & Settings', PieChart],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
+const fieldNav = [['/field', 'Field Manager', MapPin]] as const;
 
 export function Layout({ user, onLogout, children }: { user: UserProfile; onLogout: () => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -77,7 +79,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     );
   };
 
-  const nav = user.role === 'admin' ? adminNav : merchantNav;
+  const nav = user.role === 'admin' ? adminNav : user.role === 'field_manager' ? fieldNav : merchantNav;
   return (
     <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : ''}`}>
       <header className="topbar">
@@ -108,7 +110,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
             <button className="icon-button notification-button" title="Customer order notifications" onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
             {renderNotificationPopover()}
           </div> : null}
-          <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : t('layout.merchant')}</span>
+          <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : user.role === 'field_manager' ? 'Field Manager' : t('layout.merchant')}</span>
           <span className="topbar-user">{user.full_name || user.email}</span>
           <button className="button secondary signout" onClick={onLogout}><LogOut size={15} />{t('layout.signOut')}</button>
         </div>

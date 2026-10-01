@@ -43,6 +43,8 @@ import { CustomerOffers } from './pages/customer/Offers';
 import { CustomerNotifications } from './pages/customer/Notifications';
 import { CustomerReferral } from './pages/customer/Referral';
 import { CustomerFavorites } from './pages/customer/Favorites';
+import { FieldManager } from './pages/FieldManager';
+import { FieldManagers } from './pages/FieldManagers';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -277,6 +279,10 @@ export function App() {
     );
   }
 
+  if (user.role === 'field_manager') {
+    return <Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout>;
+  }
+
   return (
     <Layout user={user} onLogout={logout}>
       <PageErrorBoundary key={location.pathname}>
@@ -299,6 +305,7 @@ export function App() {
           <Route path="/locations" element={<RoleRoute user={user} role="admin"><Locations /></RoleRoute>} />
           <Route path="/locations/:id" element={<RoleRoute user={user} role="admin"><LocationProfile /></RoleRoute>} />
           <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
+          <Route path="/field-managers" element={<RoleRoute user={user} role="admin"><FieldManagers /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </PageErrorBoundary>
