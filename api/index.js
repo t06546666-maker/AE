@@ -9,11 +9,21 @@ try {
   console.error('AE API startup failed:', error);
 }
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   if (startupError) {
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
     return res.end(JSON.stringify({ success: false, error: 'API startup failed' }));
   }
-  return app(req, res);
+  try {
+    return await app(req, res);
+  } catch (error) {
+    console.error('AE API request failed:', error);
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(JSON.stringify({ success: false, error: 'Internal server error' }));
+    }
+    return undefined;
+  }
 };
