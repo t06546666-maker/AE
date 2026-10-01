@@ -241,6 +241,7 @@ export function App() {
         <Route path="/customer/login" element={<CustomerLogin onLogin={setUser} />} />
         <Route path="/customer/signup" element={<CustomerSignup onLogin={setUser} />} />
         <Route path="/login" element={<Login onLogin={setUser} />} />
+        <Route path="/field" element={<Login field onLogin={setUser} />} />
         <Route path="*" element={<Navigate to="/customer/login" replace />} />
       </Routes>
     );
@@ -255,6 +256,10 @@ export function App() {
           setUser({ ...user, must_change_password: false });
           void queryClient.invalidateQueries();
         }} />;
+  }
+
+  if (location.pathname === '/field' && user.role !== 'field_manager') {
+    return <div className="state-panel"><h1>Field Manager portal</h1><p>You are signed in as {user.role}. Sign out here to use a field manager account, or open /field in a separate browser profile.</p><button className="button primary" onClick={logout}>Sign out to Field Manager Login</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>Back to my dashboard</button></div>;
   }
 
   if (user.role === 'customer') {

@@ -1,6 +1,11 @@
 -- Field Manager web module. Run once in Supabase SQL editor.
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check check (role in ('admin','merchant','customer','field_manager'));
+alter table public.profiles drop constraint if exists merchant_role_assignment;
+alter table public.profiles add constraint merchant_role_assignment check (
+  (role in ('admin', 'customer', 'field_manager') and merchant_id is null)
+  or (role = 'merchant' and merchant_id is not null)
+);
 
 create table if not exists public.field_manager_sessions (
   id uuid primary key default gen_random_uuid(), manager_id uuid not null references public.profiles(id) on delete cascade,
