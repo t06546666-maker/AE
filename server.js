@@ -52,7 +52,13 @@ async function sendPushNotification(token, title, body, data = {}) {
       token,
       notification: { title, body },
       data: Object.fromEntries(Object.entries(data).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)])),
-      android: { priority: 'high' }
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'ae_notifications',
+          sound: 'default'
+        }
+      }
     });
     return true;
   } catch (error) {

@@ -129,6 +129,20 @@ export function App() {
           if (status.location !== 'granted') return Geolocation.requestPermissions();
         }).catch(error => console.warn('Location permission unavailable', error));
 
+        try {
+          await PushNotifications.createChannel({
+            id: 'ae_notifications',
+            name: 'AE Notifications',
+            description: 'Notifications for AE rewards, orders, and payments',
+            importance: 5,
+            visibility: 1,
+            vibration: true,
+            lights: true
+          });
+        } catch (e) {
+          console.warn('Could not create notification channel:', e);
+        }
+
         const pushStatus = await PushNotifications.checkPermissions();
         if (pushStatus.receive !== 'granted') await PushNotifications.requestPermissions();
         // Attach the registration listener before register(). Android may emit
