@@ -114,6 +114,8 @@ export function App() {
     let disposed = false;
     const listeners: Array<{ remove: () => Promise<void> }> = [];
     let registrationTimer: ReturnType<typeof setTimeout> | undefined;
+    let registrationRetryTimer: ReturnType<typeof setInterval> | undefined;
+    let registrationAttempts = 0;
     const reportPush = (message: string) => window.dispatchEvent(new CustomEvent('ae:push-status', { detail: message }));
     if (user && CapacitorApp && Capacitor.isNativePlatform()) {
       Promise.all([
@@ -135,6 +137,7 @@ export function App() {
         listeners.push(await PushNotifications.addListener('registration', (token) => {
           if (disposed) return;
           clearTimeout(registrationTimer);
+          if (registrationRetryTimer) clearInterval(registrationRetryTimer);
           void apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
             body: JSON.stringify({ push_token: token.value, push_enabled: true })
@@ -150,6 +153,14 @@ export function App() {
         if (finalPushStatus.receive === 'granted') {
           registrationTimer = setTimeout(() => reportPush('Still waiting for Google notification registration. Check your connection and retry.'), 20000);
           await PushNotifications.register();
+          registrationRetryTimer = setInterval(() => {
+            if (disposed || registrationAttempts >= 3) {
+              if (registrationRetryTimer) clearInterval(registrationRetryTimer);
+              return;
+            }
+            registrationAttempts += 1;
+            void PushNotifications.register();
+          }, 15000);
         } else reportPush('Allow notifications in Android settings to receive alerts.');
 
         listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
@@ -164,7 +175,7 @@ export function App() {
         }));
       }).catch((error) => reportPush(`Notification setup failed: ${error.message}`));
     }
-    return () => { disposed = true; clearTimeout(registrationTimer); for (const listener of listeners) void listener.remove(); };
+    return () => { disposed = true; clearTimeout(registrationTimer); if (registrationRetryTimer) clearInterval(registrationRetryTimer); for (const listener of listeners) void listener.remove(); };
   }, [user?.id, user?.role, navigate, queryClient]);
 
   useEffect(() => {
