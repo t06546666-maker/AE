@@ -77,9 +77,9 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
 
   async function handleDecoded(decoded: string, instance: ScannerInstance) {
     if (locked.current) return;
-    let payload: { id?: string };
+    let payload: { id?: string; transactionMode?: string };
     try {
-      payload = JSON.parse(decoded) as { id?: string };
+      payload = JSON.parse(decoded) as { id?: string; transactionMode?: string };
     } catch {
       // Customer QR screens use the compact customer ID directly. Accept
       // that legacy/plain format as well as the JSON payload used by the
@@ -97,7 +97,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
         stopCamera(instance),
       ]);
       setCustomer(data.customer);
-      setTransactionMode('combined');
+      setTransactionMode(payload.transactionMode === 'earn' ? 'earn' : 'combined');
       setNotes('');
       setAmount('');
       setPaymentTransactionId('');

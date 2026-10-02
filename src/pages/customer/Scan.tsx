@@ -9,7 +9,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
 
   useEffect(() => {
     if (user?.id) {
-      QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id }), {
+      QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id, transactionMode: 'earn' }), {
         width: 250,
         margin: 1,
         color: {
@@ -56,7 +56,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
         </div>
 
         <p className="text-[15px] font-semibold text-white tracking-wide text-center mb-12">
-          Show this to the merchant
+          Show this to the merchant to earn points — Issue Only
         </p>
 
         {/* Bottom Button (Adapted from "Enter Code Manually") */}

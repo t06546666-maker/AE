@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
@@ -7,6 +8,16 @@ import { useCustomerOffers, useCustomerRedeemReward } from '../../hooks/useCusto
 const CATEGORIES = ['All', 'Food & Beverage', 'Retail', 'Health'];
 
 export function CustomerRewards({ user }: { user: UserProfile }) {
+  const [redeemQr, setRedeemQr] = useState('');
+  const [qrError, setQrError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setRedeemQr(''); setQrError(false);
+    QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id, transactionMode: 'combined' }), { width: 280, margin: 4, color: { dark: '#101a37', light: '#ffffff' } })
+      .then(src => { if (active) setRedeemQr(src); })
+      .catch(() => { if (active) setQrError(true); });
+    return () => { active = false; };
+  }, [user.customer_code, user.id]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +63,13 @@ export function CustomerRewards({ user }: { user: UserProfile }) {
         </button>
       </header>
 
+      <section className="mx-5 mt-5 rounded-3xl border border-blue-100 bg-white p-5 text-center shadow-sm">
+        <h2 className="text-xl font-bold">Redeem + Issue QR</h2>
+        <p className="mt-2 text-sm text-gray-500">Show this QR to your merchant to redeem 100 points and earn points on your purchase.</p>
+        {redeemQr ? <img src={redeemQr} alt="Customer QR for Redeem + Issue" className="mx-auto mt-4 h-60 w-60 max-w-full"/> : <p className="py-12 text-sm text-gray-500" role="status">{qrError ? 'Unable to create QR. Please reload this page.' : 'Loading QR…'}</p>}
+        <p className="mt-2 font-bold">{user.name || 'Customer'}</p><p className="mt-1 text-xs text-gray-500">{user.customer_code || user.id}</p>
+        <p className="mt-3 text-xs text-blue-600">Your merchant confirms the transaction. Showing this QR does not deduct points.</p>
+      </section>
       {/* Search Bar */}
       {searchOpen && (
         <div className="px-5 pt-3 pb-1 bg-white border-b border-gray-100">
