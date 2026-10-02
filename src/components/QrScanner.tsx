@@ -34,7 +34,9 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [message, setMessage] = useState(() => t('scanner.secure'));
   const [starting, setStarting] = useState(false);
   const [amount, setAmount] = useState('');
-  const [pointsToRedeem, setPointsToRedeem] = useState('');
+  const [pointsToRedeem, setPointsToRedeem] = useState('100');
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
+  const [discountValue, setDiscountValue] = useState(String(settings.merchantRedeemDiscount || 5));
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
@@ -159,12 +161,12 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     mutationFn: (verifiedPaymentId?: string) => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? Number(pointsToRedeem || 0) : 0, paymentTransactionId: verifiedPaymentId || paymentTransactionId || undefined, location: 'In-store' }),
+      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentTransactionId: verifiedPaymentId || paymentTransactionId || undefined, location: 'In-store' }),
     }),
     onSuccess(data) {
       showToast(t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }));
       setCustomer(null); setAmount(''); locked.current = false;
-      setPaymentTransactionId('');
+      setPaymentTransactionId(''); setPointsToRedeem('100');
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -184,7 +186,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
         checkout.mutate(paymentTransactionId);
         return;
       }
-      const discount = transactionMode === 'combined' && Number(pointsToRedeem || 0) > 0 ? (Number(amount) * ((Number(pointsToRedeem || 0) / 100) * Number(settings.merchantRedeemDiscount || 5)) / 100) : 0;
+      const discount = transactionMode === 'combined' ? (discountType === 'flat' ? Number(discountValue || 0) : Number(amount) * Number(discountValue || 0) / 100) : 0;
       const finalAmount = Math.max(0, Number(amount) - discount);
       const created = await apiFetch<{ payment: { id: string }; upiUrl: string }>('/api/payments/create-upi-intent', { method: 'POST', body: JSON.stringify({ amount: finalAmount, customer_id: customer.id }) });
       setPaymentTransactionId(created.payment.id);
@@ -202,13 +204,15 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
       body: JSON.stringify({
         customerCode: customer?.id,
         transactionAmount: Number(amount),
-        pointsToRedeem: Number(pointsToRedeem),
+        pointsToRedeem: 100,
+        discountType,
+        discountValue: Number(discountValue),
       })
     }),
     onSuccess(data) {
       setRedeemResult(data);
       showToast('Redemption successful!', 'success');
-      setAmount(''); setPointsToRedeem(''); locked.current = false;
+      setAmount(''); setPointsToRedeem('100'); locked.current = false;
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -262,9 +266,11 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                 <>
                   <div className="purchase-fields">
                     <label>Transaction Amount (₹)<input className="amount-input" type="number" min="100" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                    <label>Points to Redeem (fixed)<input className="amount-input" type="number" min="100" max="100" value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label>
+                    <label>Points to Redeem (fixed)<input className="amount-input" type="number" value="100" readOnly /></label>
+                    <label>Discount type<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">Percentage (%)</option><option value="flat">Flat (₹)</option></select></label>
+                    <label>{discountType === 'flat' ? 'Discount amount (₹)' : 'Discount percentage (%)'}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label>
                   </div>
-                  <p className="amount-rule" style={{marginBottom: 10}}>Available: {formatPoints(customer.rewardPoints)} pts · 100 pts = ₹{formatPoints((Number(amount || 0) / 100) * (Number(pointsToRedeem || 0) / 100) * Number(settings.merchantRedeemDiscount || 5))} discount</p>
+                  <p className="amount-rule" style={{marginBottom: 10}}>Available: {formatPoints(customer.rewardPoints)} pts · Fixed 100 pts · {discountType === 'flat' ? `₹${Number(discountValue || 0).toFixed(2)} flat discount` : `${Number(discountValue || 0)}% discount`}</p>
                   <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || Number(pointsToRedeem) < 100 || redeem.isPending} onClick={() => redeem.mutate()}>{redeem.isPending ? 'Processing...' : 'Calculate & Redeem'}</button>
                 </>
               ) : (
@@ -272,7 +278,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                     <label>Points per INR 100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).filter((option: number) => option >= 1 && option <= 100).map((option: number) => <option key={option} value={option}>{option} pts</option>)}</select></label>
-                    {transactionMode === 'combined' ? <label>Points to Redeem<input className="amount-input" type="number" min="100" max="100" value={pointsToRedeem} onChange={(event) => setPointsToRedeem(event.target.value)} /></label> : null}
+                    {transactionMode === 'combined' ? <><label>Points to Redeem (fixed)<input className="amount-input" type="number" value="100" readOnly /></label><label>Discount type<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">Percentage (%)</option><option value="flat">Flat (₹)</option></select></label><label>{discountType === 'flat' ? 'Discount amount (₹)' : 'Discount percentage (%)'}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label></> : null}
                   </div>
                   <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
                   <p className="amount-rule">INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts</p>

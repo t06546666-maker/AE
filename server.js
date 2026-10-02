@@ -220,6 +220,20 @@ function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
+function redemptionDiscount(amount, type, value) {
+  const normalizedType = type === 'flat' ? 'flat' : 'percentage';
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue < 0) return null;
+  const rawAmount = normalizedType === 'flat' ? numericValue : amount * numericValue / 100;
+  const discountAmount = Math.min(amount, Math.max(0, rawAmount));
+  return {
+    type: normalizedType,
+    value: numericValue,
+    amount: discountAmount,
+    percentage: amount > 0 ? discountAmount * 100 / amount : 0,
+  };
+}
+
 function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
   const radians = (value) => value * Math.PI / 180;
   const dLat = radians(lat2 - lat1); const dLon = radians(lon2 - lon1);
@@ -3674,6 +3688,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     return res.status(400).json({ success: false, error: 'Points per INR 100 must be between 1 and 100.' });
   }
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
+  const discountType = req.body.discountType === 'flat' ? 'flat' : 'percentage';
   const paymentTransactionId = cleanText(req.body.paymentTransactionId, 100);
   if (
     !customerCode ||
@@ -3690,7 +3705,9 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
     const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,customer_id,status,amount,customers(customer_code)').eq('id', paymentTransactionId).maybeSingle();
     const paymentRewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
-    const payableAmount = Math.round((amount - (pointsToRedeem === 100 ? amount * Number(paymentRewardSettings.redeem_discount_per_100 || 5) / 100 : 0)) * 100);
+    const discount = pointsToRedeem === 100 ? redemptionDiscount(amount, discountType, req.body.discountValue ?? (paymentRewardSettings.redeem_discount_per_100 || 5)) : null;
+    if (pointsToRedeem === 100 && !discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater.' });
+    const payableAmount = Math.round((amount - (discount?.amount || 0)) * 100);
     if (!verifiedPayment || verifiedPayment.merchant_id !== req.auth.profile.merchant_id || verifiedPayment.customers?.customer_code !== customerCode || verifiedPayment.status !== 'paid' || Math.round(Number(verifiedPayment.amount) * 100) !== payableAmount) return res.status(402).json({ success: false, error: 'Payment does not match this customer and checkout amount.' });
   }
   if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
@@ -3704,8 +3721,9 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     const { data: membership } = customer ? await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle() : { data: null };
     if (!customer || !membership || Number(membership.reward_points || 0) < pointsToRedeem) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
     const rewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
-    const discountPercentage = (pointsToRedeem / 100) * Number(rewardSettings.redeem_discount_per_100 || 5);
-    redemptionContext = { customer, membership, discountPercentage, discountAmount: amount * (discountPercentage / 100) };
+    const discount = redemptionDiscount(amount, discountType, req.body.discountValue ?? (rewardSettings.redeem_discount_per_100 || 5));
+    if (!discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater.' });
+    redemptionContext = { customer, membership, discountPercentage: discount.percentage, discountAmount: discount.amount, discountType: discount.type, discountValue: discount.value };
   }
   
   const { data, error } = await processPurchase({
@@ -5079,6 +5097,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     }
     
     const { customerCode, transactionAmount, pointsToRedeem } = req.body;
+    const discountType = req.body.discountType === 'flat' ? 'flat' : 'percentage';
     
     if (!customerCode || !Number.isFinite(transactionAmount) || !Number.isFinite(pointsToRedeem)) {
       return res.status(400).json({ success: false, error: 'Invalid parameters' });
@@ -5111,8 +5130,10 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     }
     
     // 3. Calculate Discount
-    const discountPercentage = (pointsToRedeem / 100) * discountPer100;
-    const discountAmount = transactionAmount * (discountPercentage / 100);
+    const discount = redemptionDiscount(transactionAmount, discountType, req.body.discountValue ?? discountPer100);
+    if (!discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater' });
+    const discountPercentage = discount.percentage;
+    const discountAmount = discount.amount;
     
     // 4. Perform deduction transaction in Supabase
     const { data: redemption, error: redError } = await supabaseAdmin.from('point_redemptions').insert({
