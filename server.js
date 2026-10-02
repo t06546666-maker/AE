@@ -1429,7 +1429,7 @@ app.post('/api/field/sessions/end', requireAuth, requireRole('field_manager'), a
 });
 
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
-  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,active,merchant_categories(name)').order('name');
+  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,merchant_categories(name)').order('name');
   if (error) return res.status(500).json({ success: false, error: error.message });
   res.json({ success: true, merchants: data || [] });
 });
@@ -1491,6 +1491,17 @@ app.post('/api/admin/field-managers', requireAuth, requireRole('admin'), async (
   const { data, error } = await supabaseAdmin.from('profiles').insert({ id: authData.user.id, full_name: fullName, role: 'field_manager', merchant_id: null, must_change_password: false }).select('id,full_name,role,created_at').single();
   if (error) { await supabaseAdmin.auth.admin.deleteUser(authData.user.id); return res.status(400).json({ success: false, error: error.message }); }
   res.status(201).json({ success: true, manager: data, temporaryPassword: password });
+});
+
+app.delete('/api/admin/field-managers/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const id = req.params.id;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ success: false, error: 'Invalid manager ID' });
+  const { data: manager, error: lookupError } = await supabaseAdmin.from('profiles').select('id').eq('id', id).eq('role', 'field_manager').maybeSingle();
+  if (lookupError) return res.status(500).json({ success: false, error: lookupError.message });
+  if (!manager) return res.status(404).json({ success: false, error: 'Field manager not found' });
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  return res.json({ success: true });
 });
 
 app.patch('/api/admin/field-updates/:id', requireAuth, requireRole('admin'), async (req, res) => {
@@ -1791,19 +1802,19 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
   try {
     const { data: orders } = await supabaseAdmin
       .from('orders')
-      .select('id, created_at, points_earned:reward_points, merchants(name)')
+      .select('id, created_at, amount, points_earned:reward_points, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false });
 
     const { data: redemptions } = await supabaseAdmin
       .from('point_redemptions')
-      .select('id, created_at, points_redeemed, merchants(name)')
+      .select('id, created_at, transaction_amount, points_redeemed, merchants(name)')
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false });
 
     let transactions = [
-      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, points: o.points_earned })),
-      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, points: r.points_redeemed }))
+      ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount ?? null, points: o.points_earned })),
+      ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount ?? null, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const total = transactions.length;

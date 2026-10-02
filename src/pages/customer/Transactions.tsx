@@ -123,7 +123,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                     </div>
                     <div className="text-right">
                       <p className={`font-bold text-[16px] ${t.type === 'earn' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
-                        {t.type === 'earn' ? '+' : '-'}{t.points} points · ₹{Number(t.amount || 0).toLocaleString('en-IN')}
+                        {t.type === 'earn' ? '+' : '-'}{t.points} points · {t.amount == null ? 'Amount unavailable' : `₹${Number(t.amount).toLocaleString('en-IN')}`}
                       </p>
                       <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
                     </div>
