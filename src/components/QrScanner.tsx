@@ -8,6 +8,7 @@ import { apiFetch } from '../api';
 import type { Customer, RewardSettings } from '../types';
 import { formatPhone, formatPoints } from '../utils';
 import { useToast } from '../toast';
+import { ScannedCheckout } from './ScannedCheckout';
 
 type ScannerInstance = { start: (...args: unknown[]) => Promise<unknown>; stop: () => Promise<unknown>; clear: () => void };
 
@@ -34,6 +35,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [message, setMessage] = useState(() => t('scanner.secure'));
   const [starting, setStarting] = useState(false);
   const [amount, setAmount] = useState('');
+  const [notes, setNotes] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState('100');
   const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
   const [discountValue, setDiscountValue] = useState(String(settings.merchantRedeemDiscount || 5));
@@ -95,6 +97,10 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
         stopCamera(instance),
       ]);
       setCustomer(data.customer);
+      setTransactionMode('combined');
+      setNotes('');
+      setAmount('');
+      setPaymentTransactionId('');
       setMessage(t('scanner.verified'));
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : t('scanner.customerFailed'));
@@ -161,7 +167,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     mutationFn: (verifiedPaymentId?: string) => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentTransactionId: verifiedPaymentId || paymentTransactionId || undefined, location: 'In-store' }),
+      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentTransactionId: verifiedPaymentId || paymentTransactionId || undefined, location: notes.trim() || 'In-store' }),
     }),
     onSuccess(data) {
       showToast(t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }));
@@ -196,7 +202,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   }
 
   const eligibleAmount = Number(amount);
-  const points = eligibleAmount < 10 ? 0 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * 10);
+  const points = eligibleAmount < 10 ? 0 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
 
   const redeem = useMutation({
     mutationFn: () => apiFetch<{ discountAmount: number; newBalance: number }>(`/api/merchants/${merchantId}/redeem`, {
@@ -220,7 +226,9 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     onError(error) { showToast(error.message, 'error'); },
   });
 
-  return (
+  const postScan = customer ? <ScannedCheckout customer={customer} combined={transactionMode === 'combined'} setCombined={value=>setTransactionMode(value?'combined':'earn')} amount={amount} setAmount={setAmount} rate={percentage} setRate={setPercentage} rates={Array.from(new Set([percentage,...(settings.earnOptions || [5,10,20,30,50])])).filter(n=>n>=1 && n<=100)} discountType={discountType} setDiscountType={setDiscountType} discountValue={discountValue} setDiscountValue={setDiscountValue} points={points} notes={notes} setNotes={setNotes} busy={checkout.isPending} paymentLocked={Boolean(paymentTransactionId)} paymentLabel={paymentSettings.data?.data?.paymentEnabled ? paymentTransactionId ? 'Confirm payment received & complete' : 'Send payment request to customer' : undefined} onSubmit={()=>void payAndCheckout()} onBack={()=>{setCustomer(null);setPaymentTransactionId('');locked.current=false;setMessage(t('scanner.ready'));}}/> : null;
+
+  return postScan || (
     <section className="panel scanner-panel">
       <div className="panel-heading"><div><h2>{mode === 'redeem' ? 'Redeem Points' : t('scanner.title')}</h2><p>{mode === 'redeem' ? 'Scan customer QR to apply discount' : t('scanner.subtitle')}</p></div><ScanLine /></div>
       <div className="scanner-grid">
