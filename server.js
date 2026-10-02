@@ -1443,7 +1443,7 @@ app.post('/api/field/sessions/end', requireAuth, requireRole('field_manager'), a
 });
 
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
-  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,merchant_categories(name)').order('name');
+  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)').order('name');
   if (error) return res.status(500).json({ success: false, error: error.message });
   res.json({ success: true, merchants: data || [] });
 });
@@ -1850,7 +1850,7 @@ async function ensureDefaultMerchantCategories() {
 
 app.get('/api/merchant-categories', requireAuth, async (req, res) => {
   try {
-    if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+    if (!['admin', 'field_manager'].includes(req.auth.profile?.role)) return res.status(403).json({ success: false, error: 'Not authorized' });
     await ensureDefaultMerchantCategories();
     const { data: categories, error } = await supabaseAdmin.from('merchant_categories').select('id, name').order('name');
     if (error) throw error;
@@ -2433,11 +2433,17 @@ app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (
   });
 });
 
-app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) => {
+app.post('/api/merchants', requireAuth, (req, res, next) => {
+  if (!['admin', 'field_manager'].includes(req.auth.profile?.role)) {
+    return res.status(403).json({ success: false, error: 'Admin or Field manager access required' });
+  }
+  next();
+}, async (req, res) => {
   const name = cleanText(req.body.name, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const category_id = cleanText(req.body.category_id, 100) || null;
   const address = cleanText(req.body.address, 300) || null;
   const latitude = req.body.latitude === undefined || req.body.latitude === '' ? null : Number(req.body.latitude);
   const longitude = req.body.longitude === undefined || req.body.longitude === '' ? null : Number(req.body.longitude);
@@ -2453,7 +2459,16 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
 
   const { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({ name, email, phone, address, latitude, longitude, network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000' })
+    .insert({
+      name,
+      email,
+      phone,
+      address,
+      latitude,
+      longitude,
+      category_id,
+      network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000'
+    })
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
@@ -2482,6 +2497,30 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
     return res.status(400).json({ success: false, error: profileError.message });
   }
 
+  if (req.auth.profile?.role === 'field_manager') {
+    try {
+      await supabaseAdmin.from('field_manager_merchant_updates').insert({
+        manager_id: req.auth.profile.id,
+        merchant_id: merchant.id,
+        payload: {
+          action: 'onboard_merchant',
+          merchant_name: name,
+          merchant_code: merchant.merchant_code,
+          phone,
+          email,
+          address,
+          latitude,
+          longitude,
+        },
+        status: 'approved',
+        review_note: `Onboarded by field manager (${req.auth.profile.full_name || req.auth.profile.email})`,
+        reviewed_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('Could not record field manager onboarding record:', e.message);
+    }
+  }
+
   const whatsapp = await sendMerchantAccountReadyWhatsApp(merchant);
   res.status(201).json({
     success: true,
@@ -2503,7 +2542,12 @@ app.post('/api/merchants', requireAuth, requireRole('admin'), async (req, res) =
   });
 });
 
-app.post('/api/merchants/:id/reset-password', requireAuth, requireRole('admin'), async (req, res) => {
+app.post('/api/merchants/:id/reset-password', requireAuth, (req, res, next) => {
+  if (!['admin', 'field_manager'].includes(req.auth.profile?.role)) {
+    return res.status(403).json({ success: false, error: 'Admin or Field manager access required' });
+  }
+  next();
+}, async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
   const [{ data: merchant }, { data: profile }] = await Promise.all([
     supabaseAdmin.from('merchants')
