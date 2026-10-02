@@ -1,0 +1,50 @@
+.field-onboarding { --primary:#0064ff; --border:#dce8f3; color:#101d36; }
+.field-onboarding-title h1 { margin:0 0 6px; font-size:28px; letter-spacing:-.8px; }
+.field-onboarding-title p { margin:0 0 20px; color:#617187; font-size:14px; }
+.field-onboarding .merchant-form { background:#fff; border:1px solid #dce8f3; border-radius:14px; padding:24px; box-shadow:0 8px 28px #3079ba08; max-width:1000px; }
+.field-onboarding .merchant-form .panel-heading { justify-content:flex-start; gap:12px; margin-bottom:22px; }
+.field-onboarding .merchant-form .panel-heading h2 { font-size:18px; margin:0 0 4px; }
+.field-onboarding .merchant-form .panel-heading p { font-size:13px; margin:0; color:#617187; }
+.field-section-icon { background:#0064ff; color:white; width:44px; height:44px; border-radius:9px; display:grid; place-items:center; }
+.field-onboarding .four-column-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 22px; }
+.field-onboarding .four-column-form>label { font-size:13px; font-weight:600; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.field-onboarding .four-column-form>label:first-child { grid-column:1/-1; }
+.field-onboarding .four-column-form>label:nth-child(7) { grid-column:1/-1; grid-row:4; }
+.field-onboarding .four-column-form>label:nth-child(6) { grid-column:1/-1; grid-row:5; }
+.field-onboarding .merchant-form input,.field-onboarding .merchant-form select { border:1px solid #dce3ec; border-radius:7px; background:#fbfdff; min-height:44px; width:100%; font-size:14px; color:#16243b; }
+.field-onboarding .merchant-form input:focus,.field-onboarding .merchant-form select:focus { outline:2px solid #0064ff33; border-color:#0064ff; }
+.field-onboarding .merchant-form small { font-weight:400; font-size:11px; color:#65758b; }
+.field-password { position:relative; }
+.field-password input { padding-right:44px; }
+.field-password button { position:absolute; right:8px; top:8px; border:0; background:transparent; color:#536781; padding:5px; cursor:pointer; }
+.field-photo-card,.field-location-card { padding:16px; background:#fff; border:1px solid #e2ebf4; border-radius:10px; }
+.field-card-title { display:flex; align-items:center; gap:8px; font-weight:650; font-size:14px; }
+.field-card-title>svg { background:#0064ff; color:white; padding:7px; box-sizing:content-box; border-radius:7px; }
+.field-upload-hint,.field-location-card p { color:#617187; font-size:12px; font-weight:400; margin:8px 0; }
+.field-photo-card input[type=file] { padding:12px; min-height:94px; background:#f0f8ff; border:1px dashed #b5d4f0; }
+.field-map-preview { width:100%; min-height:114px; border:1px solid #cde4de; border-radius:8px; background:linear-gradient(145deg,#e5f4e7,#edf6ff 55%,#ddf1e5); color:#1762b8; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; cursor:pointer; padding:12px; }
+.field-map-preview strong { font-size:12px; }.field-map-preview span { font-size:11px; color:#536781; }
+.field-onboarding .merchant-form .form-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid #e4edf5; }
+.field-onboarding .merchant-form .button { border-radius:7px; font-size:12px; min-height:42px; padding:10px 14px; }
+.field-onboarding .merchant-form .button.primary { background:#0064ff; border-color:#0064ff; color:white; }
+.field-onboarding .merchant-form .button.secondary { background:#f8fbff; color:#263d5b; border:1px solid #dce8f3; }
+.field-onboarding .merchant-form { max-width:760px; }
+.field-onboarding .four-column-form>label:nth-child(6),.field-onboarding .four-column-form>label:nth-child(7) { grid-row:auto; grid-column:auto; }
+@media(max-width:650px) { .field-onboarding .merchant-form { padding:16px; }.field-onboarding .four-column-form { grid-template-columns:1fr; }.field-onboarding .four-column-form>label:nth-child(6),.field-onboarding .four-column-form>label:nth-child(7) { grid-row:auto; }.field-onboarding-title h1 { font-size:24px; }.field-onboarding .merchant-form .form-actions .button { flex:1 1 45%; } }
+.field-steps { list-style:none; display:flex; padding:0; margin:0 0 32px; }
+.field-steps li { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; font-size:12px; color:#65758b; }
+.field-steps li:not(:last-child):after { content:''; height:2px; background:#e2e8f0; position:absolute; left:calc(50% + 16px); right:calc(-50% + 16px); top:15px; }
+.field-steps li.complete:after { background:#88b6ff; }
+.field-steps li>span { width:30px; height:30px; border-radius:50%; border:1px solid #dce3ec; background:#f7f9fc; display:grid; place-items:center; font-size:14px; }
+.field-steps li.current { color:#101d36; font-weight:600; }.field-steps li.current>span { background:#0064ff; color:white; border-color:#0064ff; }.field-steps li.complete>span { color:#0064ff; background:#f3f9ff; border-color:#88b6ff; }
+.field-onboarding .merchant-form { max-width:760px; margin-inline:auto; }
+.field-onboarding .four-column-form>label:nth-child(6),.field-onboarding .four-column-form>label:nth-child(7) { grid-row:auto; grid-column:auto; }
+.field-onboarding .field-photo-card,.field-onboarding .field-review,.field-onboarding .field-image-tip,.field-onboarding .field-location-card { grid-column:1/-1; }
+.field-onboarding .field-photo-card input[type=file] { min-height:120px; }
+.field-image-tip { padding:16px; background:#f0f8ff; border-radius:10px; color:#617187; font-size:13px; }
+.field-review-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid #eef2f7; }
+.field-review-row strong,.field-review-row small { display:block; margin-bottom:5px; overflow-wrap:anywhere; }
+.field-review-row button { border:0; background:transparent; color:#0064ff; cursor:pointer; font-weight:600; }
+.field-review-row img { width:120px; height:75px; object-fit:cover; border-radius:8px; }
+.field-onboarding .merchant-form .form-actions { justify-content:space-between; }
+.field-onboarding .merchant-form .form-actions>.primary { margin-left:auto; min-width:180px; }

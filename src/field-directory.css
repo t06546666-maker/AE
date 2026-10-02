@@ -1,0 +1,14 @@
+.field-directory { color:#14213b; --primary:#0064ff; }
+.field-directory-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+.field-directory-heading h1 { margin:0 0 5px; font-size:28px; }.field-directory-heading p { margin:0; color:#65758b; font-size:14px; }
+.field-directory .button.primary { background:#0064ff; border-color:#0064ff; color:white; border-radius:7px; }
+.field-directory-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:16px; }
+.field-directory-stats>div { display:grid; grid-template-columns:40px 1fr; gap:4px 12px; padding:20px 16px; border:1px solid #dfebf5; border-radius:10px; background:white; }
+.field-directory-stats svg { grid-row:span 2; padding:8px; width:40px; height:40px; border-radius:8px; background:#eaf3ff; color:#0064ff; }
+.field-directory-stats strong { font-size:22px; }.field-directory-stats span { font-size:11px; color:#65758b; }
+.field-status-note { font-size:12px; color:#65758b; }
+.field-directory .list-toolbar { display:flex; flex-wrap:wrap; gap:10px; padding:12px; background:white; border:1px solid #dfebf5; border-radius:10px; }
+.field-directory .search-field { flex:1; min-width:220px; }.field-directory select { background:#fbfdff; border:1px solid #dfebf5; border-radius:7px; padding:10px; color:#263d5b; }
+.field-directory .table-panel { border-radius:10px; border-color:#dfebf5; }.field-directory table { font-size:12px; }.field-directory th { background:#f0f7fd; color:#526680; font-size:11px; }.field-directory td { padding:16px 12px; }.field-directory tr:hover td { background:#f8fbff; }
+.field-directory-pagination { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 0; font-size:12px; }.field-directory-pagination>div { display:flex; align-items:center; gap:12px; }.field-directory-pagination button { border:1px solid #dce8f3; background:white; border-radius:6px; padding:8px 12px; color:#0064ff; cursor:pointer; }.field-directory-pagination button:disabled { opacity:.4; cursor:default; }
+@media(max-width:700px) { .field-directory-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }.field-directory-stats>div { padding:12px 10px; gap:8px; }.field-directory-heading h1 { font-size:24px; }.field-directory-heading { align-items:flex-start; }.field-directory-pagination { flex-direction:column; }.field-directory .list-toolbar select { flex:1; min-width:0!important; } }

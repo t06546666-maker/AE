@@ -1,13 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
-  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare,
+  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
+import '../field-shell.css';
 
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
@@ -33,13 +34,22 @@ const merchantNav = [
   ['/more', 'Business & Settings', PieChart],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
-const fieldNav = [['/field', 'Field Manager', MapPin]] as const;
+const fieldNav = [
+  ['/field?section=onboarding', 'Onboard Merchant', ShoppingBag],
+  ['/field?section=directory', 'All Merchants', Building2],
+  ['/field?section=visits', 'Visits & Check-in', MapPin],
+  ['/field?section=mapper', 'Merchant Mapper', MapPin],
+  ['/field?section=policy', 'Policy & Guidelines', ReceiptText],
+  ['/field?section=profile', 'My Profile', UserCog],
+] as const;
 
 export function Layout({ user, onLogout, children }: { user: UserProfile; onLogout: () => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('ae_theme') || 'light');
   const location = useLocation();
+  const navigate = useNavigate();
+  const [fieldSearch, setFieldSearch] = useState('');
   const { t, i18n } = useTranslation();
   const status = useQuery({
     queryKey: ['status'],
@@ -54,7 +64,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     refetchInterval: 15_000,
   });
 
-  useEffect(() => setSidebarOpen(false), [location.pathname]);
+  useEffect(() => setSidebarOpen(false), [location.pathname, location.search]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('ae_theme', theme);
@@ -80,13 +90,22 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
   };
 
   const nav = user.role === 'admin' ? adminNav : user.role === 'field_manager' ? fieldNav : merchantNav;
+  const signOut = async () => {
+    if (user.role === 'field_manager') {
+      try { await apiFetch('/api/field/sessions/end', { method: 'POST' }); }
+      catch (error) { console.warn('Field session could not be ended before sign-out.', error); }
+    }
+    onLogout();
+  };
   return (
-    <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : ''}`}>
+    <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : user.role === 'field_manager' ? 'field-shell' : ''}`}>
       <header className="topbar">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
           <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
+          {user.role === 'field_manager' && <div className="field-brand-text"><strong>Field Manager</strong><small>Grow · Reach · Track</small></div>}
         </div>
+        {user.role === 'field_manager' && <form className="field-shell-search" onSubmit={event => { event.preventDefault(); navigate(`/field?section=directory&search=${encodeURIComponent(fieldSearch.trim())}`); }}><Search size={17} /><input aria-label="Search merchants" placeholder="Search merchants, locations…" value={fieldSearch} onChange={event => setFieldSearch(event.target.value)} /><button type="submit">Search</button></form>}
         <div className="topbar-right">
           <div className="integration-health" title={t('layout.integrationStatus')}>
             <span className={status.data?.resend ? 'online' : 'offline'}>{t('layout.email')}</span>
@@ -112,7 +131,8 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </div> : null}
           <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : user.role === 'field_manager' ? 'Field Manager' : t('layout.merchant')}</span>
           <span className="topbar-user">{user.full_name || user.email}</span>
-          <button className="button secondary signout" onClick={onLogout}><LogOut size={15} />{t('layout.signOut')}</button>
+          {user.role === 'field_manager' && <Link className="field-shell-avatar" to="/field?section=profile" aria-label="Open My Profile">{(user.full_name || 'Field Manager').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</Link>}
+          <button className="button secondary signout" onClick={() => void signOut()}><LogOut size={15} />{t('layout.signOut')}</button>
         </div>
       </header>
       <div className="shell-body">
@@ -121,14 +141,14 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             {nav.map(([to, label, Icon]) => (
-              <NavLink key={to} to={to} className={({ isActive }) => isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/')) ? 'active' : ''}>
+              <NavLink key={to} to={to} className={({ isActive }) => (user.role === 'field_manager' ? new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'onboarding') : isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/'))) ? 'active' : ''}>
                 <Icon size={18} /><span>{t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
               </NavLink>
             ))}
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
-            <button className="button secondary signout desktop-view-hidden" onClick={onLogout} style={{ width: '100%', justifyContent: 'center' }}>
+            <button className="button secondary signout desktop-view-hidden" onClick={() => void signOut()} style={{ width: '100%', justifyContent: 'center' }}>
               <LogOut size={15} />{t('layout.signOut')}
             </button>
           </div>

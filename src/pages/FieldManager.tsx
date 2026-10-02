@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -6,11 +7,9 @@ import {
   Camera,
   Check,
   CheckCircle2,
-  Compass,
   Copy,
   Eye,
   KeyRound,
-  LogOut,
   MapPin,
   MapPinned,
   MessageCircle,
@@ -19,14 +18,18 @@ import {
   Sparkles,
   Store,
   Trash2,
-  UserPlus,
   X,
-  XCircle,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { MerchantCategory, UserProfile } from '../types';
-import { LoadingState, ErrorState, PageHeader } from '../components/Common';
+import { LoadingState, ErrorState } from '../components/Common';
 import { useToast } from '../toast';
+import '../field-onboarding.css';
+import '../field-directory.css';
+import { FieldVisits } from '../components/FieldVisits';
+import { FieldMerchantMapper } from '../components/FieldMerchantMapper';
+import { FieldPolicy } from '../components/FieldPolicy';
+import { FieldProfile } from '../components/FieldProfile';
 
 interface FieldMerchant {
   id: string;
@@ -116,11 +119,16 @@ const calculateDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2:
   return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
+export function FieldManager({ user }: { user: UserProfile; onLogout: () => void }) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'onboarding' | 'directory' | 'visits'>('onboarding');
+  const [sectionParams, setSectionParams] = useSearchParams();
+  type FieldSection = 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
+  const section = sectionParams.get('section');
+  const activeTab: FieldSection = ['onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'onboarding';
+  const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
+  useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
   // Location tracking
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
@@ -132,7 +140,14 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [onboardStep, setOnboardStep] = useState(0);
+  const [locality, setLocality] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [storeState, setStoreState] = useState('Kerala');
   const [categoryId, setCategoryId] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -156,6 +171,8 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   // Search & visit state
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [directoryPage, setDirectoryPage] = useState(1);
+  useEffect(() => setDirectoryPage(1), [search, categoryFilter]);
   const [selectedMerchant, setSelectedMerchant] = useState<FieldMerchant | null>(null);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
   const [notes, setNotes] = useState('');
@@ -283,6 +300,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
         m.name.toLowerCase().includes(term) ||
         m.merchant_code.toLowerCase().includes(term) ||
         (m.phone && m.phone.toLowerCase().includes(term)) ||
+        (m.email && m.email.toLowerCase().includes(term)) ||
         (m.address && m.address.toLowerCase().includes(term));
       const matchCategory = !categoryFilter || m.category_id === categoryFilter;
       return matchSearch && matchCategory;
@@ -335,6 +353,10 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+          showToast('Choose a JPG or PNG image under 5 MB.', 'error');
+          continue;
+        }
         if (!file.type.startsWith('image/')) {
           showToast('Only image files (JPG, PNG, WEBP) are supported.', 'error');
           continue;
@@ -382,8 +404,9 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
           email: finalEmail,
           phone: `+91${cleanPhone}`,
           password,
-          category_id: categoryId || undefined,
-          address: address.trim() || undefined,
+          category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined),
+          new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined,
+          address: [address.trim(), locality.trim(), city.trim(), storeState.trim(), pincode.trim()].filter(Boolean).join(', ') || undefined,
           latitude: latitude || undefined,
           longitude: longitude || undefined,
           image_url: shopImages[0]?.url || undefined,
@@ -406,12 +429,19 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
       setEmail('');
       setPhone('');
       setPassword('');
+      setCategoryId('');
+      setCustomCategory('');
       setAddress('');
+      setLocality('');
+      setCity('');
+      setPincode('');
+      setOnboardStep(0);
       setLatitude('');
       setLongitude('');
       setShopImages([]);
       showToast(t('merchants.created'));
       void queryClient.invalidateQueries({ queryKey: ['field-merchants'] });
+      void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
     },
     onError(error) {
       showToast(error.message, 'error');
@@ -420,6 +450,10 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
 
   const handleOnboardSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (onboardStep < 3) {
+      setOnboardStep(onboardStep + 1);
+      return;
+    }
     create.mutate();
   };
 
@@ -476,14 +510,6 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
     onError: (e) => showToast(e.message, 'error'),
   });
 
-  const handleSignOut = async () => {
-    try {
-      await apiFetch('/api/field/sessions/end', { method: 'POST' });
-    } finally {
-      onLogout();
-    }
-  };
-
   if (merchantsQuery.isPending) return <LoadingState />;
   if (merchantsQuery.isError) {
     return <ErrorState error={merchantsQuery.error} retry={() => merchantsQuery.refetch()} />;
@@ -493,37 +519,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   const categories = categoriesQuery.data?.categories || [];
 
   return (
-    <div className="dashboard-page">
-      {/* Header bar */}
-      <PageHeader
-        title="Field Manager"
-        subtitle={`Signed in as ${user.full_name || user.email}`}
-        actions={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {position && (
-              <span
-                style={{
-                  fontSize: '11px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '4px 8px',
-                  background: 'var(--green-soft)',
-                  color: 'var(--green)',
-                  borderRadius: '12px',
-                  fontWeight: 500,
-                }}
-              >
-                <Compass size={13} /> GPS Live (±{Math.round(position.coords.accuracy)}m)
-              </span>
-            )}
-            <button className="button secondary" onClick={() => void handleSignOut()}>
-              <LogOut size={16} /> Sign out
-            </button>
-          </div>
-        }
-      />
-
+    <div className={`dashboard-page ${activeTab === 'onboarding' ? 'field-onboarding' : ''}`}>
       {/* Global alert / location message */}
       {locationError && (
         <div className="state-panel" role="alert">
@@ -532,7 +528,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
       )}
 
       {/* Active Visit Banner if checked in */}
-      {activeVisit && (
+      {activeVisit && activeTab !== 'visits' && (
         <section className="panel" style={{ borderColor: '#0f8a54' }}>
           <h2>Active visit: {activeVisit.merchants?.name || selectedMerchant?.name || 'Merchant'}</h2>
           <p>
@@ -558,91 +554,33 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
         </section>
       )}
 
-      {/* Top Navigation Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '20px',
-          borderBottom: '1px solid var(--border)',
-          paddingBottom: '10px',
-          overflowX: 'auto',
-        }}
-      >
-        <button
-          onClick={() => setActiveTab('onboarding')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            background: activeTab === 'onboarding' ? 'var(--primary)' : 'var(--surface)',
-            color: activeTab === 'onboarding' ? '#ffffff' : 'var(--text)',
-            boxShadow: activeTab === 'onboarding' ? '0 2px 8px rgba(81,69,215,0.25)' : 'none',
-          }}
-        >
-          <UserPlus size={17} /> Onboard Merchant
-        </button>
-
-        <button
-          onClick={() => setActiveTab('directory')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            background: activeTab === 'directory' ? 'var(--primary)' : 'var(--surface)',
-            color: activeTab === 'directory' ? '#ffffff' : 'var(--text)',
-          }}
-        >
-          <Store size={17} /> All Merchants ({allMerchants.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('visits')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            background: activeTab === 'visits' ? 'var(--primary)' : 'var(--surface)',
-            color: activeTab === 'visits' ? '#ffffff' : 'var(--text)',
-          }}
-        >
-          <MapPin size={17} /> Visits & Check-in {activeVisit ? '•' : ''}
-        </button>
-      </div>
-
       {/* ========================================================================= */}
       {/* TAB 1: ONBOARDING SECTION (SAME AS ALL OTHER FORMS) */}
       {/* ========================================================================= */}
       {activeTab === 'onboarding' && (
         <>
+          <div className="field-onboarding-title">
+            <h1>Onboard Merchant</h1>
+            <p>Create a new merchant login and add a new merchant to the system.</p>
+          </div>
           <form className="panel merchant-form" onSubmit={handleOnboardSubmit}>
+            <ol className="field-steps" aria-label="Onboarding progress">
+              {['Business Details', 'Location', 'Image', 'Review'].map((label, index) => (
+                <li key={label} className={index === onboardStep ? 'current' : index < onboardStep ? 'complete' : ''} aria-current={index === onboardStep ? 'step' : undefined}>
+                  <span>{index < onboardStep ? <Check size={16} /> : index + 1}</span>{label}
+                </li>
+              ))}
+            </ol>
             <div className="panel-heading">
+              <span className="field-section-icon"><Building2 size={22} /></span>
               <div>
-                <h2>{t('merchants.add')}</h2>
-                <p>{t('merchants.createSecure')}</p>
+                <h2>{['Business Details', 'Store Address', 'Shop Image (Optional)', 'Review Details'][onboardStep]}</h2>
+                <p>{['Enter the basic information about the merchant', 'Enter the complete store address', 'Upload a photo of the store for easy identification', 'Please verify the information before adding'][onboardStep]}</p>
               </div>
-              <Plus />
             </div>
 
             <div className="four-column-form">
+              {onboardStep === 0 && <>
               <label>
                 {t('merchants.storeName')}
                 <input
@@ -690,50 +628,98 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
 
               <label>
                 {t('merchants.tempPassword')}
+                <div className="field-password">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   minLength={10}
                   required
                 />
+                <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}><Eye size={18} /></button>
+                </div>
                 <small>{t('merchants.passwordHelp')}</small>
               </label>
 
               <label>
-                Category (Optional)
-                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                  <option value="">No Category</option>
+                Category *
+                <select
+                  required
+                  value={categoryId}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    if (e.target.value !== '__other__') {
+                      setCustomCategory('');
+                    }
+                  }}
+                >
+                  <option value="">Select category</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
+                  <option value="__other__">Other</option>
                 </select>
+                {categoryId === '__other__' && (
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Enter new category"
+                    style={{ marginTop: '6px' }}
+                    required
+                    autoFocus
+                  />
+                )}
               </label>
-
+              <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} /> Generate User ID & Password</button>
+              </>}
+              {onboardStep === 1 && <>
               <label>
-                Store address{' '}
+                Address Line *
                 <input
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
                   placeholder="Street, city"
+                  required
                 />
               </label>
-
-              <label>
-                Shop image (Optional)
+              <label>Area / Locality *<input value={locality} onChange={e => setLocality(e.target.value)} required placeholder="e.g. Market Road" /></label>
+              <label>City *<input value={city} onChange={e => setCity(e.target.value)} required /></label>
+              <label>Pincode *<input value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} pattern="[1-9][0-9]{5}" inputMode="numeric" required /></label>
+              <label>State *<input value={storeState} onChange={e => setStoreState(e.target.value)} required /></label>
+              <div className="field-location-card">
+                <button type="button" className="field-map-preview" onClick={() => setMapPickerOpen(true)}><MapPinned size={30} /><strong>Select Location on Map</strong><span>{latitude && longitude ? `${latitude}, ${longitude}` : 'Tap to set exact store location'}</span></button>
+                <button type="button" className="button secondary" onClick={captureGps}><MapPin size={16} /> Use Current Location</button>
+              </div>
+              </>}
+              {onboardStep === 2 && <>
+              <label className="field-photo-card">
+                <span className="field-card-title"><Camera size={20} /> Shop Image <small>(Optional)</small></span>
+                <span className="field-upload-hint">Choose a clear storefront photo</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png"
                   onChange={handleImageFileChange}
                   disabled={isUploadingImage}
                 />
               </label>
+              <p className="field-image-tip">A clear store image helps field staff and customers identify the store easily. JPG or PNG, maximum 5 MB.</p>
+              </>}
+              {onboardStep === 3 && <div className="field-review">
+                {[
+                  ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
+                  ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
+                  ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
+                  ['Location', latitude && longitude ? `${latitude}, ${longitude}` : 'Not selected', 1],
+                ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{label}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>Edit</button></div>)}
+                <div className="field-review-row"><div><small>Store Image</small>{shopImages.length ? <img src={shopImages[0].url} alt="Storefront" /> : <strong>No image added</strong>}</div><button type="button" onClick={() => setOnboardStep(2)}>Edit</button></div>
+              </div>}
             </div>
 
             {/* Uploaded thumbnails preview if any */}
-            {shopImages.length > 0 && (
+            {onboardStep === 2 && shopImages.length > 0 && (
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
                 {shopImages.map((img, idx) => (
                   <div
@@ -791,40 +777,11 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
 
             {/* Form Action Buttons */}
             <div className="form-actions">
+              {onboardStep > 0 && <button type="button" className="button secondary" disabled={create.isPending} onClick={() => setOnboardStep(onboardStep - 1)}>← Back</button>}
               <button className="button primary" disabled={create.isPending || isUploadingImage}>
                 <Plus size={16} />
-                {create.isPending ? t('merchants.creating') : t('merchants.add')}
+                {onboardStep < 3 ? 'Next →' : create.isPending ? t('merchants.creating') : t('merchants.add')}
               </button>
-
-              <button
-                type="button"
-                className="button secondary"
-                onClick={handleGenerateBoth}
-              >
-                <Sparkles size={16} /> Generate User ID & Password
-              </button>
-
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setMapPickerOpen(true)}
-              >
-                <MapPinned size={16} /> Select location on map
-              </button>
-
-              <button
-                type="button"
-                className="button secondary"
-                onClick={captureGps}
-              >
-                <MapPin size={16} /> Use current location
-              </button>
-
-              {latitude && longitude ? (
-                <span style={{ fontSize: '12px', color: '#0f8a54', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                  <CheckCircle2 size={14} /> Location pinned ({Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)})
-                </span>
-              ) : null}
             </div>
           </form>
 
@@ -923,18 +880,21 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
       {/* TAB 2: ALL MERCHANTS DIRECTORY */}
       {/* ========================================================================= */}
       {activeTab === 'directory' && (
-        <>
+        <div className="field-directory">
+          <div className="field-directory-heading"><div><h1>All Merchants</h1><p>View and manage all merchant accounts</p></div><button className="button primary" onClick={() => setActiveTab('onboarding')}><Plus size={17} /> Add Merchant</button></div>
+          <div className="field-directory-stats"><div><Store /><strong>{allMerchants.length.toLocaleString()}</strong><span>Total Merchants</span></div><div><MapPin /><strong>{allMerchants.filter(m => m.latitude != null && m.longitude != null).length}</strong><span>Location Added</span></div><div><Camera /><strong>{allMerchants.filter(m => m.image_url).length}</strong><span>With Store Photo</span></div><div><CheckCircle2 /><strong>{new Set(visitsQuery.data?.visits.map(v => v.merchant_id) || []).size}</strong><span>Visited Merchants</span></div></div>
+          <p className="field-status-note">Account status is not provided by the merchant API. Visit figures cover the loaded visit history.</p>
           <div className="list-toolbar">
             <label className="search-field">
               <Search size={17} />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search store name, code, phone, address…"
+                placeholder="Search store name, code, email, phone…" aria-label="Search merchants"
               />
             </label>
             <select
-              value={categoryFilter}
+              aria-label="Filter category" value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{ minWidth: '180px' }}
             >
@@ -958,11 +918,12 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                     <th>{t('login.email')}</th>
                     <th>{t('merchants.phone')}</th>
                     <th>Address</th>
+                    <th>Last Visit</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMerchants.map((m) => (
+                  {filteredMerchants.slice((Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10))) - 1) * 10, Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10))) * 10).map((m) => (
                     <tr key={m.id}>
                       <td>
                         <strong>{m.merchant_code}</strong>
@@ -993,6 +954,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                       <td>{m.email}</td>
                       <td>{m.phone}</td>
                       <td>{m.address || '—'}</td>
+                      <td>{visitsQuery.data?.visits.find(v => v.merchant_id === m.id) ? new Date(visitsQuery.data.visits.find(v => v.merchant_id === m.id)!.check_in_at).toLocaleDateString() : '—'}</td>
                       <td>
                         <div className="table-actions">
                           {m.phone && (
@@ -1023,7 +985,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                   ))}
                   {filteredMerchants.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
                         No merchants found matching your search.
                       </td>
                     </tr>
@@ -1032,109 +994,21 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
               </table>
             </div>
           </section>
-        </>
+          <div className="field-directory-pagination"><span>{filteredMerchants.length} matching merchants</span><div><button disabled={directoryPage <= 1} onClick={() => setDirectoryPage(directoryPage - 1)}>Previous</button><span>Page {Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10)))} of {Math.max(1, Math.ceil(filteredMerchants.length / 10))}</span><button disabled={directoryPage >= Math.ceil(filteredMerchants.length / 10)} onClick={() => setDirectoryPage(directoryPage + 1)}>Next</button></div></div>
+        </div>
       )}
 
       {/* ========================================================================= */}
       {/* TAB 3: VISITS & CHECK-IN */}
       {/* ========================================================================= */}
-      {activeTab === 'visits' && (
-        <>
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Nearby merchants</h2>
-                <p>Allow browser location to calculate distance. Check-in is allowed within 150m.</p>
-              </div>
-              <MapPin />
-            </div>
-
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Merchant</th>
-                    <th>Address</th>
-                    <th>Distance</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nearbyMerchants.map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <strong>{m.name}</strong>
-                        <small>{m.merchant_code}</small>
-                      </td>
-                      <td>{m.address || 'No address saved'}</td>
-                      <td>
-                        {m.distance == null ? (
-                          'Location unavailable'
-                        ) : (
-                          `${Math.round(m.distance)} m`
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className="button primary"
-                          disabled={Boolean(activeVisit) || checkInMutation.isPending || m.distance == null}
-                          onClick={() => {
-                            setSelectedMerchant(m);
-                            checkInMutation.mutate(m);
-                          }}
-                        >
-                          <MapPin size={15} /> Check in
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Recent visits</h2>
-                <p>Your completed field activity.</p>
-              </div>
-              <XCircle />
-            </div>
-
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Merchant</th>
-                    <th>Status</th>
-                    <th>Check-in</th>
-                    <th>Distance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visitsQuery.data?.visits.map((v) => (
-                    <tr key={v.id}>
-                      <td>{v.merchants?.name || v.merchant_id}</td>
-                      <td>
-                        <span className={`tag ${v.status === 'completed' ? 'success' : 'info'}`}>
-                          {v.status}
-                        </span>
-                      </td>
-                      <td>{new Date(v.check_in_at).toLocaleString()}</td>
-                      <td>{v.distance_m ? `${Math.round(v.distance_m)}m` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
-      )}
+      {activeTab === 'visits' && <FieldVisits merchants={nearbyMerchants} visits={visitsQuery.data?.visits || []} active={activeVisit} notes={notes} setNotes={setNotes} busy={checkInMutation.isPending || checkOutMutation.isPending} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} retry={() => void visitsQuery.refetch()} onCheckIn={id => { const merchant = allMerchants.find(m => m.id === id); if (merchant) { setSelectedMerchant(merchant); checkInMutation.mutate(merchant); } }} onCheckOut={() => checkOutMutation.mutate()} />}
 
       {/* ========================================================================= */}
       {/* EXACT ADMIN CREDENTIALS MODAL */}
       {/* ========================================================================= */}
+      {activeTab === 'mapper' && <FieldMerchantMapper merchants={allMerchants} categories={categories} />}
+      {activeTab === 'policy' && <FieldPolicy />}
+      {activeTab === 'profile' && <FieldProfile user={user} visits={visitsQuery.data?.visits || []} merchantCount={allMerchants.length} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} />}
       <FieldCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 
       {/* ========================================================================= */}
