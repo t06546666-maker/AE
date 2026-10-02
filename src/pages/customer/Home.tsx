@@ -54,10 +54,10 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   };
 
   return (
-    <div className="bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="customer-modern-page bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
       <CustomerPaymentRequests />
       {/* Header */}
-      <header className="flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
+      <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
           <Languages size={16} />
           <select
@@ -79,7 +79,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
       <div className="px-4 pt-2 space-y-6">
         {/* Greeting */}
-        <div>
+        <div className="customer-modern-greeting">
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
             Hi, {user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
           </h2>
@@ -87,7 +87,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </div>
 
         {/* Points Card */}
-        <Link to="/customer/transactions" className="block bg-[#087a4b] rounded-[16px] p-5 text-white shadow-md relative overflow-hidden active:scale-[0.98] transition-transform w-full">
+        <Link to="/customer/transactions" className="customer-modern-points-card block rounded-[16px] p-5 text-white shadow-md relative overflow-hidden active:scale-[0.98] transition-transform w-full">
           <div className="flex justify-between items-center relative z-10">
             <div>
               <p className="text-[13px] font-medium text-green-50 mb-1">Your AE Points</p>
@@ -105,18 +105,18 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* Primary customer actions */}
         <div className="grid grid-cols-2 gap-3 pt-1">
-          <Link to="/customer/rewards" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#087a4b] p-4 text-white shadow-md active:scale-[0.98] transition-transform">
+          <Link to="/customer/rewards" className="customer-modern-action customer-modern-action-primary flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] p-4 text-white shadow-md active:scale-[0.98] transition-transform">
             <Gift size={30} strokeWidth={2} />
             <span className="text-[16px] font-bold">Redeem</span>
             <span className="text-[11px] text-green-50">Use your points</span>
           </Link>
-          <Link to="/customer/scan" className="flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+          <Link to="/customer/scan" className="customer-modern-action customer-modern-action-secondary flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
             {qrSrc ? <img src={qrSrc} alt="Your AE customer QR code" className="h-[72px] w-[72px] rounded-lg bg-white p-1" /> : <Star size={34} />}
             <span className="text-[16px] font-bold">My QR Code</span>
             <span className="text-[11px] text-gray-600">Show to earn points</span>
           </Link>
         </div>
-        <Link to="/customer/explore" className="flex items-center justify-between rounded-[18px] bg-[#e6f8ef] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+        <Link to="/customer/explore" className="customer-modern-list-card flex items-center justify-between rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
           <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
           <ChevronRight size={20} />
         </Link>

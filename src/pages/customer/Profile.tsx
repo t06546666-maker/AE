@@ -44,9 +44,9 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px] flex flex-col relative">
+    <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px] flex flex-col relative">
       {/* Top Green Section */}
-      <div className="bg-[#e9f8f0] pb-10 pt-4 px-5 rounded-b-[40px] shadow-sm relative z-10">
+      <div className="customer-modern-profile-hero pb-10 pt-4 px-5 rounded-b-[40px] shadow-sm relative z-10">
         <header className="flex justify-between items-center mb-6">
           <Link to="/customer/home" className="text-gray-800"><ArrowLeft size={24} /></Link>
           <button onClick={() => setShowSettings(true)} className="text-gray-800"><Settings size={24} /></button>
@@ -98,7 +98,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       <div className="px-5 -mt-6 relative z-20 space-y-4">
         {/* Section 1 */}
-        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Star size={20} className="text-gray-400" />
@@ -120,7 +120,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         </div>
 
         {/* Section 2 */}
-        <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
           <button onClick={() => { setSelectedFaq(null); setShowHelp(true); }} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <HelpCircle size={20} className="text-gray-400" />

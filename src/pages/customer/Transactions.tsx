@@ -30,7 +30,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
       <header className="flex justify-between items-center px-5 py-4 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-gray-800">
@@ -41,7 +41,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
 
       <div className="px-5 pt-6 space-y-6">
         {/* Points Card */}
-        <div className="bg-[#087a4b] rounded-[20px] p-5 text-white shadow-lg relative overflow-hidden">
+        <div className="customer-modern-points-card rounded-[20px] p-5 text-white shadow-lg relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center relative z-10">
             <div>
