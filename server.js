@@ -1442,8 +1442,54 @@ app.post('/api/field/sessions/end', requireAuth, requireRole('field_manager'), a
   res.json({ success: true, session: data });
 });
 
+const shopImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+app.post('/api/field/upload-image', requireAuth, fieldManagerRole, shopImageUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No image file provided' });
+    const extension = offerImageExtension(req.file.mimetype);
+    const fileName = `shops/${req.auth.profile.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(OFFER_IMAGE_BUCKET)
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.warn('Supabase storage upload failed, using Data URI fallback:', uploadError.message);
+      const base64 = req.file.buffer.toString('base64');
+      const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+      return res.json({ success: true, url: dataUri, path: fileName });
+    }
+
+    const { data: signedData } = await supabaseAdmin.storage
+      .from(OFFER_IMAGE_BUCKET)
+      .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+
+    const publicUrl = supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).getPublicUrl(fileName).data?.publicUrl;
+    const url = signedData?.signedUrl || publicUrl;
+    return res.json({ success: true, url, path: fileName });
+  } catch (error) {
+    console.error('Field image upload error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
-  const { data, error } = await supabaseAdmin.from('merchants').select('id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)').order('name');
+  let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,merchant_categories(name)';
+  let { data, error } = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+  if (error && (error.message?.includes('image') || error.code === '42703')) {
+    selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)';
+    const retry = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) return res.status(500).json({ success: false, error: error.message });
   res.json({ success: true, merchants: data || [] });
 });
@@ -2447,6 +2493,9 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const address = cleanText(req.body.address, 300) || null;
   const latitude = req.body.latitude === undefined || req.body.latitude === '' ? null : Number(req.body.latitude);
   const longitude = req.body.longitude === undefined || req.body.longitude === '' ? null : Number(req.body.longitude);
+  const images = Array.isArray(req.body.images) ? req.body.images.filter(x => typeof x === 'string' && x.trim()) : [];
+  const image_url = typeof req.body.image_url === 'string' && req.body.image_url.trim() ? req.body.image_url.trim() : (images[0] || null);
+
   if (!name || !email || !isEmail(email) || !phone || !isStrongPassword(password)) {
     return res.status(400).json({
       success: false,
@@ -2457,20 +2506,36 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     return res.status(400).json({ success: false, error: 'Enter both valid latitude and longitude values, or leave both blank' });
   }
 
-  const { data: merchant, error: merchantError } = await supabaseAdmin
+  let insertPayload = {
+    name,
+    email,
+    phone,
+    address,
+    latitude,
+    longitude,
+    category_id,
+    image_url,
+    images: images.length ? images : [],
+    network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000'
+  };
+
+  let { data: merchant, error: merchantError } = await supabaseAdmin
     .from('merchants')
-    .insert({
-      name,
-      email,
-      phone,
-      address,
-      latitude,
-      longitude,
-      category_id,
-      network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000'
-    })
+    .insert(insertPayload)
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
+
+  if (merchantError && (merchantError.message?.includes('image') || merchantError.code === '42703')) {
+    delete insertPayload.image_url;
+    delete insertPayload.images;
+    const retry = await supabaseAdmin
+      .from('merchants')
+      .insert(insertPayload)
+      .select('id,merchant_code,name,email,phone,created_at')
+      .single();
+    merchant = retry.data;
+    merchantError = retry.error;
+  }
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -2511,6 +2576,8 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
           address,
           latitude,
           longitude,
+          image_url,
+          images,
         },
         status: 'approved',
         review_note: `Onboarded by field manager (${req.auth.profile.full_name || req.auth.profile.email})`,

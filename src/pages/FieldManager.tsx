@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
+  Camera,
   Check,
   CheckCircle2,
   Compass,
@@ -9,6 +10,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Image as ImageIcon,
   KeyRound,
   LogOut,
   MapPin,
@@ -22,6 +24,8 @@ import {
   Send,
   Sparkles,
   Store,
+  Trash2,
+  Upload,
   UserPlus,
   X,
   XCircle,
@@ -42,6 +46,8 @@ interface FieldMerchant {
   category_id?: string;
   created_at?: string;
   active?: boolean;
+  image_url?: string;
+  images?: string[];
   merchant_categories?: { name?: string };
 }
 
@@ -77,6 +83,12 @@ interface CreateMerchantApiResponse {
   };
   temporaryPassword: string;
   whatsapp: { sent: boolean; status: string; error: string | null };
+}
+
+interface ShopImageItem {
+  id: string;
+  url: string;
+  path?: string;
 }
 
 function generateStrongPassword() {
@@ -124,6 +136,14 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   const [gpsStatus, setGpsStatus] = useState('');
   const [isCapturingGps, setIsCapturingGps] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Shop Images State
+  const [shopImages, setShopImages] = useState<ShopImageItem[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Result modal/card for created credentials
   const [credentials, setCredentials] = useState<CreatedMerchantCredentials | null>(null);
@@ -235,6 +255,48 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
     );
   };
 
+  // Handle uploading shop images
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploadingImage(true);
+    setUploadError('');
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) {
+          setUploadError('Only image files (JPG, PNG, WEBP) are supported.');
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await apiFetch<{ success: boolean; url: string; path?: string }>('/api/field/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.url) {
+          setShopImages((prev) => [
+            ...prev,
+            { id: `${Date.now()}-${Math.random()}`, url: res.url, path: res.path },
+          ]);
+        }
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload shop image');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeShopImage = (id: string) => {
+    setShopImages((prev) => prev.filter((img) => img.id !== id));
+  };
+
   // Create Merchant Mutation
   const createMerchantMutation = useMutation({
     mutationFn: () => {
@@ -251,6 +313,8 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
           address: address.trim() || undefined,
           latitude: latitude || undefined,
           longitude: longitude || undefined,
+          image_url: shopImages[0]?.url || undefined,
+          images: shopImages.map((img) => img.url),
         }),
       });
     },
@@ -272,6 +336,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
       setLatitude('');
       setLongitude('');
       setGpsStatus('');
+      setShopImages([]);
       setStatusMessage(`Merchant ${data.merchant.name} onboarded successfully!`);
       void queryClient.invalidateQueries({ queryKey: ['field-merchants'] });
     },
@@ -780,27 +845,32 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                   <Building2 size={20} color="var(--primary)" /> Onboard New Merchant Store
                 </h2>
                 <p style={{ margin: 0, color: 'var(--muted)', fontSize: '13px' }}>
-                  Capture store details, assign category, pin GPS coordinates, and set up instant login access.
+                  Capture store details, photos, business category, pin GPS coordinates, and set up instant login access.
                 </p>
               </div>
               <Sparkles size={20} color="var(--primary)" />
             </div>
 
             <form onSubmit={handleOnboardSubmit} style={{ marginTop: '16px' }}>
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              <div
+                className="form-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '16px',
+                }}
+              >
                 {/* Store Name */}
                 <label>
                   <span>Store / Business Name *</span>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      required
-                      type="text"
-                      placeholder="e.g. Grand Mart Supermarket"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      maxLength={120}
-                    />
-                  </div>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. Grand Mart Supermarket"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={120}
+                  />
                 </label>
 
                 {/* Business Category */}
@@ -928,6 +998,192 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                 </label>
               </div>
 
+              {/* ============================================================= */}
+              {/* SHOP IMAGES / PHOTOS SECTION */}
+              {/* ============================================================= */}
+              <div
+                style={{
+                  marginTop: '18px',
+                  padding: '16px',
+                  background: 'var(--surface-alt)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div>
+                    <strong style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ImageIcon size={16} color="var(--primary)" /> Storefront & Signboard Images
+                    </strong>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                      Capture or upload photos of the shop exterior, signboard, and entrance.
+                    </span>
+                  </div>
+
+                  {/* Hidden inputs for Camera and Gallery */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={handleImageFileChange}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleImageFileChange}
+                  />
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="button primary"
+                      disabled={isUploadingImage}
+                      onClick={() => cameraInputRef.current?.click()}
+                      style={{ padding: '7px 12px', fontSize: '12px' }}
+                    >
+                      <Camera size={14} />
+                      Take Photo
+                    </button>
+
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={isUploadingImage}
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{ padding: '7px 12px', fontSize: '12px' }}
+                    >
+                      <Upload size={14} />
+                      Choose from Gallery
+                    </button>
+                  </div>
+                </div>
+
+                {isUploadingImage && (
+                  <p style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 500, margin: '6px 0' }}>
+                    Uploading shop image to storage…
+                  </p>
+                )}
+
+                {uploadError && (
+                  <p style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 500, margin: '6px 0' }}>
+                    {uploadError}
+                  </p>
+                )}
+
+                {/* Image Thumbnails Grid */}
+                {shopImages.length > 0 ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                      marginTop: '10px',
+                    }}
+                  >
+                    {shopImages.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        style={{
+                          position: 'relative',
+                          width: '100px',
+                          height: '100px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: '2px solid var(--border)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                          background: 'var(--surface)',
+                        }}
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Shop image ${idx + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setPreviewImageUrl(img.url)}
+                          title="Click to view full image"
+                        />
+                        {idx === 0 && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background: 'rgba(81, 69, 215, 0.85)',
+                              color: '#fff',
+                              fontSize: '9px',
+                              fontWeight: 600,
+                              textAlign: 'center',
+                              padding: '2px 0',
+                            }}
+                          >
+                            Signboard
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeShopImage(img.id)}
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            background: 'rgba(0, 0, 0, 0.65)',
+                            color: '#fff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                          title="Remove image"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: '1px dashed var(--border)',
+                      borderRadius: '6px',
+                      padding: '16px',
+                      textAlign: 'center',
+                      color: 'var(--muted)',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      background: 'var(--surface)',
+                      marginTop: '6px',
+                    }}
+                  >
+                    No images attached. Tap <strong>Take Photo</strong> or <strong>Choose from Gallery</strong> to add shop pictures.
+                  </div>
+                )}
+              </div>
+
               {/* Store GPS Coordinates Section */}
               <div
                 style={{
@@ -1044,7 +1300,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                 <button
                   type="submit"
                   className="button primary"
-                  disabled={createMerchantMutation.isPending}
+                  disabled={createMerchantMutation.isPending || isUploadingImage}
                   style={{ minWidth: '180px', padding: '10px 20px', fontSize: '14px' }}
                 >
                   <UserPlus size={16} />
@@ -1082,9 +1338,45 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                   {allMerchants.slice(0, 10).map((m) => (
                     <tr key={m.id}>
                       <td>
-                        <strong>{m.name}</strong>
-                        <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>
-                          {m.merchant_code}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {m.image_url ? (
+                            <img
+                              src={m.image_url}
+                              alt={m.name}
+                              style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '6px',
+                                objectFit: 'cover',
+                                border: '1px solid var(--border)',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => setPreviewImageUrl(m.image_url!)}
+                              title="Click to view shop photo"
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '6px',
+                                background: 'var(--surface-alt)',
+                                border: '1px solid var(--border)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--muted)',
+                              }}
+                            >
+                              <Store size={20} />
+                            </div>
+                          )}
+                          <div>
+                            <strong>{m.name}</strong>
+                            <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>
+                              {m.merchant_code}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td>
@@ -1184,7 +1476,13 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
             <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
               <Search
                 size={16}
-                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--muted)',
+                }}
               />
               <input
                 type="text"
@@ -1225,9 +1523,45 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                 {filteredMerchants.map((m) => (
                   <tr key={m.id}>
                     <td>
-                      <strong>{m.name}</strong>
-                      <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>
-                        {m.merchant_code}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {m.image_url ? (
+                          <img
+                            src={m.image_url}
+                            alt={m.name}
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '6px',
+                              objectFit: 'cover',
+                              border: '1px solid var(--border)',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => setPreviewImageUrl(m.image_url!)}
+                            title="Click to view shop photo"
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '6px',
+                              background: 'var(--surface-alt)',
+                              border: '1px solid var(--border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--muted)',
+                            }}
+                          >
+                            <Store size={18} />
+                          </div>
+                        )}
+                        <div>
+                          <strong>{m.name}</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>
+                            {m.merchant_code}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -1254,7 +1588,15 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                     <td>{m.address || 'No address saved'}</td>
                     <td>
                       {m.latitude && m.longitude ? (
-                        <span style={{ fontSize: '11px', color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--green)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                        >
                           <MapPin size={12} /> {Number(m.latitude).toFixed(4)}, {Number(m.longitude).toFixed(4)}
                         </span>
                       ) : (
@@ -1413,6 +1755,69 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
               </table>
             </div>
           </section>
+        </div>
+      )}
+
+      {/* Image Preview Lightbox Modal */}
+      {previewImageUrl && (
+        <div
+          onClick={() => setPreviewImageUrl(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '85vh',
+              background: 'var(--surface)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+            }}
+          >
+            <button
+              onClick={() => setPreviewImageUrl(null)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+              }}
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={previewImageUrl}
+              alt="Store Preview"
+              style={{
+                display: 'block',
+                maxWidth: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

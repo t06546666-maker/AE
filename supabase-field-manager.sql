@@ -6,6 +6,8 @@ alter table public.profiles add constraint merchant_role_assignment check (
   (role in ('admin', 'customer', 'field_manager') and merchant_id is null)
   or (role = 'merchant' and merchant_id is not null)
 );
+alter table public.merchants add column if not exists image_url text;
+alter table public.merchants add column if not exists images jsonb default '[]'::jsonb;
 
 create table if not exists public.field_manager_sessions (
   id uuid primary key default gen_random_uuid(), manager_id uuid not null references public.profiles(id) on delete cascade,
