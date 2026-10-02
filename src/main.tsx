@@ -6,6 +6,7 @@ import { App } from './App';
 import { ToastProvider } from './toast';
 import './i18n';
 import './styles.css';
+import './customer-glass.css';
 
 window.setTimeout(() => {
   sessionStorage.removeItem('ae_script_refresh');

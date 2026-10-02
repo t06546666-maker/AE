@@ -89,7 +89,7 @@ export function CustomerExplore() {
   const submitReview = async () => { if (!detailMerchant || reviewMessage.trim().length < 2) return; await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: 'merchant', merchant_id: detailMerchant.id, rating: reviewRating, message: reviewMessage.trim() }) }); setReviewMessage(''); const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${detailMerchant.id}`); setReviews(result.reviews || []); };
 
   return (
-    <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
       <header className="flex justify-between items-center px-5 py-4 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-gray-800">
@@ -118,7 +118,7 @@ export function CustomerExplore() {
 
       {/* Categories */}
       <div className="px-5 pt-6 pb-2">
-        <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide -mx-5 px-5">
+        <div className="glass-categories flex overflow-x-auto space-x-2 pb-2 scrollbar-hide -mx-5 px-5">
           <button
             onClick={() => handleCategoryChange('All')}
             className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
@@ -152,7 +152,7 @@ export function CustomerExplore() {
       </div>
 
       {/* Merchant List */}
-      <div className="px-5 space-y-3">
+      <div className="glass-merchants px-5 space-y-3">
         {isLoading ? (
           <div className="py-12 text-center text-gray-400">Loading merchants...</div>
         ) : merchants.length === 0 ? (

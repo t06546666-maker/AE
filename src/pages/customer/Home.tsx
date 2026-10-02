@@ -124,6 +124,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span><span className="text-[11px] text-blue-600">Ask a selected merchant for products</span></div></div><ChevronRight size={20} />
         </button>
 
+        <Link to="/customer/offers" className="glass-offer-link"><Gift size={25}/><div><strong>Offers</strong><span>Discover exclusive offers</span></div><ChevronRight size={20}/></Link>
         {/* Merchant offers grid */}
         <section className="pt-1">
           <div className="mb-3 flex items-end justify-between">

@@ -21,7 +21,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
   }, [i18n.language]);
 
   return (
-    <div className="app-shell theme-green">
+    <div className="app-shell theme-green customer-glass">
       <header className="topbar hidden md:flex">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>

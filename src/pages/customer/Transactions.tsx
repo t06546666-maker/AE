@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Star, Gift, Wallet, IndianRupee } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerTransactions } from '../../hooks/useCustomerData';
 import { useState } from 'react';
@@ -30,7 +30,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
   };
 
   return (
-    <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="glass-points customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
       <header className="flex justify-between items-center px-5 py-4 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-gray-800">
@@ -58,8 +58,10 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
           </div>
         </div>
 
+        <div className="glass-stats"><div><Star size={16}/><strong>{allEarned.toLocaleString('en-IN')}</strong><span>Earned on this page</span></div><div><Gift size={16}/><strong>{allRedeemed.toLocaleString('en-IN')}</strong><span>Redeemed on this page</span></div><div><Wallet size={16}/><strong>{availablePoints.toLocaleString('en-IN')}</strong><span>Available</span></div><div><IndianRupee size={16}/><strong>₹{transactions.filter(t => t.type === 'earn').reduce((sum,t) => sum + Number(t.amount || 0),0).toLocaleString('en-IN')}</strong><span>Purchases on this page</span></div></div>
+        <section className="glass-points-chart"><h2>Points &amp; Purchases</h2><p>● Points earned　<span style={{color:'#1476ed'}}>● Purchase amount (₹)</span></p><div className="glass-chart-bars">{transactions.filter(t => t.type === 'earn').slice().reverse().map(t => <div key={t.id} title={`${t.merchant_name}: ${t.points} points · ₹${t.amount ?? 'Unavailable'}`}><i style={{height:`${Math.max(2,t.points / Math.max(1,...transactions.map(x=>x.points))*100)}%`}}/><b style={{height:`${Math.max(2,Number(t.amount || 0) / Math.max(1,...transactions.map(x=>Number(x.amount || 0)))*100)}%`}}/></div>)}</div><p className="mt-3">Recorded purchases on this page</p></section>
         {/* Stats Row */}
-        <div className="flex justify-between px-2">
+        <div className="hidden flex justify-between px-2">
           <div className="text-center">
             <p className="text-[16px] font-bold text-gray-900">{allEarned}</p>
             <p className="text-[12px] font-medium text-gray-500">Earned</p>
@@ -109,7 +111,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 <div className="py-12 text-center text-gray-400">No transactions found.</div>
               ) : (
                 transactions.map((t, idx) => (
-                  <div key={t.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div key={t.id} className="glass-transaction-row p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 ${getAvatarColor(idx)} rounded-full flex items-center justify-center font-bold text-sm tracking-tighter`}>
                         {getInitials(t.merchant_name)}
@@ -123,10 +125,11 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                     </div>
                     <div className="text-right">
                       <p className={`font-bold text-[16px] ${t.type === 'earn' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
-                        {t.type === 'earn' ? '+' : '-'}{t.points} points · {t.amount == null ? 'Amount unavailable' : `₹${Number(t.amount).toLocaleString('en-IN')}`}
+                        {t.type === 'earn' ? '+' : '-'}{t.points}<small>Points</small>
                       </p>
                       <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
                     </div>
+                    <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? 'Purchase' : 'Transaction'}</small></div>
                   </div>
                 ))
               )}
