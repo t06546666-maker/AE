@@ -2149,10 +2149,19 @@ app.put('/api/profile/preferences', requireAuth, async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   if (!requireSupabase(res)) return;
-  const email = cleanText(req.body.email, 254).toLowerCase();
+  let email = cleanText(req.body.email, 254).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  if (!isEmail(email) || !password) {
-    return res.status(400).json({ success: false, error: 'Valid email and password are required' });
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Valid user ID / email and password are required' });
+  }
+
+  if (!isEmail(email)) {
+    const { data: m } = await supabaseAdmin.from('merchants').select('email').ilike('merchant_code', email).maybeSingle();
+    if (m?.email) {
+      email = m.email.toLowerCase();
+    } else {
+      email = `${email}@ae-rewards.com`;
+    }
   }
 
   const { data, error } = await supabaseAuth.auth.signInWithPassword({ email, password });

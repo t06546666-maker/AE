@@ -58,6 +58,7 @@ interface Visit {
 
 interface CredentialResult {
   merchantCode: string;
+  userId?: string;
   loginEmail: string;
   temporaryPassword: string;
   phone?: string;
@@ -102,7 +103,7 @@ function generateStrongPassword() {
 function generateMerchantUserId(storeName: string) {
   const clean = storeName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || 'store';
   const randomNum = Math.floor(100 + Math.random() * 900);
-  return `${clean}${randomNum}@ae-rewards.com`;
+  return `${clean}${randomNum}`;
 }
 
 const calculateDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -127,6 +128,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
 
   // Form state - exactly matching Admin Merchants form
   const [name, setName] = useState('');
+  const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -291,9 +293,18 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   const handleGenerateBoth = () => {
     const newId = generateMerchantUserId(name);
     const newPwd = generateStrongPassword();
-    setEmail(newId);
+    setUserId(newId);
+    setEmail(`${newId}@ae-rewards.com`);
     setPassword(newPwd);
     showToast('Generated User ID and Password');
+  };
+
+  const handleUserIdChange = (val: string) => {
+    setUserId(val);
+    const sanitized = val.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (!email || email.endsWith('@ae-rewards.com')) {
+      setEmail(sanitized ? `${sanitized}@ae-rewards.com` : '');
+    }
   };
 
   // Capture GPS coordinates for the onboarding store
@@ -361,11 +372,14 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
   const create = useMutation({
     mutationFn: () => {
       const cleanPhone = phone.replace(/\D/g, '');
+      const cleanUserId = userId.trim();
+      const finalEmail = (email.trim() || (cleanUserId ? `${cleanUserId.toLowerCase()}@ae-rewards.com` : '')).toLowerCase();
       return apiFetch<CreateMerchantApiResponse>('/api/merchants', {
         method: 'POST',
         body: JSON.stringify({
           name: name.trim(),
-          email: email.trim(),
+          userId: cleanUserId || undefined,
+          email: finalEmail,
           phone: `+91${cleanPhone}`,
           password,
           category_id: categoryId || undefined,
@@ -380,6 +394,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
     onSuccess(data) {
       setCredentials({
         merchantCode: data.merchant.merchantCode,
+        userId: userId.trim() || data.merchant.merchantCode,
         loginEmail: data.merchant.email,
         temporaryPassword: data.temporaryPassword,
         phone: data.merchant.phone,
@@ -387,6 +402,7 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
         whatsapp: data.whatsapp,
       });
       setName('');
+      setUserId('');
       setEmail('');
       setPhone('');
       setPassword('');
@@ -637,11 +653,22 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
               </label>
 
               <label>
+                User ID
+                <input
+                  value={userId}
+                  onChange={(event) => handleUserIdChange(event.target.value)}
+                  placeholder="e.g. store101"
+                  required
+                />
+              </label>
+
+              <label>
                 {t('login.email')}
                 <input
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value.toLowerCase())}
+                  placeholder="e.g. store101@ae-rewards.com"
                   required
                 />
               </label>
@@ -691,28 +718,6 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
                   placeholder="Street, city"
-                />
-              </label>
-
-              <label>
-                Latitude{' '}
-                <input
-                  type="number"
-                  step="any"
-                  value={latitude}
-                  onChange={(event) => setLatitude(event.target.value)}
-                  placeholder="e.g. 9.9312"
-                />
-              </label>
-
-              <label>
-                Longitude{' '}
-                <input
-                  type="number"
-                  step="any"
-                  value={longitude}
-                  onChange={(event) => setLongitude(event.target.value)}
-                  placeholder="e.g. 76.2673"
                 />
               </label>
 
@@ -814,6 +819,12 @@ export function FieldManager({ user, onLogout }: { user: UserProfile; onLogout: 
               >
                 <MapPin size={16} /> Use current location
               </button>
+
+              {latitude && longitude ? (
+                <span style={{ fontSize: '12px', color: '#0f8a54', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                  <CheckCircle2 size={14} /> Location pinned ({Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)})
+                </span>
+              ) : null}
             </div>
           </form>
 
@@ -1317,10 +1328,12 @@ function FieldCredentialsModal({
   const cleanPhone = (credentials.phone || '').replace(/\D/g, '');
   const recipient = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
   const loginUrl = `${window.location.origin}/login`;
+  const displayUserId = credentials.userId || credentials.merchantCode;
   const messageText =
     `*Welcome to AE Reward Network!*\n\n` +
     `Hello ${credentials.storeName || 'Merchant'}, your merchant account has been onboarded and is now live.\n\n` +
     `*Your Login Credentials:*\n` +
+    `👤 *User ID:* ${displayUserId}\n` +
     `🏷️ *Merchant Code:* ${credentials.merchantCode}\n` +
     `📧 *Login Email:* ${credentials.loginEmail}\n` +
     `🔑 *Temporary Password:* ${credentials.temporaryPassword}\n\n` +
@@ -1339,6 +1352,13 @@ function FieldCredentialsModal({
           {t(credentials.whatsapp.sent ? 'merchants.messageSent' : 'merchants.messageFailed')}
         </p>
         {credentials.whatsapp.error ? <small className="form-error">{credentials.whatsapp.error}</small> : null}
+        <div className="credential-row">
+          <span>User ID</span>
+          <strong>{displayUserId}</strong>
+          <button className="icon-button" title="Copy" onClick={() => void copy(displayUserId)}>
+            <Copy />
+          </button>
+        </div>
         <div className="credential-row">
           <span>{t('merchants.code')}</span>
           <strong>{credentials.merchantCode}</strong>

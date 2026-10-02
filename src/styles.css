@@ -233,10 +233,12 @@ label > input:focus, label > select:focus, label > textarea:focus, .phone-field 
 label small { font-size: 10px; font-weight: 600; }
 .customer-fields, .three-column-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .four-column-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 14px; }
-.customer-fields label, .purchase-fields label, .three-column-form label, .four-column-form label, .settings-fields label, .merchant-select { display: grid; gap: 6px; }
-.phone-field { display: flex; }
-.phone-field span { min-width: 52px; display: grid; place-items: center; background: var(--surface-alt); border: 1px solid var(--border); border-right: 0; border-radius: 7px 0 0 7px; color: var(--text); font-weight: 800; }
-.phone-field input { border-radius: 0 7px 7px 0; }
+.customer-fields label, .purchase-fields label, .three-column-form label, .settings-fields label, .merchant-select { display: grid; gap: 6px; }
+.four-column-form label { display: flex; flex-direction: column; justify-content: flex-start; gap: 6px; }
+.four-column-form label > input, .four-column-form label > select, .four-column-form .phone-field { height: 41px; min-height: 41px; max-height: 41px; box-sizing: border-box; }
+.phone-field { display: flex; height: 41px; box-sizing: border-box; }
+.phone-field span { min-width: 52px; height: 41px; box-sizing: border-box; display: grid; place-items: center; background: var(--surface-alt); border: 1px solid var(--border); border-right: 0; border-radius: 7px 0 0 7px; color: var(--text); font-weight: 800; }
+.phone-field input { border-radius: 0 7px 7px 0; height: 41px; box-sizing: border-box; }
 .phone-registration-status { min-height: 18px; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.4; }
 .phone-registration-status.existing { color: var(--amber); }
 .phone-registration-status.available { color: var(--green); }
