@@ -7,6 +7,7 @@ import { ToastProvider } from './toast';
 import './i18n';
 import './styles.css';
 import './customer-glass.css';
+import './customer-home-polish.css';
 
 window.setTimeout(() => {
   sessionStorage.removeItem('ae_script_refresh');

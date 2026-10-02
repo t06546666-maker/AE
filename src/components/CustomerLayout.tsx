@@ -58,7 +58,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
               <Search size={18} /><span>Explore</span>
             </NavLink>
-            <NavLink to="/customer/home?productList=1" className={({ isActive }) => isActive ? 'active' : ''}>
+            <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
               <ListPlus size={18} /><span>Product List</span>
             </NavLink>
             <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
@@ -88,7 +88,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
           <Search />
           <span>Explore</span>
         </NavLink>
-        <NavLink to="/customer/home?productList=1" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>Product List</span></NavLink>
+        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>Product List</span></NavLink>
         <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Gift />
           <span>Offers</span>

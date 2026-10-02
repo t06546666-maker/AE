@@ -70,7 +70,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <option value="ml">മ</option>
           </select>
         </label>
-        <img src="/logo.png" alt="AE" className="absolute left-1/2 -translate-x-1/2 object-contain" style={{ width: 72, height: 40 }} />
+        <img src="/logo.png" alt="AE" className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
@@ -87,7 +87,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </div>
 
         {/* Points Card */}
-        <Link to="/customer/transactions" className="customer-modern-points-card block rounded-[16px] p-5 text-white shadow-md relative overflow-hidden active:scale-[0.98] transition-transform w-full">
+        <Link to="/customer/transactions" className="customer-home-points customer-modern-points-card block rounded-[16px] p-5 text-white shadow-md relative overflow-hidden active:scale-[0.98] transition-transform w-full">
           <div className="flex justify-between items-center relative z-10">
             <div>
               <p className="text-[13px] font-medium text-green-50 mb-1">Your AE Points</p>

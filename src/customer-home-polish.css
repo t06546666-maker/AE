@@ -1,0 +1,6 @@
+.customer-glass .customer-modern-topbar img.customer-home-logo{position:relative!important;left:auto!important;right:auto!important;top:auto!important;translate:none!important;transform:none!important;flex-shrink:0;object-fit:contain;margin:0;align-self:center}
+.customer-glass .customer-home-points{padding-right:112px!important;color:#fff!important}
+.customer-glass .customer-home-points span,.customer-glass .customer-home-points p{color:#fff!important}
+.customer-glass .customer-home-points:before{content:'';position:absolute;right:5px;top:13px;width:110px;height:120px;background:url('/reward-coin.svg') center/contain no-repeat;pointer-events:none;z-index:1}
+.customer-glass .customer-home-points:after{display:none}
+.customer-glass .customer-home-points>div>svg{position:absolute;right:-91px;bottom:-10px;border:1px solid #ffffff70;border-radius:50%;padding:6px;box-sizing:content-box;background:#ffffff18}
