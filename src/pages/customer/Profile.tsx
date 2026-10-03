@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, Shield, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
+import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useCustomerMerchants } from '../../hooks/useCustomerData';
@@ -9,7 +9,7 @@ import { apiFetch } from '../../api';
 export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
   const [selectedFaq, setSelectedFaq] = useState<string | null>(null);
-  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showContact, setShowContact] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'app' | 'merchant'>('app');
@@ -31,7 +31,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
   const handleWhatsAppHelp = () => {
     const msg = encodeURIComponent('Hi, I need help with my AE Rewards account.');
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    window.open(`https://wa.me/917306010846?text=${msg}`, '_blank', 'noopener,noreferrer');
   };
 
   const submitFeedback = async (event: React.FormEvent) => {
@@ -138,10 +138,10 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
-          <button onClick={() => setShowPrivacy(true)} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+          <button onClick={() => setShowContact(true)} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
-              <Shield size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">Privacy & Terms</span>
+              <Mail size={20} className="text-gray-400" />
+              <span className="font-semibold text-[15px] text-gray-800">Contact</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
@@ -183,8 +183,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <div className="mb-4 rounded-[16px] border border-[#bfe8d2] bg-[#effaf4] p-4">
               <p className="text-[13px] font-bold text-gray-900">Still need help?</p>
-              <p className="mt-1 text-[12px] text-gray-600">Chat with AE support on WhatsApp or email us. Add your official support number as <code>VITE_AE_SUPPORT_PHONE</code> in your deployment settings to show a Call AE option here.</p>
-              {import.meta.env.VITE_AE_SUPPORT_PHONE && <a href={`tel:${import.meta.env.VITE_AE_SUPPORT_PHONE}`} className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#087a4b] px-4 py-2 text-[12px] font-bold text-white"><Phone size={14} /> Call AE support</a>}
+              <p className="mt-1 text-[12px] text-gray-600">Chat with support on WhatsApp or email us.</p>
             </div>
             <div className="space-y-3">
               <button onClick={handleWhatsAppHelp} className="w-full flex items-center gap-4 p-4 bg-green-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
@@ -196,13 +195,13 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <p className="text-[12px] text-gray-500">Get instant support</p>
                 </div>
               </button>
-              <a href="mailto:support@affiliateae.com" className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
+              <a href="mailto:info@affiliateinnovations.co.in" className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                   <Mail size={18} className="text-gray-600" />
                 </div>
                 <div>
                   <p className="font-bold text-[14px] text-gray-900">Email Support</p>
-                  <p className="text-[12px] text-gray-500">support@affiliateae.com</p>
+                  <p className="text-[12px] text-gray-500">info@affiliateinnovations.co.in</p>
                 </div>
               </a>
             </div>
@@ -224,19 +223,18 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         </div>
       )}
 
-      {/* Privacy & Terms Modal */}
-      {showPrivacy && (
-        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowPrivacy(false)}>
+      {/* Contact Modal */}
+      {showContact && (
+        <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowContact(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[18px] font-bold text-gray-900">Privacy & Terms</h2>
-              <button onClick={() => setShowPrivacy(false)}><X size={22} className="text-gray-500" /></button>
+              <h2 className="text-[18px] font-bold text-gray-900">Contact</h2>
+              <button onClick={() => setShowContact(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="space-y-4 text-[13px] text-gray-600 leading-relaxed">
-              <p>Affiliate Innovations · Free pilot. Legal documents are drafts awaiting review.</p>
-              <p><a href="/legal?type=customer">Read Customer Terms</a></p>
-              <p><a href="/legal?type=privacy">Read Privacy Policy</a></p>
-              <p>Contact: info@affiliateinnovations.co.in · +91 9025547577</p>
+              <p>Affiliate Innovations</p>
+              <p><a href="https://wa.me/917306010846" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></p>
+              <p><a href="mailto:info@affiliateinnovations.co.in">Email Support: info@affiliateinnovations.co.in</a></p>
             </div>
           </div>
         </div>

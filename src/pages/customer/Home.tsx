@@ -116,15 +116,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <span className="text-[11px] text-gray-600">Show to earn points</span>
           </Link>
         </div>
-        <Link to="/customer/explore" className="customer-modern-list-card flex items-center justify-between rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
-          <ChevronRight size={20} />
-        </Link>
-        <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span><span className="text-[11px] text-blue-600">Ask a selected merchant for products</span></div></div><ChevronRight size={20} />
-        </button>
-
-        <Link to="/customer/offers" className="glass-offer-link"><Gift size={25}/><div><strong>Offers</strong><span>Discover exclusive offers</span></div><ChevronRight size={20}/></Link>
         {/* Merchant offers grid */}
         <section className="pt-1">
           <div className="mb-3 flex items-end justify-between">
@@ -133,6 +124,15 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
           {offersLoading ? <div className="rounded-2xl bg-gray-50 py-8 text-center text-sm text-gray-400">Loading offers...</div> : offers.length ? <div className="grid grid-cols-2 gap-3">{offers.map((offer) => <Link to="/customer/offers" key={offer.id} className="overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform"><div className="h-[112px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">{offer.imageUrl ? <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={34} /></div>}</div><div className="p-3"><h4 className="line-clamp-2 text-[13px] font-bold leading-tight text-gray-900">{offer.title}</h4><p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p><p className="mt-2 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p></div></Link>)}</div> : <div className="rounded-2xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">No active offers right now.</div>}
         </section>
+        <Link to="/customer/explore" className="customer-modern-list-card flex items-center justify-between rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
+          <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
+          <ChevronRight size={20} />
+        </Link>
+        <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
+          <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span></div></div><ChevronRight size={20} />
+        </button>
+
+        <Link to="/customer/offers" className="glass-offer-link"><Gift size={25}/><div><strong>Offers</strong><span>Discover exclusive offers</span></div><ChevronRight size={20}/></Link>
 
         {/* Recent Activity */}
         <div className="pt-2">

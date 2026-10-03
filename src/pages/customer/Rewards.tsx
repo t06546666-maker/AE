@@ -22,11 +22,10 @@ export function CustomerRewards({ user }: { user: UserProfile }) {
       <h1 className="text-lg font-bold">Redeem QR</h1>
     </header>
     <section className="mx-5 mt-5 rounded-3xl border border-blue-100 bg-white p-5 text-center shadow-sm">
-      <h2 className="text-xl font-bold">Redeem + Issue QR</h2>
+      <h2 className="text-xl font-bold">Redeem + Receive</h2>
       <p className="mt-2 text-sm text-gray-500">Show this QR to your merchant to redeem 100 points and earn points on your purchase.</p>
       {redeemQr ? <img src={redeemQr} alt="Customer QR for Redeem + Issue" className="mx-auto mt-4 h-60 w-60 max-w-full"/> : <p className="py-12 text-sm text-gray-500" role="status">{qrError ? 'Unable to create QR. Please reload this page.' : 'Loading QR…'}</p>}
       <p className="mt-2 font-bold">{user.name || 'Customer'}</p><p className="mt-1 text-xs text-gray-500">{user.customer_code || user.id}</p>
-      <p className="mt-3 text-xs text-blue-600">Your merchant confirms the transaction. Showing this QR does not deduct points.</p>
     </section>
   </div>;
 }

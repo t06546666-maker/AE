@@ -55,8 +55,8 @@ export function CustomerScan({ user }: { user: UserProfile }) {
           </div>
         </div>
 
-        <p className="text-[15px] font-semibold text-white tracking-wide text-center mb-12">
-          Show this to the merchant to earn points — Issue Only
+        <p className="rounded-xl bg-white/90 px-4 py-3 text-[15px] font-semibold text-black tracking-wide text-center mb-12">
+          Show this QR to an AE merchant to earn points for every purchase.
         </p>
 
         {/* Bottom Button (Adapted from "Enter Code Manually") */}
