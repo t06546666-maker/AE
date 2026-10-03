@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -825,7 +825,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                           ) : (
                             <Store size={18} style={{ color: 'var(--muted)' }} />
                           )}
-                          <strong>{m.name}</strong>
+                          <Link to={`/field/merchants/${m.id}`}><strong>{m.name}</strong></Link>
                         </div>
                       </td>
                       <td>{m.merchant_categories?.name || 'General'}</td>

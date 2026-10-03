@@ -1,3 +1,4 @@
+import { maskedPhone } from '../maskedPhone';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -6,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { apiFetch } from '../api';
 import type { Customer, RewardSettings } from '../types';
-import { formatPhone, formatPoints } from '../utils';
+import { formatPoints } from '../utils';
 import { useToast } from '../toast';
 import { ScannedCheckout } from './ScannedCheckout';
 
@@ -246,7 +247,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
         <div className="checkout-panel">
           {customer ? (
             <div className="verified-customer">
-              <div className="verified-title"><CheckCircle2 /><div><h3>{customer.name}</h3><p>{formatPhone(customer.phone)} · {customer.id}</p></div></div>
+              <div className="verified-title"><CheckCircle2 /><div><h3>{customer.name}</h3><p>{maskedPhone(customer.phone)} · {customer.id}</p></div></div>
               {customer.isNewToMerchant ? <span className="tag info">{t('scanner.newConnection')}</span> : null}
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
               <label className="scanner-mode-field">Transaction type

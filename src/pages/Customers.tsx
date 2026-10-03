@@ -1,3 +1,4 @@
+import { maskedPhone } from '../maskedPhone';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +11,7 @@ import type { Customer, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPhone, formatPoints, initials, qrPayload } from '../utils';
 import { useToast } from '../toast';
 
-function CustomerQrModal({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+function CustomerQrModal({ customer, onClose, mask }: { customer: Customer; onClose: () => void; mask: boolean }) {
   const { t } = useTranslation();
   const [qrUrl, setQrUrl] = useState(''); const { showToast } = useToast();
   useEffect(() => { QRCode.toDataURL(qrPayload(customer), { width: 300, margin: 2, errorCorrectionLevel: 'M' }).then(setQrUrl); }, [customer]);
@@ -19,7 +20,7 @@ function CustomerQrModal({ customer, onClose }: { customer: Customer; onClose: (
     onSuccess() { showToast(t('customers.qrQueued')); }, onError(error) { showToast(error.message, 'error'); },
   });
   function download() { if (!qrUrl) return; const anchor = document.createElement('a'); anchor.href = qrUrl; anchor.download = `AE-QR-${customer.id}.png`; anchor.click(); }
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="modal customer-modal"><button className="icon-button modal-close" title={t('common.close')} onClick={onClose}><X /></button><h2>{t('customers.qrTitle')}</h2><p>{t('customers.qrText')}</p><div className="qr-modal-grid"><div className="result-qr">{qrUrl ? <img src={qrUrl} alt={`QR code for ${customer.name}`} /> : <span>{t('customers.generating')}</span>}<strong>{customer.id}</strong></div><div className="result-details"><h3>{customer.name}</h3><p>{formatPhone(customer.phone)}</p><p>{customer.email}</p><dl><div><dt>{t('dashboard.orders')}</dt><dd>{customer.orderCount || 0}</dd></div><div><dt>{t('orders.points')}</dt><dd>{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints)}</dd></div><div><dt>{t('customers.registered')}</dt><dd>{formatDate(customer.registeredAt)}</dd></div></dl><div className="result-actions"><button className="button whatsapp" disabled={send.isPending} onClick={() => send.mutate(undefined)}><MessageCircle size={16} />{t('customers.sendWhatsapp')}</button><button className="button secondary" onClick={download}><Download size={16} />{t('customers.download')}</button></div></div></div></div></div>;
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="modal customer-modal"><button className="icon-button modal-close" title={t('common.close')} onClick={onClose}><X /></button><h2>{t('customers.qrTitle')}</h2><p>{t('customers.qrText')}</p><div className="qr-modal-grid"><div className="result-qr">{qrUrl ? <img src={qrUrl} alt={`QR code for ${customer.name}`} /> : <span>{t('customers.generating')}</span>}<strong>{customer.id}</strong></div><div className="result-details"><h3>{customer.name}</h3><p>{(mask ? maskedPhone(customer.phone) : formatPhone(customer.phone))}</p><p>{customer.email}</p><dl><div><dt>{t('dashboard.orders')}</dt><dd>{customer.orderCount || 0}</dd></div><div><dt>{t('orders.points')}</dt><dd>{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints)}</dd></div><div><dt>{t('customers.registered')}</dt><dd>{formatDate(customer.registeredAt)}</dd></div></dl><div className="result-actions"><button className="button whatsapp" disabled={send.isPending} onClick={() => send.mutate(undefined)}><MessageCircle size={16} />{t('customers.sendWhatsapp')}</button><button className="button secondary" onClick={download}><Download size={16} />{t('customers.download')}</button></div></div></div></div></div>;
 }
 
 export function Customers({ user }: { user: UserProfile }) {
@@ -47,7 +48,7 @@ export function Customers({ user }: { user: UserProfile }) {
     <div className="list-toolbar"><label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('customers.search')} /></label></div>
     {customers.isPending ? <LoadingState label={t('customers.loading')} /> : customers.isError ? <ErrorState error={customers.error} retry={() => customers.refetch()} /> : <>
       <div className="customer-grid">{customers.data?.customers.map((customer, index) => <article className="customer-card" key={`${customer.databaseId}-${customer.merchantId || index}`}>
-        <div className="customer-head"><span className="avatar">{initials(customer.name)}</span><div><h3>{customer.name}</h3><strong>{customer.id}</strong><p>{formatPhone(customer.phone)}</p><p>{customer.email}</p>{user.role === 'admin' && customer.registrationSource === 'self' ? <span className="tag violet">{t('customers.selfRegistered')}</span> : null}</div><button className="icon-button qr-view-button" title={t('customers.viewQr')} onClick={() => setSelected(customer)}><Eye /></button></div>
+        <div className="customer-head"><span className="avatar">{initials(customer.name)}</span><div><h3>{customer.name}</h3><strong>{customer.id}</strong><p>{(user.role === 'merchant' ? maskedPhone(customer.phone) : formatPhone(customer.phone))}</p><p>{customer.email}</p>{user.role === 'admin' && customer.registrationSource === 'self' ? <span className="tag violet">{t('customers.selfRegistered')}</span> : null}</div><button className="icon-button qr-view-button" title={t('customers.viewQr')} onClick={() => setSelected(customer)}><Eye /></button></div>
         <div className="customer-stats"><div><strong>{customer.orderCount || 0}</strong><span>{t('dashboard.orders')}</span></div><div><strong>{formatCurrency(customer.totalSpend || 0)}</strong><span>{t('customers.spent')}</span></div><div><strong>{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints)}</strong><span>{user.role === 'admin' ? t('customers.totalPoints') : t('orders.points')}</span></div></div>
         {user.role === 'admin' && customer.memberships?.length ? <div className="membership-list">{customer.memberships.map((membership) => <div key={membership.merchantId}><span><strong>{membership.merchant}</strong><small>{t('customers.scans', { count: membership.qrScans })}</small></span><span className="tag violet">{formatPoints(membership.rewardPoints)} pts</span></div>)}</div> : null}
         <div className="customer-foot"><span className={`tag ${customer.isRetained ? 'success' : 'info'}`}>{customer.isRetained ? t('customers.returning') : t('customers.new')}</span><div><button className="icon-button whatsapp-icon" title={t('customers.sendWhatsapp')} onClick={() => setSelected(customer)}><MessageCircle /></button><button className="icon-button" title={t('customers.qrTitle')} onClick={() => setSelected(customer)}><Eye /></button>{user.role === 'admin' ? <button className="icon-button danger-icon" title={t('customers.delete')} disabled={remove.isPending} onClick={() => deleteCustomer(customer)}><Trash2 /></button> : null}</div></div>
@@ -55,7 +56,7 @@ export function Customers({ user }: { user: UserProfile }) {
       {!customers.data?.customers.length ? <EmptyState>{t('customers.noCustomers')}</EmptyState> : null}
       <PaginationBar pagination={customers.data?.pagination} onPage={setPage} />
     </>}
-    {selected ? <CustomerQrModal customer={selected} onClose={() => setSelected(null)} /> : null}
+    {selected ? <CustomerQrModal mask={user.role === 'merchant'} customer={selected} onClose={() => setSelected(null)} /> : null}
     <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} defaultSection="points" fixedSection onClose={() => setExportFormat(null)} />
   </>;
 }

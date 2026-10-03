@@ -1400,7 +1400,10 @@ async function sendWelcomeEmail(purchase) {
 
 // --- AE Settlement Engine Modules ---
 app.use('/api/networks', requireAuth, networksRouter);
-app.use('/api/customers', requireAuth, rewardsRouter); 
+app.use('/api/customers', requireAuth, (req, res, next) => {
+  if (!['admin', 'merchant'].includes(req.auth.profile.role)) return res.status(403).json({ error: 'Customer data is restricted to Admin and Merchant roles' });
+  next();
+}, rewardsRouter);
 app.use('/api/redemptions', requireAuth, redemptionsRouter);
 app.use('/api/settlements', requireAuth, settlementsRouter);
 app.use('/api/payments', paymentsRouter);
@@ -1481,6 +1484,34 @@ app.post('/api/field/upload-image', requireAuth, fieldManagerRole, shopImageUplo
   }
 });
 
+// Legal drafts are deliberately not mandatory until approved and enabled.
+const legalEnabled = process.env.LEGAL_ACCEPTANCE_ENABLED === 'true';
+const legalTermsVersion = '2026-10-03-v1';
+const legalPrivacyVersion = '2026-10-03-v1';
+async function legalStatus(req, res) {
+  if (!legalEnabled) return res.json({ enabled: false, accepted: false, termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
+  const actor = req.customer || req.auth.profile;
+  const role = req.customer ? 'customer' : actor.role;
+  if (role === 'admin') return res.json({ enabled: true, accepted: true, termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
+  const { data, error } = await supabaseAdmin.from('legal_acceptances').select('accepted_at').eq('actor_id', actor.id).eq('actor_role', role).eq('terms_version', legalTermsVersion).eq('privacy_version', legalPrivacyVersion).maybeSingle();
+  if (error) return res.status(503).json({ error: 'Legal acceptance storage is unavailable. Contact support.' });
+  res.json({ enabled: true, accepted: Boolean(data), termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
+}
+async function acceptLegal(req, res) {
+  if (!legalEnabled) return res.status(409).json({ error: 'Draft documents are not enabled for acceptance.' });
+  const actor = req.customer || req.auth.profile;
+  const role = req.customer ? 'customer' : actor.role;
+  if (!['customer', 'merchant', 'field_manager'].includes(role)) return res.status(403).json({ error: 'This role does not require acceptance.' });
+  if (req.body.termsAccepted !== true || req.body.privacyAcknowledged !== true || req.body.termsVersion !== legalTermsVersion || req.body.privacyVersion !== legalPrivacyVersion) return res.status(400).json({ error: 'Review and accept the current documents.' });
+  const { error } = await supabaseAdmin.from('legal_acceptances').upsert({ actor_id: actor.id, actor_role: role, terms_version: legalTermsVersion, privacy_version: legalPrivacyVersion }, { onConflict: 'actor_id,actor_role,terms_version,privacy_version', ignoreDuplicates: true });
+  if (error) return res.status(503).json({ error: 'Acceptance could not be saved. Please try again.' });
+  res.json({ success: true });
+}
+app.get('/api/customer/legal', requireCustomerAuth, legalStatus);
+app.post('/api/customer/legal', requireCustomerAuth, acceptLegal);
+app.get('/api/profile/legal', requireAuth, legalStatus);
+app.post('/api/profile/legal', requireAuth, acceptLegal);
+
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
   let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,merchant_categories(name)';
   let { data, error } = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
@@ -1535,6 +1566,36 @@ app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager
   res.json({ success: true, update: data });
 });
 
+app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { data: merchant, error } = await supabaseAdmin.from('merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
+  const activity = await supabaseAdmin.from('field_manager_activity').insert({ manager_id: req.auth.profile.id, merchant_id: merchant.id, action: 'merchant_profile_view' });
+  res.json({ merchant, activityRecorded: !activity.error });
+});
+app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
+  const { data: profile, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('id', req.params.id).eq('role', 'field_manager').maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!profile) return res.status(404).json({ error: 'Field manager not found' });
+  const account = await supabaseAdmin.auth.admin.getUserById(profile.id);
+  const results = await Promise.all([
+    supabaseAdmin.from('field_manager_sessions').select('id,login_at,logout_at').eq('manager_id', profile.id).order('login_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,status,payload,created_at').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
+  ]);
+  const fatal = results.slice(0, 3).find(r => r.error);
+  if (fatal) return res.status(500).json({ error: fatal.error.message });
+  res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error });
+});
+app.get('/api/admin/merchants/:id/records', requireAuth, requireRole('admin'), async (req, res) => {
+  const results = await Promise.all([
+    supabaseAdmin.from('orders').select('id,order_no,customer_id,amount,reward_points,created_at').eq('merchant_id', req.params.id).order('created_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('payment_transactions').select('id,customer_id,amount,status,created_at').eq('merchant_id', req.params.id).order('created_at', { ascending: false }).limit(200),
+  ]);
+  if (results.some(r => r.error)) return res.status(500).json({ error: 'Merchant records could not load' });
+  res.json({ orders: results[0].data, payments: results[1].data });
+});
 app.get('/api/admin/field-managers', requireAuth, requireRole('admin'), async (_req, res) => {
   const { data: managers, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('role', 'field_manager').order('full_name');
   if (error) return res.status(500).json({ success: false, error: error.message });
@@ -1905,7 +1966,7 @@ app.get('/api/merchant-categories', requireAuth, async (req, res) => {
 });
 
 app.post('/api/merchant-categories', requireAuth, async (req, res) => {
-  if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
+  if (!['admin', 'field_manager'].includes(req.auth.profile?.role)) return res.status(403).json({ success: false, error: 'Not authorized' });
   const name = cleanText(req.body.name, 80);
   if (!name) return res.status(400).json({ success: false, error: 'Category name is required' });
   const { data, error } = await supabaseAdmin.from('merchant_categories').insert({ name }).select('id, name').single();
@@ -2497,8 +2558,28 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const name = cleanText(req.body.name, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
+  let category_id = cleanText(req.body.category_id, 100) || null;
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  const category_id = cleanText(req.body.category_id, 100) || null;
+  const new_category_name = cleanText(req.body.new_category_name || req.body.new_category || req.body.newCategory, 80);
+  if ((!category_id || category_id === '__other__') && new_category_name) {
+    const { data: existingCat } = await supabaseAdmin
+      .from('merchant_categories')
+      .select('id')
+      .ilike('name', new_category_name)
+      .maybeSingle();
+    if (existingCat?.id) {
+      category_id = existingCat.id;
+    } else {
+      const { data: newCat } = await supabaseAdmin
+        .from('merchant_categories')
+        .insert({ name: new_category_name })
+        .select('id')
+        .maybeSingle();
+      if (newCat?.id) category_id = newCat.id;
+    }
+  } else if (category_id === '__other__') {
+    category_id = null;
+  }
   const address = cleanText(req.body.address, 300) || null;
   const latitude = req.body.latitude === undefined || req.body.latitude === '' ? null : Number(req.body.latitude);
   const longitude = req.body.longitude === undefined || req.body.longitude === '' ? null : Number(req.body.longitude);
@@ -3882,7 +3963,10 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, whatsapp: { skipped: true, reason: 'push_only' } });
 });
 
-app.get('/api/orders', requireAuth, async (req, res) => {
+app.get('/api/orders', requireAuth, (req, res, next) => {
+  if (!['admin', 'merchant'].includes(req.auth.profile.role)) return res.status(403).json({ error: 'Order data is restricted to Admin and Merchant roles' });
+  next();
+}, async (req, res) => {
   const paging = paginationFromRequest(req, 25, 100);
   let query = supabaseAdmin.from('orders')
     .select(

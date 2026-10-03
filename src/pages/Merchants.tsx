@@ -31,6 +31,7 @@ export function Merchants() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -66,7 +67,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId || undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -79,7 +80,8 @@ export function Merchants() {
       setEmail('');
       setPhone('');
       setPassword('');
-      setAddress(''); setLatitude(''); setLongitude('');
+      setAddress(''); setLatitude(''); setLongitude(''); setCategoryId(''); setCustomCategory('');
+      void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
       showToast(t('merchants.created'));
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
     },
@@ -182,12 +184,14 @@ export function Merchants() {
           
           <label>
             Category (Optional)
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value !== '__other__') setCustomCategory(''); }}>
               <option value="">No Category</option>
               {categoriesQuery.data?.categories?.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
+              <option value="__other__">Other</option>
             </select>
+            {categoryId === '__other__' && <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="Enter new category" style={{ marginTop: '6px' }} required autoFocus />}
           </label>
           <label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
           <label>Latitude <input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>

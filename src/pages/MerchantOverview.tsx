@@ -1,3 +1,4 @@
+import { maskedPhone } from '../maskedPhone';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
@@ -8,7 +9,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarDays, Chev
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
 import type { Customer, Order, Pagination, UserProfile } from '../types';
-import { formatCurrency, formatPhone, initials } from '../utils';
+import { formatCurrency, initials } from '../utils';
 import { buildMerchantAnalytics, changePercent, indiaDate, type MerchantAnalytics, type MerchantCustomer } from './merchantAnalytics';
 import './merchant-overview.css';
 
@@ -97,7 +98,7 @@ function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; on
       <div className="mo-profile-person"><span className="mo-avatar violet">{initials(customer.name)}</span><div><h3>{customer.name}</h3><span className="mo-badge">{customer.visits.length >= 3 && <Crown size={13} />}{stage(customer.visits.length)}</span></div></div>
       <div className="mo-contact">{customer.phone && <a href={`tel:${customer.phone}`}><Phone size={19} /><span>Call</span></a>}{customer.email && <a href={`mailto:${customer.email}`}><Mail size={19} /><span>Email</span></a>}<Link to="/offers?create=1"><Gift size={19} /><span>Create offer</span></Link></div>
       <div className="mo-profile-stats"><div><strong>{customer.visits.length}</strong><small>Recorded visits</small></div><div><strong>{formatCurrency(customer.spend)}</strong><small>Total spent</small></div><div><strong>{customer.joined ? dateLabel(customer.joined) : '—'}</strong><small>Customer since</small></div></div>
-      <p className="mo-note">Lifetime activity at your business • {formatPhone(customer.phone)}</p><h3 className="mo-history-title">Visit history</h3>
+      <p className="mo-note">Lifetime activity at your business • {maskedPhone(customer.phone)}</p><h3 className="mo-history-title">Visit history</h3>
       <div className="mo-history">{customer.visits.map(o => <div key={o.id}><span className="mo-history-icon"><CalendarDays size={17} /></span><span><strong>{dateLabel(o.timestamp)}</strong><small>{o.orderNo}</small></span><b>{formatCurrency(o.amount)}</b></div>)}{!customer.visits.length && <p className="mo-empty">No purchases recorded yet.</p>}</div>
       <p className="mo-note">Offers use your existing offer workflow; they are not sent privately from this profile.</p>
     </div>

@@ -1,0 +1,19 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link, useParams } from 'react-router-dom';
+import { apiFetch } from '../api';
+import { ErrorState, LoadingState } from '../components/Common';
+
+function Records({ title, rows }: { title: string; rows: Record<string, unknown>[] }) {
+  const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
+  return <section className="panel"><h2>{title}</h2>{!rows.length ? <p>No records.</p> : <div className="table-scroll"><table><thead><tr>{columns.map(c => <th key={c}>{c.replaceAll('_', ' ')}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={String(row.id || index)}>{columns.map(c => <td key={c} style={{ maxWidth: 350, overflowWrap: 'anywhere' }}>{row[c] == null ? '—' : typeof row[c] === 'object' ? JSON.stringify(row[c]) : String(row[c])}</td>)}</tr>)}</tbody></table></div>}</section>;
+}
+export function ReadOnlyProfiles({ kind }: { kind: 'manager' | 'merchant' | 'field-merchant' }) {
+  const { id = '' } = useParams();
+  const endpoint = kind === 'manager' ? `/api/admin/field-managers/${id}/profile` : kind === 'field-merchant' ? `/api/field/merchants/${id}/profile` : `/api/merchants/${id}/summary`;
+  const query = useQuery({ queryKey: ['read-profile', kind, id], queryFn: () => apiFetch<Record<string, any>>(endpoint), refetchOnWindowFocus: kind !== 'field-merchant', staleTime: kind === 'field-merchant' ? Infinity : 0 });
+  const records = useQuery({ queryKey: ['read-merchant-records', id], queryFn: () => apiFetch<Record<string, any>>(`/api/admin/merchants/${id}/records`), enabled: kind === 'merchant' });
+  if (query.isPending) return <LoadingState />;
+  if (query.isError) return <ErrorState error={query.error} retry={() => void query.refetch()} />;
+  const data = query.data;
+  return <div className="dashboard-page"><Link to={kind === 'manager' ? '/field-managers' : kind === 'field-merchant' ? '/field?section=directory' : '/merchants'}>← Back</Link><h1>{kind === 'manager' ? 'Field Manager Profile' : 'Merchant Profile'}</h1><p>Read-only · Full authorised contact details · Latest 200 records per activity category.</p><Records title="Profile" rows={[data.profile || data.merchant]} />{data.summary && <Records title="Dashboard Summary" rows={[data.summary]} />}{data.customers && <Records title="Customers and Rewards" rows={data.customers} />}{kind === 'field-merchant' && data.activityRecorded === false && <p role="alert">Profile loaded, but activity logging is unavailable. Admin must apply the activity migration.</p>}{kind === 'manager' && <>{!data.activityAvailable && <p role="alert">Profile-view tracking requires the field activity migration. Past views cannot be reconstructed.</p>}<Records title="Login / Logout Sessions" rows={data.sessions || []} /><Records title="Visits and GPS" rows={data.visits || []} /><Records title="Submitted Merchant Updates" rows={data.updates || []} /><Records title="Merchant Profiles Viewed" rows={data.activity || []} /></>}{kind === 'merchant' && (records.isPending ? <LoadingState /> : records.isError ? <ErrorState error={records.error} retry={() => void records.refetch()} /> : <><Records title="Transactions" rows={records.data.orders || []} /><Records title="Payments" rows={records.data.payments || []} /></>)}</div>;
+}

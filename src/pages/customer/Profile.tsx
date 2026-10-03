@@ -233,10 +233,10 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               <button onClick={() => setShowPrivacy(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="space-y-4 text-[13px] text-gray-600 leading-relaxed">
-              <p><strong className="text-gray-900">Privacy Policy</strong><br />We collect your phone number and transaction history solely to operate the AE Rewards program. We do not sell your data to third parties.</p>
-              <p><strong className="text-gray-900">Data Storage</strong><br />Your data is stored securely and encrypted at rest. You can request deletion at any time by contacting support.</p>
-              <p><strong className="text-gray-900">Terms of Use</strong><br />AE Points have no cash value and cannot be transferred. Points expire 1 year from the date they are issued. AE reserves the right to modify the program at any time.</p>
-              <p><strong className="text-gray-900">Contact</strong><br />For questions, email support@affiliateae.com.</p>
+              <p>Affiliate Innovations · Free pilot. Legal documents are drafts awaiting review.</p>
+              <p><a href="/legal?type=customer">Read Customer Terms</a></p>
+              <p><a href="/legal?type=privacy">Read Privacy Policy</a></p>
+              <p>Contact: info@affiliateinnovations.co.in · +91 9025547577</p>
             </div>
           </div>
         </div>

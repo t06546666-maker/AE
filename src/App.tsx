@@ -8,6 +8,9 @@ import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
 import { Administrators } from './pages/Administrators';
 import { ChangePassword } from './pages/ChangePassword';
+import { Legal } from './pages/Legal';
+import { LegalGate } from './components/LegalGate';
+import { ReadOnlyProfiles } from './pages/ReadOnlyProfiles';
 import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -17,7 +20,7 @@ import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
 import { Locations } from './pages/Locations';
 import { LocationProfile } from './pages/LocationProfile';
-import { MerchantProfile, Merchants } from './pages/Merchants';
+import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
 import { Offers } from './pages/Offers';
 import { Orders } from './pages/Orders';
@@ -231,6 +234,7 @@ export function App() {
     return () => { active = false; };
   }, []);
 
+  if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Legal />;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (!user) {
     return (
@@ -264,7 +268,7 @@ export function App() {
 
   if (user.role === 'customer') {
     return (
-      <CustomerLayout user={user} onLogout={logout}>
+      <LegalGate user={user} onLogout={logout}><CustomerLayout user={user} onLogout={logout}>
         <PageErrorBoundary key={location.pathname}>
           <Routes>
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
@@ -280,16 +284,16 @@ export function App() {
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
           </Routes>
         </PageErrorBoundary>
-      </CustomerLayout>
+      </CustomerLayout></LegalGate>
     );
   }
 
   if (user.role === 'field_manager') {
-    return <Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout>;
+    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<ReadOnlyProfiles kind="field-merchant" />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
   }
 
   return (
-    <Layout user={user} onLogout={logout}>
+    <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}>
       <PageErrorBoundary key={location.pathname}>
         <Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
@@ -306,7 +310,8 @@ export function App() {
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
-          <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><MerchantProfile /></RoleRoute>} />
+          <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><ReadOnlyProfiles kind="merchant" /></RoleRoute>} />
+          <Route path="/field-managers/:id" element={<RoleRoute user={user} role="admin"><ReadOnlyProfiles kind="manager" /></RoleRoute>} />
           <Route path="/locations" element={<RoleRoute user={user} role="admin"><Locations /></RoleRoute>} />
           <Route path="/locations/:id" element={<RoleRoute user={user} role="admin"><LocationProfile /></RoleRoute>} />
           <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
@@ -314,6 +319,6 @@ export function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </PageErrorBoundary>
-    </Layout>
+    </Layout></LegalGate>
   );
 }

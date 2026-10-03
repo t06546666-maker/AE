@@ -148,6 +148,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
+            <Link to={`/legal?type=${user.role === 'field_manager' ? 'field' : 'merchant'}`}>Terms & Privacy</Link>
             <button className="button secondary signout desktop-view-hidden" onClick={() => void signOut()} style={{ width: '100%', justifyContent: 'center' }}>
               <LogOut size={15} />{t('layout.signOut')}
             </button>
