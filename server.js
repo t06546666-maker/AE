@@ -413,9 +413,36 @@ async function pushToMerchant(merchantId, title, body, data = {}) {
 }
 
 async function pushToCustomer(customerId, title, body, data = {}) {
-  const { data: customer } = await supabaseAdmin.from('customers').select('push_token,push_enabled').eq('id', customerId).maybeSingle();
-  return customer?.push_enabled !== false && customer?.push_token
-    ? sendPushNotification(customer.push_token, title, body, data) : false;
+  try {
+    const target = await getCustomerPushTarget(customerId);
+    if (!target.push_token || target.push_enabled === false) {
+      console.warn('Customer notification skipped:', { customerId, reason: target.push_enabled === false ? 'disabled' : 'no_firestore_token', title });
+      return false;
+    }
+    return target.push_enabled !== false && target.push_token
+      ? sendPushNotification(target.push_token, title, body, data) : false;
+  } catch (error) {
+    console.error('Customer Firestore notification lookup failed:', error.message);
+    return false;
+  }
+}
+
+// Private server-only registry. Authentication still uses the customer's AE
+// account, but token storage and delivery no longer query Supabase push fields.
+async function customerPushDocument(customerId) {
+  await firebaseInitializationPromise;
+  if (!firebaseInitialized) throw new Error('Firebase Admin is not configured');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  return getFirestore().collection('ae_customer_notifications').doc(String(customerId));
+}
+async function getCustomerPushTarget(customerId) {
+  const document = await customerPushDocument(customerId);
+  return (await document.get()).data() || {};
+}
+async function saveCustomerPushTarget(customerId, updates) {
+  const document = await customerPushDocument(customerId);
+  const { FieldValue } = await import('firebase-admin/firestore');
+  await document.set({ ...updates, updated_at: FieldValue.serverTimestamp() }, { merge: true });
 }
 
 async function getMerchantEarnRateWithCap(merchantId) {
@@ -750,19 +777,12 @@ async function processOfferRecipient(recipientRow, mediaCache) {
     
     // Attempt to send a Push Notification
     try {
-      const { data: customer } = await supabaseAdmin.from('customers')
-        .select('push_token, push_enabled')
-        .eq('id', recipientRow.customer_id)
-        .single();
-        
-      if (customer?.push_enabled && customer?.push_token) {
-        await sendPushNotification(
-          customer.push_token,
+        await pushToCustomer(
+          recipientRow.customer_id,
           `New Offer from ${recipientRow.merchant_name || 'Store'}!`,
           recipientRow.title || 'Tap to claim your exclusive offer.',
           { url: '/customer/offers' }
         );
-      }
     } catch (e) {
       console.warn('Failed to send push notification:', e.message);
     }
@@ -2071,6 +2091,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
   await pushToRole('admin', 'New product list request', 'A customer sent a product list for admin review.', { url: '/customer-product-lists', requestId: data.id });
+  await pushToCustomer(req.customer.id, 'Product list submitted', 'Your product list was received and is awaiting review.', { url: '/customer/home?productList=1', requestId: data.id });
   res.status(201).json({ success: true, request: data });
 });
 
@@ -2104,7 +2125,7 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
   if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
   if (existing && status !== 'pending') await pushToMerchant(existing.merchant_id, `Product list ${status}`, `A customer product list was ${status} by admin.`, { url: '/customer-orders', requestId: data.id });
-  if (existing && status !== 'pending') await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/product-lists', requestId: data.id });
+  if (existing && status !== 'pending') await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/home?productList=1', requestId: data.id });
   res.json({ success: true, request: data });
 });
 
@@ -2115,7 +2136,7 @@ app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('mer
   if (error) return res.status(500).json({ success: false, error: 'Unable to update product list status' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
   const { data: request } = await supabaseAdmin.from('customer_product_list_requests').select('customer_id').eq('id', data.id).maybeSingle();
-  if (request) await pushToCustomer(request.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/product-lists', requestId: data.id });
+  if (request) await pushToCustomer(request.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/home?productList=1', requestId: data.id });
   res.json({ success: true, request: data });
 });
 
@@ -2143,11 +2164,15 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
 });
 
 app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, res) => {
-  if (req.customer.push_enabled === false) return res.status(400).json({ success: false, error: 'Enable notifications in your profile settings first.' });
-  if (!req.customer.push_token) return res.status(400).json({ success: false, error: 'This account has no registered phone. Open the Android app and enable notifications first.' });
-  await firebaseInitializationPromise;
-  if (!firebaseInitialized) return res.status(503).json({ success: false, error: 'The server notification service is not configured. Please contact AE support.' });
-  const sent = await sendPushNotification(req.customer.push_token, 'AE notification test', 'Your phone can receive AE notifications.', { url: '/customer/notifications' });
+  let target;
+  try { target = await getCustomerPushTarget(req.customer.id); }
+  catch (error) {
+    console.error('Firestore notification test lookup failed:', error.message);
+    return res.status(503).json({ success: false, error: 'Firebase notification storage is unavailable. Check Firestore setup and server permissions.' });
+  }
+  if (target.push_enabled === false) return res.status(400).json({ success: false, error: 'Enable notifications in your profile settings first.' });
+  if (!target.push_token) return res.status(400).json({ success: false, error: 'No phone token is registered in Firebase. Open the updated Android app and allow notifications.' });
+  const sent = await sendPushNotification(target.push_token, 'AE notification test', 'Your phone can receive AE notifications.', { url: '/customer/notifications' });
   if (!sent) return res.status(502).json({ success: false, error: 'Firebase rejected the notification. The server log contains the delivery error.' });
   res.json({ success: true });
 });
@@ -2157,19 +2182,36 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   const { push_token, push_enabled, whatsapp_enabled, location_enabled } = req.body;
   
   const updates = {};
-  if (push_token !== undefined) updates.push_token = cleanText(push_token, 4096);
-  if (push_enabled !== undefined) updates.push_enabled = Boolean(push_enabled);
+  const pushUpdates = {};
+  if (push_token !== undefined) {
+    if (typeof push_token !== 'string' || !push_token.trim() || push_token.length > 4096) return res.status(400).json({ success: false, error: 'A valid phone notification token is required.' });
+    pushUpdates.push_token = push_token.trim();
+  }
+  if (push_enabled !== undefined) {
+    if (typeof push_enabled !== 'boolean') return res.status(400).json({ success: false, error: 'push_enabled must be true or false.' });
+    pushUpdates.push_enabled = push_enabled;
+  }
   if (whatsapp_enabled !== undefined) updates.whatsapp_enabled = Boolean(whatsapp_enabled);
   if (location_enabled !== undefined) updates.location_enabled = Boolean(location_enabled);
   
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && Object.keys(pushUpdates).length === 0) {
     return res.json({ success: true, message: 'No updates provided' });
   }
 
-  const { error } = await supabaseAdmin
+  let previousPush = {};
+  if (Object.keys(pushUpdates).length) {
+    try {
+      previousPush = await getCustomerPushTarget(customerId);
+      await saveCustomerPushTarget(customerId, pushUpdates);
+    } catch (error) {
+      console.error('Firestore phone registration failed:', error.message);
+      return res.status(503).json({ success: false, error: 'Could not save phone registration in Firebase. Check Firestore setup and server permissions.' });
+    }
+  }
+  const { error } = Object.keys(updates).length ? await supabaseAdmin
     .from('customers')
     .update(updates)
-    .eq('id', customerId);
+    .eq('id', customerId) : { error: null };
 
   if (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -2177,10 +2219,10 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
 
   // Welcome only when a phone is newly registered or notifications re-enabled.
   // Ordinary app opens with the same token must not generate another welcome.
-  const welcomeNeeded = updates.push_token && updates.push_enabled === true &&
-    (req.customer.push_token !== updates.push_token || req.customer.push_enabled === false);
+  const welcomeNeeded = pushUpdates.push_token && pushUpdates.push_enabled === true &&
+    (previousPush.push_token !== pushUpdates.push_token || previousPush.push_enabled === false);
   const welcomeAccepted = welcomeNeeded ? await sendPushNotification(
-    updates.push_token, 'Welcome to AE!',
+    pushUpdates.push_token, `Welcome, ${req.customer.name || 'Customer'}!`,
     'Your phone is connected. Receive purchase, reward and payment alerts here.',
     { url: '/customer/notifications', type: 'welcome' }
   ) : null;
@@ -2407,9 +2449,10 @@ app.get('/api/customer/payment-requests', requireCustomerAuth, async (req, res) 
 
 app.post('/api/payments/confirm-upi', requireAuth, requireRole('merchant'), async (req, res) => {
   const paymentId = cleanText(req.body.paymentId, 100);
-  const { data, error } = await supabaseAdmin.from('payment_transactions').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', paymentId).eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'pending').select('id,status').maybeSingle();
+  const { data, error } = await supabaseAdmin.from('payment_transactions').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', paymentId).eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'pending').select('id,status,customer_id,amount').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
   if (!data) return res.status(404).json({ success: false, error: 'Pending UPI payment was not found' });
+  await pushToCustomer(data.customer_id, 'Payment confirmed', `Your merchant confirmed receipt of ₹${Number(data.amount).toFixed(2)}.`, { url: '/customer/transactions', paymentId: data.id });
   res.json({ success: true, payment: data });
 });
 
@@ -3956,6 +3999,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     .eq('id', req.auth.profile.merchant_id)
     .maybeSingle();
   const merchantName = merchantForNotification?.name || 'your merchant';
+  if (redemption) await pushToCustomer(purchase.customer_id, 'Points redeemed', `${merchantName} redeemed ${pointsToRedeem} points. Discount: ₹${Number(redemptionContext.discountAmount).toFixed(2)}.`, { url: '/customer/transactions', transactionId: redemption.id, merchantName });
   await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId: purchase.id, merchantName });
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
   // Purchases use native push notifications only. WhatsApp is reserved for
@@ -5176,6 +5220,7 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     if (expected !== signature) return res.status(400).json({ success: false, error: 'Invalid payment signature' });
     const { data, error } = await supabaseAdmin.from('payment_transactions').update({ razorpay_payment_id: paymentId, status: 'paid', updated_at: new Date().toISOString() }).eq('razorpay_order_id', orderId).neq('status', 'paid').select().maybeSingle();
     if (error || !data) return res.status(404).json({ success: false, error: 'Payment order not found or already processed' });
+    if (data.customer_id) await pushToCustomer(data.customer_id, 'Payment successful', `Your payment of ₹${Number(data.amount).toFixed(2)} was verified.`, { url: '/customer/transactions', paymentId: data.id });
     res.json({ success: true, payment: data });
   } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not verify payment' }); }
 });
