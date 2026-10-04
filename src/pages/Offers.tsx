@@ -31,6 +31,7 @@ export function Offers({ user }: { user: UserProfile }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [audience, setAudience] = useState<'all' | 'loyal'>('all');
   const [expiresAt, setExpiresAt] = useState(tomorrowInput());
   const [image, setImage] = useState<File | null>(null);
   const [rejecting, setRejecting] = useState<Offer | null>(null);
@@ -42,6 +43,7 @@ export function Offers({ user }: { user: UserProfile }) {
   useEffect(() => {
     if (user.role === 'merchant' && searchParams.get('create') === '1') {
       setFormOpen(true);
+      setAudience(searchParams.get('audience') === 'loyal' ? 'loyal' : 'all');
       const next = new URLSearchParams(searchParams);
       next.delete('create');
       setSearchParams(next, { replace: true });
@@ -67,6 +69,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setTitle('');
     setDescription('');
     setCategory('');
+    setAudience('all');
     setExpiresAt(tomorrowInput());
     setImage(null);
   }
@@ -76,6 +79,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setTitle(offer.title);
     setDescription(offer.description);
     setCategory(offer.category || '');
+    setAudience(offer.audience || 'all');
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
     setFormOpen(true);
@@ -88,6 +92,7 @@ export function Offers({ user }: { user: UserProfile }) {
       body.set('title', title.trim());
       body.set('description', description.trim());
       body.set('category', category);
+      body.set('audience', audience);
       body.set('expiresAt', new Date(`${expiresAt}T23:59:59+05:30`).toISOString());
       if (image) body.set('image', image);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
@@ -182,6 +187,10 @@ export function Offers({ user }: { user: UserProfile }) {
                 <option value="">General</option>
                 {OFFER_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
+            </label>
+            <label className="offer-description-field">
+              Audience
+              <select value={audience} disabled={Boolean(editing)} onChange={event => setAudience(event.target.value as 'all' | 'loyal')}><option value="all">All customers</option><option value="loyal">Loyal customers only (5+ purchases at your store)</option></select>
             </label>
             <label className="offer-description-field">
               {t('offers.description')}

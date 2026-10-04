@@ -64,16 +64,25 @@ export function rangeForPeriod(period: Period, customFrom?: string, customTo?: s
 export function rangeForChartPeriod(period: Period, customFrom?: string, customTo?: string) {
   if (period === 'custom') return rangeForPeriod(period, customFrom, customTo);
 
-  const start = new Date();
-  const end = new Date();
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  end.setDate(end.getDate() + 1);
-
-  if (period === 'week') start.setDate(start.getDate() - 6);
-  if (period === 'month') start.setDate(start.getDate() - 27);
-
-  return { from: indiaIso(start), to: indiaIso(end) };
+  // Use the Indian calendar regardless of the browser's timezone.
+  const indiaToday = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+  const start = new Date(`${indiaToday}T00:00:00Z`);
+  const end = new Date(start);
+  if (period === 'week') {
+    start.setUTCDate(start.getUTCDate() - (start.getUTCDay() + 6) % 7);
+    end.setTime(start.getTime());
+    end.setUTCDate(end.getUTCDate() + 7);
+  } else if (period === 'month') {
+    start.setUTCDate(1);
+    end.setTime(start.getTime());
+    end.setUTCMonth(end.getUTCMonth() + 1);
+  } else {
+    end.setUTCDate(end.getUTCDate() + 1);
+  }
+  return {
+    from: `${start.toISOString().slice(0, 10)}T00:00:00+05:30`,
+    to: `${end.toISOString().slice(0, 10)}T00:00:00+05:30`,
+  };
 }
 
 export function qrPayload(customer: { id: string; name: string; phone: string }) {

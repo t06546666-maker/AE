@@ -14,7 +14,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
   const transactions = data?.transactions ?? [];
   const availablePoints = dashboard?.reward_points ?? 0;
 
-  const allEarned = transactions.filter(t => t.type === 'earn').reduce((sum, t) => sum + t.points, 0);
+  const allEarned = transactions.filter(t => t.type !== 'redeem').reduce((sum, t) => sum + t.points, 0);
   const allRedeemed = transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + t.points, 0);
 
   const getInitials = (name?: string) => {
@@ -124,10 +124,10 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold text-[16px] ${t.type === 'earn' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
-                        {t.type === 'earn' ? '+' : '-'}{t.points}<small>Points</small>
+                      <p className={`font-bold text-[16px] ${t.type !== 'redeem' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
+                        {t.type !== 'redeem' ? '+' : '-'}{t.points}<small>Points</small>
                       </p>
-                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
+                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'bonus' ? 'Loyalty bonus' : t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
                     </div>
                     <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? 'Purchase' : 'Transaction'}</small></div>
                   </div>

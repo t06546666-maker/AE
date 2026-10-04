@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Download, Plus, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
+import { maskedPhone } from '../maskedPhone';
 import { EmptyState, ErrorState, ExportModal, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Order, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPoints, formatTime, initials } from '../utils';
@@ -29,7 +30,7 @@ export function Orders({ user }: { user: UserProfile }) {
             {orders.data?.orders.map((order) => <tr key={order.id}>
               <td><strong className="order-number">{order.orderNo}</strong><small>{order.source}</small></td>
               <td><div className="person-cell"><span>{initials(order.customer)}</span><div><strong>{order.customer}</strong><small>{order.cid}</small></div></div></td>
-              <td>{order.phone}</td><td>{order.email}</td><td className="amount-column"><span className="tag success amount-tag">{formatCurrency(order.amount)}</span></td>
+              <td>{user.role === 'merchant' ? maskedPhone(order.phone) : order.phone}</td><td>{order.email}</td><td className="amount-column"><span className="tag success amount-tag">{formatCurrency(order.amount)}</span></td>
               <td><span className="tag info">{order.rewardPercentage}%</span></td><td><strong className="points-text">{formatPoints(order.rewardPoints)}</strong></td>
               <td>{formatDate(order.timestamp)}</td><td>{formatTime(order.timestamp)}</td><td><span className={`tag ${['delivered', 'read'].includes(order.whatsappStatus) ? 'success' : order.whatsappStatus === 'failed' ? 'danger' : 'info'}`}>{order.whatsappStatus.replace('_', ' ')}</span></td><td>{order.emailSent ? <span className="tag success">{t('orders.sent')}</span> : null}</td>
             </tr>)}

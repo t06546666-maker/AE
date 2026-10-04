@@ -41,7 +41,7 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
     const returning = active.filter(c => c.first && indiaDate(c.first) < `${periodMonth}-01`);
     const countThroughEnd = (c: typeof customers[number]) => c.visits.filter(o => indiaDate(o.timestamp) <= end).length;
     const repeat = active.filter(c => countThroughEnd(c) >= 2);
-    const loyal = active.filter(c => countThroughEnd(c) >= 3);
+    const loyal = active.filter(c => countThroughEnd(c) >= 5);
     const sales = current.reduce((sum, o) => sum + o.amount, 0);
     return { orders: current, active, fresh, returning, repeat, loyal, sales, average: current.length ? sales / current.length : 0 };
   }
@@ -61,10 +61,10 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
     }
     return { day: i + 1, total: seen.size, fresh: newCount, returning: seen.size - newCount };
   });
-  const heat = Array.from({ length: 7 }, () => Array<number>(8).fill(0));
+  const heat = Array.from({ length: 7 }, () => Array<number>(4).fill(0));
   current.orders.forEach(o => {
     const d = new Date(Date.parse(o.timestamp) + 330 * 60000);
-    heat[(d.getUTCDay() + 6) % 7][Math.floor(d.getUTCHours() / 3)]++;
+    heat[(d.getUTCDay() + 6) % 7][Math.floor(d.getUTCHours() / 6)]++;
   });
   const busiest = heat.map(row => row.reduce((sum, n) => sum + n, 0));
   const busiestDay = current.orders.length ? busiest.indexOf(Math.max(...busiest)) : -1;

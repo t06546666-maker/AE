@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, ExportModal, LoadingState, PageHeader, Paginati
 import type { Merchant, MerchantSummaryResponse, Pagination, MerchantCategory } from '../types';
 import { formatDate, formatPoints } from '../utils';
 import { useToast } from '../toast';
+import { AllocateMerchantPoints } from '../components/MerchantPointBalance';
 
 interface CredentialResult {
   merchantCode: string;
@@ -23,6 +24,7 @@ interface CreateMerchantResponse {
 }
 
 export function Merchants() {
+  const [allocation, setAllocation] = useState<Merchant | null>(null);
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -226,6 +228,7 @@ export function Merchants() {
                     <td>{merchant.orderCount ?? 0}</td>
                     <td>
                       <div className="table-actions">
+                        <button className="button secondary" onClick={() => setAllocation(merchant)}>Allocate points</button>
                         <Link className="icon-button" title="View merchant" to={`/merchants/${merchant.id}`}><Eye /></Link>
                         <button className="icon-button" title={t('merchants.reset')} disabled={reset.isPending} onClick={() => resetMerchant(merchant)}><KeyRound /></button>
                         <button className="icon-button danger-icon" title="Delete merchant" disabled={remove.isPending} onClick={() => deleteMerchant(merchant)}><Trash2 /></button>
@@ -243,6 +246,7 @@ export function Merchants() {
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
+      {allocation && <AllocateMerchantPoints merchantId={allocation.id} name={allocation.name} onClose={() => setAllocation(null)}/>}
       {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>Select merchant location</h2><p>Search for a place or click the exact location.</p><div style={{ display: 'flex', gap: 8, marginBottom: 10 }}><input value={mapSearch} onChange={event => setMapSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); (event.currentTarget.nextElementSibling as HTMLButtonElement)?.click(); } }} placeholder="Search address or place" style={{ flex: 1 }} /><button type="button" className="button secondary" onClick={() => { const google = (window as any).google; if (!mapSearch.trim() || !google?.maps || !mapRef.current) return; setLocationMessage('Searching...'); new google.maps.Geocoder().geocode({ address: mapSearch.trim() }, (results: any[], status: string) => { const point = results?.[0]?.geometry?.location; if (status !== 'OK' || !point) { setLocationMessage('Place not found. Try a more specific address.'); return; } const position = { lat: point.lat(), lng: point.lng() }; setLatitude(position.lat.toFixed(6)); setLongitude(position.lng.toFixed(6)); mapRef.current.setCenter(position); mapRef.current.setZoom(16); markerRef.current?.setMap(null); markerRef.current = new google.maps.Marker({ map: mapRef.current, position, title: results[0].formatted_address }); setLocationMessage('Location selected.'); }); }}>Search</button></div><div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button secondary" onClick={() => { setLocationMessage(''); if (!navigator.geolocation) { setLocationMessage('Location is not supported by this browser.'); return; } setLocationMessage('Finding your location...'); navigator.geolocation.getCurrentPosition(({ coords }) => { const lat = coords.latitude.toFixed(6); const lng = coords.longitude.toFixed(6); setLatitude(lat); setLongitude(lng); const position = { lat: coords.latitude, lng: coords.longitude }; mapRef.current?.setCenter(position); mapRef.current?.setZoom(16); const google = (window as any).google; if (google?.maps && mapRef.current) { markerRef.current?.setMap(null); markerRef.current = new google.maps.Marker({ map: mapRef.current, position, title: 'Your current location' }); } setLocationMessage('Current location selected.'); }, () => setLocationMessage('Unable to get your location. Allow location access and try again.'), { enableHighAccuracy: true, timeout: 10000 }); }}>Use my current location</button><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>Use this location</button></div>{locationMessage ? <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>{locationMessage}</p> : null}</div></div> : null}
     </>
   );

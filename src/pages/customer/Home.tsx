@@ -159,14 +159,28 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                       </p>
                     </div>
                   </div>
-                  <p className={`font-bold text-[14px] ${item.type === 'earn' ? 'text-[#22c55e]' : 'text-gray-900'}`}>
-                    {item.type === 'earn' ? '+' : '-'}{item.points}
+                  <p className={`font-bold text-[14px] ${item.type !== 'redeem' ? 'text-[#22c55e]' : 'text-gray-900'}`}>
+                    {item.type !== 'redeem' ? '+' : '-'}{item.points}{item.type === 'bonus' ? ' bonus' : ''}
                   </p>
                 </div>
               ))
             )}
           </div>
         </div>
+
+        {/* Personal customer journey: counts come from all purchases, not recent activity. */}
+        <section className="customer-modern-list-card rounded-[18px] p-4 shadow-sm" aria-labelledby="customer-journey-title">
+          <h3 id="customer-journey-title" className="text-[16px] font-bold text-gray-900">Your Customer Journey</h3>
+          <p className="mt-1 text-[12px] text-gray-600">Your purchases across AE merchants.</p>
+          {isLoading ? <p className="py-4 text-sm text-gray-500">Loading your journey...</p> : data?.purchase_count == null ? <p className="py-4 text-sm text-gray-500">Your journey is currently unavailable.</p> : <>
+            <p className="my-3 text-sm font-semibold text-gray-900">{data.purchase_count.toLocaleString('en-IN')} recorded purchases</p>
+            <ol className="space-y-3">{[
+              { title: 'First visit', threshold: 1, description: 'Make your first purchase at an AE merchant.' },
+              { title: 'Repeat visit', threshold: 2, description: 'Complete two recorded purchases.' },
+              { title: 'Loyal customer', threshold: 3, description: 'Complete three recorded purchases.' },
+            ].map((stage, index) => <li key={stage.title} className="flex items-center gap-3 rounded-xl bg-white/70 p-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold ${data.purchase_count! >= stage.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{index + 1}</span><div className="flex-1"><strong className="text-sm text-gray-900">{stage.title}</strong><p className="text-xs text-gray-600">{stage.description}</p></div><span className="text-xs font-semibold text-gray-700">{data.purchase_count! >= stage.threshold ? 'Reached' : 'Not yet'}</span></li>)}</ol>
+          </>}
+        </section>
 
         {/* Banner */}
         <div className="bg-[#e8faee] rounded-[16px] p-4 flex items-center justify-between shadow-sm relative overflow-hidden mt-2 border border-green-50">

@@ -133,11 +133,11 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
         if (currentUser) idToken = await currentUser.getIdToken(true);
       }
       if (!idToken) throw new Error('Phone verification did not return a secure token. Please request a new OTP.');
-      const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/signup', {
+      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile }>('/api/auth/customer/signup', {
         method: 'POST',
         body: JSON.stringify({ idToken, name: name.trim(), email: email.trim(), password }),
       });
-      setAccessToken(data.accessToken);
+      setAccessToken(data.accessToken, data.refreshToken);
       onLogin(data.user);
     } catch (cause: any) {
       setError(cause?.message || 'Invalid or expired verification code.');

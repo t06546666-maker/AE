@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeIndianRupee, MessageCircle, Save } from 'lucide-react';
+import { ArrowDown, BadgeIndianRupee, ChartNoAxesCombined, CheckCircle2, Coins, Gift, Info, MessageCircle, RefreshCw, Save, ShoppingBasket, ShoppingCart, Star, Tag, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
 import type { RewardSettings, UserProfile } from '../types';
 import { formatPoints } from '../utils';
 import { useToast } from '../toast';
+import './reward-settings.css';
 
 export function RewardSettingsPage({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
@@ -30,8 +31,8 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
 
   useEffect(() => { 
     if (settings.data) { 
-      setEarnPoints(settings.data.merchantEarnPoints || 10);
-      setRedeemDiscount(settings.data.merchantRedeemDiscount || 5);
+      setEarnPoints(settings.data.merchantEarnPoints ?? 10);
+      setRedeemDiscount(settings.data.merchantRedeemDiscount ?? 5);
       if (settings.data.earnOptions) setEarnOptions(settings.data.earnOptions.join(', '));
       if (settings.data.subscription) setSubscription(settings.data.subscription);
       if (settings.data.subscription?.plans) setPlans(settings.data.subscription.plans);
@@ -71,6 +72,23 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
   if (settings.isError) return <ErrorState error={settings.error} retry={() => settings.refetch()} />;
   
   const data = settings.data;
+
+  if (user.role === 'merchant') return (
+    <div className="rs-page">
+      <section className="rs-card">
+        <header className="rs-hero"><span className="rs-hero-icon"><Gift /></span><div><h1>Reward Settings</h1><p>Set how customers earn points and how they can redeem them at your store.</p></div></header>
+        <div className="rs-settings">
+          <div className="rs-field"><span className="rs-icon blue"><Coins /></span><label><strong>Points given per ₹100 purchase</strong><span>How many points a customer earns for every ₹100 spent.</span><select value={earnPoints} onChange={e => setEarnPoints(Number(e.target.value))}>{Array.from(new Set([...(data?.earnOptions || []), earnPoints])).map(option => <option key={option} value={option}>{option} Points</option>)}</select></label><Info className="rs-info" aria-label="Points are capped at 100 per purchase" /></div>
+          <div className="rs-field"><span className="rs-icon purple"><Tag /></span><label><strong>Discount given per 100 points redeemed</strong><span>How much discount customers get for every 100 points.</span><select value={redeemDiscount} onChange={e => setRedeemDiscount(Number(e.target.value))}>{Array.from(new Set([...(data?.redeemOptions || []), redeemDiscount])).map(option => <option key={option} value={option}>{option}% Discount</option>)}</select></label><Info className="rs-info" aria-label="Redemption uses exactly 100 points" /></div>
+          <aside className="rs-notice"><Star size={25} fill="currentColor"/><div><strong>Maximum 100 points can be applied in a single bill.</strong><p>Customers can earn and redeem points over time. Redemption uses exactly 100 points per transaction.</p></div></aside>
+        </div>
+      </section>
+      <section className="rs-card rs-examples"><header><span className="rs-icon green"><ChartNoAxesCombined /></span><div><h2>Earning Examples</h2><p>Based on {earnPoints} points per ₹100 purchase (maximum 100 points per bill)</p></div></header><div className="rs-grid">{[100, 250, 1000].map(amount => <div className="rs-example earning" key={amount}><strong><ShoppingBasket />₹{amount.toLocaleString('en-IN')} Purchase</strong><ArrowDown className="rs-down"/><b><span className="rs-coin">★</span>{Math.min(100, Math.floor(amount / 100 * earnPoints))} Points</b></div>)}</div></section>
+      <section className="rs-card rs-examples"><header><span className="rs-icon purple"><Tag /></span><div><h2>Redemption Examples</h2><p>Based on {redeemDiscount}% discount per 100 points (fixed 100 points per bill)</p></div></header><div className="rs-grid">{[1000, 500, 250].map(amount => <div className="rs-example redemption" key={amount}><strong><Coins />100 Points</strong><ArrowDown className="rs-down"/><b>{redeemDiscount}% Discount</b><div className="rs-example-total"><span><ShoppingCart size={18}/>On a ₹{amount.toLocaleString('en-IN')} order</span><b>₹{(amount * redeemDiscount / 100).toFixed(2)} off</b></div></div>)}</div></section>
+      <section className="rs-card rs-rules"><h2><TriangleAlert/>Important Rules</h2><div className="rs-rule-grid"><p><CheckCircle2 className="green"/>Exactly 100 points are redeemed in one bill.</p><p><Gift className="purple"/>Discount is calculated from the purchase amount entered at checkout.</p><p><RefreshCw className="blue"/>Points can be earned and used across multiple transactions.</p><p><Info className="amber"/>You can change these settings anytime.</p></div></section>
+      <button className="rs-save" type="button" disabled={saveMerchant.isPending} onClick={() => saveMerchant.mutate()}><Save/>{saveMerchant.isPending ? 'Saving…' : 'Save Settings'}</button>
+    </div>
+  );
 
   return (
     <>

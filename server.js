@@ -307,6 +307,39 @@ async function requireAuth(req, res, next) {
 const CUSTOMER_JWT_SECRET = process.env.CUSTOMER_JWT_SECRET || '07899040657f592d4f4d71c954e7977d7090e5e51e2c6cd44c1069c8ee06794c';
 const customerOtps = new Map();
 
+function customerSessionTokens(customer) {
+  const credentialVersion = crypto.createHmac('sha256', CUSTOMER_JWT_SECRET).update(customer.password_hash || '').digest('hex');
+  return {
+    accessToken: jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' }),
+    refreshToken: jwt.sign({ customerId: customer.id, role: 'customer', purpose: 'refresh', credentialVersion }, CUSTOMER_JWT_SECRET, { expiresIn: '365d' }),
+  };
+}
+
+app.post('/api/auth/refresh', async (req, res) => {
+  if (!requireSupabase(res)) return;
+  const refreshToken = typeof req.body.refreshToken === 'string' ? req.body.refreshToken : '';
+  if (!refreshToken || refreshToken.length > 8192) return res.status(401).json({ error: 'Sign in again to renew your session.' });
+  try {
+    if (req.body.customer === true) {
+      const claims = jwt.verify(refreshToken, CUSTOMER_JWT_SECRET);
+      if (claims.purpose !== 'refresh' || claims.role !== 'customer') return res.status(401).json({ error: 'Invalid refresh session.' });
+      const { data: customer, error } = await supabaseAdmin.from('customers').select('*').eq('id', claims.customerId).single();
+      if (error) throw error;
+      const version = customer && crypto.createHmac('sha256', CUSTOMER_JWT_SECRET).update(customer.password_hash || '').digest('hex');
+      if (!customer || version !== claims.credentialVersion) return res.status(401).json({ error: 'Sign in again to renew your session.' });
+      return res.json(customerSessionTokens(customer));
+    }
+    // A separate client prevents one person's refresh session affecting another.
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await client.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) return res.status(401).json({ error: 'Sign in again to renew your session.' });
+    return res.json({ accessToken: data.session.access_token, refreshToken: data.session.refresh_token });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') return res.status(401).json({ error: 'Sign in again to renew your session.' });
+    return res.status(503).json({ error: 'Session renewal is temporarily unavailable. Please retry.' });
+  }
+});
+
 async function requireCustomerAuth(req, res, next) {
   if (!requireSupabase(res)) return;
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
@@ -314,7 +347,7 @@ async function requireCustomerAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, CUSTOMER_JWT_SECRET);
-    if (!payload.customerId) return res.status(401).json({ success: false, error: 'Invalid token' });
+    if (!payload.customerId || payload.purpose === 'refresh') return res.status(401).json({ success: false, error: 'Invalid token' });
     
     const { data: customer, error } = await supabaseAdmin
       .from('customers')
@@ -670,6 +703,7 @@ async function offerDto(row, failure) {
     title: row.title,
     description: row.description,
     category: row.category || null,
+    audience: row.audience || 'all',
     imageUrl: await signedOfferImageUrl(row.image_path),
     expiresAt: row.expires_at,
     status: row.status,
@@ -1767,7 +1801,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
   
   res.json({
     success: true,
-    accessToken: token,
+    ...customerSessionTokens(customer),
     user: customer,
   });
 });
@@ -1826,7 +1860,7 @@ app.post('/api/auth/customer/signup', async (req, res) => {
 
     const customer = { ...created.data, role: 'customer' };
     const accessToken = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
-    return res.status(201).json({ success: true, accessToken, user: customer });
+    return res.status(201).json({ success: true, ...customerSessionTokens(customer), user: customer });
   } catch (error) {
     console.error('Customer signup failed:', error);
     if (error.code === '23505') return res.status(409).json({ success: false, error: 'An account with these details already exists. Please log in.' });
@@ -1909,6 +1943,10 @@ app.get('/api/auth/customer/me', requireCustomerAuth, (req, res) => {
 
 app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
   try {
+    const purchaseCount = await supabaseAdmin.from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('customer_id', req.customer.id);
+    if (purchaseCount.error) throw purchaseCount.error;
     const { data: orders } = await supabaseAdmin
       .from('orders')
       .select('id, created_at, amount, points_earned:reward_points, merchants(name)')
@@ -1923,7 +1961,10 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false }).limit(5);
+    if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
     const activity = [
+      ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
@@ -1931,6 +1972,7 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
     res.json({
       success: true,
       reward_points: req.customer.reward_points,
+      purchase_count: purchaseCount.count || 0,
       activity
     });
   } catch (error) {
@@ -1953,7 +1995,10 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
       .eq('customer_id', req.customer.id)
       .order('created_at', { ascending: false });
 
+    const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false });
+    if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
     let transactions = [
+      ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount ?? null, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount ?? null, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -2061,9 +2106,35 @@ app.get('/api/customer/merchant-reviews/:merchantId', requireCustomerAuth, async
   res.json({ success: true, reviews: (data || []).map(row => ({ id: row.id, rating: row.rating, message: row.message, createdAt: row.created_at, customerName: row.customers?.name || 'Customer' })) });
 });
 
+app.post('/api/merchant/feedback', requireAuth, requireRole('merchant'), async (req, res) => {
+  const categories = ['App experience', 'Points & redemption', 'QR scanning', 'Product lists', 'Support', 'Suggestion', 'Other'];
+  const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+  const rating = req.body.rating ?? null;
+  const requestId = req.body.requestId;
+  if (!req.auth.profile.merchant_id) return res.status(403).json({ error: 'Merchant account required' });
+  if (!categories.includes(req.body.category) || message.length < 2 || message.length > 2000 || (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId || '')) return res.status(400).json({ error: 'Choose a category, enter 2–2,000 characters, and select a valid optional rating.' });
+  const payload = { merchant_id: req.auth.profile.merchant_id, submitted_by: req.auth.user.id, request_id: requestId, category: req.body.category, rating, message };
+  const created = await supabaseAdmin.from('merchant_feedback').insert(payload).select('id').single();
+  if (created.error?.code === '23505') {
+    const existing = await supabaseAdmin.from('merchant_feedback').select('*').eq('request_id', requestId).eq('merchant_id', payload.merchant_id).eq('submitted_by', payload.submitted_by).maybeSingle();
+    if (existing.data && existing.data.category === payload.category && existing.data.rating === rating && existing.data.message === message) return res.json({ success: true, id: existing.data.id });
+    return res.status(409).json({ error: 'Feedback request mismatch. Please reopen the feedback form.' });
+  }
+  if (created.error) return res.status(503).json({ error: 'Unable to save feedback. Ensure the merchant feedback migration is applied, then retry.' });
+  return res.status(201).json({ success: true, id: created.data.id });
+});
+
+app.get('/api/admin/merchant-feedback', requireAuth, requireRole('admin'), async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('merchant_feedback').select('id,category,rating,message,created_at,merchants(name)').order('created_at', { ascending: false }).limit(200);
+  if (error) return res.status(503).json({ error: 'Unable to load merchant feedback. Ensure the merchant feedback migration is applied.' });
+  return res.json({ feedback: (data || []).map(row => ({ id: row.id, category: row.category, rating: row.rating, message: row.message, createdAt: row.created_at, merchantName: row.merchants?.name || 'Merchant' })) });
+});
+
 app.get('/api/feedback', requireAuth, async (req, res) => {
+  const isMerchant = req.auth.profile.role === 'merchant';
+  if (isMerchant && !req.auth.profile.merchant_id) return res.status(403).json({ error: 'Merchant account required' });
   let query = supabaseAdmin.from('customer_feedback')
-    .select('id,feedback_type,rating,message,created_at,merchant_id,customers(name,phone),merchants(name)')
+    .select(isMerchant ? 'id,feedback_type,rating,message,created_at,merchant_id,merchants(name)' : 'id,feedback_type,rating,message,created_at,merchant_id,customers(name,phone),merchants(name)')
     .order('created_at', { ascending: false }).limit(200);
   if (req.auth.profile.role === 'merchant') {
     query = query.eq('merchant_id', req.auth.profile.merchant_id).eq('feedback_type', 'merchant');
@@ -2075,7 +2146,7 @@ app.get('/api/feedback', requireAuth, async (req, res) => {
   res.json({ success: true, feedback: (data || []).map((row) => ({
     id: row.id, type: row.feedback_type, rating: row.rating, message: row.message,
     createdAt: row.created_at, merchantId: row.merchant_id,
-    customerName: row.customers?.name || 'Customer', customerPhone: row.customers?.phone || '',
+    ...(isMerchant ? { customerName: 'Anonymous' } : { customerName: row.customers?.name || 'Customer', customerPhone: row.customers?.phone || '' }),
     merchantName: row.merchants?.name || '',
   })) });
 });
@@ -2151,7 +2222,14 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     
   if (error) return res.status(500).json({ success: false, error: error.message });
   
-  const mappedOffers = await Promise.all((offers || []).map(async o => ({
+  const eligibleMerchants = new Set();
+  for (const merchantId of new Set((offers || []).filter(o => o.audience === 'loyal').map(o => o.merchant_id))) {
+    const result = await supabaseAdmin.from('orders').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('customer_id', req.customer.id);
+    if (result.error) return res.status(503).json({ error: 'Unable to verify loyalty eligibility.' });
+    if (result.count >= 5) eligibleMerchants.add(merchantId);
+  }
+  const visibleOffers = (offers || []).filter(o => o.audience !== 'loyal' || eligibleMerchants.has(o.merchant_id));
+  const mappedOffers = await Promise.all(visibleOffers.map(async o => ({
     id: o.id,
     title: o.title,
     description: o.description,
@@ -2198,10 +2276,8 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
     return res.json({ success: true, message: 'No updates provided' });
   }
 
-  let previousPush = {};
   if (Object.keys(pushUpdates).length) {
     try {
-      previousPush = await getCustomerPushTarget(customerId);
       await saveCustomerPushTarget(customerId, pushUpdates);
     } catch (error) {
       console.error('Firestore phone registration failed:', error.message);
@@ -2217,16 +2293,8 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 
-  // Welcome only when a phone is newly registered or notifications re-enabled.
-  // Ordinary app opens with the same token must not generate another welcome.
-  const welcomeNeeded = pushUpdates.push_token && pushUpdates.push_enabled === true &&
-    (previousPush.push_token !== pushUpdates.push_token || previousPush.push_enabled === false);
-  const welcomeAccepted = welcomeNeeded ? await sendPushNotification(
-    pushUpdates.push_token, `Welcome, ${req.customer.name || 'Customer'}!`,
-    'Your phone is connected. Receive purchase, reward and payment alerts here.',
-    { url: '/customer/notifications', type: 'welcome' }
-  ) : null;
-  res.json({ success: true, welcomeAccepted });
+  // The app owns the one-time welcome. Token refreshes must not send another.
+  res.json({ success: true, welcomeAccepted: null });
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
@@ -2284,6 +2352,7 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({
     success: true,
     accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
     expiresAt: data.session.expires_at,
     user: { email: data.user.email, ...profile },
   });
@@ -2338,6 +2407,23 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: profileError.message });
   }
   return res.json({ success: true, changedAt });
+});
+
+app.get('/api/merchants/:id/point-balance', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin' && (req.auth.profile.role !== 'merchant' || req.auth.profile.merchant_id !== req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  const { data, error } = await supabaseAdmin.from('merchants').select('point_balance').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(503).json({ error: 'Merchant points are unavailable. Apply the merchant point allocation migration.' });
+  if (!data) return res.status(404).json({ error: 'Merchant not found' });
+  return res.json({ balance: Number(data.point_balance || 0) });
+});
+
+app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'), async (req, res) => {
+  const points = req.body.points;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!Number.isInteger(points) || points < 1 || points > 1000000 || !uuid.test(req.params.id) || !uuid.test(req.body.requestId || '')) return res.status(400).json({ error: 'Valid merchant, request ID, and 1–1,000,000 whole points are required.' });
+  const { data, error } = await supabaseAdmin.rpc('allocate_merchant_points', { p_merchant_id: req.params.id, p_admin_id: req.auth.user.id, p_points: points, p_request_id: req.body.requestId });
+  if (error) return res.status(error.code === 'PGRST202' ? 503 : 400).json({ error: error.code === 'PGRST202' ? 'Apply the merchant point allocation migration first.' : error.message });
+  return res.json({ success: true, balance: Number(data) });
 });
 
 app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
@@ -3030,7 +3116,7 @@ app.get('/api/offers', requireAuth, async (req, res) => {
   const status = cleanText(req.query.status, 30);
   const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
   let query = supabaseAdmin.from('offers').select(
-    'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
+    'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
     { count: 'exact' },
   ).order('created_at', { ascending: false });
   if (req.auth.profile.role === 'merchant') {
@@ -3080,6 +3166,21 @@ app.get('/api/offers', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/api/merchant/loyal-customers', requireAuth, requireRole('merchant'), async (req, res) => {
+  const result = await supabaseAdmin.rpc('loyal_customers', { p_merchant_id: req.auth.profile.merchant_id });
+  if (result.error) return res.status(503).json({ error: 'Loyalty is not available. Apply supabase-loyalty.sql first.' });
+  return res.json({ customers: result.data || [] });
+});
+
+app.post('/api/merchant/loyalty-bonus', requireAuth, requireRole('merchant'), async (req, res) => {
+  const points = Number(req.body.points);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!Number.isInteger(points) || points < 1 || points > 100 || !uuid.test(req.body.customerId || '') || !uuid.test(req.body.requestId || '')) return res.status(400).json({ error: 'Select a customer and enter 1–100 whole points.' });
+  const result = await supabaseAdmin.rpc('award_loyalty_bonus', { p_merchant_id: req.auth.profile.merchant_id, p_customer_id: req.body.customerId, p_points: points, p_request_id: req.body.requestId, p_created_by: req.auth.user.id });
+  if (result.error) return res.status(400).json({ error: result.error.message });
+  return res.json({ success: true, bonus: result.data });
+});
+
 app.post(
   '/api/offers',
   requireAuth,
@@ -3111,12 +3212,13 @@ app.post(
         title,
         description,
         category,
+        audience: req.body.audience === 'loyal' ? 'loyal' : 'all',
         image_path: imagePath,
         expires_at: expiresAt.toISOString(),
         status: 'pending',
         submitted_by: req.auth.user.id,
       }).select(
-        'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+        'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
       await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
@@ -3186,7 +3288,7 @@ app.put(
         submitted_by: req.auth.user.id,
         updated_at: new Date().toISOString(),
       }).eq('id', offerId).select(
-        'id,merchant_id,title,description,category,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+        'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
       if (uploadedPath) {
@@ -4603,7 +4705,7 @@ function weeklyDashboardIntervals(orders, from, to) {
   const startTime = from.getTime();
   const endTime = to.getTime();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const intervals = Array.from({ length: 4 }, (_, index) => ({
+  const intervals = Array.from({ length: Math.ceil((endTime - startTime) / weekMs) }, (_, index) => ({
     label: `Week ${index + 1}`,
     orders: 0,
     revenue: 0,
@@ -4612,7 +4714,7 @@ function weeklyDashboardIntervals(orders, from, to) {
   for (const order of orders) {
     const orderTime = new Date(order.created_at).getTime();
     if (orderTime < startTime || orderTime >= endTime) continue;
-    const intervalIndex = Math.min(3, Math.floor((orderTime - startTime) / weekMs));
+    const intervalIndex = Math.floor((orderTime - startTime) / weekMs);
     intervals[intervalIndex].orders += 1;
     intervals[intervalIndex].revenue += Number(order.amount);
   }
@@ -5225,91 +5327,12 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not verify payment' }); }
 });
 
-app.post('/api/merchants/:id/subscription', requireAuth, async (req, res) => {
-  try {
-    const { payment_reference, mandate_id, signature } = req.body;
-    const adminConfig = await getAdminRewardConfig();
-    const merchantId = req.params.id;
-    
-    if (!payment_reference) return res.status(400).json({ success: false, error: 'Payment reference required' });
-    
-    if (mandate_id && signature) {
-      if (!process.env.RAZORPAY_KEY_SECRET) return res.status(500).json({ success: false, error: 'Razorpay secret missing' });
-      const text = `${payment_reference}|${mandate_id}`;
-      const generatedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-        .update(text)
-        .digest('hex');
-      if (generatedSignature !== signature) {
-        return res.status(400).json({ success: false, error: 'Invalid Razorpay signature. Payment verification failed.' });
-      }
-    }
-
-    const { data: merchant, error: fetchError } = await supabaseAdmin
-      .from('merchants')
-      .select('point_balance, subscription_expires_at')
-      .eq('id', merchantId)
-      .single();
-      
-    if (fetchError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
-
-    const currentPoints = merchant.point_balance || 0;
-    const now = new Date();
-    const expiryDate = merchant.subscription_expires_at && new Date(merchant.subscription_expires_at) > now
-      ? new Date(merchant.subscription_expires_at)
-      : now;
-    expiryDate.setDate(expiryDate.getDate() + adminConfig.subscription.days);
-    
-    const updatePayload = {
-      point_balance: currentPoints + adminConfig.subscription.points,
-      subscription_expires_at: expiryDate.toISOString(),
-    };
-    if (mandate_id) updatePayload.subscription_mandate_id = mandate_id;
-
-    const { error: updateError } = await supabaseAdmin
-      .from('merchants')
-      .update(updatePayload)
-      .eq('id', merchantId);
-
-    if (updateError) throw updateError;
-    
-    res.json({ success: true, message: `Subscription purchased successfully. ${adminConfig.subscription.points} points added.` });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message || 'Failed to process subscription' });
-  }
+app.post('/api/merchants/:id/subscription', requireAuth, (_req, res) => {
+  res.status(403).json({ success: false, error: 'Subscriptions are coming soon. Ask Admin to allocate points.' });
 });
 
-app.post('/api/merchants/:id/top-up', requireAuth, async (req, res) => {
-  try {
-    const { points, payment_reference } = req.body;
-    const merchantId = req.params.id;
-    if (!points || points < 50) return res.status(400).json({ success: false, error: 'Minimum top-up is 50 points' });
-    if (!payment_reference) return res.status(400).json({ success: false, error: 'Payment reference required' });
-
-    // In a real scenario, you'd verify a one-time Razorpay payment signature here 
-    // similar to the subscription route. For now, we simulate success if reference is provided.
-    
-    const { data: merchant, error: fetchError } = await supabaseAdmin
-      .from('merchants')
-      .select('point_balance')
-      .eq('id', merchantId)
-      .single();
-      
-    if (fetchError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
-
-    const currentPoints = merchant.point_balance || 0;
-    
-    const { error: updateError } = await supabaseAdmin
-      .from('merchants')
-      .update({ point_balance: currentPoints + points })
-      .eq('id', merchantId);
-
-    if (updateError) throw updateError;
-    
-    res.json({ success: true, message: `${points} points topped up successfully.` });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message || 'Failed to process top-up' });
-  }
+app.post('/api/merchants/:id/top-up', requireAuth, (_req, res) => {
+  res.status(403).json({ success: false, error: 'Self-service top-ups are unavailable. Ask Admin to allocate points.' });
 });
 
 app.get('/api/health', (_req, res) => {

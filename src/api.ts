@@ -1,6 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 
 const TOKEN_KEY = 'ae_access_token';
+const REFRESH_KEY = 'ae_refresh_token';
+let renewal: Promise<void> | null = null;
 // Vercel serves the API from the same deployment. Use relative requests on
 // the live domain so www and non-www hosts never trigger cross-origin issues.
 const configuredApiUrl = import.meta.env.VITE_API_URL || '';
@@ -26,15 +28,46 @@ export function getAccessToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
 
-export function setAccessToken(token: string) {
+export function setAccessToken(token: string, refreshToken?: string) {
   localStorage.setItem(TOKEN_KEY, token);
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+  else localStorage.removeItem(REFRESH_KEY);
 }
 
 export function clearAccessToken() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+async function renewSession() {
+  if (renewal) return renewal;
+  const previous = getAccessToken();
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) return;
+  renewal = (async () => {
+    let customer = false;
+    try { customer = JSON.parse(atob(previous.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'customer'; } catch { /* Server validates token. */ }
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/api/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken, customer }) });
+    } catch { throw new ApiError('Cannot renew your saved session while offline. Please retry.', 0); }
+    if (getAccessToken() !== previous || localStorage.getItem(REFRESH_KEY) !== refreshToken) return;
+    if (response.status === 401) { clearAccessToken(); window.dispatchEvent(new Event('ae:unauthorized')); throw new ApiError('Please sign in again.', 401); }
+    if (!response.ok) throw new ApiError('Unable to renew your session. Please retry.', response.status);
+    const data = await response.json();
+    if (getAccessToken() === previous) setAccessToken(data.accessToken, data.refreshToken);
+  })().finally(() => { renewal = null; });
+  return renewal;
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const authenticationRequest = /\/api\/auth\/(?:customer\/)?(?:login|signup|refresh)/.test(path);
+  if (!authenticationRequest && localStorage.getItem(REFRESH_KEY)) {
+    try {
+      const payload = JSON.parse(atob(getAccessToken().split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (payload.exp * 1000 <= Date.now() + 60_000) await renewSession();
+    } catch (error) { if (error instanceof ApiError) throw error; }
+  }
   const url = path.startsWith('/') ? `${API_BASE_URL}${path}` : path;
   const headers = new Headers(init.headers);
   const token = getAccessToken();

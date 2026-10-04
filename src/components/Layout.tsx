@@ -101,7 +101,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : user.role === 'field_manager' ? 'field-shell' : ''}`}>
       <header className="topbar">
         <div className="topbar-left">
-          <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
+          {user.role !== 'merchant' && <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>}
           <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
           {user.role === 'field_manager' && <div className="field-brand-text"><strong>Field Manager</strong><small>Grow · Reach · Track</small></div>}
         </div>
@@ -136,8 +136,8 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </div>
       </header>
       <div className="shell-body">
-        {sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        {user.role !== 'merchant' && sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
+        {user.role !== 'merchant' && <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             {nav.map(([to, label, Icon]) => (
@@ -153,13 +153,13 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               <LogOut size={15} />{t('layout.signOut')}
             </button>
           </div>
-        </aside>
+        </aside>}
         <main className="main-content">
           <div className="mobile-topbar desktop-view-hidden" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'white' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
+              {user.role !== 'merchant' && <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
                 <Menu size={28} color="#1a1a1a" strokeWidth={2} />
-              </button>
+              </button>}
               <img src="/logo.png" alt="Affiliate AE" style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
             </div>
             {user.role === 'merchant' ? (
@@ -184,14 +184,14 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </main>
       </div>
       {user.role === 'merchant' && (
-        <div className="mobile-bottom-nav desktop-view-hidden">
+        <div className="mobile-bottom-nav merchant-bottom-nav">
           <NavLink to="/dashboard" className={({ isActive }) => isActive && new URLSearchParams(location.search).get('view') !== 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Home />
             <span>Home</span>
           </NavLink>
-          <NavLink to="/customers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-            <Users />
-            <span>Customers</span>
+          <NavLink to="/customer-orders" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+            <ShoppingBag />
+            <span>Orders</span>
           </NavLink>
           <NavLink to="/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Gift />

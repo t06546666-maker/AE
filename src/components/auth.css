@@ -52,3 +52,25 @@
   .ae-auth-login .ae-auth-subtitle{margin-bottom:14px;}
   .ae-auth-login .ae-auth-bottom{margin-top:16px;}
 }
+/* Chittur artwork: show only the reference's hero, never its pictured form.
+   The actual accessible form below continues to handle authentication. */
+.ae-auth-login .ae-auth-hero{aspect-ratio:900/790;background-image:url('/auth-chittur-customer.jpeg');background-size:100% auto;background-position:center top;}
+.ae-auth-login.is-merchant .ae-auth-hero{aspect-ratio:900/765;background-image:url('/auth-chittur-merchant.jpeg');background-size:100% auto;background-position:center top;}
+.ae-auth-login .ae-auth-sheet{border-radius:32px 32px 0 0;background:linear-gradient(135deg,#fff,#fafcff);}
+.ae-auth-login .ae-auth-roles a[aria-current=page],.ae-auth-login .ae-auth-primary{background:linear-gradient(105deg,#00aeef 0%,#0062e5 40%,#8500ed 100%);color:white;box-shadow:0 6px 18px #1769e52b;}
+.ae-auth-login .ae-auth-forgot,.ae-auth-login .ae-auth-bottom a{color:#005acb;}
+.ae-auth-login .ae-auth-field{border-radius:18px;background:#ffffffb8;min-height:58px;}
+.ae-auth-login .ae-auth-field:focus-within{outline-color:#0068ed;}
+@media(max-width:999px){
+ .ae-auth-login .ae-auth-window{max-width:540px;height:auto;min-height:100dvh;background:#fff;}
+ .ae-auth-login .ae-auth-hero{height:87.78cqw;background-size:100% auto;}
+ .ae-auth-login.is-merchant .ae-auth-hero{height:85cqw;background-size:100% auto;}
+ .ae-auth-login .ae-auth-sheet{margin-top:-10px;padding:20px 26px 26px;}
+ .ae-auth-login .ae-auth-roles a{padding-block:14px;}
+ .ae-auth-login .ae-auth-primary{min-height:60px;border-radius:18px;}
+}
+@media(min-width:1000px){
+ .ae-auth-login .ae-auth-window{background:#eaf8ff;}
+ .ae-auth-login .ae-auth-hero{align-self:center;}
+ .ae-auth-login .ae-auth-sheet{border-radius:30px 0 0 30px;padding:36px;}
+}

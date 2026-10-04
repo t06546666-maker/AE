@@ -4,7 +4,7 @@ import { apiFetch, queryString } from '../api';
 export type ActivityItem = {
   id: string;
   created_at: string;
-  type: 'earn' | 'redeem';
+  type: 'earn' | 'redeem' | 'bonus';
   merchant_name?: string;
   amount?: number;
   points: number;
@@ -12,6 +12,7 @@ export type ActivityItem = {
 
 export type CustomerDashboard = {
   reward_points: number;
+  purchase_count?: number;
   activity: ActivityItem[];
 };
 

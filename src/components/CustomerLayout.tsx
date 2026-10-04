@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Home, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, ListPlus } from 'lucide-react';
 import { UserProfile } from '../types';
+import { CustomerWelcome } from './CustomerWelcome';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,6 +23,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
 
   return (
     <div className="app-shell theme-green customer-glass">
+      <CustomerWelcome user={user} />
       <header className="topbar hidden md:flex">
         <div className="topbar-left">
           <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>

@@ -302,6 +302,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
               <span><i className="revenue" style={{ background: '#16a34a'}} /> {t('dashboard.revenue', 'Revenue (₹)')}</span>
             </div>
             {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
+            {chart.isError ? <ErrorState error={chart.error} retry={() => chart.refetch()} /> : null}
             <div className="chart-scroll">
               <div className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`} style={chartPeriod === 'today' ? undefined : { gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`, minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%' }}>
                 {chartData.intervals.map((item) => (

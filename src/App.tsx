@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { apiFetch, clearAccessToken, getAccessToken } from './api';
+import { ApiError, apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
 import { AddCustomer } from './pages/AddCustomer';
 import { Administrators } from './pages/Administrators';
@@ -80,6 +80,8 @@ function RoleRoute({ user, role, children }: { user: UserProfile; role: Role; ch
 export function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
+  const [restoreError, setRestoreError] = useState('');
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -209,33 +211,30 @@ export function App() {
       } catch (e) { return false; }
     })();
 
-    // Never reuse an admin/merchant session when opening a customer URL.
-    // This can happen when the same browser previously used the merchant portal.
-    // Clear that session and let the customer login page render instead of
-    // restoring the merchant dashboard and navigating away from the customer area.
-    if (location.pathname.startsWith('/customer/') && !isCustomerToken) {
-      clearAccessToken();
-      setRestoring(false);
-      return;
-    }
+    // Restore the saved identity; role-specific routes still enforce access.
 
     const endpoint = isCustomerToken ? '/api/auth/customer/me' : '/api/auth/me';
 
     let active = true;
     apiFetch<{ user: UserProfile }>(endpoint)
       .then((data) => {
-        if (!active || getAccessToken() !== token) return;
+        if (!active || !getAccessToken()) return;
         // The customer-only endpoint has already authenticated this identity.
         // Keep older deployments that omit role out of the merchant routes.
         setUser(isCustomerToken ? { ...data.user, role: 'customer' } : data.user);
       })
-      .catch(() => { if (active && getAccessToken() === token) logout(); })
+      .catch((error) => {
+        if (!active) return;
+        if (error instanceof ApiError && error.status === 401) logout();
+        else setRestoreError(error instanceof Error ? error.message : 'Unable to restore your session. Please retry.');
+      })
       .finally(() => { if (active) setRestoring(false); });
     return () => { active = false; };
-  }, []);
+  }, [restoreAttempt]);
 
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Legal />;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
+  if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
   if (!user) {
     return (
       <Routes>

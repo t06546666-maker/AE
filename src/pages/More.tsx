@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, CreditCard, Save } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ExportModal, PageHeader, PeriodControl } from '../components/Common';
 import { SubscriptionModal } from '../components/SubscriptionModal';
+import { MerchantFeedback } from '../components/MerchantFeedback';
 import type { DashboardData, Period, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, rangeForChartPeriod } from '../utils';
-import { useToast } from '../toast';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -40,7 +40,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
   const [chartFrom, setChartFrom] = useState(today); const [chartTo, setChartTo] = useState(today);
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);
   const [subscribeOpen, setSubscribeOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const chartData = chart.data || emptyDashboard;
@@ -51,11 +52,6 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
   const merchantQuery = useQuery({
     queryKey: ['merchant', user.merchant_id],
     queryFn: ({ signal }) => apiFetch<{ data: Merchant }>(`/api/merchants/${user.merchant_id}`, { signal }),
-    enabled: user.role === 'merchant' && !!user.merchant_id,
-  });
-  const paymentSettings = useQuery({
-    queryKey: ['merchant-payment-settings', user.merchant_id],
-    queryFn: ({ signal }) => apiFetch<{ data: { upiId: string; displayName: string; paymentEnabled: boolean; mode: 'test' | 'live' } }>(`/api/merchants/${user.merchant_id}/payment-settings`, { signal }),
     enabled: user.role === 'merchant' && !!user.merchant_id,
   });
 
@@ -91,7 +87,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             <div className="mobile-transaction-avatar blue" style={{ width: 40, height: 40 }}><ShieldCheck size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
               <h4>Subscription</h4>
-              <p>Manage your plan and billing</p>
+              <p>Free trial · Subscriptions coming soon</p>
             </div>
             <ChevronRight color="#94a3b8" />
           </button>
@@ -104,24 +100,38 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             </div>
             <ChevronRight color="#94a3b8" />
           </Link>
-          {user.role === 'merchant' ? <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0' }} onClick={() => setPaymentOpen(true)}>
-            <div className="mobile-transaction-avatar green" style={{ width: 40, height: 40 }}><CreditCard size={20} /></div>
-            <div className="mobile-transaction-info" style={{ textAlign: 'left' }}><h4>Payment &amp; UPI Settings</h4><p>{paymentSettings.data?.data?.upiId || 'Add your UPI ID for customer payments'}</p></div>
-            <ChevronRight color="#94a3b8" />
-          </button> : null}
         </div>
       </div>
 
       {/* Help and Support */}
+      {user.role === 'merchant' && <button type="button" className="mobile-help-btn" style={{ width: '100%', marginTop: 24, cursor: 'pointer' }} onClick={() => setFeedbackOpen(true)}><div className="mobile-help-btn-left"><MessageCircle size={20}/><div style={{ textAlign: 'left' }}><strong>Feedback to AE</strong><p style={{ margin: '4px 0', fontSize: 12 }}>Share suggestions or report an app issue</p></div></div><ChevronRight size={20}/></button>}
       <div className="mobile-help-support" style={{ marginTop: 24 }}>
-        <p>{t('dashboard.needHelpTitle', 'Need help?')}<br/>{t('dashboard.needHelpSub', 'Visit our Help Center or contact support.')}</p>
-        <Link to="/contact" className="mobile-help-btn">
+        <p>Need help?<br/>Find quick answers or chat with our support team.</p>
+        <button type="button" className="mobile-help-btn" style={{ width: '100%', cursor: 'pointer' }} aria-expanded={supportOpen} aria-controls="merchant-help-support" onClick={() => setSupportOpen(open => !open)}>
           <div className="mobile-help-btn-left">
             <Headset size={20} color="#64748b" />
             <span>{t('dashboard.helpSupport', 'Help & Support')}</span>
           </div>
           <ChevronRight size={20} color="#94a3b8" />
-        </Link>
+        </button>
+        {supportOpen && <section id="merchant-help-support" className="panel" style={{ marginTop: 16, textAlign: 'left' }}>
+          <h2>Help &amp; Support</h2>
+          <p>Need assistance with your merchant account, points, QR scanning, or product lists? Chat with us on WhatsApp or email our support team.</p>
+          <div className="form-actions" style={{ flexWrap: 'wrap', margin: '20px 0' }}>
+            <a className="button whatsapp" href="https://wa.me/917306010846?text=Hello%20Affiliate%20AE%20support%2C%20I%20need%20help%20with%20my%20merchant%20account." target="_blank" rel="noopener noreferrer"><MessageCircle size={19}/>Chat on WhatsApp</a>
+            <a className="button secondary" href="mailto:info@affiliateinnovations.co.in?subject=Merchant%20support"><Mail size={19}/>Email Support</a>
+          </div>
+          <p style={{ overflowWrap: 'anywhere', color: 'var(--text-muted)' }}>info@affiliateinnovations.co.in</p>
+          <h3 style={{ marginTop: 24 }}>Frequently Asked Questions</h3>
+          {[
+            ['How do I issue points to a customer?', 'Scan the customer’s My QR Code, select Issue Only, enter the purchase amount, check the points, and confirm the transaction.'],
+            ['How do I redeem customer points?', 'Scan the customer’s Redeem QR Code to open Redeem + Issue. Redemption uses 100 points. Enter the purchase amount and discount, review the calculation, and confirm.'],
+            ['Where can I change my reward settings?', 'Open More → Reward Settings, choose your earning rate and redemption discount, then select Save Settings.'],
+            ['Where can I find purchase history?', 'Open Purchase History to review recorded transactions. Customer phone numbers are masked in the merchant view.'],
+            ['What should I do if a transaction or QR scan fails?', 'Check your internet connection and review purchase history before retrying to avoid submitting the transaction twice. If you still need help, send support the time, order reference, and a screenshot. Never share passwords or OTPs.'],
+            ['Is a subscription payment required now?', 'The pilot is free. Subscriptions are coming soon; no subscription payment is required during the free pilot.'],
+          ].map(([question, answer]) => <details key={question} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)' }}><summary style={{ cursor: 'pointer', fontWeight: 600 }}>{question}</summary><p style={{ marginTop: 10, lineHeight: 1.6, color: 'var(--text-muted)' }}>{answer}</p></details>)}
+        </section>}
       </div>
 
       {/* Logout */}
@@ -141,19 +151,11 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
       </div>
 
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
+      {feedbackOpen && <MerchantFeedback onClose={() => setFeedbackOpen(false)}/>}
       
       {subscribeOpen && user.role === 'merchant' && merchantQuery.data?.data && (
         <SubscriptionModal merchant={merchantQuery.data.data} onClose={() => setSubscribeOpen(false)} onUpdate={() => merchantQuery.refetch()} />
       )}
-      {paymentOpen && user.role === 'merchant' && user.merchant_id ? <PaymentSettingsModal merchantId={user.merchant_id} initial={paymentSettings.data?.data} onClose={() => setPaymentOpen(false)} onSaved={() => { void paymentSettings.refetch(); setPaymentOpen(false); }} /> : null}
     </div>
   );
-}
-
-function PaymentSettingsModal({ merchantId, initial, onClose, onSaved }: { merchantId: string; initial?: { upiId: string; displayName: string; paymentEnabled: boolean; mode: 'test' | 'live' }; onClose: () => void; onSaved: () => void }) {
-  const { showToast } = useToast();
-  const [form, setForm] = useState({ upiId: initial?.upiId || '', displayName: initial?.displayName || '', paymentEnabled: initial?.paymentEnabled || false, mode: initial?.mode || 'test' });
-  useEffect(() => { if (initial) setForm({ upiId: initial.upiId || '', displayName: initial.displayName || '', paymentEnabled: initial.paymentEnabled, mode: initial.mode || 'test' }); }, [initial]);
-  const save = useMutation({ mutationFn: () => apiFetch(`/api/merchants/${merchantId}/payment-settings`, { method: 'PATCH', body: JSON.stringify(form) }), onSuccess: () => { showToast('Payment settings saved.'); onSaved(); }, onError: error => showToast(error.message, 'error') });
-  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="modal" onSubmit={event => { event.preventDefault(); save.mutate(); }}><button type="button" className="icon-button modal-close" onClick={onClose}>×</button><h2>Payment &amp; UPI Settings</h2><p>Add the UPI ID that should receive customer payments.</p><div className="form-grid"><label>UPI ID<input value={form.upiId} onChange={event => setForm({ ...form, upiId: event.target.value })} placeholder="merchant@upi" /></label><label>Display name<input value={form.displayName} onChange={event => setForm({ ...form, displayName: event.target.value })} placeholder="Your business name" /></label><label>Payment mode<select value={form.mode} onChange={event => setForm({ ...form, mode: event.target.value as 'test' | 'live' })}><option value="test">Test</option><option value="live">Live</option></select></label></div><label className="checkbox-row"><input type="checkbox" checked={form.paymentEnabled} onChange={event => setForm({ ...form, paymentEnabled: event.target.checked })} /> Enable customer UPI payments</label><p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Razorpay verification and webhook configuration are required before enabling live payments.</p><div className="form-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary" disabled={save.isPending}><Save size={16} />{save.isPending ? 'Saving…' : 'Save settings'}</button></div></form></div>;
 }

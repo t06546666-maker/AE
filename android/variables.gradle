@@ -1,4 +1,6 @@
 ext {
+    // Optional diagnostic override; normal builds retain the current SDK.
+    firebaseMessagingVersion = project.findProperty('aeDiagnosticMessagingVersion') ?: '25.0.1'
     minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36

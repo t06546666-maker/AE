@@ -83,6 +83,7 @@ export interface OfferCampaign {
 }
 
 export interface Offer {
+  audience?: 'all' | 'loyal';
   id: string;
   merchantId: string | null;
   merchant: string;

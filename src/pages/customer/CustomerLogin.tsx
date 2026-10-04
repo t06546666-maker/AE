@@ -20,11 +20,11 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
     setLoading(true);
     try {
       const fullPhone = '+91' + phone.replace(/\D/g, '');
-      const data = await apiFetch<{ accessToken: string; user: UserProfile }>('/api/auth/customer/login', {
+      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile }>('/api/auth/customer/login', {
         method: 'POST',
         body: JSON.stringify({ phone: fullPhone, password }),
       });
-      setAccessToken(data.accessToken);
+      setAccessToken(data.accessToken, data.refreshToken);
       onLogin(data.user);
     } catch (err: any) {
       setError(err.message || 'Invalid phone or password.');
