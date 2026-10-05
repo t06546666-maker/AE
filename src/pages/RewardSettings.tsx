@@ -21,6 +21,8 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
   
   const [earnPoints, setEarnPoints] = useState(10);
   const [redeemDiscount, setRedeemDiscount] = useState(5);
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
+  const [flatDiscount, setFlatDiscount] = useState('50');
   const [earnOptions, setEarnOptions] = useState('5, 10, 20, 30, 50');
   const [subscription, setSubscription] = useState({ price: 200, points: 10000, days: 30 });
   const [plans, setPlans] = useState([
@@ -33,6 +35,8 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
     if (settings.data) { 
       setEarnPoints(settings.data.merchantEarnPoints ?? 10);
       setRedeemDiscount(settings.data.merchantRedeemDiscount ?? 5);
+      setDiscountType(settings.data.merchantDiscountType ?? 'percentage');
+      setFlatDiscount(String(settings.data.merchantFlatDiscount ?? 50));
       if (settings.data.earnOptions) setEarnOptions(settings.data.earnOptions.join(', '));
       if (settings.data.subscription) setSubscription(settings.data.subscription);
       if (settings.data.subscription?.plans) setPlans(settings.data.subscription.plans);
@@ -42,7 +46,7 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
   const saveMerchant = useMutation({ 
     mutationFn: () => apiFetch(`/api/merchants/${user.merchant_id}/reward-settings`, { 
       method: 'PUT', 
-      body: JSON.stringify({ earn_points_per_100: earnPoints, redeem_discount_per_100: redeemDiscount }) 
+      body: JSON.stringify({ earn_points_per_100: earnPoints, redeem_discount_per_100: redeemDiscount, redeem_discount_type: discountType, redeem_flat_amount: Number(flatDiscount) })
     }), 
     onSuccess() { 
       queryClient.invalidateQueries({ queryKey: ['reward-settings'] }); 
@@ -79,14 +83,14 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
         <header className="rs-hero"><span className="rs-hero-icon"><Gift /></span><div><h1>Reward Settings</h1><p>Set how customers earn points and how they can redeem them at your store.</p></div></header>
         <div className="rs-settings">
           <div className="rs-field"><span className="rs-icon blue"><Coins /></span><label><strong>Points given per ₹100 purchase</strong><span>How many points a customer earns for every ₹100 spent.</span><select value={earnPoints} onChange={e => setEarnPoints(Number(e.target.value))}>{Array.from(new Set([...(data?.earnOptions || []), earnPoints])).map(option => <option key={option} value={option}>{option} Points</option>)}</select></label><Info className="rs-info" aria-label="Points are capped at 100 per purchase" /></div>
-          <div className="rs-field"><span className="rs-icon purple"><Tag /></span><label><strong>Discount given per 100 points redeemed</strong><span>How much discount customers get for every 100 points.</span><select value={redeemDiscount} onChange={e => setRedeemDiscount(Number(e.target.value))}>{Array.from(new Set([...(data?.redeemOptions || []), redeemDiscount])).map(option => <option key={option} value={option}>{option}% Discount</option>)}</select></label><Info className="rs-info" aria-label="Redemption uses exactly 100 points" /></div>
+          <div className="rs-field"><span className="rs-icon purple"><Tag /></span><label><strong>Discount given per 100 points redeemed</strong><span>How much discount customers get for every 100 points.</span><select aria-label="Discount type" value={discountType} onChange={e => setDiscountType(e.target.value as 'percentage' | 'flat')}><option value="percentage">Percentage (%)</option><option value="flat">Flat Rupees (₹)</option></select>{discountType === 'flat' ? <><span>Flat discount amount (₹)</span><input type="number" min="0" max="1000000" step="0.01" value={flatDiscount} onChange={e => setFlatDiscount(e.target.value)} aria-label="Flat discount amount in rupees"/></> : <select value={redeemDiscount} onChange={e => setRedeemDiscount(Number(e.target.value))}>{Array.from(new Set([...(data?.redeemOptions || []), redeemDiscount])).map(option => <option key={option} value={option}>{option}% Discount</option>)}</select>}</label><Info className="rs-info" aria-label="Redemption uses exactly 100 points" /></div>
           <aside className="rs-notice"><Star size={25} fill="currentColor"/><div><strong>Maximum 100 points can be applied in a single bill.</strong><p>Customers can earn and redeem points over time. Redemption uses exactly 100 points per transaction.</p></div></aside>
         </div>
       </section>
       <section className="rs-card rs-examples"><header><span className="rs-icon green"><ChartNoAxesCombined /></span><div><h2>Earning Examples</h2><p>Based on {earnPoints} points per ₹100 purchase (maximum 100 points per bill)</p></div></header><div className="rs-grid">{[100, 250, 1000].map(amount => <div className="rs-example earning" key={amount}><strong><ShoppingBasket />₹{amount.toLocaleString('en-IN')} Purchase</strong><ArrowDown className="rs-down"/><b><span className="rs-coin">★</span>{Math.min(100, Math.floor(amount / 100 * earnPoints))} Points</b></div>)}</div></section>
-      <section className="rs-card rs-examples"><header><span className="rs-icon purple"><Tag /></span><div><h2>Redemption Examples</h2><p>Based on {redeemDiscount}% discount per 100 points (fixed 100 points per bill)</p></div></header><div className="rs-grid">{[1000, 500, 250].map(amount => <div className="rs-example redemption" key={amount}><strong><Coins />100 Points</strong><ArrowDown className="rs-down"/><b>{redeemDiscount}% Discount</b><div className="rs-example-total"><span><ShoppingCart size={18}/>On a ₹{amount.toLocaleString('en-IN')} order</span><b>₹{(amount * redeemDiscount / 100).toFixed(2)} off</b></div></div>)}</div></section>
+      <section className="rs-card rs-examples"><header><span className="rs-icon purple"><Tag /></span><div><h2>Redemption Examples</h2><p>Based on {discountType === 'flat' ? `₹${Number(flatDiscount || 0).toFixed(2)} flat discount` : `${redeemDiscount}% discount`} per 100 points (fixed 100 points per bill)</p></div></header><div className="rs-grid">{[1000, 500, 250].map(amount => <div className="rs-example redemption" key={amount}><strong><Coins />100 Points</strong><ArrowDown className="rs-down"/><b>{discountType === 'flat' ? `₹${Number(flatDiscount || 0).toFixed(2)} Flat` : `${redeemDiscount}% Discount`}</b><div className="rs-example-total"><span><ShoppingCart size={18}/>On a ₹{amount.toLocaleString('en-IN')} order</span><b>₹{Math.min(amount, discountType === 'flat' ? Number(flatDiscount || 0) : amount * redeemDiscount / 100).toFixed(2)} off</b></div></div>)}</div></section>
       <section className="rs-card rs-rules"><h2><TriangleAlert/>Important Rules</h2><div className="rs-rule-grid"><p><CheckCircle2 className="green"/>Exactly 100 points are redeemed in one bill.</p><p><Gift className="purple"/>Discount is calculated from the purchase amount entered at checkout.</p><p><RefreshCw className="blue"/>Points can be earned and used across multiple transactions.</p><p><Info className="amber"/>You can change these settings anytime.</p></div></section>
-      <button className="rs-save" type="button" disabled={saveMerchant.isPending} onClick={() => saveMerchant.mutate()}><Save/>{saveMerchant.isPending ? 'Saving…' : 'Save Settings'}</button>
+      <button className="rs-save" type="button" disabled={saveMerchant.isPending || !flatDiscount.trim() || !Number.isFinite(Number(flatDiscount)) || Number(flatDiscount) < 0 || Number(flatDiscount) > 1000000} onClick={() => saveMerchant.mutate()}><Save/>{saveMerchant.isPending ? 'Saving…' : 'Save Settings'}</button>
     </div>
   );
 

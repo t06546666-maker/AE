@@ -9,6 +9,7 @@ import type { Merchant, MerchantSummaryResponse, Pagination, MerchantCategory } 
 import { formatDate, formatPoints } from '../utils';
 import { useToast } from '../toast';
 import { AllocateMerchantPoints } from '../components/MerchantPointBalance';
+import { MERCHANT_ROUTES } from '../merchantRoutes';
 
 interface CredentialResult {
   merchantCode: string;
@@ -35,6 +36,9 @@ export function Merchants() {
   const [categoryId, setCategoryId] = useState('');
   const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
+  const [merchantRoute, setMerchantRoute] = useState('');
+  const [shopImages, setShopImages] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
@@ -50,6 +54,26 @@ export function Merchants() {
   const { showToast } = useToast();
 
   useEffect(() => setPage(1), [deferredSearch]);
+
+  async function uploadShopPhoto(file?: File) {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      showToast('Choose a JPG or PNG image under 5 MB.', 'error'); return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const body = new FormData(); body.append('image', file);
+      const result = await apiFetch<{ url: string }>('/api/field/upload-image', { method: 'POST', body });
+      setShopImages(previous => [...previous, result.url]);
+    } catch (error) { showToast((error as Error).message, 'error'); }
+    finally { setUploadingPhoto(false); }
+  }
+
+  function generateCredentials() {
+    const random = crypto.randomUUID().replaceAll('-', '');
+    setEmail(`store${random.slice(0, 10)}@ae-rewards.com`);
+    setPassword(`Ae@${random.slice(10, 22)}9`);
+  }
 
 
   const categoriesQuery = useQuery({
@@ -69,7 +93,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
+      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -79,6 +103,8 @@ export function Merchants() {
         whatsapp: data.whatsapp,
       });
       setName('');
+      setMerchantRoute('');
+      setShopImages([]);
       setEmail('');
       setPhone('');
       setPassword('');
@@ -196,10 +222,14 @@ export function Merchants() {
             {categoryId === '__other__' && <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="Enter new category" style={{ marginTop: '6px' }} required autoFocus />}
           </label>
           <label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
+          <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{route}</option>)}</select></label>
           <label>Latitude <input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>
           <label>Longitude <input type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="e.g. 76.2673" /></label>
+          <label>Shop image (optional)<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>JPG or PNG, maximum 5 MB.</small></label>
         </div>
-        <button className="button primary" disabled={create.isPending}>
+        {shopImages.map((url, index) => <div key={url}><img src={url} alt={`Shop photo ${index + 1}`} style={{ width: 120, height: 80, objectFit: 'cover' }} /><button type="button" className="button secondary" onClick={() => setShopImages(images => images.filter((_, position) => position !== index))}>Remove photo</button></div>)}
+        <button type="button" className="button secondary" onClick={generateCredentials}>Generate login email & password</button>
+        <button className="button primary" disabled={create.isPending || uploadingPhoto}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : t('merchants.add')}
         </button>
         <button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}><MapPinned size={16} /> Select location on map</button>

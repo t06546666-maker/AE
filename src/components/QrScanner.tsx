@@ -10,6 +10,7 @@ import type { Customer, RewardSettings } from '../types';
 import { formatPoints } from '../utils';
 import { useToast } from '../toast';
 import { ScannedCheckout } from './ScannedCheckout';
+import { flatDiscountOptions } from '../flatDiscount';
 
 type ScannerInstance = { start: (...args: unknown[]) => Promise<unknown>; stop: () => Promise<unknown>; clear: () => void };
 
@@ -38,11 +39,20 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState('100');
-  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
-  const [discountValue, setDiscountValue] = useState(String(settings.merchantRedeemDiscount || 5));
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>(settings.merchantDiscountType ?? 'percentage');
+  const [discountValue, setDiscountValue] = useState(String(settings.merchantDiscountType === 'flat' ? (settings.merchantFlatDiscount ?? 50) : (settings.merchantRedeemDiscount ?? 5)));
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  useEffect(() => {
+    if (discountType !== 'flat' || paymentTransactionId) return;
+    const options = flatDiscountOptions(Number(amount));
+    if (!options.includes(Number(discountValue))) {
+      const preferred = settings.merchantFlatDiscount ?? 2;
+      const next = options.includes(preferred) ? preferred : options[0];
+      if (next !== undefined) setDiscountValue(String(next));
+    }
+  }, [amount, discountType, discountValue, paymentTransactionId, settings.merchantFlatDiscount]);
   const paymentBusy = useRef(false);
 
   const [percentage, setPercentage] = useState(settings.merchantEarnPoints || (settings.earnOptions?.[0] || 10));

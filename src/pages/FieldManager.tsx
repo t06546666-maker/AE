@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MERCHANT_ROUTES } from '../merchantRoutes';
+import { FieldAttendance } from '../components/FieldAttendance';
+import { FieldRoutePlanning } from '../components/FieldRoutePlanning';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -38,6 +41,7 @@ interface FieldMerchant {
   phone?: string;
   email?: string;
   address?: string;
+  route_name?: string;
   latitude?: number;
   longitude?: number;
   category_id?: string;
@@ -124,9 +128,9 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [sectionParams, setSectionParams] = useSearchParams();
-  type FieldSection = 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
+  type FieldSection = 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
   const section = sectionParams.get('section');
-  const activeTab: FieldSection = ['onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'onboarding';
+  const activeTab: FieldSection = ['attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'attendance';
   const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
   useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
@@ -149,6 +153,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const [categoryId, setCategoryId] = useState('');
   const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
+  const [merchantRoute, setMerchantRoute] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
 
@@ -400,6 +405,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         method: 'POST',
         body: JSON.stringify({
           name: name.trim(),
+          route_name: merchantRoute || undefined,
           userId: cleanUserId || undefined,
           email: finalEmail,
           phone: `+91${cleanPhone}`,
@@ -425,6 +431,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         whatsapp: data.whatsapp,
       });
       setName('');
+      setMerchantRoute('');
       setUserId('');
       setEmail('');
       setPhone('');
@@ -510,6 +517,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
     onError: (e) => showToast(e.message, 'error'),
   });
 
+  if (activeTab === 'attendance') return <div className="dashboard-page"><FieldAttendance name={user.full_name || user.name || 'Field Manager'} /></div>;
   if (merchantsQuery.isPending) return <LoadingState />;
   if (merchantsQuery.isError) {
     return <ErrorState error={merchantsQuery.error} retry={() => merchantsQuery.refetch()} />;
@@ -517,6 +525,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
 
   const allMerchants = merchantsQuery.data?.merchants || [];
   const categories = categoriesQuery.data?.categories || [];
+  if (activeTab === 'routes') return <div className="dashboard-page"><FieldRoutePlanning merchants={allMerchants} /></div>;
 
   return (
     <div className={`dashboard-page ${activeTab === 'onboarding' ? 'field-onboarding' : ''}`}>
@@ -525,33 +534,6 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         <div className="state-panel" role="alert">
           {locationError}
         </div>
-      )}
-
-      {/* Active Visit Banner if checked in */}
-      {activeVisit && activeTab !== 'visits' && (
-        <section className="panel" style={{ borderColor: '#0f8a54' }}>
-          <h2>Active visit: {activeVisit.merchants?.name || selectedMerchant?.name || 'Merchant'}</h2>
-          <p>
-            Checked in at {new Date(activeVisit.check_in_at).toLocaleString()} · GPS accuracy{' '}
-            {Math.round(activeVisit.accuracy_m || 0)}m
-          </p>
-          <div className="form-grid">
-            <label>
-              Visit notes
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </label>
-          </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-            <button
-              className="button primary"
-              onClick={() => checkOutMutation.mutate()}
-              disabled={checkOutMutation.isPending}
-            >
-              <CheckCircle2 size={16} />
-              {checkOutMutation.isPending ? 'Checking out…' : 'Check out'}
-            </button>
-          </div>
-        </section>
       )}
 
       {/* ========================================================================= */}
@@ -674,6 +656,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                 )}
               </label>
               <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} /> Generate User ID & Password</button>
+              <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{route}</option>)}</select></label>
               </>}
               {onboardStep === 1 && <>
               <label>
@@ -711,6 +694,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                 {[
                   ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
                   ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
+                  ['Merchant Route', merchantRoute || 'Not assigned', 0],
                   ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
                   ['Location', latitude && longitude ? `${latitude}, ${longitude}` : 'Not selected', 1],
                 ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{label}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>Edit</button></div>)}
@@ -948,6 +932,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                             <Store size={18} style={{ color: 'var(--muted)' }} />
                           )}
                           <strong>{m.name}</strong>
+                          {m.route_name && <small>{m.route_name}</small>}
                         </div>
                       </td>
                       <td>{m.merchant_categories?.name || 'General'}</td>

@@ -154,6 +154,8 @@ export interface RewardSettings {
   redeemOptions: number[];
   merchantEarnPoints?: number;
   merchantRedeemDiscount?: number;
+  merchantDiscountType?: 'percentage' | 'flat';
+  merchantFlatDiscount?: number;
   subscription?: { price: number; points: number; days: number; plans?: Array<{ id: string; name: string; monthly: number; yearly: number; points: number; days: number }> };
 }
 

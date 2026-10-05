@@ -35,10 +35,11 @@ const merchantNav = [
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 const fieldNav = [
+  ['/field?section=attendance', 'Attendance', Home],
   ['/field?section=onboarding', 'Onboard Merchant', ShoppingBag],
   ['/field?section=directory', 'All Merchants', Building2],
   ['/field?section=visits', 'Visits & Check-in', MapPin],
-  ['/field?section=mapper', 'Merchant Mapper', MapPin],
+  ['/field?section=routes', 'Routes', MapPin],
   ['/field?section=policy', 'Policy & Guidelines', ReceiptText],
   ['/field?section=profile', 'My Profile', UserCog],
 ] as const;
@@ -101,7 +102,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : user.role === 'field_manager' ? 'field-shell' : ''}`}>
       <header className="topbar">
         <div className="topbar-left">
-          {user.role !== 'merchant' && <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>}
+          {user.role === 'admin' && <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>}
           <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
           {user.role === 'field_manager' && <div className="field-brand-text"><strong>Field Manager</strong><small>Grow · Reach · Track</small></div>}
         </div>
@@ -136,8 +137,8 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </div>
       </header>
       <div className="shell-body">
-        {user.role !== 'merchant' && sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
-        {user.role !== 'merchant' && <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        {user.role === 'admin' && sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
+        {user.role === 'admin' && <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             {nav.map(([to, label, Icon]) => (
@@ -148,7 +149,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
-            <Link to={`/legal?type=${user.role === 'field_manager' ? 'field' : 'merchant'}`}>Terms & Privacy</Link>
+            <Link to="/legal?type=merchant">Terms & Privacy</Link>
             <button className="button secondary signout desktop-view-hidden" onClick={() => void signOut()} style={{ width: '100%', justifyContent: 'center' }}>
               <LogOut size={15} />{t('layout.signOut')}
             </button>
@@ -157,7 +158,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         <main className="main-content">
           <div className="mobile-topbar desktop-view-hidden" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'white' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {user.role !== 'merchant' && <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
+              {user.role === 'admin' && <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
                 <Menu size={28} color="#1a1a1a" strokeWidth={2} />
               </button>}
               <img src="/logo.png" alt="Affiliate AE" style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
@@ -183,6 +184,12 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           {children}
         </main>
       </div>
+      {user.role === 'field_manager' && <nav className="field-bottom-nav" aria-label="Field manager navigation">
+        {fieldNav.map(([to, label, Icon]) => {
+          const selected = new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'attendance');
+          return <Link key={to} to={to} aria-current={selected ? 'page' : undefined} className={selected ? 'active' : ''}><Icon size={21} /><span>{t(label)}</span></Link>;
+        })}
+      </nav>}
       {user.role === 'merchant' && (
         <div className="mobile-bottom-nav merchant-bottom-nav">
           <NavLink to="/dashboard" className={({ isActive }) => isActive && new URLSearchParams(location.search).get('view') !== 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>

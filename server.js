@@ -133,6 +133,7 @@ app.use((error, _req, res, next) => {
   if (error.message !== 'Origin not allowed by CORS') return next(error);
   return res.status(403).json({ success: false, error: 'This website origin is not allowed', code: 'ORIGIN_NOT_ALLOWED' });
 });
+app.use('/api/field/attendance/start', requireAuth, requireRole('field_manager'), express.json({ limit: '3mb' }));
 app.use(express.json({
   limit: '100kb',
   verify(req, _res, buffer) {
@@ -224,6 +225,10 @@ function redemptionDiscount(amount, type, value) {
   const normalizedType = type === 'flat' ? 'flat' : 'percentage';
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue < 0) return null;
+  if (normalizedType === 'flat') {
+    const allowed = !Number.isFinite(amount) || amount < 100 ? [] : amount < 200 ? [2, 5] : amount < 500 ? [2, 5, 10] : [2, 5, 10, 50];
+    if (!allowed.includes(numericValue)) return null;
+  }
   const rawAmount = normalizedType === 'flat' ? numericValue : amount * numericValue / 100;
   const discountAmount = Math.min(amount, Math.max(0, rawAmount));
   return {
@@ -502,7 +507,12 @@ async function getMerchantEarnRateWithCap(merchantId) {
 }
 
 async function getMerchantRewardSettings(merchantId) {
-  const { data, error } = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
+  const { data, error } = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100, redeem_discount_type, redeem_flat_amount').eq('id', merchantId).single();
+  if (error?.code === '42703' || error?.code === 'PGRST204') {
+    const legacy = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
+    if (legacy.error) throw legacy.error;
+    return { ...legacy.data, redeem_discount_type: 'percentage', redeem_flat_amount: 50 };
+  }
   if (error || !data) return { earn_points_per_100: 10, redeem_discount_per_100: 5 };
   return data;
 }
@@ -1493,6 +1503,51 @@ const fieldManagerRole = (req, res, next) => {
   next();
 };
 
+const attendanceDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+app.get('/api/field/route-plan', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const workDate = attendanceDate();
+  const { data, error } = await supabaseAdmin.from('field_route_plans').select('route_name,work_date').eq('manager_id', req.auth.profile.id).eq('work_date', workDate).maybeSingle();
+  if (error) return res.status(503).json({ error: 'Route planning is unavailable. Apply supabase-field-route-planning.sql and check database access.' });
+  res.json({ plan: data, workDate });
+});
+app.put('/api/field/route-plan', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const route_name = cleanText(req.body.route_name, 80);
+  if (!['Chittur 1','Chittur 2','Chittur 3','Thathamangalam 1','Thathamangalam 2','Thathamangalam 3'].includes(route_name)) return res.status(400).json({ error: 'Select a valid merchant route.' });
+  const { data, error } = await supabaseAdmin.from('field_route_plans').upsert({ manager_id: req.auth.profile.id, work_date: attendanceDate(), route_name, selected_at: new Date().toISOString() }, { onConflict: 'manager_id,work_date' }).select('route_name,work_date').single();
+  if (error) return res.status(503).json({ error: 'Could not save the route. Check route-planning database setup.' });
+  res.json({ plan: data });
+});
+app.get('/api/field/attendance', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const manager = req.auth.profile.id;
+  const [day, requests] = await Promise.all([
+    supabaseAdmin.from('field_attendance').select('id,started_at,ended_at,latitude,longitude').eq('manager_id', manager).or(`work_date.eq.${attendanceDate()},ended_at.is.null`).order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    supabaseAdmin.from('field_work_requests').select('id,kind,starts_at,ends_at,reason,status').eq('manager_id', manager).order('created_at', { ascending: false }).limit(30),
+  ]);
+  if (day.error || requests.error) return res.status(503).json({ error: 'Attendance is unavailable. Apply supabase-field-attendance.sql and check database access.' });
+  res.json({ attendance: day.data, requests: requests.data || [] });
+});
+app.post('/api/field/attendance/start', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { selfie, latitude, longitude, accuracy_m } = req.body;
+  if (typeof selfie !== 'string' || !/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/]+=*$/.test(selfie) || selfie.length > 2800000 || selfie.length < 100 || ![latitude, longitude, accuracy_m].every(value => typeof value === 'number' && Number.isFinite(value)) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180 || accuracy_m < 0) return res.status(400).json({ error: 'A valid selfie and GPS location are required.' });
+  const { data, error } = await supabaseAdmin.from('field_attendance').insert({ manager_id: req.auth.profile.id, work_date: attendanceDate(), selfie, latitude, longitude, accuracy_m }).select('id,started_at').single();
+  if (error) return res.status(error.code === '23505' ? 409 : 503).json({ error: error.code === '23505' ? 'Attendance already recorded for today. Refresh to view it.' : 'Could not record attendance. Check database setup.' });
+  res.status(201).json({ attendance: data });
+});
+app.post('/api/field/attendance/end', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('field_attendance').update({ ended_at: new Date().toISOString() }).eq('manager_id', req.auth.profile.id).is('ended_at', null).select('id').maybeSingle();
+  if (error) return res.status(503).json({ error: 'Could not end attendance. Check database setup.' });
+  if (!data) return res.status(409).json({ error: 'No active working day found.' });
+  res.json({ success: true });
+});
+app.post('/api/field/work-requests', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const { kind, starts_at, ends_at } = req.body; const reason = cleanText(req.body.reason, 300);
+  const start = Date.parse(starts_at); const end = Date.parse(ends_at);
+  if (!['leave','non_field'].includes(kind) || !reason || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return res.status(400).json({ error: 'Choose a reason and an end time after the start time.' });
+  const { data, error } = await supabaseAdmin.from('field_work_requests').insert({ manager_id: req.auth.profile.id, kind, starts_at: new Date(start).toISOString(), ends_at: new Date(end).toISOString(), reason }).select('id,status').single();
+  if (error) return res.status(503).json({ error: 'Could not submit request. Check database setup.' });
+  res.status(201).json({ request: data });
+});
+
 app.post('/api/field/sessions/end', requireAuth, requireRole('field_manager'), async (req, res) => {
   const { data, error } = await supabaseAdmin.from('field_manager_sessions').update({ logout_at: new Date().toISOString() }).eq('manager_id', req.auth.profile.id).is('logout_at', null).order('login_at', { ascending: false }).limit(1).select('id').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
@@ -1567,8 +1622,13 @@ app.get('/api/profile/legal', requireAuth, legalStatus);
 app.post('/api/profile/legal', requireAuth, acceptLegal);
 
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
-  let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,merchant_categories(name)';
+  let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,route_name,merchant_categories(name)';
   let { data, error } = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+  if (error?.message?.includes('route_name')) {
+    selectQuery = selectQuery.replace(',route_name', '');
+    const retry = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+    data = retry.data; error = retry.error;
+  }
   if (error && (error.message?.includes('image') || error.code === '42703')) {
     selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)';
     const retry = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
@@ -1587,23 +1647,33 @@ app.get('/api/field/visits', requireAuth, fieldManagerRole, async (req, res) => 
   res.json({ success: true, visits: data || [] });
 });
 
-app.post('/api/field/visits/check-in', requireAuth, requireRole('field_manager'), async (req, res) => {
+app.post(['/api/field/visits/check-in', '/api/field/visits/start'], requireAuth, requireRole('field_manager'), async (req, res) => {
   const merchantId = cleanText(req.body.merchantId, 100); const lat = Number(req.body.latitude); const lng = Number(req.body.longitude); const accuracy = Number(req.body.accuracy || 0);
-  if (!merchantId || !Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ success: false, error: 'Merchant and valid GPS coordinates are required' });
+  if (!merchantId || req.body.latitude == null || req.body.longitude == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || !Number.isFinite(accuracy) || accuracy < 0) return res.status(400).json({ success: false, error: 'Merchant and valid GPS coordinates are required' });
+  const photo = req.body.photo;
+  if (req.path.endsWith('/start') && (typeof photo !== 'string' || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo) || photo.length > 80000 || photo.length < 100)) return res.status(400).json({ error: 'Capture a valid shop photo before starting the visit.' });
+  const { data: activeVisit, error: activeError } = await supabaseAdmin.from('field_manager_visits').select('id').eq('manager_id', req.auth.profile.id).eq('status', 'active').limit(1).maybeSingle();
+  if (activeError) return res.status(503).json({ error: 'Could not verify active visits.' });
+  if (activeVisit) return res.status(409).json({ error: 'Complete the current visit before starting another.' });
+  if (req.path.endsWith('/start')) {
+    const { data: day, error: dayError } = await supabaseAdmin.from('field_attendance').select('id').eq('manager_id', req.auth.profile.id).eq('work_date', attendanceDate()).is('ended_at', null).maybeSingle();
+    if (dayError) return res.status(503).json({ error: 'Attendance is unavailable. Check attendance database setup.' });
+    if (!day) return res.status(409).json({ error: 'Start your working day in Attendance before starting a visit.' });
+  }
   const { data: merchant } = await supabaseAdmin.from('merchants').select('id,name,latitude,longitude').eq('id', merchantId).maybeSingle();
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
-  if (!Number.isFinite(Number(merchant.latitude)) || !Number.isFinite(Number(merchant.longitude))) return res.status(400).json({ success: false, error: 'This merchant has no saved GPS location' });
+  if (merchant.latitude == null || merchant.longitude == null || !Number.isFinite(Number(merchant.latitude)) || !Number.isFinite(Number(merchant.longitude))) return res.status(400).json({ success: false, error: 'This merchant has no saved GPS location' });
   const distance = haversineDistanceMeters(lat, lng, Number(merchant.latitude), Number(merchant.longitude));
   if (distance > 150) return res.status(400).json({ success: false, error: `You are ${Math.round(distance)}m away. Check-in is allowed within 150m.`, distance });
   const { data: session } = await supabaseAdmin.from('field_manager_sessions').select('id').eq('manager_id', req.auth.profile.id).is('logout_at', null).order('login_at', { ascending: false }).limit(1).maybeSingle();
-  const { data, error } = await supabaseAdmin.from('field_manager_visits').insert({ manager_id: req.auth.profile.id, merchant_id: merchantId, session_id: session?.id || null, check_in_latitude: lat, check_in_longitude: lng, accuracy_m: Number.isFinite(accuracy) ? accuracy : null, distance_m: distance }).select('*').single();
-  if (error) return res.status(500).json({ success: false, error: error.message });
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').insert({ manager_id: req.auth.profile.id, merchant_id: merchantId, session_id: session?.id || null, check_in_latitude: lat, check_in_longitude: lng, accuracy_m: accuracy, distance_m: distance, ...(req.path.endsWith('/start') ? { photos: [photo] } : {}) }).select('*').single();
+  if (error) return res.status(error.code === '23505' ? 409 : 500).json({ success: false, error: error.code === '23505' ? 'You already have an active visit. Refresh to view it.' : error.message });
   res.json({ success: true, visit: data, distance });
 });
 
 app.post('/api/field/visits/:id/check-out', requireAuth, requireRole('field_manager'), async (req, res) => {
   const lat = Number(req.body.latitude); const lng = Number(req.body.longitude);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ success: false, error: 'Valid GPS coordinates are required' });
+  if (req.body.latitude == null || req.body.longitude == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return res.status(400).json({ success: false, error: 'Valid GPS coordinates are required' });
   const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
   if (!data) return res.status(404).json({ success: false, error: 'Active visit not found' });
@@ -2688,6 +2758,10 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
   let category_id = cleanText(req.body.category_id, 100) || null;
+  const route_name = cleanText(req.body.route_name, 80) || null;
+  if (route_name && !['Chittur 1', 'Chittur 2', 'Chittur 3', 'Thathamangalam 1', 'Thathamangalam 2', 'Thathamangalam 3'].includes(route_name)) {
+    return res.status(400).json({ success: false, error: 'Select a valid merchant route' });
+  }
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const new_category_name = cleanText(req.body.new_category_name || req.body.new_category || req.body.newCategory, 80);
   if ((!category_id || category_id === '__other__') && new_category_name) {
@@ -2735,6 +2809,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     category_id,
     image_url,
     images: images.length ? images : [],
+    ...(route_name ? { route_name } : {}),
     network_id: req.body.network_id || '00000000-0000-0000-0000-000000000000'
   };
 
@@ -2744,6 +2819,9 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
 
+  if (merchantError && route_name && (merchantError.code === '42703' || merchantError.code === 'PGRST204') && merchantError.message?.includes('route_name')) {
+    return res.status(503).json({ success: false, error: 'Merchant routes need the supabase-merchant-routes.sql database migration before saving.' });
+  }
   if (merchantError && (merchantError.message?.includes('image') || merchantError.code === '42703')) {
     delete insertPayload.image_url;
     delete insertPayload.images;
@@ -3874,6 +3952,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   const email = cleanText(req.body.email, 254).toLowerCase();
   const amount = Number(req.body.amount);
   const selectedPoints = Number(req.body.rewardPercentage); // We reuse this field for points per 100
+  if (!Number.isInteger(selectedPoints) || selectedPoints < 1 || selectedPoints > 100) return res.status(400).json({ success: false, error: 'Points per ₹100 must be a whole number between 1 and 100. Maximum 100 points can be issued per purchase.' });
   const adminConfig = await getAdminRewardConfig();
   const merchantId = req.auth.profile.role === 'admin'
     ? cleanText(req.body.merchantId, 100)
@@ -4903,7 +4982,9 @@ app.get('/api/settings/reward', requireAuth, async (req, res) => {
         earnOptions: adminConfig.earnOptions, 
         redeemOptions: adminConfig.redeemOptions,
         merchantEarnPoints: merchantSettings.earn_points_per_100,
-        merchantRedeemDiscount: merchantSettings.redeem_discount_per_100
+        merchantRedeemDiscount: merchantSettings.redeem_discount_per_100,
+        merchantDiscountType: merchantSettings.redeem_discount_type || 'percentage',
+        merchantFlatDiscount: merchantSettings.redeem_flat_amount ?? 50
         ,subscription: adminConfig.subscription
       });
     }
@@ -4947,11 +5028,16 @@ app.put('/api/merchants/:id/reward-settings', requireAuth, async (req, res) => {
     if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) {
       return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
-    const { earn_points_per_100, redeem_discount_per_100 } = req.body;
-    await supabaseAdmin.from('merchants').update({
+    const { earn_points_per_100, redeem_discount_per_100, redeem_discount_type = 'percentage', redeem_flat_amount = 50 } = req.body;
+    const earn = Number(earn_points_per_100), percent = Number(redeem_discount_per_100), flat = Number(redeem_flat_amount);
+    if (!Number.isInteger(earn) || earn < 1 || earn > 100 || !Number.isInteger(percent) || percent < 0 || percent > 100 || !['percentage', 'flat'].includes(redeem_discount_type) || !Number.isFinite(flat) || flat < 0 || flat > 1000000) return res.status(400).json({ error: 'Invalid reward settings. Percentage must be 0–100 and flat rupees must be 0–1,000,000.' });
+    const { error: saveError } = await supabaseAdmin.from('merchants').update({
       earn_points_per_100: Number(earn_points_per_100),
-      redeem_discount_per_100: Number(redeem_discount_per_100)
+      redeem_discount_per_100: percent,
+      redeem_discount_type,
+      redeem_flat_amount: Math.round(flat * 100) / 100
     }).eq('id', req.params.id);
+    if (saveError) return res.status(400).json({ error: saveError.message });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

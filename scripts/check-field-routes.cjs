@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const server = fs.readFileSync('server.js', 'utf8');
+const sql = fs.readFileSync('supabase-field-route-planning.sql', 'utf8');
+const ui = fs.readFileSync('src/components/FieldRoutePlanning.tsx', 'utf8');
+const routes = server.slice(server.indexOf("app.get('/api/field/route-plan'"), server.indexOf("app.get('/api/field/attendance'"));
+assert.equal((routes.match(/requireRole\('field_manager'\)/g) || []).length, 2);
+assert(routes.includes("eq('manager_id', req.auth.profile.id)"));
+assert(routes.includes('manager_id: req.auth.profile.id'));
+assert(routes.includes("onConflict: 'manager_id,work_date'"));
+assert(sql.includes('unique(manager_id,work_date)'));
+assert(sql.includes('enable row level security'));
+assert(sql.includes('revoke all'));
+assert(ui.includes('merchant.route_name === selected'));
+assert(ui.includes('save.mutate(candidate)'));
+for (const name of ['Chittur 1','Chittur 2','Chittur 3','Thathamangalam 1','Thathamangalam 2','Thathamangalam 3']) assert(sql.includes(name) && routes.includes(name));
+console.log('PASS: static route ownership, date scoping, allowed names, RLS, confirmation and merchant-filter guards. Live database and UI tests still required.');

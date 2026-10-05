@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const server = fs.readFileSync('server.js','utf8');
+const start = server.slice(server.indexOf("app.post(['/api/field/visits/check-in'"),server.indexOf("app.post('/api/field/visits/:id/check-out'"));
+assert(start.includes("requireRole('field_manager')"));
+assert(start.includes('manager_id: req.auth.profile.id'));
+assert(start.includes('Capture a valid shop photo'));
+assert(start.includes('photos: [photo]'));
+assert(start.includes('distance > 150'));
+assert(start.includes('merchant.latitude == null'));
+assert(start.includes("from('field_attendance')"));
+assert(start.includes("eq('manager_id', req.auth.profile.id)"));
+const sql = fs.readFileSync('supabase-field-visit-active-guard.sql','utf8');
+assert(sql.includes("where status = 'active'"));
+console.log('PASS: static visit photo, attendance, identity, GPS proximity and active-visit guards. Live SQL/camera/GPS testing still required.');

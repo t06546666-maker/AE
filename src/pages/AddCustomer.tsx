@@ -130,7 +130,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   if (settings.isError) return <ErrorState error={settings.error} retry={() => settings.refetch()} />;
   const options = settings.data?.earnOptions || [5, 10, 20, 30, 50];
   const eligibleAmount = Number(amount) < 100 ? 0 : Math.min(Number(amount), 10000);
-  const points = Math.floor((eligibleAmount / 100) * percentage);
+  const points = Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
   const selectedMerchant = merchants.data?.merchants.find((merchant) => merchant.id === merchantId)?.name || '';
   const liveWhatsapp = whatsappStatus.data;
   const whatsappState = liveWhatsapp?.status
@@ -150,7 +150,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
         <div className="purchase-fields registration-purchase">
           <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">{t('registration.minimum')}</span></label>
           <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
-          <div className="point-preview"><span>{t('registration.pointsIssued')}</span><strong>{formatPoints(points)} points</strong></div>
+          <div className="point-preview"><span>{t('registration.pointsIssued')}<small style={{ display: 'block', marginTop: 4 }}>Maximum 100 points per purchase</small></span><strong>{formatPoints(points)} points</strong></div>
         </div>
         {user.role === 'admin' ? <label className="merchant-select">{t('registration.assignMerchant')}<select value={merchantId} onChange={(event) => setMerchantId(event.target.value)} required>{merchants.data?.merchants.map((merchant) => <option key={merchant.id} value={merchant.id}>{merchant.name}</option>)}</select></label> : null}
         <div className="form-actions"><button className="button primary" disabled={createCustomer.isPending}><UserPlus size={17} />{t(createCustomer.isPending ? 'registration.registering' : 'registration.registerSend')}</button><Link className="button secondary" to="/orders">{t('registration.cancel')}</Link></div>

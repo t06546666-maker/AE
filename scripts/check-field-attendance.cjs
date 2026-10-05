@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const server = fs.readFileSync('server.js', 'utf8');
+const sql = fs.readFileSync('supabase-field-attendance.sql', 'utf8');
+const start = server.slice(server.indexOf("app.post('/api/field/attendance/start'"), server.indexOf("app.post('/api/field/attendance/end'"));
+assert(start.includes("requireRole('field_manager')"));
+assert(start.includes('manager_id: req.auth.profile.id'));
+assert(start.includes('Math.abs(latitude) > 90'));
+assert(start.includes("error.code === '23505'"));
+assert(sql.includes('unique(manager_id, work_date)'));
+assert(sql.includes('where ended_at is null'));
+assert(sql.includes('enable row level security'));
+assert(sql.includes('revoke all'));
+assert(sql.includes('ends_at > starts_at'));
+console.log('PASS: static attendance authorization, GPS validation, duplicate-day, active-day and database security guards. Live SQL and phone testing still required.');

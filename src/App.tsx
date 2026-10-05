@@ -48,6 +48,7 @@ import { CustomerReferral } from './pages/customer/Referral';
 import { CustomerFavorites } from './pages/customer/Favorites';
 import { FieldManager } from './pages/FieldManager';
 import { FieldManagers } from './pages/FieldManagers';
+import { FieldMerchantVisit } from './pages/FieldMerchantVisit';
 import type { Role, UserProfile } from './types';
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -288,7 +289,7 @@ export function App() {
   }
 
   if (user.role === 'field_manager') {
-    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<ReadOnlyProfiles kind="field-merchant" />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
+    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
   }
 
   return (
