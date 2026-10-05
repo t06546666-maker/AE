@@ -35,6 +35,7 @@ const merchantNav = [
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 const fieldNav = [
+  ['/field?section=home', 'Home', Home],
   ['/field?section=attendance', 'Attendance', Home],
   ['/field?section=onboarding', 'Onboard Merchant', ShoppingBag],
   ['/field?section=directory', 'All Merchants', Building2],
@@ -142,7 +143,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             {nav.map(([to, label, Icon]) => (
-              <NavLink key={to} to={to} className={({ isActive }) => (user.role === 'field_manager' ? location.pathname === '/field' && new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'attendance') : isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/'))) ? 'active' : ''}>
+              <NavLink key={to} to={to} className={({ isActive }) => (user.role === 'field_manager' ? location.pathname === '/field' && new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'home') : isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/'))) ? 'active' : ''}>
                 <Icon size={18} /><span>{t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
               </NavLink>
             ))}

@@ -3,6 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { MERCHANT_ROUTES } from '../merchantRoutes';
 import { FieldAttendance } from '../components/FieldAttendance';
 import { FieldRoutePlanning } from '../components/FieldRoutePlanning';
+import { FieldHome } from '../components/FieldHome';
+import { FieldMerchantDirectory } from '../components/FieldMerchantDirectory';
+import '../field-reference.css';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -128,9 +131,9 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [sectionParams, setSectionParams] = useSearchParams();
-  type FieldSection = 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
+  type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
   const section = sectionParams.get('section');
-  const activeTab: FieldSection = ['attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'attendance';
+  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'home';
   const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
   useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
@@ -517,6 +520,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
     onError: (e) => showToast(e.message, 'error'),
   });
 
+  if (activeTab === 'home') return <div className="dashboard-page"><FieldHome name={user.full_name || user.name || 'Field Manager'} /></div>;
   if (activeTab === 'attendance') return <div className="dashboard-page"><FieldAttendance name={user.full_name || user.name || 'Field Manager'} /></div>;
   if (merchantsQuery.isPending) return <LoadingState />;
   if (merchantsQuery.isError) {
@@ -526,6 +530,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const allMerchants = merchantsQuery.data?.merchants || [];
   const categories = categoriesQuery.data?.categories || [];
   if (activeTab === 'routes') return <div className="dashboard-page"><FieldRoutePlanning merchants={allMerchants} /></div>;
+  if (activeTab === 'directory') return <div className="dashboard-page"><FieldMerchantDirectory merchants={allMerchants} /></div>;
 
   return (
     <div className={`dashboard-page ${activeTab === 'onboarding' ? 'field-onboarding' : ''}`}>
@@ -863,126 +868,6 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {/* ========================================================================= */}
       {/* TAB 2: ALL MERCHANTS DIRECTORY */}
       {/* ========================================================================= */}
-      {activeTab === 'directory' && (
-        <div className="field-directory">
-          <div className="field-directory-heading"><div><h1>All Merchants</h1><p>View and manage all merchant accounts</p></div><button className="button primary" onClick={() => setActiveTab('onboarding')}><Plus size={17} /> Add Merchant</button></div>
-          <div className="field-directory-stats"><div><Store /><strong>{allMerchants.length.toLocaleString()}</strong><span>Total Merchants</span></div><div><MapPin /><strong>{allMerchants.filter(m => m.latitude != null && m.longitude != null).length}</strong><span>Location Added</span></div><div><Camera /><strong>{allMerchants.filter(m => m.image_url).length}</strong><span>With Store Photo</span></div><div><CheckCircle2 /><strong>{new Set(visitsQuery.data?.visits.map(v => v.merchant_id) || []).size}</strong><span>Visited Merchants</span></div></div>
-          <p className="field-status-note">Account status is not provided by the merchant API. Visit figures cover the loaded visit history.</p>
-          <div className="list-toolbar">
-            <label className="search-field">
-              <Search size={17} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search store name, code, email, phone…" aria-label="Search merchants"
-              />
-            </label>
-            <select
-              aria-label="Filter category" value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              style={{ minWidth: '180px' }}
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <section className="table-panel">
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t('merchants.code')}</th>
-                    <th>{t('merchants.storeName')}</th>
-                    <th>Category</th>
-                    <th>{t('login.email')}</th>
-                    <th>{t('merchants.phone')}</th>
-                    <th>Address</th>
-                    <th>Last Visit</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMerchants.slice((Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10))) - 1) * 10, Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10))) * 10).map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <strong>{m.merchant_code}</strong>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {m.image_url ? (
-                            <img
-                              src={m.image_url}
-                              alt={m.name}
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '4px',
-                                objectFit: 'cover',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => setPreviewImageUrl(m.image_url!)}
-                              title="Click to view image"
-                            />
-                          ) : (
-                            <Store size={18} style={{ color: 'var(--muted)' }} />
-                          )}
-                          <strong>{m.name}</strong>
-                          {m.route_name && <small>{m.route_name}</small>}
-                        </div>
-                      </td>
-                      <td>{m.merchant_categories?.name || 'General'}</td>
-                      <td>{m.email}</td>
-                      <td>{m.phone}</td>
-                      <td>{m.address || '—'}</td>
-                      <td>{visitsQuery.data?.visits.find(v => v.merchant_id === m.id) ? new Date(visitsQuery.data.visits.find(v => v.merchant_id === m.id)!.check_in_at).toLocaleDateString() : '—'}</td>
-                      <td>
-                        <div className="table-actions">
-                          {m.phone && (
-                            <a
-                              href={`https://wa.me/${m.phone.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="icon-button"
-                              title="Chat on WhatsApp"
-                            >
-                              <MessageCircle color="#25D366" />
-                            </a>
-                          )}
-                          <button
-                            className="icon-button"
-                            title="Check in"
-                            disabled={Boolean(activeVisit) || checkInMutation.isPending}
-                            onClick={() => {
-                              setSelectedMerchant(m);
-                              checkInMutation.mutate(m);
-                            }}
-                          >
-                            <MapPin />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredMerchants.length === 0 && (
-                    <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
-                        No merchants found matching your search.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <div className="field-directory-pagination"><span>{filteredMerchants.length} matching merchants</span><div><button disabled={directoryPage <= 1} onClick={() => setDirectoryPage(directoryPage - 1)}>Previous</button><span>Page {Math.min(directoryPage, Math.max(1, Math.ceil(filteredMerchants.length / 10)))} of {Math.max(1, Math.ceil(filteredMerchants.length / 10))}</span><button disabled={directoryPage >= Math.ceil(filteredMerchants.length / 10)} onClick={() => setDirectoryPage(directoryPage + 1)}>Next</button></div></div>
-        </div>
-      )}
-
       {/* ========================================================================= */}
       {/* TAB 3: VISITS & CHECK-IN */}
       {/* ========================================================================= */}
