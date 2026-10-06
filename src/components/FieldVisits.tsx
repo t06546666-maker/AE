@@ -41,6 +41,6 @@ export function FieldVisits({ merchants, visits, active, notes, setNotes, onChec
       {mapLat != null && mapLng != null && <a target="_blank" rel="noopener noreferrer" href={`https://www.google.com/maps?q=${mapLat},${mapLng}`}>View on Map ↗</a>}
       {selected.id === active?.id ? <><label className="fv-notes">Visit Notes<textarea maxLength={2000} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add visit notes, issues or updates…" /><small>{notes.length}/2000 · Saved on check-out</small></label><button className="fv-checkout" disabled={busy} onClick={onCheckOut}><MapPin size={18} />{busy ? 'Saving…' : 'Check Out'}</button></> : <><h3>Visit Notes</h3><p>{selected.notes || 'No notes recorded.'}</p></>}
     </> : <p className="fv-empty">Select a recorded visit or check in at a merchant to view activity.</p>}</aside></div>
-    <p className="fv-footnote">Check-in uses your browser GPS. The server validates the 150-metre merchant radius. No planned or missed visits are invented.</p>
+    <p className="fv-footnote">Check-in uses your browser GPS. The server validates the 50-metre merchant radius. No planned or missed visits are invented.</p>
   </section>;
 }

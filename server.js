@@ -1648,8 +1648,8 @@ app.get('/api/field/visits', requireAuth, fieldManagerRole, async (req, res) => 
 });
 
 app.post(['/api/field/visits/check-in', '/api/field/visits/start'], requireAuth, requireRole('field_manager'), async (req, res) => {
-  const merchantId = cleanText(req.body.merchantId, 100); const lat = Number(req.body.latitude); const lng = Number(req.body.longitude); const accuracy = Number(req.body.accuracy || 0);
-  if (!merchantId || req.body.latitude == null || req.body.longitude == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || !Number.isFinite(accuracy) || accuracy < 0) return res.status(400).json({ success: false, error: 'Merchant and valid GPS coordinates are required' });
+  const merchantId = cleanText(req.body.merchantId, 100); const lat = Number(req.body.latitude); const lng = Number(req.body.longitude); const accuracy = Number(req.body.accuracy);
+  if (!merchantId || req.body.latitude == null || req.body.longitude == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || typeof req.body.accuracy !== 'number' || !Number.isFinite(accuracy) || accuracy < 0) return res.status(400).json({ success: false, error: 'Merchant and valid GPS coordinates are required' });
   const photo = req.body.photo;
   if (req.path.endsWith('/start') && (typeof photo !== 'string' || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo) || photo.length > 80000 || photo.length < 100)) return res.status(400).json({ error: 'Capture a valid shop photo before starting the visit.' });
   const { data: activeVisit, error: activeError } = await supabaseAdmin.from('field_manager_visits').select('id').eq('manager_id', req.auth.profile.id).eq('status', 'active').limit(1).maybeSingle();
@@ -1664,7 +1664,8 @@ app.post(['/api/field/visits/check-in', '/api/field/visits/start'], requireAuth,
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   if (merchant.latitude == null || merchant.longitude == null || !Number.isFinite(Number(merchant.latitude)) || !Number.isFinite(Number(merchant.longitude))) return res.status(400).json({ success: false, error: 'This merchant has no saved GPS location' });
   const distance = haversineDistanceMeters(lat, lng, Number(merchant.latitude), Number(merchant.longitude));
-  if (distance > 150) return res.status(400).json({ success: false, error: `You are ${Math.round(distance)}m away. Check-in is allowed within 150m.`, distance });
+  if (accuracy > 50) return res.status(400).json({ error: 'GPS accuracy must be 50 metres or better. Retry outdoors.' });
+  if (distance > 50) return res.status(400).json({ success: false, error: `You are ${Math.round(distance)}m away. Check-in is allowed within 50m.`, distance });
   const { data: session } = await supabaseAdmin.from('field_manager_sessions').select('id').eq('manager_id', req.auth.profile.id).is('logout_at', null).order('login_at', { ascending: false }).limit(1).maybeSingle();
   const { data, error } = await supabaseAdmin.from('field_manager_visits').insert({ manager_id: req.auth.profile.id, merchant_id: merchantId, session_id: session?.id || null, check_in_latitude: lat, check_in_longitude: lng, accuracy_m: accuracy, distance_m: distance, ...(req.path.endsWith('/start') ? { photos: [photo] } : {}) }).select('*').single();
   if (error) return res.status(error.code === '23505' ? 409 : 500).json({ success: false, error: error.code === '23505' ? 'You already have an active visit. Refresh to view it.' : error.message });
@@ -1674,7 +1675,21 @@ app.post(['/api/field/visits/check-in', '/api/field/visits/start'], requireAuth,
 app.post('/api/field/visits/:id/check-out', requireAuth, requireRole('field_manager'), async (req, res) => {
   const lat = Number(req.body.latitude); const lng = Number(req.body.longitude);
   if (req.body.latitude == null || req.body.longitude == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return res.status(400).json({ success: false, error: 'Valid GPS coordinates are required' });
-  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
+  const accuracy = Number(req.body.accuracy);
+  if (typeof req.body.accuracy !== 'number' || !Number.isFinite(accuracy) || accuracy < 0 || accuracy > 50) return res.status(400).json({ error: 'GPS accuracy must be 50 metres or better.' });
+  const { data: active, error: visitError } = await supabaseAdmin.from('field_manager_visits').select('merchant_id,merchants(latitude,longitude)').eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').maybeSingle();
+  if (visitError) return res.status(503).json({ error: 'Unable to verify visit location.' });
+  if (!active) return res.status(404).json({ error: 'Active visit not found.' });
+  const location = active.merchants;
+  if (location?.latitude == null || location?.longitude == null) return res.status(400).json({ error: 'Merchant location is missing.' });
+  const distance = haversineDistanceMeters(lat, lng, Number(location.latitude), Number(location.longitude));
+  if (!Number.isFinite(distance) || distance > 50) return res.status(400).json({ error: 'Return within 50 metres of the merchant to End Visit.', distance });
+  const outcome = cleanText(req.body.outcome, 80);
+  const followUp = cleanText(req.body.follow_up_date, 10) || null;
+  if (!['Completed','Follow-up required','Merchant unavailable','Issue reported'].includes(outcome)) return res.status(400).json({ error: 'Select a visit outcome.' });
+  if (followUp && (!/^\d{4}-\d{2}-\d{2}$/.test(followUp) || !Number.isFinite(Date.parse(followUp)) || new Date(followUp).toISOString().slice(0, 10) !== followUp)) return res.status(400).json({ error: 'Enter a valid follow-up date.' });
+  if (outcome === 'Follow-up required' && !followUp) return res.status(400).json({ error: 'A follow-up date is required for this outcome.' });
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null, outcome, follow_up_date: followUp, problems: cleanText(req.body.problems, 2000) || null, feedback: cleanText(req.body.feedback, 2000) || null }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
   if (!data) return res.status(404).json({ success: false, error: 'Active visit not found' });
   res.json({ success: true, visit: data });
@@ -1704,7 +1719,7 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   const account = await supabaseAdmin.auth.admin.getUserById(profile.id);
   const results = await Promise.all([
     supabaseAdmin.from('field_manager_sessions').select('id,login_at,logout_at').eq('manager_id', profile.id).order('login_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,status,payload,created_at').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
   ]);

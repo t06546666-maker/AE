@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { MERCHANT_ROUTES } from '../merchantRoutes';
 import { FieldAttendance } from '../components/FieldAttendance';
 import { FieldRoutePlanning } from '../components/FieldRoutePlanning';
@@ -131,6 +131,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [sectionParams, setSectionParams] = useSearchParams();
+  const navigate = useNavigate();
   type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
   const section = sectionParams.get('section');
   const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'home';
@@ -842,7 +843,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                             disabled={Boolean(activeVisit)}
                             onClick={() => {
                               setSelectedMerchant(m);
-                              checkInMutation.mutate(m);
+                              navigate(`/field/merchants/${encodeURIComponent(m.id)}`);
                             }}
                           >
                             <MapPin />
@@ -871,7 +872,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {/* ========================================================================= */}
       {/* TAB 3: VISITS & CHECK-IN */}
       {/* ========================================================================= */}
-      {activeTab === 'visits' && <FieldVisits merchants={nearbyMerchants} visits={visitsQuery.data?.visits || []} active={activeVisit} notes={notes} setNotes={setNotes} busy={checkInMutation.isPending || checkOutMutation.isPending} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} retry={() => void visitsQuery.refetch()} onCheckIn={id => { const merchant = allMerchants.find(m => m.id === id); if (merchant) { setSelectedMerchant(merchant); checkInMutation.mutate(merchant); } }} onCheckOut={() => checkOutMutation.mutate()} />}
+      {activeTab === 'visits' && <FieldVisits merchants={nearbyMerchants} visits={visitsQuery.data?.visits || []} active={activeVisit} notes={notes} setNotes={setNotes} busy={checkInMutation.isPending || checkOutMutation.isPending} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} retry={() => void visitsQuery.refetch()} onCheckIn={id => navigate(`/field/merchants/${encodeURIComponent(id)}`)} onCheckOut={() => { if (activeVisit) navigate(`/field/merchants/${encodeURIComponent(activeVisit.merchant_id)}`); }} />}
 
       {/* ========================================================================= */}
       {/* EXACT ADMIN CREDENTIALS MODAL */}

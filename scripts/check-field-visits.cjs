@@ -6,7 +6,7 @@ assert(start.includes("requireRole('field_manager')"));
 assert(start.includes('manager_id: req.auth.profile.id'));
 assert(start.includes('Capture a valid shop photo'));
 assert(start.includes('photos: [photo]'));
-assert(start.includes('distance > 150'));
+assert(start.includes('distance > 50'));
 assert(start.includes('merchant.latitude == null'));
 assert(start.includes("from('field_attendance')"));
 assert(start.includes("eq('manager_id', req.auth.profile.id)"));

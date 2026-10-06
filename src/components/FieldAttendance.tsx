@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { useToast } from '../toast';
 import { Camera, Clock, MapPin, CalendarDays, CheckCircle2 } from 'lucide-react';
 import './field-attendance.css';
+import './field-visit-preview.css';
 
 type Attendance = { id: string; started_at: string; ended_at?: string; latitude: number; longitude: number };
 type WorkRequest = { id: string; kind: string; starts_at: string; ends_at: string; reason: string; status: string };
 export function FieldAttendance({ name }: { name: string }) {
   const client = useQueryClient(); const { showToast } = useToast();
   const [mode, setMode] = useState<'start' | 'leave' | 'non_field' | null>(null);
+  const [position, setPosition] = useState<GeolocationPosition | null>(null);
+  const [locationError, setLocationError] = useState('');
+  useEffect(() => {
+    if (!navigator.geolocation) { setLocationError('Location is not supported.'); return; }
+    const watch = navigator.geolocation.watchPosition(value => { setPosition(value); setLocationError(''); }, () => { setPosition(null); setLocationError('Allow location access to record attendance.'); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+    return () => navigator.geolocation.clearWatch(watch);
+  }, []);
   const [selfie, setSelfie] = useState(''); const [starts, setStarts] = useState(''); const [ends, setEnds] = useState(''); const [reason, setReason] = useState('');
-  const [deferred, setDeferred] = useState(false);
   const data = useQuery({ queryKey: ['field-attendance'], queryFn: () => apiFetch<{ attendance: Attendance | null; requests: WorkRequest[] }>('/api/field/attendance'), refetchInterval: 60000 });
   const attendance = data.data?.attendance;
   const refresh = () => { void client.invalidateQueries({ queryKey: ['field-attendance'] }); };
@@ -29,12 +36,14 @@ export function FieldAttendance({ name }: { name: string }) {
     if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 2 * 1024 * 1024) { showToast('Use a JPG or PNG selfie under 2 MB.', 'error'); return; }
     const reader = new FileReader(); reader.onload = () => setSelfie(String(reader.result)); reader.readAsDataURL(file);
   }
-  return <section className="field-attendance">
+  return <section className="field-attendance ae-workflow">
     <header><CalendarDays /><div><h1>Attendance</h1><p>Start your day, record attendance and manage work requests.</p></div></header>
     {data.isPending ? <p>Loading attendance…</p> : data.isError ? <div role="alert"><p>{data.error.message}</p><button className="button secondary" onClick={() => void data.refetch()}>Retry</button></div> : <>
-      <article className="attendance-card"><h2>Welcome, {name}</h2><p>{attendance ? attendance.ended_at ? 'Your day is complete.' : 'Your day is in progress.' : 'Do you want to start your day?'}</p>
-      {attendance ? <><p><Clock size={17} /> Start: {new Date(attendance.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p><p><MapPin size={17} /> Starting location recorded</p>{attendance.ended_at ? <p><CheckCircle2 size={17} /> End: {new Date(attendance.ended_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p> : <button className="button primary" disabled={busy} onClick={() => { if (window.confirm('End your working day?')) end.mutate(); }}>End Day</button>}</> : <><button className="button primary" onClick={() => { setMode('start'); setDeferred(false); }}>Yes, Start Day</button><button className="button secondary" onClick={() => setDeferred(true)}>Not yet</button>{deferred && <p>You can start your day when you are ready.</p>}</>}
-      <div className="attendance-actions"><button className="button secondary" onClick={() => setMode('leave')}>Apply for Leave</button><button className="button secondary" onClick={() => setMode('non_field')}>Apply Non-Field Work</button></div></article>
+      <div className="ae-greeting"><h2>Good {Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date())) < 12 ? 'morning' : 'day'}, {name}</h2><p>{new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p></div>
+      <article className="attendance-card ae-day-status"><h2>{attendance ? attendance.ended_at ? 'Your day is complete' : 'Your day is in progress' : 'Ready to start your day'}</h2><p>{attendance ? 'Your attendance is recorded.' : 'Let’s make it a productive day.'}</p>{attendance && <p><Clock size={17} /> Started: {new Date(attendance.started_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>}</article>
+      {!attendance && <article className="attendance-card"><h2>Take attendance selfie</h2><label className="ae-photo-picker"><Camera size={32} />{selfie ? 'Retake selfie' : 'Capture your selfie'}<input type="file" accept="image/jpeg,image/png" capture="user" disabled={busy} onChange={event => void capture(event.target.files?.[0])} /></label>{selfie && <img className="attendance-selfie" src={selfie} alt="Your attendance selfie preview" />}<div className={`ae-location ${!position ? 'waiting' : ''}`}><MapPin /><div><strong>{position ? 'Location ready' : 'Location required'}</strong><small>{position ? `GPS accuracy ±${Math.round(position.coords.accuracy)} m` : locationError || 'Waiting for GPS…'}</small></div></div><button className="button primary ae-cta" disabled={busy || !selfie} onClick={() => start.mutate()}>{start.isPending ? 'Starting…' : 'Start Day'}</button></article>}
+      {attendance && <article className="attendance-card"><p><MapPin size={17} /> Starting location recorded</p>{attendance.ended_at ? <p><CheckCircle2 size={17} /> Ended: {new Date(attendance.ended_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p> : <button className="button primary ae-cta" disabled={busy} onClick={() => { if (window.confirm('End your working day?')) end.mutate(); }}>End Day</button>}</article>}
+      <div className="attendance-actions"><button className="button secondary" onClick={() => setMode('leave')}>Apply for Leave</button><button className="button secondary" onClick={() => setMode('non_field')}>Non-field Work</button></div>
       <article className="attendance-card"><h2>My requests</h2>{!data.data?.requests.length && <p>No requests yet.</p>}{data.data?.requests.map(item => <div key={item.id} className="attendance-request"><strong>{item.kind === 'leave' ? 'Leave' : 'Non-field work'}</strong><span>{item.status}</span><p>{new Date(item.starts_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} — {new Date(item.ends_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p><p>{item.reason}</p></div>)}</article>
     </>}
     {mode && <div className="modal-backdrop"><form className="modal attendance-card" onSubmit={event => { event.preventDefault(); if (mode === 'start') start.mutate(); else request.mutate(); }}>

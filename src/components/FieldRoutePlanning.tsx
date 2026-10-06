@@ -6,6 +6,7 @@ import { apiFetch } from '../api';
 import { MERCHANT_ROUTES } from '../merchantRoutes';
 import { useToast } from '../toast';
 import './field-route-planning.css';
+import { FieldRouteMap } from './FieldRouteMap';
 
 type RouteMerchant = { id: string; name: string; merchant_code: string; address?: string; route_name?: string; latitude?: number; longitude?: number };
 type RoutePlan = { route_name: string; work_date: string };
@@ -29,6 +30,7 @@ export function FieldRoutePlanning({ merchants }: { merchants: RouteMerchant[] }
         return <button key={route} className={selected === route ? 'selected' : ''} disabled={save.isPending} onClick={() => { if (selected !== route) setCandidate(route); }}><div><strong>{route}</strong><small>{count} merchants</small></div>{selected === route ? <Check /> : <ChevronRight />}</button>;
       })}</div><button className="button primary route-continue" disabled={!selected || save.isPending} onClick={() => setShowMerchants(true)}>Continue <ChevronRight size={18} /></button></> : <>
         <button className="button secondary" onClick={() => setShowMerchants(false)}>Change route</button>
+        <FieldRouteMap key={selected} merchants={selectedMerchants} />
         {!selectedMerchants.length && <p>No merchants are assigned to this route yet. Select their route during onboarding.</p>}
         <div className="route-merchants">{selectedMerchants.map(merchant => <article key={merchant.id}><Store /><div><strong>{merchant.name}</strong><small>{merchant.merchant_code}</small><p>{merchant.address || 'Address not added'}</p><div className="route-merchant-actions"><Link className="button primary" to={`/field/merchants/${encodeURIComponent(merchant.id)}`}>View merchant</Link>{mapUrl(merchant) && <a className="button secondary" target="_blank" rel="noopener noreferrer" href={mapUrl(merchant)!}>View map</a>}</div></div></article>)}</div>
       </>}

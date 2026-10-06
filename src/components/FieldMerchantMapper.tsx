@@ -5,7 +5,7 @@ import '../field-mapper.css';
 type Merchant = { id: string; name: string; merchant_code: string; category_id?: string; address?: string; latitude?: number | null; longitude?: number | null; image_url?: string };
 type Category = { id: string; name: string };
 let mapsPromise: Promise<any> | undefined;
-function loadMaps(key: string) {
+export function loadMaps(key: string) {
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (!mapsPromise) mapsPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -19,7 +19,7 @@ function loadMaps(key: string) {
   return mapsPromise;
 }
 function hasLocation(m: Merchant) { return m.latitude != null && m.longitude != null && Number.isFinite(Number(m.latitude)) && Number.isFinite(Number(m.longitude)) && Math.abs(Number(m.latitude)) <= 90 && Math.abs(Number(m.longitude)) <= 180; }
-export function FieldMerchantMapper({ merchants, categories }: { merchants: Merchant[]; categories: Category[] }) {
+export function FieldMerchantMapper({ merchants, categories, visitPosition }: { merchants: Merchant[]; categories: Category[]; visitPosition?: { latitude: number; longitude: number } | null }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -62,6 +62,14 @@ export function FieldMerchantMapper({ merchants, categories }: { merchants: Merc
   }, [located, ready]);
   useEffect(() => { if (ready && selectedMerchant && hasLocation(selectedMerchant)) { map.current?.panTo({ lat: Number(selectedMerchant.latitude), lng: Number(selectedMerchant.longitude) }); map.current?.setZoom(16); } }, [selectedMerchant, ready]);
   useEffect(() => { map.current?.setMapTypeId(satellite ? 'satellite' : 'roadmap'); }, [satellite, ready]);
+  useEffect(() => {
+    if (!ready || visitPosition === undefined || !located[0]) return;
+    const google = (window as any).google;
+    const circle = new google.maps.Circle({ map: map.current, center: { lat: Number(located[0].latitude), lng: Number(located[0].longitude) }, radius: 50, fillColor: '#00aeef', fillOpacity: 0.16, strokeColor: '#007aff', strokeOpacity: 0.5, strokeWeight: 1 });
+    const marker = visitPosition ? new google.maps.Marker({ map: map.current, position: { lat: visitPosition.latitude, lng: visitPosition.longitude }, title: 'Your location', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#0064ff', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 } }) : null;
+    map.current.fitBounds(circle.getBounds(), 35);
+    return () => { circle.setMap(null); marker?.setMap(null); };
+  }, [ready, located, visitPosition]);
   return <section className="field-mapper"><h1>Merchant Mapper</h1><p>View merchant locations and identify stores that need GPS coordinates.</p>
     <div className="fm-filters"><label><Search size={17} /><input aria-label="Search merchant locations" placeholder="Search location, store or merchant ID…" value={search} onChange={e => setSearch(e.target.value)} /></label><select aria-label="Category" value={category} onChange={e => setCategory(e.target.value)}><option value="">All Categories</option>{categories.map(c => <option value={c.id} key={c.id}>{c.name}</option>)}</select><select aria-label="Location filter" value={locationFilter} onChange={e => setLocationFilter(e.target.value)}><option value="">All Locations</option><option value="mapped">GPS Added</option><option value="missing">GPS Missing</option></select></div>
     <div className="fm-grid"><div className="fm-list"><h2>Merchants ({filtered.length})</h2>{filtered.map(m => <button key={m.id} className={selected === m.id ? 'selected' : ''} onClick={() => setSelected(m.id)}>{m.image_url ? <img src={m.image_url} alt="" /> : <Store />}<div><strong>{m.name}</strong><small>{m.merchant_code} · {m.address || 'No address saved'}</small><span>{hasLocation(m) ? 'GPS Added' : 'GPS Missing'}</span></div></button>)}{!filtered.length && <p>No matching merchants.</p>}</div>

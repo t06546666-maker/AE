@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const vm = require('node:vm');
+const context = { exports: {} };
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/visitLocation.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
+const { canVisit, visitDistance } = context.exports;
+assert.equal(canVisit(50, 50), true);
+for (const [distance, accuracy] of [[50.01, 5], [5, 50.01], [null, 5], [5, null], [NaN, 5], [5, -1]]) assert.equal(canVisit(distance, accuracy), false);
+assert.equal(visitDistance(10, 76, 10, 76), 0);
+assert(visitDistance(10, 76, 10.001, 76) > 50);
+const server = fs.readFileSync('server.js', 'utf8');
+const checkout = server.slice(server.indexOf("app.post('/api/field/visits/:id/check-out'"), server.indexOf("app.post('/api/field/visits/:id/update'"));
+assert(checkout.includes('distance > 50'));
+assert(checkout.includes("typeof req.body.accuracy !== 'number'"));
+for (const field of ['outcome', 'follow_up_date', 'problems', 'feedback', 'notes']) assert(checkout.includes(field));
+assert(checkout.includes("eq('manager_id', req.auth.profile.id)"));
+console.log('PASS: 50-metre boundary, accuracy rejection, distance calculation and checkout report guards.');

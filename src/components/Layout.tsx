@@ -35,8 +35,8 @@ const merchantNav = [
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 const fieldNav = [
-  ['/field?section=home', 'Home', Home],
   ['/field?section=attendance', 'Attendance', Home],
+  ['/field?section=home', 'Home', Home],
   ['/field?section=onboarding', 'Onboard Merchant', ShoppingBag],
   ['/field?section=directory', 'All Merchants', Building2],
   ['/field?section=visits', 'Visits & Check-in', MapPin],

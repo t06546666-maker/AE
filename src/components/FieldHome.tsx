@@ -5,12 +5,12 @@ export function FieldHome({ name }: { name: string }) {
   const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const actions = [
+    { section: 'attendance', title: 'Attendance', detail: 'Start and end your day', Icon: ClipboardCheck },
     { section: 'onboarding', title: 'Onboard Merchant', detail: 'Add new merchant', Icon: Store },
     { section: 'directory', title: 'All Merchants', detail: 'View and manage', Icon: Building2 },
     { section: 'visits', title: 'Visits & Check-in', detail: 'Check in at locations', Icon: MapPin },
     { section: 'routes', title: 'Routes', detail: 'View your route plan', Icon: Route },
     { section: 'policy', title: 'Policy & Guidelines', detail: 'Working guidance', Icon: FileText },
-    { section: 'attendance', title: 'Attendance', detail: 'Start and end your day', Icon: ClipboardCheck },
   ];
   return <section className="field-home">
     <header className="field-home-hero"><div><small>FIELD MANAGER</small><h1>{greeting},<br />{name}</h1><p>Your merchants. Your route. Your day.</p></div>
