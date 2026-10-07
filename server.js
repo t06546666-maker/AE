@@ -179,6 +179,8 @@ const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
   process.env.WA_MERCHANT_CREDENTIALS_TEMPLATE || 'merchant_account_ready',
   512,
 );
+// Enable only after the exact welcome copy is approved in Meta and its bonus is confirmed.
+const WA_MERCHANT_WELCOME_TEMPLATE = cleanText(process.env.WA_MERCHANT_WELCOME_TEMPLATE || '', 512);
 const WA_OFFER_TEMPLATE = cleanText(
   process.env.WA_OFFER_TEMPLATE || 'merchant_offer_v1',
   512,
@@ -910,7 +912,7 @@ async function sendWhatsAppTemplate({
   components,
   logId,
 }) {
-  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password'].includes(messageType)) {
+  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials'].includes(messageType)) {
     return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
   }
   if (!WA_TOKEN || !WA_PHONE_ID) {
@@ -1116,6 +1118,20 @@ async function sendMerchantAccountReadyWhatsApp(merchant) {
         { type: 'text', text: merchant.email },
       ],
     }],
+  });
+}
+
+async function sendMerchantWelcomeWhatsApp(merchant) {
+  if (!WA_MERCHANT_WELCOME_TEMPLATE) return sendMerchantAccountReadyWhatsApp(merchant);
+  return sendWhatsAppTemplate({
+    merchantId: merchant.id,
+    messageType: 'merchant_credentials',
+    recipient: merchant.phone,
+    templateName: WA_MERCHANT_WELCOME_TEMPLATE,
+    components: [{ type: 'body', parameters: [
+      { type: 'text', text: merchant.name },
+      { type: 'text', text: merchant.name },
+    ] }],
   });
 }
 
@@ -1686,10 +1702,19 @@ app.post('/api/field/visits/:id/check-out', requireAuth, requireRole('field_mana
   if (!Number.isFinite(distance) || distance > 50) return res.status(400).json({ error: 'Return within 50 metres of the merchant to End Visit.', distance });
   const outcome = cleanText(req.body.outcome, 80);
   const followUp = cleanText(req.body.follow_up_date, 10) || null;
+  const reason = cleanText(req.body.reason, 80);
+  const feedback = cleanText(req.body.feedback, 2000);
+  const challenge = cleanText(req.body.challenge_status, 80) || null;
+  const reportImage = req.body.report_image || null;
+  if (!['Merchant request','Usual route visit','Demo and monitoring','Other'].includes(reason)) return res.status(400).json({ error: 'Select a visit reason.' });
+  if (!feedback) return res.status(400).json({ error: 'Merchant feedback is required.' });
+  if (challenge && !['Pending','Solved','Escalated to admin team','Follow-up required'].includes(challenge)) return res.status(400).json({ error: 'Select a valid challenge status.' });
+  if (reportImage && (typeof reportImage !== 'string' || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(reportImage) || reportImage.length > 60000 || reportImage.length < 100)) return res.status(400).json({ error: 'Invalid report image.' });
+  if (challenge === 'Follow-up required' && !followUp) return res.status(400).json({ error: 'Enter a follow-up date.' });
   if (!['Completed','Follow-up required','Merchant unavailable','Issue reported'].includes(outcome)) return res.status(400).json({ error: 'Select a visit outcome.' });
   if (followUp && (!/^\d{4}-\d{2}-\d{2}$/.test(followUp) || !Number.isFinite(Date.parse(followUp)) || new Date(followUp).toISOString().slice(0, 10) !== followUp)) return res.status(400).json({ error: 'Enter a valid follow-up date.' });
   if (outcome === 'Follow-up required' && !followUp) return res.status(400).json({ error: 'A follow-up date is required for this outcome.' });
-  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null, outcome, follow_up_date: followUp, problems: cleanText(req.body.problems, 2000) || null, feedback: cleanText(req.body.feedback, 2000) || null }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: new Date().toISOString(), check_out_latitude: lat, check_out_longitude: lng, notes: cleanText(req.body.notes, 2000) || null, outcome, follow_up_date: followUp, problems: cleanText(req.body.problems, 2000) || null, feedback, reason, challenge_status: challenge, report_image: reportImage }).eq('id', req.params.id).eq('manager_id', req.auth.profile.id).eq('status', 'active').select('*, merchants(name,merchant_code)').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: error.message });
   if (!data) return res.status(404).json({ success: false, error: 'Active visit not found' });
   res.json({ success: true, visit: data });
@@ -1706,7 +1731,7 @@ app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager
 });
 
 app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_manager'), async (req, res) => {
-  const { data: merchant, error } = await supabaseAdmin.from('merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
+  const { data: merchant, error } = await supabaseAdmin.from('merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,opening_time,closing_time,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
   const activity = await supabaseAdmin.from('field_manager_activity').insert({ manager_id: req.auth.profile.id, merchant_id: merchant.id, action: 'merchant_profile_view' });
@@ -1719,7 +1744,7 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   const account = await supabaseAdmin.auth.admin.getUserById(profile.id);
   const results = await Promise.all([
     supabaseAdmin.from('field_manager_sessions').select('id,login_at,logout_at').eq('manager_id', profile.id).order('login_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,status,payload,created_at').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
   ]);
@@ -2144,7 +2169,7 @@ app.get('/api/customer/categories', async (req, res) => {
 
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
-  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, created_at, merchant_categories(name)', { count: 'exact' });
+  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, merchant_categories(name)', { count: 'exact' });
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
   }
@@ -2161,6 +2186,8 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
     merchants: (merchants || []).map((merchant) => ({
       id: merchant.id,
       merchant_name: merchant.name,
+      image_url: merchant.image_url || merchant.images?.[0] || null,
+      images: Array.isArray(merchant.images) ? merchant.images.filter(image => typeof image === 'string') : [],
       category: merchant.merchant_categories?.name || '',
       address: merchant.address || '',
       latitude: merchant.latitude === null ? null : Number(merchant.latitude),
@@ -2803,6 +2830,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const longitude = req.body.longitude === undefined || req.body.longitude === '' ? null : Number(req.body.longitude);
   const images = Array.isArray(req.body.images) ? req.body.images.filter(x => typeof x === 'string' && x.trim()) : [];
   const image_url = typeof req.body.image_url === 'string' && req.body.image_url.trim() ? req.body.image_url.trim() : (images[0] || null);
+  if (!image_url) return res.status(400).json({ error: 'At least one shop photo is required to onboard a merchant.' });
 
   if (!name || !email || !isEmail(email) || !phone || !isStrongPassword(password)) {
     return res.status(400).json({
@@ -2814,7 +2842,12 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     return res.status(400).json({ success: false, error: 'Enter both valid latitude and longitude values, or leave both blank' });
   }
 
+  const openingTime = cleanText(req.body.opening_time, 20);
+  const closingTime = cleanText(req.body.closing_time, 20);
+  if ((Boolean(openingTime) !== Boolean(closingTime)) || (openingTime && (!/^([01]\d|2[0-3]):[0-5]\d$/.test(openingTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(closingTime)))) return res.status(400).json({ error: 'Provide both valid opening and closing times.' });
   let insertPayload = {
+    // Opening/closing times are local shop hours; overnight schedules are allowed.
+    ...(openingTime ? { opening_time: openingTime, closing_time: closingTime } : {}),
     name,
     email,
     phone,
@@ -2837,16 +2870,9 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   if (merchantError && route_name && (merchantError.code === '42703' || merchantError.code === 'PGRST204') && merchantError.message?.includes('route_name')) {
     return res.status(503).json({ success: false, error: 'Merchant routes need the supabase-merchant-routes.sql database migration before saving.' });
   }
+  if (merchantError && /opening_time|closing_time/.test(merchantError.message || '')) return res.status(503).json({ error: 'Shop hours require the supabase-merchant-hours.sql database migration.' });
   if (merchantError && (merchantError.message?.includes('image') || merchantError.code === '42703')) {
-    delete insertPayload.image_url;
-    delete insertPayload.images;
-    const retry = await supabaseAdmin
-      .from('merchants')
-      .insert(insertPayload)
-      .select('id,merchant_code,name,email,phone,created_at')
-      .single();
-    merchant = retry.data;
-    merchantError = retry.error;
+    return res.status(503).json({ error: 'Merchant photo storage needs its database migration before onboarding.' });
   }
   if (merchantError) return res.status(400).json({ success: false, error: merchantError.message });
 
@@ -2900,7 +2926,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     }
   }
 
-  const whatsapp = await sendMerchantAccountReadyWhatsApp(merchant);
+  const whatsapp = await sendMerchantWelcomeWhatsApp(merchant);
   res.status(201).json({
     success: true,
     merchant: {

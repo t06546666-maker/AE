@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { CustomerShopCard } from '../../components/CustomerShopCard';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useEffect, useState } from 'react';
@@ -9,6 +10,8 @@ import { apiFetch } from '../../api';
 
 
 export function CustomerExplore() {
+  const routeLocation = useLocation();
+  const [reviewError, setReviewError] = useState(''); const [reviewBusy, setReviewBusy] = useState(false);
   const [page, setPage] = useState(1);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
@@ -78,15 +81,16 @@ export function CustomerExplore() {
     setActiveCategory(cat);
     // Pass category as search hint when not 'All'
     if (cat !== 'All') {
-      setSearch(cat);
+      setSelectedCategory(cat); setSearch(inputValue);
     } else {
       setSearch(inputValue);
     }
     setPage(1);
   };
   const toggleFavorite = (id: string) => setFavorites(current => { const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]; localStorage.setItem('ae_favorite_merchants', JSON.stringify(next)); return next; });
-  const openMerchant = async (merchant: typeof merchants[number]) => { setDetailMerchant(merchant); setSelectedMerchantId(merchant.id); document.getElementById('customer-nearby-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${merchant.id}`); setReviews(result.reviews || []); } catch { setReviews([]); } };
-  const submitReview = async () => { if (!detailMerchant || reviewMessage.trim().length < 2) return; await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: 'merchant', merchant_id: detailMerchant.id, rating: reviewRating, message: reviewMessage.trim() }) }); setReviewMessage(''); const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${detailMerchant.id}`); setReviews(result.reviews || []); };
+  const openMerchant = async (merchant: typeof merchants[number]) => { setReviewMessage(''); setReviewRating(5); setReviews([]); setDetailMerchant(merchant); setSelectedMerchantId(merchant.id); document.getElementById('customer-nearby-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${merchant.id}`); setReviews(result.reviews || []); } catch { setReviews([]); } };
+  const submitReview = async () => { if (!detailMerchant || reviewBusy || reviewMessage.trim().length < 2) return; setReviewBusy(true); setReviewError(''); try { await apiFetch('/api/customer/feedback', { method: 'POST', body: JSON.stringify({ feedback_type: 'merchant', merchant_id: detailMerchant.id, rating: reviewRating, message: reviewMessage.trim() }) }); setReviewMessage(''); const result = await apiFetch<{ reviews: any[] }>(`/api/customer/merchant-reviews/${detailMerchant.id}`); setReviews(result.reviews || []); } catch (error) { setReviewError((error as Error).message); } finally { setReviewBusy(false); } };
+  useEffect(() => { const merchant = routeLocation.state?.merchant; if (merchant?.id) void openMerchant(merchant); }, [routeLocation.key]);
 
   return (
     <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
@@ -152,40 +156,17 @@ export function CustomerExplore() {
       </div>
 
       {/* Merchant List */}
-      <div className="glass-merchants px-5 space-y-3">
+      <div className="glass-merchants ae-shop-grid">
         {isLoading ? (
           <div className="py-12 text-center text-gray-400">Loading merchants...</div>
         ) : merchants.length === 0 ? (
           <div className="py-12 text-center text-gray-400">No merchants found{search ? ` for "${search}"` : ''}.</div>
         ) : (
-          sortedMerchants.map((merchant, idx) => (
-            <button
-              key={merchant.id}
-              onClick={() => { void locateUser(); void openMerchant(merchant); }}
-              className="w-full bg-white rounded-[20px] p-4 flex items-center justify-between shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 ${getAvatarColor(idx)} rounded-full flex items-center justify-center font-bold text-xs`}>
-                  {getInitials(merchant.merchant_name)}
-                </div>
-                <div>
-                  <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{merchant.merchant_name}</h3>
-                  {merchant.category && <p className="text-[11px] text-gray-500 font-medium mt-0.5">{merchant.category}</p>}
-                  {distanceKm(merchant.latitude, merchant.longitude) !== null && <p className="text-[12px] font-bold text-[#3158f5] mt-1">{distanceKm(merchant.latitude, merchant.longitude)!.toFixed(1)} km away</p>}
-                  <p className="text-[12px] font-bold text-[#087a4b] mt-1">Accepts AE Points</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {merchant.latitude != null && merchant.longitude != null ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`} target="_blank" rel="noreferrer" aria-label={`Get directions to ${merchant.merchant_name}`} onClick={(event) => event.stopPropagation()} className="rounded-full bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-[#087a4b]">Directions</a> : null}
-                <button type="button" aria-label={favorites.includes(merchant.id) ? 'Remove from favorites' : 'Add to favorites'} onClick={(event) => { event.stopPropagation(); toggleFavorite(merchant.id); }} className="rounded-full p-2"><Heart size={21} className={favorites.includes(merchant.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'} /></button>
-                <ChevronRight size={18} className="text-gray-400" />
-              </div>
-            </button>
-          ))
+          sortedMerchants.map(merchant => <CustomerShopCard key={merchant.id} merchant={merchant} onOpen={() => void openMerchant(merchant)} favorite={favorites.includes(merchant.id)} onFavorite={() => toggleFavorite(merchant.id)} distance={distanceKm(merchant.latitude, merchant.longitude)} />)
         )}
       </div>
 
-      {detailMerchant ? <div className="fixed inset-0 z-[100] grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-5" onClick={() => setDetailMerchant(null)}><section className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 pb-28 sm:rounded-3xl sm:pb-5" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2><p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p><p className="mt-1 text-sm font-bold text-[#3158f5]">{distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'} km away</p></div><button onClick={() => setDetailMerchant(null)} className="text-2xl text-gray-400">×</button></div>{detailMerchant.latitude != null && detailMerchant.longitude != null ? <a className="mb-5 block rounded-xl bg-[#087a4b] px-4 py-3 text-center font-bold text-white" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${detailMerchant.latitude},${detailMerchant.longitude}`}>Get directions</a> : null}<h3 className="mb-2 font-bold">Write a review</h3><div className="flex gap-1">{[1,2,3,4,5].map(star => <button key={star} onClick={() => setReviewRating(star)} className={`text-2xl ${star <= reviewRating ? 'text-amber-400' : 'text-gray-300'}`}>★</button>)}</div><textarea value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder="Share your experience" className="mt-2 min-h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" /><button onClick={() => void submitReview()} className="mt-2 rounded-xl bg-[#3158f5] px-4 py-2 text-sm font-bold text-white">Submit review</button><h3 className="mb-2 mt-6 font-bold">Customer reviews</h3>{reviews.length ? reviews.map(review => <div key={review.id} className="border-b border-gray-100 py-3"><div className="text-amber-400">{'★'.repeat(review.rating || 0)}<span className="ml-2 text-xs text-gray-500">{review.customerName}</span></div><p className="mt-1 text-sm text-gray-700">{review.message}</p></div>) : <p className="text-sm text-gray-500">No reviews yet.</p>}</section></div> : null}
+      {detailMerchant ? <div className="fixed inset-0 z-[100] grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-5" onClick={() => setDetailMerchant(null)}><section className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 pb-28 sm:rounded-3xl sm:pb-5" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2><p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p><p className="mt-1 text-sm font-bold text-[#3158f5]">{distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'} km away</p></div><button onClick={() => setDetailMerchant(null)} className="text-2xl text-gray-400">×</button></div>{detailMerchant.latitude != null && detailMerchant.longitude != null ? <a className="mb-5 block rounded-xl bg-[#087a4b] px-4 py-3 text-center font-bold text-white" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${detailMerchant.latitude},${detailMerchant.longitude}`}>Get directions</a> : null}<p className="text-sm text-gray-600">{detailMerchant.address}</p><div className="ae-shop-gallery">{Array.from(new Set([detailMerchant.image_url, ...(detailMerchant.images || [])].filter((image): image is string => !!image))).map(image => <a key={image} href={image} target="_blank" rel="noopener noreferrer"><img src={image} alt={`${detailMerchant.merchant_name} shop photo`} loading="lazy" /></a>)}</div><h3 className="mb-2 font-bold">Write a review</h3><div className="flex gap-1">{[1,2,3,4,5].map(star => <button key={star} onClick={() => setReviewRating(star)} className={`text-2xl ${star <= reviewRating ? 'text-amber-400' : 'text-gray-300'}`}>★</button>)}</div><textarea value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder="Share your experience" className="mt-2 min-h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" />{reviewError && <p role="alert" className="text-sm text-red-600">{reviewError}</p>}<button disabled={reviewBusy || reviewMessage.trim().length < 2} onClick={() => void submitReview()} className="mt-2 rounded-xl bg-[#3158f5] px-4 py-2 text-sm font-bold text-white">Submit review</button><h3 className="mb-2 mt-6 font-bold">Customer reviews</h3>{reviews.length ? reviews.map(review => <div key={review.id} className="border-b border-gray-100 py-3"><div className="text-amber-400">{'★'.repeat(review.rating || 0)}<span className="ml-2 text-xs text-gray-500">{review.customerName}</span></div><p className="mt-1 text-sm text-gray-700">{review.message}</p></div>) : <p className="text-sm text-gray-500">No reviews yet.</p>}</section></div> : null}
 
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex justify-between items-center pt-4 pb-6 px-5">

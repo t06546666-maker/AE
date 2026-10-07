@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { MERCHANT_ROUTES } from '../merchantRoutes';
+import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
 import { FieldAttendance } from '../components/FieldAttendance';
 import { FieldRoutePlanning } from '../components/FieldRoutePlanning';
 import { FieldHome } from '../components/FieldHome';
 import { FieldMerchantDirectory } from '../components/FieldMerchantDirectory';
 import '../field-reference.css';
 import '../field-complete-preview.css';
+import { LiveCamera } from '../components/LiveCamera';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -159,6 +160,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
   const [merchantRoute, setMerchantRoute] = useState('');
+  const [openingTime, setOpeningTime] = useState(''); const [closingTime, setClosingTime] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
 
@@ -355,8 +357,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   };
 
   // Image Upload handler
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const uploadShopFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
     setIsUploadingImage(true);
 
@@ -392,7 +393,6 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       showToast(err.message || 'Image upload failed', 'error');
     } finally {
       setIsUploadingImage(false);
-      e.target.value = '';
     }
   };
 
@@ -410,7 +410,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         method: 'POST',
         body: JSON.stringify({
           name: name.trim(),
-          route_name: merchantRoute || undefined,
+          route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined,
           userId: cleanUserId || undefined,
           email: finalEmail,
           phone: `+91${cleanPhone}`,
@@ -437,6 +437,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       });
       setName('');
       setMerchantRoute('');
+      setOpeningTime(''); setClosingTime('');
       setUserId('');
       setEmail('');
       setPhone('');
@@ -462,6 +463,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
 
   const handleOnboardSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (onboardStep >= 2 && !shopImages.length) { showToast('Add at least one shop photo.', 'error'); return; }
     if (onboardStep < 3) {
       setOnboardStep(onboardStep + 1);
       return;
@@ -563,7 +565,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
             <div className="panel-heading">
               <span className="field-section-icon"><Building2 size={22} /></span>
               <div>
-                <h2>{['Business Details', 'Store Address', 'Shop Image (Optional)', 'Review Details'][onboardStep]}</h2>
+                <h2>{['Business Details', 'Store Address', 'Shop Image (Required)', 'Review Details'][onboardStep]}</h2>
                 <p>{['Enter the basic information about the merchant', 'Enter the complete store address', 'Upload a photo of the store for easy identification', 'Please verify the information before adding'][onboardStep]}</p>
               </div>
             </div>
@@ -643,7 +645,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   }}
                 >
                   <option value="">Select category</option>
-                  {categories.map((c) => (
+                  {categories.filter(c => c.name.trim().toLowerCase() !== 'other').map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -663,7 +665,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                 )}
               </label>
               <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} /> Generate User ID & Password</button>
-              <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{route}</option>)}</select></label>
+              <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
+          <label>Opening Time<input type="time" value={openingTime} required={!!closingTime} onChange={event => setOpeningTime(event.target.value)} /></label><label>Closing Time<input type="time" value={closingTime} required={!!openingTime} onChange={event => setClosingTime(event.target.value)} /></label>
               </>}
               {onboardStep === 1 && <>
               <label>
@@ -686,22 +689,24 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
               </>}
               {onboardStep === 2 && <>
               <label className="field-photo-card">
-                <span className="field-card-title"><Camera size={20} /> Shop Image <small>(Optional)</small></span>
-                <span className="field-upload-hint">Choose a clear storefront photo</span>
+                <span className="field-card-title"><Camera size={20} /> Shop Image <small>(Required)</small></span>
+                <span className="field-upload-hint">Upload Photo — JPG or PNG</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png"
-                  onChange={handleImageFileChange}
+                  onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ''; void uploadShopFiles(files); }}
                   disabled={isUploadingImage}
                 />
               </label>
               <p className="field-image-tip">A clear store image helps field staff and customers identify the store easily. JPG or PNG, maximum 5 MB.</p>
+              <LiveCamera facing="environment" disabled={isUploadingImage || create.isPending} label="Take Photo" onCapture={file => void uploadShopFiles([file])} />
               </>}
               {onboardStep === 3 && <div className="field-review">
                 {[
                   ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
                   ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
                   ['Merchant Route', merchantRoute || 'Not assigned', 0],
+                  ['Shop Hours', openingTime && closingTime ? `${openingTime} – ${closingTime}` : 'Not provided', 0],
                   ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
                   ['Location', latitude && longitude ? `${latitude}, ${longitude}` : 'Not selected', 1],
                 ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{label}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>Edit</button></div>)}

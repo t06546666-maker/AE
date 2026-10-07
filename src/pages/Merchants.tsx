@@ -9,7 +9,8 @@ import type { Merchant, MerchantSummaryResponse, Pagination, MerchantCategory } 
 import { formatDate, formatPoints } from '../utils';
 import { useToast } from '../toast';
 import { AllocateMerchantPoints } from '../components/MerchantPointBalance';
-import { MERCHANT_ROUTES } from '../merchantRoutes';
+import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
+import { LiveCamera } from '../components/LiveCamera';
 
 interface CredentialResult {
   merchantCode: string;
@@ -36,7 +37,9 @@ export function Merchants() {
   const [categoryId, setCategoryId] = useState('');
   const [customCategory, setCustomCategory] = useState('');
   const [address, setAddress] = useState('');
+  const [onboardStep, setOnboardStep] = useState(0);
   const [merchantRoute, setMerchantRoute] = useState('');
+  const [openingTime, setOpeningTime] = useState(''); const [closingTime, setClosingTime] = useState('');
   const [shopImages, setShopImages] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [latitude, setLatitude] = useState('');
@@ -93,7 +96,7 @@ export function Merchants() {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
+      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -104,7 +107,8 @@ export function Merchants() {
       });
       setName('');
       setMerchantRoute('');
-      setShopImages([]);
+      setOpeningTime(''); setClosingTime('');
+      setShopImages([]); setOnboardStep(0);
       setEmail('');
       setPhone('');
       setPassword('');
@@ -146,6 +150,8 @@ export function Merchants() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (onboardStep >= 2 && !shopImages.length) { showToast('Add at least one shop photo.', 'error'); return; }
+    if (onboardStep < 3) { setOnboardStep(onboardStep + 1); return; }
     create.mutate();
   }
 
@@ -200,7 +206,7 @@ export function Merchants() {
           <div><h2>{t('merchants.add')}</h2><p>{t('merchants.createSecure')}</p></div>
           <Plus />
         </div>
-        <div className="four-column-form">
+        <nav aria-label="Onboarding steps" className="attendance-actions">{['Business Details','Location','Photos','Review'].map((title,index) => <span key={title} aria-current={onboardStep === index ? 'step' : undefined} style={{ padding: 10, color: onboardStep === index ? '#0064ff' : '#64748b', fontWeight: 700 }}>{index + 1}. {title}</span>)}</nav><fieldset disabled={onboardStep !== 0} hidden={onboardStep !== 0} style={{ border: 0 }}><div className="four-column-form">
           <label>{t('merchants.storeName')}<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
           <label>{t('login.email')}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
           <label>{t('merchants.phone')}<div className="phone-field"><span>+91</span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div></label>
@@ -214,23 +220,24 @@ export function Merchants() {
             Category (Optional)
             <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value !== '__other__') setCustomCategory(''); }}>
               <option value="">No Category</option>
-              {categoriesQuery.data?.categories?.map(c => (
+              {categoriesQuery.data?.categories?.filter(c => c.name.trim().toLowerCase() !== 'other').map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
               <option value="__other__">Other</option>
             </select>
             {categoryId === '__other__' && <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="Enter new category" style={{ marginTop: '6px' }} required autoFocus />}
           </label>
-          <label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
-          <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{route}</option>)}</select></label>
+          </div></fieldset><fieldset disabled={onboardStep !== 1} hidden={onboardStep !== 1} style={{ border: 0 }}><div className="four-column-form"><label>Store address <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, city" /></label>
+          <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
+          <label>Opening Time<input type="time" value={openingTime} required={!!closingTime} onChange={event => setOpeningTime(event.target.value)} /></label><label>Closing Time<input type="time" value={closingTime} required={!!openingTime} onChange={event => setClosingTime(event.target.value)} /></label>
           <label>Latitude <input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>
           <label>Longitude <input type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="e.g. 76.2673" /></label>
-          <label>Shop image (optional)<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>JPG or PNG, maximum 5 MB.</small></label>
+          </div><button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}>Select location on map</button></fieldset><fieldset disabled={onboardStep !== 2} hidden={onboardStep !== 2} style={{ border: 0 }}><div className="four-column-form"><label>Upload Photo (required)<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>JPG or PNG, maximum 5 MB.</small></label><LiveCamera facing="environment" disabled={uploadingPhoto || create.isPending} label="Take Photo" onCapture={file => void uploadShopPhoto(file)} />
         </div>
         {shopImages.map((url, index) => <div key={url}><img src={url} alt={`Shop photo ${index + 1}`} style={{ width: 120, height: 80, objectFit: 'cover' }} /><button type="button" className="button secondary" onClick={() => setShopImages(images => images.filter((_, position) => position !== index))}>Remove photo</button></div>)}
-        <button type="button" className="button secondary" onClick={generateCredentials}>Generate login email & password</button>
+        </fieldset>{onboardStep === 3 && <div className="field-review"><h3>Review merchant details</h3>{[['Shop name',name],['Email',email],['Phone',phone],['Category',categoryId === '__other__' ? customCategory : categoriesQuery.data?.categories.find(c => c.id === categoryId)?.name],['Address',address],['Route',routeLabel(merchantRoute)],['Opening time',openingTime],['Closing time',closingTime],['Location',`${latitude}, ${longitude}`]].map(([label,value]) => <p key={label}><strong>{label}:</strong> {value || 'Not provided'}</p>)}{shopImages.map(url => <img key={url} src={url} alt="Shop photo review" style={{ width: 120, borderRadius: 12 }} />)}</div>}{onboardStep === 0 && <button type="button" className="button secondary" onClick={generateCredentials}>Generate login email & password</button>}{onboardStep > 0 && <button type="button" className="button secondary" onClick={() => setOnboardStep(onboardStep - 1)}>Back</button>}
         <button className="button primary" disabled={create.isPending || uploadingPhoto}>
-          <Plus size={16} />{create.isPending ? t('merchants.creating') : t('merchants.add')}
+          <Plus size={16} />{create.isPending ? t('merchants.creating') : onboardStep < 3 ? 'Next' : t('merchants.add')}
         </button>
         <button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}><MapPinned size={16} /> Select location on map</button>
       </form>

@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const server = fs.readFileSync('server.js', 'utf8');
+assert(server.includes("['registration', 'registration_password', 'merchant_credentials'].includes(messageType)"));
+const welcome = server.slice(server.indexOf('async function sendMerchantWelcomeWhatsApp'), server.indexOf('function offerExpiryText'));
+assert(welcome.includes('if (!WA_MERCHANT_WELCOME_TEMPLATE) return sendMerchantAccountReadyWhatsApp(merchant)'));
+assert(welcome.includes('recipient: merchant.phone'));
+assert.equal((welcome.match(/type: 'text'/g) || []).length, 2);
+assert(server.includes('const whatsapp = await sendMerchantWelcomeWhatsApp(merchant);\n  res.status(201)'));
+const reset = server.slice(server.indexOf("app.post('/api/merchants/:id/reset-password'"));
+assert(reset.includes('const whatsapp = await sendMerchantAccountReadyWhatsApp(merchant);'));
+console.log('PASS: merchant welcome configuration, two variables, onboarding hook and separate password-reset messaging.');

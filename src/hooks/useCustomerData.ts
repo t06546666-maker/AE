@@ -22,6 +22,8 @@ export type CustomerMerchantCategory = {
 };
 
 export type CustomerMerchant = {
+  image_url?: string | null;
+  images?: string[];
   id: string;
   merchant_name: string;
   category?: string;

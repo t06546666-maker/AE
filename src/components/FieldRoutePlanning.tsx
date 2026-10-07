@@ -7,6 +7,7 @@ import { MERCHANT_ROUTES } from '../merchantRoutes';
 import { useToast } from '../toast';
 import './field-route-planning.css';
 import { FieldRouteMap } from './FieldRouteMap';
+import { FieldRouteReference } from './FieldRouteReference';
 
 type RouteMerchant = { id: string; name: string; merchant_code: string; address?: string; route_name?: string; latitude?: number; longitude?: number };
 type RoutePlan = { route_name: string; work_date: string };
@@ -22,6 +23,7 @@ export function FieldRoutePlanning({ merchants }: { merchants: RouteMerchant[] }
     return location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : null;
   };
   return <section className="field-route-planning">
+    <FieldRouteReference />
     <header><MapPin /><div><h1>{showMerchants ? 'Merchants on your route' : 'Route Selection'}</h1><p>Plan your merchant visits for today.</p></div></header>
     {query.isPending ? <p>Loading today’s route…</p> : query.isError ? <div role="alert"><p>{query.error.message}</p><button className="button secondary" onClick={() => void query.refetch()}>Retry</button></div> : <>
       <article className="route-summary"><div><small>Today’s route</small><strong>{selected || 'Not selected'}</strong><span>{query.data?.workDate}</span></div><div><Store /><strong>{selected ? selectedMerchants.length : '—'}</strong><small>Merchants</small></div></article>
