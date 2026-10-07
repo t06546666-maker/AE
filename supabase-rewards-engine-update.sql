@@ -95,8 +95,8 @@ BEGIN
   FROM public.orders
   WHERE orders.customer_id = v_customer.id AND orders.merchant_id = p_merchant_id;
 
-  -- 1. Minimum purchase ₹100, Maximum eligible ₹10,000
-  IF p_amount < 100 THEN
+  -- 1. Maximum eligible ₹10,000; small purchases earn fixed points.
+  IF p_amount < 10 THEN
     v_eligible_amount := 0;
   ELSIF p_amount > 10000 THEN
     v_eligible_amount := 10000;
@@ -106,7 +106,12 @@ BEGIN
 
   -- 2. Pro-rata points calculation: Floor((Amount / 100) * points_per_100)
   IF v_eligible_amount > 0 THEN
-    v_points := least(100, floor(v_eligible_amount / 100.0) * p_points_per_100);
+    v_points := CASE
+      WHEN v_eligible_amount < 10 THEN 0
+      WHEN v_eligible_amount < 50 THEN 2
+      WHEN v_eligible_amount < 100 THEN 5
+      ELSE least(100, floor(v_eligible_amount / 100.0) * p_points_per_100)
+    END;
   ELSE
     v_points := 0;
   END IF;

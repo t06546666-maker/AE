@@ -4020,11 +4020,11 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     (email && !isEmail(email)) ||
     !merchantId ||
     !Number.isFinite(amount) ||
-    amount < 100
+    amount < 10
   ) {
     return res.status(400).json({
       success: false,
-      error: `Purchase must be at least 100.`,
+      error: `Enter valid customer details and a purchase amount of ₹10 or more.`,
     });
   }
 
