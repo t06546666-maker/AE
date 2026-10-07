@@ -1720,6 +1720,17 @@ app.post('/api/field/visits/:id/check-out', requireAuth, requireRole('field_mana
   res.json({ success: true, visit: data });
 });
 
+app.post('/api/admin/field-visits/:id/force-close', requireAuth, requireRole('admin'), async (req, res) => {
+  const reason = cleanText(req.body.reason, 2000);
+  if (reason.length < 5) return res.status(400).json({ error: 'Enter a reason of at least 5 characters.' });
+  const closedAt = new Date().toISOString();
+  // Only an active visit may be overridden. Preserve its report and never fabricate GPS.
+  const { data, error } = await supabaseAdmin.from('field_manager_visits').update({ status: 'completed', check_out_at: closedAt, check_out_latitude: null, check_out_longitude: null, admin_closed_by: req.auth.profile.id, admin_closed_at: closedAt, admin_close_reason: reason }).eq('id', req.params.id).eq('status', 'active').select('id,manager_id,merchant_id,admin_closed_at,admin_close_reason').maybeSingle();
+  if (error) return res.status(503).json({ error: 'Unable to close visit. Ensure the admin-close database migration is applied.' });
+  if (!data) return res.status(409).json({ error: 'Visit is no longer active. Refresh and check its status.' });
+  return res.json({ success: true, visit: data });
+});
+
 app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager'), async (req, res) => {
   const { data: visit } = await supabaseAdmin.from('field_manager_visits').select('id,merchant_id').eq('id', req.params.id).eq('manager_id', req.auth.profile.id).maybeSingle();
   if (!visit) return res.status(404).json({ success: false, error: 'Visit not found' });
@@ -1744,13 +1755,18 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   const account = await supabaseAdmin.auth.admin.getUserById(profile.id);
   const results = await Promise.all([
     supabaseAdmin.from('field_manager_sessions').select('id,login_at,logout_at').eq('manager_id', profile.id).order('login_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,status,payload,created_at').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
   ]);
+  const [attendance, workRequests, onboarded] = await Promise.all([
+    supabaseAdmin.from('field_attendance').select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie').eq('manager_id', profile.id).order('work_date', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_work_requests').select('id,kind,starts_at,ends_at,reason,status').eq('manager_id', profile.id).order('starts_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_merchant_updates').select('id', { count: 'exact', head: true }).eq('manager_id', profile.id).eq('payload->>action', 'onboard_merchant'),
+  ]);
   const fatal = results.slice(0, 3).find(r => r.error);
   if (fatal) return res.status(500).json({ error: fatal.error.message });
-  res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error });
+  res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error, attendance: attendance.data || [], attendanceAvailable: !attendance.error, workRequests: workRequests.data || [], workRequestsAvailable: !workRequests.error, onboardedTotal: onboarded.error ? null : onboarded.count });
 });
 app.get('/api/admin/merchants/:id/records', requireAuth, requireRole('admin'), async (req, res) => {
   const results = await Promise.all([

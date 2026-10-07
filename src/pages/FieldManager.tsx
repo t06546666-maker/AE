@@ -36,7 +36,6 @@ import '../field-onboarding.css';
 import '../field-directory.css';
 import { FieldVisits } from '../components/FieldVisits';
 import { FieldMerchantMapper } from '../components/FieldMerchantMapper';
-import { FieldPolicy } from '../components/FieldPolicy';
 import { FieldProfile } from '../components/FieldProfile';
 
 interface FieldMerchant {
@@ -134,9 +133,9 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const queryClient = useQueryClient();
   const [sectionParams, setSectionParams] = useSearchParams();
   const navigate = useNavigate();
-  type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'policy' | 'profile';
+  type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'profile';
   const section = sectionParams.get('section');
-  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'policy', 'profile'].includes(section || '') ? section as FieldSection : 'home';
+  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'profile'].includes(section || '') ? section as FieldSection : 'home';
   const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
   useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
@@ -849,7 +848,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                             disabled={Boolean(activeVisit)}
                             onClick={() => {
                               setSelectedMerchant(m);
-                              navigate(`/field/merchants/${encodeURIComponent(m.id)}`);
+                              navigate(`/field/merchants/${encodeURIComponent(m.id)}?visit=1`);
                             }}
                           >
                             <MapPin />
@@ -878,13 +877,12 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {/* ========================================================================= */}
       {/* TAB 3: VISITS & CHECK-IN */}
       {/* ========================================================================= */}
-      {activeTab === 'visits' && <FieldVisits merchants={nearbyMerchants} visits={visitsQuery.data?.visits || []} active={activeVisit} notes={notes} setNotes={setNotes} busy={checkInMutation.isPending || checkOutMutation.isPending} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} retry={() => void visitsQuery.refetch()} onCheckIn={id => navigate(`/field/merchants/${encodeURIComponent(id)}`)} onCheckOut={() => { if (activeVisit) navigate(`/field/merchants/${encodeURIComponent(activeVisit.merchant_id)}`); }} />}
+      {activeTab === 'visits' && <FieldVisits merchants={nearbyMerchants} visits={visitsQuery.data?.visits || []} active={activeVisit} notes={notes} setNotes={setNotes} busy={checkInMutation.isPending || checkOutMutation.isPending} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} retry={() => void visitsQuery.refetch()} onCheckIn={id => navigate(`/field/merchants/${encodeURIComponent(id)}?visit=1`)} onCheckOut={() => { if (activeVisit) navigate(`/field/merchants/${encodeURIComponent(activeVisit.merchant_id)}?visit=1`); }} />}
 
       {/* ========================================================================= */}
       {/* EXACT ADMIN CREDENTIALS MODAL */}
       {/* ========================================================================= */}
       {activeTab === 'mapper' && <FieldMerchantMapper merchants={allMerchants} categories={categories} />}
-      {activeTab === 'policy' && <FieldPolicy />}
       {activeTab === 'profile' && <FieldProfile user={user} visits={visitsQuery.data?.visits || []} merchantCount={allMerchants.length} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} />}
       <FieldCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 

@@ -9,6 +9,8 @@ import {
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
 import '../field-shell.css';
+import '../field-footer.css';
+import { FieldSignOutContext } from './FieldSignOutContext';
 
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
@@ -41,7 +43,6 @@ const fieldNav = [
   ['/field?section=directory', 'All Merchants', Building2],
   ['/field?section=visits', 'Visits & Check-in', MapPin],
   ['/field?section=routes', 'Routes', MapPin],
-  ['/field?section=policy', 'Policy & Guidelines', ReceiptText],
   ['/field?section=profile', 'My Profile', UserCog],
 ] as const;
 
@@ -150,7 +151,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
-            <Link to={user.role === 'field_manager' ? '/legal?type=field' : '/legal?type=merchant'}>Terms & Privacy</Link>
+            {user.role !== 'field_manager' && <Link to="/legal?type=merchant">Terms & Privacy</Link>}
             <button className="button secondary signout desktop-view-hidden" onClick={() => void signOut()} style={{ width: '100%', justifyContent: 'center' }}>
               <LogOut size={15} />{t('layout.signOut')}
             </button>
@@ -182,9 +183,16 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               </div>
             ) : <div />}
           </div>
-          {children}
+          <FieldSignOutContext.Provider value={user.role === 'field_manager' ? signOut : null}>{children}</FieldSignOutContext.Provider>
         </main>
       </div>
+      {user.role === 'field_manager' && <nav className="ae-field-footer" aria-label="Field Manager navigation">{[
+        { section: 'home', label: 'Home', Icon: Home },
+        { section: 'visits', label: 'Visits', Icon: MapPin },
+        { section: 'attendance', label: 'Attendance', Icon: ReceiptText },
+        { section: 'routes', label: 'Routes', Icon: MapPin },
+        { section: 'profile', label: 'Profile', Icon: UserCog },
+      ].map(({ section, label, Icon }) => { const current = location.pathname === '/field' ? new URLSearchParams(location.search).get('section') || 'home' : location.pathname.startsWith('/field/merchants/') && new URLSearchParams(location.search).get('visit') === '1' ? 'visits' : ''; return <Link key={section} to={`/field?section=${section}`} className={`${current === section ? 'active' : ''} ${section === 'attendance' ? 'attendance' : ''}`} aria-current={current === section ? 'page' : undefined}><Icon size={22} /><span>{label}</span></Link>; })}</nav>}
       {user.role === 'merchant' && (
         <div className="mobile-bottom-nav merchant-bottom-nav">
           <NavLink to="/dashboard" className={({ isActive }) => isActive && new URLSearchParams(location.search).get('view') !== 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>

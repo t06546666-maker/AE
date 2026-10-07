@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
+import { AdminForceCloseVisit } from '../components/AdminForceCloseVisit';
+import { AdminManagerOverview } from '../components/AdminManagerOverview';
 
 function Records({ title, rows }: { title: string; rows: Record<string, unknown>[] }) {
   const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
@@ -15,5 +17,6 @@ export function ReadOnlyProfiles({ kind }: { kind: 'manager' | 'merchant' | 'fie
   if (query.isPending) return <LoadingState />;
   if (query.isError) return <ErrorState error={query.error} retry={() => void query.refetch()} />;
   const data = query.data;
-  return <div className="dashboard-page"><Link to={kind === 'manager' ? '/field-managers' : kind === 'field-merchant' ? '/field?section=directory' : '/merchants'}>← Back</Link><h1>{kind === 'manager' ? 'Field Manager Profile' : 'Merchant Profile'}</h1><p>Read-only · Full authorised contact details · Latest 200 records per activity category.</p><Records title="Profile" rows={[data.profile || data.merchant]} />{data.summary && <Records title="Dashboard Summary" rows={[data.summary]} />}{data.customers && <Records title="Customers and Rewards" rows={data.customers} />}{kind === 'field-merchant' && data.activityRecorded === false && <p role="alert">Profile loaded, but activity logging is unavailable. Admin must apply the activity migration.</p>}{kind === 'manager' && <>{!data.activityAvailable && <p role="alert">Profile-view tracking requires the field activity migration. Past views cannot be reconstructed.</p>}<Records title="Login / Logout Sessions" rows={data.sessions || []} /><Records title="Visits and GPS" rows={data.visits || []} /><Records title="Submitted Merchant Updates" rows={data.updates || []} /><Records title="Merchant Profiles Viewed" rows={data.activity || []} /></>}{kind === 'merchant' && (records.isPending ? <LoadingState /> : records.isError ? <ErrorState error={records.error} retry={() => void records.refetch()} /> : <><Records title="Transactions" rows={records.data.orders || []} /><Records title="Payments" rows={records.data.payments || []} /></>)}</div>;
+  if (kind === 'manager') return <AdminManagerOverview data={data} />;
+  return <div className="dashboard-page"><Link to={kind === 'field-merchant' ? '/field?section=directory' : '/merchants'}>← Back</Link><h1>{'Merchant Profile'}</h1><p>Profile details are read-only · Full authorised contact details · Latest 200 records per activity category.</p><Records title="Profile" rows={[data.profile || data.merchant]} />{data.summary && <Records title="Dashboard Summary" rows={[data.summary]} />}{data.customers && <Records title="Customers and Rewards" rows={data.customers} />}{kind === 'field-merchant' && data.activityRecorded === false && <p role="alert">Profile loaded, but activity logging is unavailable. Admin must apply the activity migration.</p>}{kind === 'merchant' && (records.isPending ? <LoadingState /> : records.isError ? <ErrorState error={records.error} retry={() => void records.refetch()} /> : <><Records title="Transactions" rows={records.data.orders || []} /><Records title="Payments" rows={records.data.payments || []} /></>)}</div>;
 }

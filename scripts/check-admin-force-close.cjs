@@ -1,0 +1,14 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const server = fs.readFileSync('server.js', 'utf8');
+const handler = server.slice(server.indexOf("app.post('/api/admin/field-visits/:id/force-close'"), server.indexOf("app.post('/api/field/visits/:id/update'"));
+assert(handler.includes("requireRole('admin')"));
+assert(handler.includes('reason.length < 5'));
+assert(handler.includes("eq('status', 'active')"));
+assert(handler.includes('admin_closed_by: req.auth.profile.id'));
+assert(handler.includes('admin_closed_at: closedAt'));
+assert(handler.includes('admin_close_reason: reason'));
+assert(handler.includes('check_out_latitude: null'));
+assert(handler.includes('check_out_longitude: null'));
+assert(handler.includes('status(409)'));
+console.log('PASS: Admin-only override, required reason, active-only update and explicit audit without fabricated GPS.');

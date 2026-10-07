@@ -10,7 +10,6 @@ export function FieldHome({ name }: { name: string }) {
     { section: 'directory', title: 'All Merchants', detail: 'View and manage', Icon: Building2 },
     { section: 'visits', title: 'Visits & Check-in', detail: 'Check in at locations', Icon: MapPin },
     { section: 'routes', title: 'Routes', detail: 'View your route plan', Icon: Route },
-    { section: 'policy', title: 'Policy & Guidelines', detail: 'Working guidance', Icon: FileText },
   ];
   return <section className="field-home">
     <header className="field-home-hero"><div><small>FIELD MANAGER</small><h1>{greeting},<br />{name}</h1><p>Your merchants. Your route. Your day.</p></div>
