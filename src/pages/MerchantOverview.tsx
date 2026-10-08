@@ -68,7 +68,8 @@ function GrowthChart({ model }: { model: MerchantAnalytics }) {
 }
 
 function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
-  const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month'>('month');
+  const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
+  const [salesDate, setSalesDate] = useState(() => indiaDate(new Date()));
   const [mixPeriod, setMixPeriod] = useState<'week' | 'month'>('month');
   const mixRange = rangeForChartPeriod(mixPeriod)!;
   const mixStart = Date.parse(mixRange.from);
@@ -79,36 +80,38 @@ function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
   }));
   const freshCount = activeCustomers.filter(customer => customer.first && Date.parse(customer.first) >= mixStart).length;
   const returningCount = activeCustomers.length - freshCount;
-  const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod, rangeForChartPeriod(salesPeriod)!);
+  const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod === 'date' ? 'today' : salesPeriod, (salesPeriod === 'date' ? rangeForChartPeriod('custom', salesDate, salesDate) : rangeForChartPeriod(salesPeriod))!);
   const max = Math.max(1, ...weeks.map(week => week.sales));
   const newShare = activeCustomers.length ? Math.round(freshCount / activeCustomers.length * 100) : 0;
   const returningShare = activeCustomers.length ? 100 - newShare : 0;
-  return <div className="mo-columns mo-visuals"><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Sales overview</h2><p>{salesPeriod === 'today' ? 'Sales by six-hour slot · INR' : salesPeriod === 'week' ? 'Sales Monday–Sunday · INR' : 'Sales by week of this month · INR'}</p></div><select aria-label="Sales overview period" value={salesPeriod} onChange={event => setSalesPeriod(event.target.value as typeof salesPeriod)}><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-bars">{weeks.map(week => <div className="mo-bar-item" key={week.label}><strong>{formatCurrency(week.sales)}</strong><span style={{ height: `${Math.max(6, week.sales / max * 130)}px` }} /><small>{week.label}</small></div>)}</div></section><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Customer mix</h2><p>New vs returning</p></div><select aria-label="Customer mix period" value={mixPeriod} onChange={event => setMixPeriod(event.target.value as typeof mixPeriod)}><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-donut-wrap"><div className="mo-donut" style={{ background: activeCustomers.length ? `conic-gradient(#1875eb 0 ${newShare}%, #8055d5 ${newShare}% 100%)` : '#e2e8f0' }}><strong>{activeCustomers.length.toLocaleString('en-IN')}<small>customers</small></strong></div><div className="mo-donut-legend"><span><i className="new" />New customers <b>{freshCount} · {newShare}%</b></span><span><i className="returning" />Returning <b>{returningCount} · {returningShare}%</b></span></div></div></section></div>;
+  return <div className="mo-columns mo-visuals"><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Sales overview</h2><p>{salesPeriod === 'date' ? `Sales on ${salesDate} · INR` : salesPeriod === 'today' ? 'Sales by six-hour slot · INR' : salesPeriod === 'week' ? 'Sales Monday–Sunday · INR' : 'Sales by week of this month · INR'}</p></div><div><select aria-label="Sales overview period" value={salesPeriod} onChange={event => setSalesPeriod(event.target.value as typeof salesPeriod)}><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="date">Choose Date</option></select>{salesPeriod === 'date' && <input aria-label="Sales overview date" type="date" value={salesDate} max={indiaDate(new Date())} onChange={event => { if (event.target.value) setSalesDate(event.target.value); }} />}</div></div><div className="mo-bars">{weeks.map(week => <div className="mo-bar-item" key={week.label}><strong>{formatCurrency(week.sales)}</strong><span style={{ height: `${Math.max(6, week.sales / max * 130)}px` }} /><small>{week.label}</small></div>)}</div></section><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Customer mix</h2><p>New vs returning</p></div><select aria-label="Customer mix period" value={mixPeriod} onChange={event => setMixPeriod(event.target.value as typeof mixPeriod)}><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-donut-wrap"><div className="mo-donut" style={{ background: activeCustomers.length ? `conic-gradient(#1875eb 0 ${newShare}%, #8055d5 ${newShare}% 100%)` : '#e2e8f0' }}><strong>{activeCustomers.length.toLocaleString('en-IN')}<small>customers</small></strong></div><div className="mo-donut-legend"><span><i className="new" />New customers <b>{freshCount} · {newShare}%</b></span><span><i className="returning" />Returning <b>{returningCount} · {returningShare}%</b></span></div></div></section></div>;
 }
 
 function currentCount(model: MerchantAnalytics) { return model.current.active.length.toLocaleString('en-IN'); }
 
 function ActivitySnapshot({ model }: { model: MerchantAnalytics }) {
-  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
-  const range = rangeForChartPeriod(period)!;
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'date'>('today');
+  const [chosenDate, setChosenDate] = useState(() => indiaDate(new Date()));
+  const chartPeriod = period === 'date' ? 'today' : period;
+  const range = (period === 'date' ? rangeForChartPeriod('custom', chosenDate, chosenDate) : rangeForChartPeriod(period))!;
   const start = Date.parse(range.from);
   const end = Date.parse(range.to);
   const dayMs = 24 * 60 * 60 * 1000;
-  const labels = period === 'today' ? SIX_HOUR_LABELS
-    : period === 'week' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const labels = chartPeriod === 'today' ? SIX_HOUR_LABELS
+    : chartPeriod === 'week' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     : Array.from({ length: Math.ceil((end - start) / (7 * dayMs)) }, (_, i) => `Week ${i + 1}`);
   const days = labels.map(() => 0);
   for (const order of model.customers.flatMap(customer => customer.visits)) {
     const time = Date.parse(order.timestamp);
     if (time < start || time >= end || time > Date.now()) continue;
-    const interval = period === 'today' ? Math.floor((time - start) / (6 * 60 * 60 * 1000))
-      : period === 'week' ? Math.floor((time - start) / dayMs)
+    const interval = chartPeriod === 'today' ? Math.floor((time - start) / (6 * 60 * 60 * 1000))
+      : chartPeriod === 'week' ? Math.floor((time - start) / dayMs)
       : Math.floor((time - start) / (7 * dayMs));
     days[interval]++;
   }
   const max = Math.max(1, ...days);
   const total = days.reduce((sum, value) => sum + value, 0);
-  return <section className="mo-panel mo-activity-snapshot"><div className="mo-panel-heading"><div><h2>Purchase rhythm</h2><p>{period === 'today' ? 'Recorded visits by six-hour slot' : period === 'week' ? 'Recorded visits Monday–Sunday' : 'Recorded visits by week of this month'}</p></div><select aria-label="Purchase rhythm period" value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-week-bars">{days.map((value, index) => <div className="mo-week-bar" key={labels[index]}><strong>{value}</strong><span style={{ height: `${value / max * 112}px` }} /><small>{labels[index]}</small></div>)}</div><div className="mo-activity-foot"><span>Peak {period === 'today' ? 'time' : period === 'week' ? 'day' : 'week'}</span><b>{total ? labels[days.indexOf(Math.max(...days))] : '—'}</b><span>{total.toLocaleString('en-IN')} total visits</span></div></section>;
+  return <section className="mo-panel mo-activity-snapshot"><div className="mo-panel-heading"><div><h2>Purchase rhythm</h2><p>{chartPeriod === 'today' ? (period === 'date' ? `Recorded visits on ${chosenDate}` : 'Recorded visits by six-hour slot') : chartPeriod === 'week' ? 'Recorded visits Monday–Sunday' : 'Recorded visits by week of this month'}</p></div><div><select aria-label="Purchase rhythm period" value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="date">Choose Date</option></select>{period === 'date' && <input aria-label="Purchase rhythm date" type="date" value={chosenDate} max={indiaDate(new Date())} onChange={event => { if (event.target.value) setChosenDate(event.target.value); }} />}</div></div><div className="mo-week-bars">{days.map((value, index) => <div className="mo-week-bar" key={labels[index]}><strong>{value}</strong><span style={{ height: `${value / max * 112}px` }} /><small>{labels[index]}</small></div>)}</div><div className="mo-activity-foot"><span>Peak {chartPeriod === 'today' ? 'time' : chartPeriod === 'week' ? 'day' : 'week'}</span><b>{total ? labels[days.indexOf(Math.max(...days))] : '—'}</b><span>{total.toLocaleString('en-IN')} total visits</span></div></section>;
 }
 
 function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; onClose: () => void }) {
