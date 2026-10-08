@@ -1,5 +1,3 @@
 [
-  { "id": "test-local", "title": "Discover local favourites", "description": "Explore shops around you with AE.", "theme": "blue", "icon": "store", "action": "Explore shops", "url": "/customer/explore", "test": true },
-  { "id": "test-offers", "title": "Something new to discover", "description": "See what your local shopping community has to offer.", "theme": "purple", "icon": "gift", "action": "View offers", "url": "/customer/offers", "test": true },
-  { "id": "test-shopping", "title": "Your everyday shopping, connected", "description": "Send your shopping list to an AE merchant.", "theme": "green", "icon": "list", "action": "Create a list", "url": "/customer/home?productList=1", "test": true }
+  { "id": "ae-launch-poster", "title": "AE — connecting local businesses and customers", "description": "AE promotional poster for Chittur and Thathamangalam", "theme": "blue", "icon": "store", "action": "Explore AE shops", "url": "/customer/explore", "test": false, "imageUrl": "https://www.affiliateae.co.in/ads/ae-launch-poster.png" }
 ]

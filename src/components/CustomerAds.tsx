@@ -37,8 +37,10 @@ export function CustomerAds() {
     <div ref={slider} className="flex overflow-x-auto snap-x snap-mandatory rounded-2xl" style={{ scrollbarWidth: 'none' }} onScroll={event => { const element = event.currentTarget; if (element.clientWidth) setActive(Math.round(element.scrollLeft / element.clientWidth)); }}>
       {ads.data.ads.map((ad, index) => {
         const Icon = ad.icon === 'gift' ? Gift : ad.icon === 'list' ? ListPlus : Store;
+        if (ad.imageUrl && !failedImages.includes(ad.id)) return <Link key={ad.id} aria-label={`${ad.title}. ${ad.action}`} to={ad.url.startsWith('/customer/') ? ad.url : '/customer/explore'} className="relative block h-[180px] w-full shrink-0 snap-start overflow-hidden rounded-2xl bg-blue-50">
+          <img src={ad.imageUrl} alt={ad.description || ad.title} className="h-full w-full object-contain" onError={() => setFailedImages(current => [...current, ad.id])}/>
+        </Link>;
         return <Link key={ad.id} aria-label={`${index + 1} of ${ads.data.ads.length}: ${ad.title}. ${ad.action}`} to={ad.url.startsWith('/customer/') ? ad.url : '/customer/explore'} className={`relative flex min-h-[150px] w-full shrink-0 snap-start flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br ${themes[ad.theme] || themes.blue} px-4 py-3 text-white shadow-sm`}>
-          {ad.imageUrl && !failedImages.includes(ad.id) && <><img src={ad.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setFailedImages(current => [...current, ad.id])}/><span className="absolute inset-0 bg-gradient-to-t from-black/85 to-black/10"/></>}
           <div className="relative z-10">
           <div className="mb-2 flex items-center justify-between"><span className="rounded-full bg-black/20 px-2 py-0.5 text-[9px] font-semibold">{ad.test ? 'Demo' : 'Sponsored'}</span><Icon size={22} aria-hidden="true"/></div>
           <h3 className="text-sm font-bold leading-tight">{ad.title}</h3><p className="mt-1 text-xs leading-snug text-white/90">{ad.description}</p>
@@ -49,6 +51,6 @@ export function CustomerAds() {
     </div>
     <div className="mt-2 flex items-center justify-center" aria-label="Choose advertisement">{ads.data.ads.map((ad, index) => <button key={ad.id} type="button" aria-label={`Show ad ${index + 1}: ${ad.title}`} aria-current={selected === index ? 'true' : undefined} onClick={() => goTo(index)} className="flex h-10 w-10 items-center justify-center"><span className={`block h-2 rounded-full ${selected === index ? 'w-5 bg-blue-600' : 'w-2 bg-gray-300'}`} /></button>)}</div>
     <p className="sr-only" aria-live="polite">Advertisement {selected + 1} of {ads.data.ads.length}</p>
-    <button type="button" className="text-xs text-gray-500" onClick={() => setPaused(value => !value)}>{paused ? 'Play slides' : 'Pause slides'}</button>
+    {count > 1 && <button type="button" className="text-xs text-gray-500" onClick={() => setPaused(value => !value)}>{paused ? 'Play slides' : 'Pause slides'}</button>}
   </section>;
 }
