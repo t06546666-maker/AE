@@ -932,7 +932,9 @@ async function sendWhatsAppTemplate({
         offer_id: offerId,
         campaign_id: campaignId,
         offer_recipient_id: offerRecipientId,
-        message_type: messageType,
+        // Registration templates share the existing database onboarding type.
+        // `registration_password` is a delivery label, not the Meta template name.
+        message_type: messageType === 'registration_password' ? 'qr' : messageType,
         template_name: templateName,
         recipient,
         status: 'queued',
