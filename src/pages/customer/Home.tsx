@@ -2,7 +2,7 @@ import { formatDateTime } from '../../utils';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload, ShoppingBag, QrCode, Tags } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -12,6 +12,7 @@ import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequest
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerAds } from '../../components/CustomerAds';
+import './home-reference.css';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const dailyGreeting = useDailyGreeting('customer');
@@ -59,31 +60,20 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   };
 
   return (
-    <div className="customer-modern-page bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
       <CustomerPaymentRequests />
       {/* Header */}
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
-        <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
-          <Languages size={16} />
-          <select
-            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
-            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
-            onChange={(event) => void i18n.changeLanguage(event.target.value)}
-            aria-label={t('language.malayalam')}
-          >
-            <option value="en">EN</option>
-            <option value="ml">മ</option>
-          </select>
-        </label>
         <img src="/logo.png" alt="AE" className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
+        <CustomerLocationBar compact />
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
         </Link>
       </header>
 
-      <CustomerLocationBar />
       <div className="px-4 pt-2 space-y-6">
+        <CustomerAds />
         {/* Greeting */}
         <div className="customer-modern-greeting">
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
@@ -109,36 +99,25 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
         </Link>
 
-        {/* Primary customer actions */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Link to="/customer/rewards" className="customer-modern-action customer-modern-action-primary flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] p-4 text-white shadow-md active:scale-[0.98] transition-transform">
-            <Gift size={30} strokeWidth={2} />
-            <span className="text-[16px] font-bold">Redeem</span>
-            <span className="text-[11px] text-green-50">Use your points</span>
-          </Link>
-          <Link to="/customer/scan" className="customer-modern-action customer-modern-action-secondary flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
-            {qrSrc ? <img src={qrSrc} alt="Your AE customer QR code" className="h-[72px] w-[72px] rounded-lg bg-white p-1" /> : <Star size={34} />}
-            <span className="text-[16px] font-bold">My QR Code</span>
-            <span className="text-[11px] text-gray-600">Show to earn points</span>
-          </Link>
-        </div>
+        <nav className="ae-home-shortcuts" aria-label="Customer quick actions">
+          <Link to="/customer/explore" className="shops"><ShoppingBag/><span>Nearby Shops</span></Link>
+          <Link to="/customer/offers" className="offers"><Tags/><span>Offers</span></Link>
+          <Link to="/customer/scan" className="qr"><QrCode/><span>My QR Code</span></Link>
+          <Link to="/customer/rewards" className="redeem"><Gift/><span>Redeem Points</span></Link>
+        </nav>
+        <CustomerAds />
         {/* Merchant offers grid */}
         <section className="pt-1">
           <div className="mb-3 flex items-end justify-between">
-            <div><h3 className="text-[16px] font-bold text-gray-900">Merchant Offers</h3><p className="text-[11px] text-gray-500">Save more at AE businesses near you</p></div>
+            <div><h3 className="text-[16px] font-bold text-gray-900">Featured Offers Near You</h3><p className="text-[11px] text-gray-500">Save more at AE businesses near you</p></div>
             <Link to="/customer/offers" className="text-[12px] font-bold text-[#087a4b]">View all</Link>
           </div>
           {offersLoading ? <div className="rounded-2xl bg-gray-50 py-8 text-center text-sm text-gray-400">Loading offers...</div> : offers.length ? <div className="grid grid-cols-2 gap-3">{offers.map((offer) => <Link to="/customer/offers" key={offer.id} className="overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform"><div className="h-[112px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">{offer.imageUrl ? <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={34} /></div>}</div><div className="p-3"><h4 className="line-clamp-2 text-[13px] font-bold leading-tight text-gray-900">{offer.title}</h4><p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p><p className="mt-2 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p></div></Link>)}</div> : <div className="rounded-2xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">No active offers right now.</div>}
         </section>
-        <Link to="/customer/explore" className="customer-modern-list-card flex items-center justify-between rounded-[18px] p-4 text-[#087a4b] shadow-sm active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3"><MapPin size={30} strokeWidth={2} /><div><span className="block text-[16px] font-bold">Nearby Shops</span><span className="text-[11px] text-gray-600">Find AE shops around you</span></div></div>
-          <ChevronRight size={20} />
-        </Link>
         <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
           <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">Send Product List</span></div></div><ChevronRight size={20} />
         </button>
 
-        <Link to="/customer/offers" className="glass-offer-link"><Gift size={25}/><div><strong>Offers</strong><span>Discover exclusive offers</span></div><ChevronRight size={20}/></Link>
 
         {/* Recent Activity */}
         <div className="pt-2">
@@ -174,6 +153,18 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
         </div>
 
+        <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
+          <Languages size={16} />
+          <select
+            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
+            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
+            onChange={(event) => void i18n.changeLanguage(event.target.value)}
+            aria-label={t('language.malayalam')}
+          >
+            <option value="en">EN</option>
+            <option value="ml">മ</option>
+          </select>
+        </label></div>
         {/* Personal customer journey: counts come from all purchases, not recent activity. */}
         <section className="customer-modern-list-card rounded-[18px] p-4 shadow-sm" aria-labelledby="customer-journey-title">
           <h3 id="customer-journey-title" className="text-[16px] font-bold text-gray-900">Your Customer Journey</h3>
@@ -188,16 +179,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </>}
         </section>
 
-        <CustomerAds />
-        {/* Banner */}
-        <div className="bg-[#e8faee] rounded-[16px] p-4 flex items-center justify-between shadow-sm relative overflow-hidden mt-2 border border-green-50">
-          <div className="relative z-10">
-            <h3 className="font-bold text-[15px] text-gray-900 leading-tight tracking-wide">More Shopping<br/>More Rewards</h3>
-          </div>
-          <div className="relative z-10 text-[#facc15]">
-            <Gift size={40} strokeWidth={1.5} />
-          </div>
-        </div>
       </div>
       {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Product Lists</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
