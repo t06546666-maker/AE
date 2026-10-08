@@ -11,6 +11,7 @@ import { apiFetch } from '../../api';
 import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
+import { CustomerAds } from '../../components/CustomerAds';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const dailyGreeting = useDailyGreeting('customer');
@@ -187,6 +188,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </>}
         </section>
 
+        <CustomerAds />
         {/* Banner */}
         <div className="bg-[#e8faee] rounded-[16px] p-4 flex items-center justify-between shadow-sm relative overflow-hidden mt-2 border border-green-50">
           <div className="relative z-10">

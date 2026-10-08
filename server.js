@@ -15,6 +15,7 @@ const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
+const customerAds = require('./backend/customer-ads.json');
 let initializeApp;
 let cert;
 let getAuth;
@@ -2194,6 +2195,11 @@ app.get('/api/customer/categories', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+app.get('/api/customer/ads', requireCustomerAuth, (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ ads: customerAds });
 });
 
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
