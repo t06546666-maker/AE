@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../utils';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
@@ -8,8 +9,10 @@ import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerMerchants, useCustomerOffers } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
 import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
+import { useDailyGreeting } from '../../dailyGreeting';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
+  const dailyGreeting = useDailyGreeting('customer');
   const { data, isLoading } = useCustomerDashboard();
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -83,7 +86,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
             Hi, {user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
           </h2>
-          <p className="text-[13px] text-gray-500 font-medium tracking-wide">Where customers meet business and beyond.</p>
+          <p className="text-[13px] text-gray-500 font-medium tracking-wide">{dailyGreeting}</p>
         </div>
 
         {/* Points Card */}
@@ -155,7 +158,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     <div>
                       <p className="font-bold text-[14px] text-gray-900 leading-tight">{item.merchant_name || 'Store'}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {formatDateTime(item.created_at)}
                       </p>
                     </div>
                   </div>

@@ -14,6 +14,7 @@ const { Resend } = require('resend');
 const Razorpay = require('razorpay');
 const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
+const dailyGreetings = require('./backend/daily-messages.json');
 let initializeApp;
 let cert;
 let getAuth;
@@ -2172,6 +2173,16 @@ app.delete('/api/merchant-categories/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// Public, non-personal dashboard copy; backend updates reach installed apps.
+app.get('/api/daily-greetings', (req, res) => {
+  const role = req.query.role;
+  if (role !== 'customer' && role !== 'merchant') {
+    return res.status(400).json({ error: 'Choose customer or merchant greetings.' });
+  }
+  res.set('Cache-Control', 'no-store');
+  res.json({ messages: dailyGreetings[role], rotationStart: dailyGreetings.rotationStart });
+});
+
 app.get('/api/customer/categories', async (req, res) => {
   try {
     await ensureDefaultMerchantCategories();
@@ -3313,7 +3324,25 @@ app.post('/api/merchant/loyalty-bonus', requireAuth, requireRole('merchant'), as
   if (!Number.isInteger(points) || points < 1 || points > 100 || !uuid.test(req.body.customerId || '') || !uuid.test(req.body.requestId || '')) return res.status(400).json({ error: 'Select a customer and enter 1–100 whole points.' });
   const result = await supabaseAdmin.rpc('award_loyalty_bonus', { p_merchant_id: req.auth.profile.merchant_id, p_customer_id: req.body.customerId, p_points: points, p_request_id: req.body.requestId, p_created_by: req.auth.user.id });
   if (result.error) return res.status(400).json({ error: result.error.message });
-  return res.json({ success: true, bonus: result.data });
+  let notificationSent = false;
+  let claim;
+  try {
+    await firebaseInitializationPromise;
+    const { getFirestore } = await import('firebase-admin/firestore');
+    claim = getFirestore().collection('ae_loyalty_notifications').doc(String(result.data.id));
+    // Atomic claim prevents duplicate pushes when the award request is retried.
+    await claim.create({ bonus_id: result.data.id, created_at: new Date().toISOString() });
+    notificationSent = await pushToCustomer(
+      req.body.customerId,
+      'Thank you for your loyalty! 💙',
+      `You received ${result.data.points} AE loyalty points. Thank you for your loyalty!`,
+      { url: '/customer/notifications', bonus_id: String(result.data.id), type: 'loyalty_bonus' },
+    );
+    if (!notificationSent) await claim.delete();
+  } catch (error) {
+    if (error.code !== 6 && error.code !== 'already-exists') console.warn('Loyalty notification failed:', error.message);
+  }
+  return res.json({ success: true, bonus: result.data, notificationSent });
 });
 
 app.post(
@@ -4967,7 +4996,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   const orders = ordersResult.data || [];
   const lifetimeOrders = lifetimeResult.data || [];
   const intervals = [0, 1, 2, 3].map((index) => ({
-    label: `${String(index * 6).padStart(2, '0')}–${String((index + 1) * 6).padStart(2, '0')}`,
+    label: ['12 AM–6 AM', '6 AM–12 PM', '12 PM–6 PM', '6 PM–12 AM'][index],
     orders: 0,
     revenue: 0,
   }));

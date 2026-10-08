@@ -1,3 +1,4 @@
+import { SIX_HOUR_LABELS } from '../utils';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
@@ -14,6 +15,8 @@ import { buildMerchantAnalytics, changePercent, indiaDate, type MerchantAnalytic
 import './merchant-overview.css';
 import { LoyalCustomers } from '../components/LoyalCustomers';
 import { MerchantPointBalance } from '../components/MerchantPointBalance';
+import { useDailyGreeting } from '../dailyGreeting';
+import { salesOverviewBuckets } from './salesOverview';
 
 async function loadPages<T>(resource: 'orders' | 'customers', signal: AbortSignal): Promise<T[]> {
   const fetchPage = (page: number) => apiFetch<Record<string, T[]> & { pagination: Pagination }>(`/api/${resource}?page=${page}&pageSize=100`, { signal });
@@ -65,6 +68,7 @@ function GrowthChart({ model }: { model: MerchantAnalytics }) {
 }
 
 function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
+  const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month'>('month');
   const [mixPeriod, setMixPeriod] = useState<'week' | 'month'>('month');
   const mixRange = rangeForChartPeriod(mixPeriod)!;
   const mixStart = Date.parse(mixRange.from);
@@ -75,16 +79,11 @@ function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
   }));
   const freshCount = activeCustomers.filter(customer => customer.first && Date.parse(customer.first) >= mixStart).length;
   const returningCount = activeCustomers.length - freshCount;
-  const weeks = Array.from({ length: 4 }, (_, index) => {
-    const start = index * Math.ceil(model.days / 4) + 1;
-    const end = Math.min(model.days, (index + 1) * Math.ceil(model.days / 4));
-    const sales = model.current.orders.filter(order => { const day = Number(indiaDate(order.timestamp).slice(8)); return day >= start && day <= end; }).reduce((sum, order) => sum + order.amount, 0);
-    return { label: `W${index + 1}`, sales };
-  });
+  const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod, rangeForChartPeriod(salesPeriod)!);
   const max = Math.max(1, ...weeks.map(week => week.sales));
   const newShare = activeCustomers.length ? Math.round(freshCount / activeCustomers.length * 100) : 0;
   const returningShare = activeCustomers.length ? 100 - newShare : 0;
-  return <div className="mo-columns mo-visuals"><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Sales overview</h2><p>Weekly sales in INR</p></div><BarChart3 size={21} /></div><div className="mo-bars">{weeks.map(week => <div className="mo-bar-item" key={week.label}><strong>{formatCurrency(week.sales)}</strong><span style={{ height: `${Math.max(6, week.sales / max * 130)}px` }} /><small>{week.label}</small></div>)}</div></section><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Customer mix</h2><p>New vs returning</p></div><select aria-label="Customer mix period" value={mixPeriod} onChange={event => setMixPeriod(event.target.value as typeof mixPeriod)}><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-donut-wrap"><div className="mo-donut" style={{ background: activeCustomers.length ? `conic-gradient(#1875eb 0 ${newShare}%, #8055d5 ${newShare}% 100%)` : '#e2e8f0' }}><strong>{activeCustomers.length.toLocaleString('en-IN')}<small>customers</small></strong></div><div className="mo-donut-legend"><span><i className="new" />New customers <b>{freshCount} · {newShare}%</b></span><span><i className="returning" />Returning <b>{returningCount} · {returningShare}%</b></span></div></div></section></div>;
+  return <div className="mo-columns mo-visuals"><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Sales overview</h2><p>{salesPeriod === 'today' ? 'Sales by six-hour slot · INR' : salesPeriod === 'week' ? 'Sales Monday–Sunday · INR' : 'Sales by week of this month · INR'}</p></div><select aria-label="Sales overview period" value={salesPeriod} onChange={event => setSalesPeriod(event.target.value as typeof salesPeriod)}><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-bars">{weeks.map(week => <div className="mo-bar-item" key={week.label}><strong>{formatCurrency(week.sales)}</strong><span style={{ height: `${Math.max(6, week.sales / max * 130)}px` }} /><small>{week.label}</small></div>)}</div></section><section className="mo-panel"><div className="mo-panel-heading"><div><h2>Customer mix</h2><p>New vs returning</p></div><select aria-label="Customer mix period" value={mixPeriod} onChange={event => setMixPeriod(event.target.value as typeof mixPeriod)}><option value="week">This Week</option><option value="month">This Month</option></select></div><div className="mo-donut-wrap"><div className="mo-donut" style={{ background: activeCustomers.length ? `conic-gradient(#1875eb 0 ${newShare}%, #8055d5 ${newShare}% 100%)` : '#e2e8f0' }}><strong>{activeCustomers.length.toLocaleString('en-IN')}<small>customers</small></strong></div><div className="mo-donut-legend"><span><i className="new" />New customers <b>{freshCount} · {newShare}%</b></span><span><i className="returning" />Returning <b>{returningCount} · {returningShare}%</b></span></div></div></section></div>;
 }
 
 function currentCount(model: MerchantAnalytics) { return model.current.active.length.toLocaleString('en-IN'); }
@@ -95,7 +94,7 @@ function ActivitySnapshot({ model }: { model: MerchantAnalytics }) {
   const start = Date.parse(range.from);
   const end = Date.parse(range.to);
   const dayMs = 24 * 60 * 60 * 1000;
-  const labels = period === 'today' ? ['00–06', '06–12', '12–18', '18–24']
+  const labels = period === 'today' ? SIX_HOUR_LABELS
     : period === 'week' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     : Array.from({ length: Math.ceil((end - start) / (7 * dayMs)) }, (_, i) => `Week ${i + 1}`);
   const days = labels.map(() => 0);
@@ -136,10 +135,11 @@ function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; on
 function VisitHeatmap({ model }: { model: MerchantAnalytics }) {
   const [selected, setSelected] = useState<string | null>(null);
   const max = Math.max(1, ...model.heat.flat());
-  return <><div className="mo-heat" role="group" aria-label="Purchase activity by weekday and six-hour period in India Standard Time"><span />{['00–06', '06–12', '12–18', '18–24'].map(time => <span className="mo-heat-time" key={time}>{time}</span>)}{model.heat.map((row, i) => <div className="mo-heat-row" key={i}><span>{weekdays[i].slice(0, 3)}</span>{row.map((count, j) => { const label = `${weekdays[i]}, ${String(j * 6).padStart(2, '0')}:00–${String((j + 1) * 6).padStart(2, '0')}:00 IST: ${count} recorded purchases`; return <button key={j} aria-label={label} title={label} data-level={count ? Math.max(1, Math.ceil(count / max * 4)) : 0} onClick={() => setSelected(label)}>{count || <span aria-hidden="true">·</span>}</button>; })}</div>)}</div><div className="mo-heat-key"><span>Less</span>{[0, 1, 2, 3, 4].map(n => <i key={n} data-level={n} />)}<span>More</span><span>India Standard Time</span></div><p className="mo-note" aria-live="polite">{selected || 'Tap a cell to see the exact time and purchase count.'}</p><div className="mo-insight-banner"><Lightbulb size={20} /><p>{model.busiestDay >= 0 ? `${weekdays[model.busiestDay]} is your busiest day this month. Plan your offers around your busiest times.` : 'Your busiest times will appear after you record customer purchases.'}</p></div></>;
+  return <><div className="mo-heat" role="group" aria-label="Purchase activity by weekday and six-hour period in India Standard Time"><span />{SIX_HOUR_LABELS.map(time => <span className="mo-heat-time" key={time}>{time}</span>)}{model.heat.map((row, i) => <div className="mo-heat-row" key={i}><span>{weekdays[i].slice(0, 3)}</span>{row.map((count, j) => { const label = `${weekdays[i]}, ${SIX_HOUR_LABELS[j]} IST: ${count} recorded purchases`; return <button key={j} aria-label={label} title={label} data-level={count ? Math.max(1, Math.ceil(count / max * 4)) : 0} onClick={() => setSelected(label)}>{count || <span aria-hidden="true">·</span>}</button>; })}</div>)}</div><div className="mo-heat-key"><span>Less</span>{[0, 1, 2, 3, 4].map(n => <i key={n} data-level={n} />)}<span>More</span><span>India Standard Time</span></div><p className="mo-note" aria-live="polite">{selected || 'Tap a cell to see the exact time and purchase count.'}</p><div className="mo-insight-banner"><Lightbulb size={20} /><p>{model.busiestDay >= 0 ? `${weekdays[model.busiestDay]} is your busiest day this month. Plan your offers around your busiest times.` : 'Your busiest times will appear after you record customer purchases.'}</p></div></>;
 }
 
 export function MerchantOverview({ user }: { user: UserProfile }) {
+  const dailyGreeting = useDailyGreeting('merchant');
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const view = location.pathname === '/customers' ? 'customers' : ['insights', 'reports'].includes(params.get('view') || '') ? params.get('view')! : 'overview';
@@ -196,7 +196,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     { label: 'Total sales', value: current.sales, before: previous.sales, icon: IndianRupee, color: 'amber', hint: 'Recorded purchase value' },
   ];
   return <div className="merchant-overview">
-    <header className="mo-heading"><div><span className="mo-eyebrow">YOUR BUSINESS, CLOSER</span><h1>{view === 'overview' ? `Hello, ${user.full_name || 'there'}` : view === 'customers' ? 'Your customers' : view === 'insights' ? 'Customer insights' : 'Business reports'}</h1><p>{view === 'customers' ? 'Every relationship starts with knowing your customer.' : 'Know your customers. Keep them coming back.'}</p></div><div className="mo-hero-controls">{view === 'overview' && user.merchant_id && <MerchantPointBalance merchantId={user.merchant_id} compact/>}<div className="mo-heading-actions">{view !== 'customers' && <label className="mo-month"><CalendarDays size={17} /><span>{new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span><input aria-label="Reporting month" type="month" min="2000-01" max={currentMonth} value={month} onChange={e => { if (e.target.value) { const next = new URLSearchParams(params); next.set('month', e.target.value); setParams(next, { replace: true }); } }} /></label>} {view === 'overview' && <div className="mo-header-actions"><Link to="/add-customer" className="mo-header-action add">+ <span>Add customer</span></Link><Link to="/rewards?scan=1" className="mo-header-action scan">⌁ <span>Scan QR</span></Link></div>}</div></div></header>
+<header className="mo-heading"><div><span className="mo-eyebrow">YOUR BUSINESS, CLOSER</span><h1>{view === 'overview' ? `Hello, ${user.full_name || 'there'}` : view === 'customers' ? 'Your customers' : view === 'insights' ? 'Customer insights' : 'Business reports'}</h1><p>{view === 'customers' ? 'Every relationship starts with knowing your customer.' : dailyGreeting}</p></div><div className="mo-hero-controls">{view === 'overview' && user.merchant_id && <MerchantPointBalance merchantId={user.merchant_id} compact/>}<div className="mo-heading-actions">{view !== 'customers' && <label className="mo-month"><CalendarDays size={17} /><span>{new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span><input aria-label="Reporting month" type="month" min="2000-01" max={currentMonth} value={month} onChange={e => { if (e.target.value) { const next = new URLSearchParams(params); next.set('month', e.target.value); setParams(next, { replace: true }); } }} /></label>} {view === 'overview' && <div className="mo-header-actions"><Link to="/add-customer" className="mo-header-action add">+ <span>Add customer</span></Link><Link to="/rewards?scan=1" className="mo-header-action scan">⌁ <span>Scan QR</span></Link></div>}</div></div></header>
     <nav className="mo-tabs" aria-label="Business dashboard sections">{[['overview', 'Overview'], ['customers', 'Customers'], ['insights', 'Insights'], ['reports', 'Reports']].map(([id, label]) => <Link key={id} to={href(id)} aria-current={view === id ? 'page' : undefined}>{label}</Link>)}<Link className="mo-create-link" to="/offers?create=1"><Plus size={16} />Create offer</Link></nav>
     <div className="mo-content" key={view}>
     {view === 'overview' && <>

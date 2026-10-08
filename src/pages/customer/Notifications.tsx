@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Bell } from 'lucide-react';
@@ -14,7 +15,7 @@ export function CustomerNotifications() {
       {error && <div role="alert"><p>{error.message}</p><button onClick={() => void refetch()}>Try again</button></div>}
       {!isLoading && !error && !data?.transactions.length && <p>No purchase or redemption activity yet.</p>}
       {data?.transactions.map(item => <Link key={`${item.type}-${item.id}`} to="/customer/transactions" className="flex gap-3 rounded-2xl bg-white p-4 shadow-sm">
-        <Bell className="shrink-0 text-blue-600" /><div><p className="font-bold">₹{Number(item.amount || 0).toLocaleString('en-IN')} {item.type === 'bonus' ? 'loyalty bonus' : item.type === 'earn' ? 'purchase' : 'redemption'}</p><p>{Number(item.points).toLocaleString('en-IN')} points {item.type !== 'redeem' ? 'earned' : 'redeemed'} · {item.merchant_name || 'AE Merchant'}</p><time className="text-xs text-gray-500">{new Date(item.created_at).toLocaleString('en-IN')}</time></div>
+        <Bell className="shrink-0 text-blue-600" /><div><p className="font-bold">{item.type === 'bonus' ? 'Thank you for your loyalty! 💙' : `₹${Number(item.amount || 0).toLocaleString('en-IN')} ${item.type === 'earn' ? 'purchase' : 'redemption'}`}</p><p>{Number(item.points).toLocaleString('en-IN')} points {item.type !== 'redeem' ? 'earned' : 'redeemed'} · {item.merchant_name || 'AE Merchant'}</p>{item.type === 'bonus' && <p>You received {Number(item.points).toLocaleString('en-IN')} AE loyalty points. Thank you for your loyalty!</p>}<time className="text-xs text-gray-500">{formatDateTime(item.created_at)}</time></div>
       </Link>)}
       <div className="flex justify-between"><button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button><button disabled={!data || page >= data.pagination.totalPages} onClick={() => setPage(page + 1)}>Next</button></div>
     </main>

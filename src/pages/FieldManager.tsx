@@ -1,3 +1,5 @@
+import { TimeInput } from '../components/TimeInput';
+import { formatClockTime } from '../utils';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
@@ -665,7 +667,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
               </label>
               <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} /> Generate User ID & Password</button>
               <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
-          <label>Opening Time<input type="time" value={openingTime} required={!!closingTime} onChange={event => setOpeningTime(event.target.value)} /></label><label>Closing Time<input type="time" value={closingTime} required={!!openingTime} onChange={event => setClosingTime(event.target.value)} /></label>
+          <label>Opening Time<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>Closing Time<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
               </>}
               {onboardStep === 1 && <>
               <label>
@@ -705,7 +707,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
                   ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
                   ['Merchant Route', merchantRoute || 'Not assigned', 0],
-                  ['Shop Hours', openingTime && closingTime ? `${openingTime} – ${closingTime}` : 'Not provided', 0],
+                  ['Shop Hours', openingTime && closingTime ? `${formatClockTime(openingTime)} – ${formatClockTime(closingTime)}` : 'Not provided', 0],
                   ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
                   ['Location', latitude && longitude ? `${latitude}, ${longitude}` : 'Not selected', 1],
                 ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{label}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>Edit</button></div>)}

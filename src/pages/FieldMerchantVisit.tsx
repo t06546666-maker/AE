@@ -1,3 +1,4 @@
+import { formatDateTime, formatClockTime } from '../utils';
 import { useEffect, useState } from 'react';
 import { canVisit, visitDistance } from '../visitLocation';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -84,11 +85,11 @@ export function FieldMerchantVisit() {
   const merchant = profile.data.merchant; const busy = start.isPending || finish.isPending || preparing;
   const distance = location && merchant.latitude != null && merchant.longitude != null ? visitDistance(location.coords.latitude, location.coords.longitude, Number(merchant.latitude), Number(merchant.longitude)) : null;
   const nearby = !locationError && !!location && clock - location.timestamp < 30000 && canVisit(distance, location.coords.accuracy);
-  const time = (date: string) => new Date(date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const time = (date: string) => formatDateTime(date);
   return <div className="dashboard-page"><section className="field-route-planning ae-workflow">
     <Link to={visitMode ? "/field?section=visits" : "/field?section=directory"}>← {visitMode ? "Back to visits" : "Back to merchants"}</Link>
     <header><Store /><div><h1>{!visitMode ? 'Merchant Profile' : ownActive ? 'Visit Report' : 'Check In'}</h1><p>{merchant.name} · {merchant.merchant_code}</p></div></header>
-    <article className="attendance-card"><h2>Merchant information</h2>{merchant.opening_time && merchant.closing_time && <p><Clock size={17} /> Shop hours: {merchant.opening_time.slice(0,5)} – {merchant.closing_time.slice(0,5)} (local time){merchant.closing_time < merchant.opening_time ? ' · closes next day' : ''}</p>}<p><MapPin size={17} /> {merchant.address || 'Address not added'}</p>{merchant.phone && <p><Phone size={17} /> <a href={`tel:${merchant.phone}`}>{merchant.phone}</a></p>}<p>{merchant.email}</p>{merchant.image_url && <img src={merchant.image_url} alt={merchant.name} style={{ maxWidth:'100%',maxHeight:220,borderRadius:14 }} />}</article>
+    <article className="attendance-card"><h2>Merchant information</h2>{merchant.opening_time && merchant.closing_time && <p><Clock size={17} /> Shop hours: {formatClockTime(merchant.opening_time)} – {formatClockTime(merchant.closing_time)} (IST){merchant.closing_time < merchant.opening_time ? ' · closes next day' : ''}</p>}<p><MapPin size={17} /> {merchant.address || 'Address not added'}</p>{merchant.phone && <p><Phone size={17} /> <a href={`tel:${merchant.phone}`}>{merchant.phone}</a></p>}<p>{merchant.email}</p>{merchant.image_url && <img src={merchant.image_url} alt={merchant.name} style={{ maxWidth:'100%',maxHeight:220,borderRadius:14 }} />}</article>
     {!profile.data.activityRecorded && <p role="alert">Profile-view activity could not be recorded.</p>}
     {visitMode && <article className="attendance-card"><h2>{ownActive ? 'Visit in progress' : 'Check-in location'}</h2>
       {!ownActive && merchant.latitude != null && merchant.longitude != null && <div className="ae-checkin-map"><FieldMerchantMapper merchants={[merchant]} categories={[]} visitPosition={location ? { latitude: location.coords.latitude, longitude: location.coords.longitude } : null} /></div>}

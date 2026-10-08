@@ -1,9 +1,10 @@
+import { formatDateTime } from '../utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminForceCloseVisit } from './AdminForceCloseVisit';
 import './admin-manager-overview.css';
 
-const time = (date?: string) => date ? new Date(date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '—';
+const time = (date?: string) => date ? formatDateTime(date) : '—';
 function MapLink({ lat, lng }: { lat?: number; lng?: number }) {
   return lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) ? <a className="button secondary" target="_blank" rel="noopener noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${Number(lat)},${Number(lng)}`}>View location on map</a> : <span>Location unavailable</span>;
 }

@@ -1,3 +1,4 @@
+import { SIX_HOUR_LABELS } from '../utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,7 @@ import { SubscriptionModal } from '../components/SubscriptionModal';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
-  intervals: ['00-06', '06-12', '12-18', '18-24'].map((label) => ({ label, orders: 0, revenue: 0 })),
+  intervals: SIX_HOUR_LABELS.map((label) => ({ label, orders: 0, revenue: 0 })),
   retention: { lifetimeCustomers: 0, selectedVisits: 0, todayVisits: 0, weekVisits: 0, monthVisits: 0 },
 };
 

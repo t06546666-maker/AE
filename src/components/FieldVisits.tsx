@@ -1,3 +1,4 @@
+import { formatDateTime } from '../utils';
 import { useEffect, useState } from 'react';
 import { CalendarDays, CheckCircle2, MapPin, Store } from 'lucide-react';
 import '../field-visits.css';
@@ -17,7 +18,7 @@ export function FieldVisits({ merchants, visits, active, notes, setNotes, onChec
   const selected = visits.find(v => v.id === selectedId) || active;
   const merchant = merchants.find(m => m.id === selected?.merchant_id);
   const duration = selected ? Math.max(0, Math.floor(((selected.check_out_at ? new Date(selected.check_out_at).getTime() : now) - new Date(selected.check_in_at).getTime()) / 1000)) : 0;
-  const time = (value: string | null | undefined) => value ? new Date(value).toLocaleString() : '—';
+  const time = (value: string | null | undefined) => value ? formatDateTime(value) : '—';
   const mapLat = selected?.check_in_latitude ?? merchant?.latitude;
   const mapLng = selected?.check_in_longitude ?? merchant?.longitude;
   return <section className="field-visits">

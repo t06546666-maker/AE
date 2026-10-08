@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../utils';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Star, Gift, Wallet, IndianRupee } from 'lucide-react';
 import { UserProfile } from '../../types';
@@ -119,7 +120,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                       <div>
                         <p className="font-bold text-[16px] text-gray-900 leading-tight">{t.merchant_name || 'Store'}</p>
                         <p className="text-[12px] text-gray-400 mt-1">
-                          {new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {formatDateTime(t.created_at)}
                         </p>
                       </div>
                     </div>

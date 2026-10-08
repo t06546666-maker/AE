@@ -4,15 +4,32 @@ export const ALL_REWARD_OPTIONS = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric',
+    day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata',
   });
 }
 
 export function formatTime(value: string) {
   return new Date(value).toLocaleTimeString('en-IN', {
-    hour: '2-digit', minute: '2-digit', hour12: true,
-  });
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
+  }).replace(/\b(am|pm)\b/gi, period => period.toUpperCase());
 }
+
+export function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
+  }).replace(/\b(am|pm)\b/gi, period => period.toUpperCase());
+}
+
+// Shop hours are wall-clock times, not timestamps; do not timezone-shift them.
+export function formatClockTime(value: string) {
+  const match = /^(\d{2}):(\d{2})/.exec(value);
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return '—';
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+export const SIX_HOUR_LABELS = ['12 AM–6 AM', '6 AM–12 PM', '12 PM–6 PM', '6 PM–12 AM'];
 
 export function formatPoints(value: number | string | null | undefined) {
   return Number(value || 0).toFixed(2);
