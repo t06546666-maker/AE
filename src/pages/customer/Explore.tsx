@@ -4,7 +4,8 @@ import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
 import { useEffect, useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
-import { Geolocation } from '@capacitor/geolocation';
+import { useCustomerLocation } from '../../hooks/useCustomerLocation';
+import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { apiFetch } from '../../api';
 
 
@@ -20,14 +21,15 @@ export function CustomerExplore() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const currentLocation = useCustomerLocation();
+  const userLocation = currentLocation.data || null;
   const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviews, setReviews] = useState<any[]>([]);
 
   const categoriesQuery = useCustomerCategories();
-  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory);
+  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory, userLocation);
   const merchants = data?.merchants ?? [];
   const distanceKm = (latitude?: number | null, longitude?: number | null) => {
     if (!userLocation || latitude == null || longitude == null) return null;
@@ -38,15 +40,8 @@ export function CustomerExplore() {
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
   const sortedMerchants = [...merchants].sort((a, b) => (distanceKm(a.latitude, a.longitude) ?? Number.POSITIVE_INFINITY) - (distanceKm(b.latitude, b.longitude) ?? Number.POSITIVE_INFINITY));
-  const locateUser = async () => {
-    try {
-      const permission = await Geolocation.requestPermissions();
-      if (permission.location !== 'granted') return;
-      const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 12000 });
-      setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-    } catch { /* location is optional; merchants remain visible without distances */ }
-  };
-  useEffect(() => { void locateUser(); }, []);
+  const locateUser = () => currentLocation.refetch();
+  useEffect(() => setPage(1), [userLocation?.latitude, userLocation?.longitude]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -105,6 +100,7 @@ export function CustomerExplore() {
         </button>
       </header>
 
+      <CustomerLocationBar />
       {/* Search Bar */}
       {searchOpen && (
         <form onSubmit={handleSearchSubmit} className="px-5 pt-3 pb-1 bg-white border-b border-gray-100">

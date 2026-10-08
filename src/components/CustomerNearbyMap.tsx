@@ -8,7 +8,7 @@ type Coordinates = { latitude: number; longitude: number };
 
 const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
-function loadGoogleMaps() {
+export function loadGoogleMaps() {
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   return new Promise<any>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>('script[data-ae-google-maps]');

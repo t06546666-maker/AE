@@ -74,10 +74,10 @@ export function useCustomerCategories() {
   });
 }
 
-export function useCustomerMerchants(page: number, search?: string, categoryId?: string) {
+export function useCustomerMerchants(page: number, search?: string, categoryId?: string, location?: { latitude: number; longitude: number } | null) {
   return useQuery({
-    queryKey: ['customer', 'merchants', page, search, categoryId],
-    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId })}`, { signal }),
+    queryKey: ['customer', 'merchants', page, search, categoryId, location?.latitude, location?.longitude],
+    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId, latitude: location?.latitude, longitude: location?.longitude })}`, { signal }),
     staleTime: 60000
   });
 }

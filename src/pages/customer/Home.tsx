@@ -10,6 +10,7 @@ import { useCustomerDashboard, useCustomerMerchants, useCustomerOffers } from '.
 import { apiFetch } from '../../api';
 import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
 import { useDailyGreeting } from '../../dailyGreeting';
+import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const dailyGreeting = useDailyGreeting('customer');
@@ -80,6 +81,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </Link>
       </header>
 
+      <CustomerLocationBar />
       <div className="px-4 pt-2 space-y-6">
         {/* Greeting */}
         <div className="customer-modern-greeting">

@@ -2198,6 +2198,9 @@ app.get('/api/customer/categories', async (req, res) => {
 
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
+  const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
+  const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
+  const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
   let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, merchant_categories(name)', { count: 'exact' });
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
@@ -2206,10 +2209,29 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
     query = query.or(`name.ilike.%${paging.search}%,merchant_code.ilike.%${paging.search}%`);
   }
   query = query.order('created_at', { ascending: false });
-  if (paging.enabled) query = query.range(paging.from, paging.to);
+  if (nearby) query = query.range(0, 999);
+  else if (paging.enabled) query = query.range(paging.from, paging.to);
 
-  const { data: merchants, count, error } = await query;
+  let { data: merchants, count, error } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
+  if (nearby) {
+    // Sort the complete filtered directory before pagination, not just one page.
+    for (let offset = 1000; offset < count; offset += 1000) {
+      const batch = await query.range(offset, offset + 999);
+      if (batch.error) return res.status(500).json({ success: false, error: batch.error.message });
+      merchants.push(...(batch.data || []));
+    }
+    const distance = merchant => {
+      if (merchant.latitude == null || merchant.longitude == null) return Infinity;
+      const rad = Math.PI / 180;
+      const lat = Number(merchant.latitude), lon = Number(merchant.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return Infinity;
+      const a = Math.sin((lat - latitude) * rad / 2) ** 2 + Math.cos(latitude * rad) * Math.cos(lat * rad) * Math.sin((lon - longitude) * rad / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+    };
+    merchants.sort((a, b) => distance(a) - distance(b));
+    if (paging.enabled) merchants = merchants.slice(paging.from, paging.to + 1);
+  }
   res.json({
     success: true,
     merchants: (merchants || []).map((merchant) => ({
