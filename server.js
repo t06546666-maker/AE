@@ -2616,6 +2616,15 @@ app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'
   return res.json({ success: true, balance: Number(data) });
 });
 
+app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (req, res) => {
+  const merchantId = req.auth.profile.merchant_id;
+  if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });
+  const { data, error } = await supabaseAdmin.from('merchants').select('name,merchant_code,email,phone,address,image_url,opening_time,closing_time,latitude,longitude,merchant_categories(name)').eq('id', merchantId).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Merchant not found' });
+  return res.json({ data });
+});
+
 app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
   if (req.params.id === 'summary' || req.params.id === 'reset-password') return next(); // Skip specific routes
   const { data, error } = await supabaseAdmin

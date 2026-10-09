@@ -1753,5 +1753,14 @@
   "ui.Where customers meet businesses and beyond": "Where customers meet businesses and beyond",
   "ui.Customers and businesses, together in one digital space.": "Customers and businesses, together in one digital space.",
   "ui.Trust": "Trust",
-  "ui.Growth": "Growth"
+  "ui.Growth": "Growth",
+  "ui.Your business and account details": "Your business and account details",
+  "ui.Back to More": "Back to More",
+  "ui.No merchant account is linked to this login.": "No merchant account is linked to this login.",
+  "ui.Account holder": "Account holder",
+  "ui.View shop on map": "View shop on map",
+  "ui.Contact admin to update your business details.": "Contact admin to update your business details.",
+  "ui.Shop photos": "Shop photos",
+  "ui.Opening time": "Opening time",
+  "ui.Closing time": "Closing time"
 }

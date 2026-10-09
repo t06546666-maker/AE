@@ -23,6 +23,7 @@ import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
 import { Locations } from './pages/Locations';
 import { LocationProfile } from './pages/LocationProfile';
+import { MerchantProfile } from './pages/MerchantProfile';
 import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
 import { Offers } from './pages/Offers';
@@ -312,6 +313,7 @@ export function App() {
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/rewards" element={<Rewards user={user} />} />
           <Route path="/more" element={<More user={user} onLogout={logout} />} />
+          <Route path="/merchant-profile" element={<RoleRoute user={user} role="merchant"><MerchantProfile user={user} /></RoleRoute>} />
           <Route path="/feedback" element={<Feedback user={user} />} />
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />

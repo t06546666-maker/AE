@@ -1591,5 +1591,14 @@
   "ui.Where customers meet businesses and beyond": "ഉപഭോക്താക്കളും വ്യാപാരങ്ങളും ഒത്തുചേരുന്ന ഇടം",
   "ui.Customers and businesses, together in one digital space.": "ഉപഭോക്താക്കളും വ്യാപാരികളും ഇനി ഒരേ ഡിജിറ്റൽ ഇടത്തിൽ.",
   "ui.Trust": "വിശ്വാസം",
-  "ui.Growth": "വളർച്ച"
+  "ui.Growth": "വളർച്ച",
+  "ui.Your business and account details": "നിങ്ങളുടെ വ്യാപാരത്തിന്റെയും അക്കൗണ്ടിന്റെയും വിവരങ്ങൾ",
+  "ui.Back to More": "കൂടുതൽ ഓപ്ഷനുകളിലേക്ക് മടങ്ങുക",
+  "ui.No merchant account is linked to this login.": "ഈ ലോഗിനുമായി വ്യാപാരിയുടെ അക്കൗണ്ട് ബന്ധിപ്പിച്ചിട്ടില്ല.",
+  "ui.Account holder": "അക്കൗണ്ട് ഉടമ",
+  "ui.View shop on map": "മാപ്പിൽ കട കാണുക",
+  "ui.Contact admin to update your business details.": "വ്യാപാര വിവരങ്ങൾ പുതുക്കാൻ അഡ്മിനെ ബന്ധപ്പെടുക.",
+  "ui.Shop photos": "കടയുടെ ചിത്രങ്ങൾ",
+  "ui.Opening time": "തുറക്കുന്ന സമയം",
+  "ui.Closing time": "അടയ്ക്കുന്ന സമയം"
 }
