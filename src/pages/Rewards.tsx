@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
@@ -19,7 +20,7 @@ export function Rewards({ user }: { user: UserProfile }) {
   });
   if (user.role !== 'merchant') return <Navigate to="/dashboard" replace />;
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeScanner(); }}>
-    <div className="modal scanner-modal" role="dialog" aria-modal="true" aria-label="Scan customer QR">
+    <div className="modal scanner-modal" role="dialog" aria-modal="true" aria-label={uiText("Scan customer QR")}>
       <button type="button" className="icon-button modal-close" aria-label={t('common.close')} onClick={closeScanner}><X /></button>
       {settings.isPending && <LoadingState label="Loading scanner" />}
       {settings.isError && <ErrorState error={settings.error} retry={() => settings.refetch()} />}

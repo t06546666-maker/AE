@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -28,8 +29,8 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
       <CustomerBillPopup key={user.id} customerId={user.id} />
       <header className="topbar hidden md:flex">
         <div className="topbar-left">
-          <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>
-          <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
+          <button className="icon-button mobile-menu" title={uiText("Open menu")} onClick={() => setSidebarOpen(true)}><Menu /></button>
+          <div className="brand"><img src="/logo.png" alt={uiText("AE")} style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
         </div>
         <div className="topbar-right">
           <label className="language-control" title={t('language.malayalam')}>
@@ -39,7 +40,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
               onChange={(event) => void i18n.changeLanguage(event.target.value)}
               aria-label={t('language.malayalam')}
             >
-              <option value="en">EN</option>
+              <option value="en">{uiText("EN")}</option>
               <option value="ml">മ</option>
             </select>
           </label>
@@ -52,24 +53,24 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
         </div>
       </header>
       <div className="shell-body">
-        {sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
+        {sidebarOpen ? <button className="sidebar-backdrop" aria-label={uiText("Close menu")} onClick={() => setSidebarOpen(false)} /> : null}
         <aside className={`sidebar hidden md:flex ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
             <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Home size={18} /><span>Home</span>
+              <Home size={18} /><span>{uiText("Home")}</span>
             </NavLink>
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Search size={18} /><span>Explore</span>
+              <Search size={18} /><span>{uiText("Explore")}</span>
             </NavLink>
             <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
-              <ListPlus size={18} /><span>Product List</span>
+              <ListPlus size={18} /><span>{uiText("Product List")}</span>
             </NavLink>
             <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Gift size={18} /><span>Offers</span>
+              <Gift size={18} /><span>{uiText("Offers")}</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
-              <User size={18} /><span>Profile</span>
+              <User size={18} /><span>{uiText("Profile")}</span>
             </NavLink>
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -86,20 +87,20 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
       <div className="mobile-bottom-nav md:hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100 bg-white">
         <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Home />
-          <span>Home</span>
+          <span>{uiText("Home")}</span>
         </NavLink>
         <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Search />
-          <span>Explore</span>
+          <span>{uiText("Explore")}</span>
         </NavLink>
-        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>Product List</span></NavLink>
+        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>{uiText("Product List")}</span></NavLink>
         <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Gift />
-          <span>Offers</span>
+          <span>{uiText("Offers")}</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <User />
-          <span>Profile</span>
+          <span>{uiText("Profile")}</span>
         </NavLink>
       </div>
     </div>

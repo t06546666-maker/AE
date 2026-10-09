@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -46,8 +47,7 @@ export function LocationProfile() {
     <>
       <div className="profile-header">
         <Link to="/locations" className="button secondary">
-          <ArrowLeft size={16} /> Back to Locations
-        </Link>
+          <ArrowLeft size={16} />{uiText(" Back to Locations ")}</Link>
       </div>
 
       <PageHeader
@@ -60,7 +60,7 @@ export function LocationProfile() {
         }
       />
 
-      <h3>Assigned Merchants</h3>
+      <h3>{uiText("Assigned Merchants")}</h3>
       {merchantsQuery.isPending ? (
         <LoadingState label="Loading assigned merchants..." />
       ) : merchantsQuery.isError ? (
@@ -94,7 +94,7 @@ export function LocationProfile() {
             </table>
           </div>
           {!merchantsQuery.data?.merchants.length ? (
-            <EmptyState>No merchants assigned to this location yet.</EmptyState>
+            <EmptyState>{uiText("No merchants assigned to this location yet.")}</EmptyState>
           ) : null}
         </section>
       )}

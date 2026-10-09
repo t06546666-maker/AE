@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { maskedPhone } from '../maskedPhone';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -114,7 +115,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
         ...current,
         notifications: { ...current.notifications, whatsapp: data.whatsapp },
       } : current);
-      showToast(data.whatsapp.sent ? 'WhatsApp QR message sent' : 'WhatsApp message failed', data.whatsapp.sent ? 'success' : 'error');
+      showToast(data.whatsapp.sent ? "WhatsApp QR message sent" : "WhatsApp message failed", data.whatsapp.sent ? "success" : "error");
     },
     onError(error) { showToast(error.message, 'error'); },
   });
@@ -140,7 +141,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   const liveWhatsapp = whatsappStatus.data;
   const whatsappState = liveWhatsapp?.status
     || result?.notifications.whatsapp.status
-    || (result?.notifications.whatsapp.sent ? 'sent' : result?.notifications.whatsapp.queued ? 'queued' : 'failed');
+    || (result?.notifications.whatsapp.sent ? "sent" : result?.notifications.whatsapp.queued ? "queued" : "failed");
   const whatsappError = liveWhatsapp?.error || result?.notifications.whatsapp.error;
   return (
     <>
@@ -153,9 +154,9 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <label>{t('registration.emailAddress')} <small>{t('registration.optional')}</small><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         </div>
         <div className="purchase-fields registration-purchase">
-          <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="10" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">₹10–₹49: 2 points · ₹50–₹99: 5 points · ₹100+: selected rate</span></label>
-          <label>Points per ₹100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option} Pts</option>)}</select></label>
-          <div className="point-preview"><span>{t('registration.pointsIssued')}<small style={{ display: 'block', marginTop: 4 }}>Maximum 100 points per purchase</small></span><strong>{formatPoints(points)} points</strong></div>
+          <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="10" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">{uiText("₹10–₹49: 2 points · ₹50–₹99: 5 points · ₹100+: selected rate")}</span></label>
+          <label>{uiText("Points per ₹100")}<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option}{uiText(" Pts")}</option>)}</select></label>
+          <div className="point-preview"><span>{t('registration.pointsIssued')}<small style={{ display: 'block', marginTop: 4 }}>{uiText("Maximum 100 points per purchase")}</small></span><strong>{formatPoints(points)}{uiText(" points")}</strong></div>
         </div>
         {user.role === 'admin' ? <label className="merchant-select">{t('registration.assignMerchant')}<select value={merchantId} onChange={(event) => setMerchantId(event.target.value)} required>{merchants.data?.merchants.map((merchant) => <option key={merchant.id} value={merchant.id}>{merchant.name}</option>)}</select></label> : null}
         <div className="form-actions"><button className="button primary" disabled={createCustomer.isPending}><UserPlus size={17} />{t(createCustomer.isPending ? 'registration.registering' : 'registration.registerSend')}</button><Link className="button secondary" to="/dashboard" replace>{t('registration.cancel')}</Link></div>
@@ -165,7 +166,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <div className="panel-heading"><div><h2><CheckCircle2 /> {t('registration.registered')}</h2><p>{t('registration.saved')}</p></div></div>
           <div className="result-grid">
             <div className="result-qr">{qrUrl ? <img src={qrUrl} alt={`QR code for ${result.customer.name}`} /> : <span>{t('customers.generating')}</span>}<strong>{result.customer.id}</strong></div>
-            <div className="result-details"><h3>{result.customer.name}</h3><p>{(user.role === 'merchant' ? maskedPhone(result.customer.phone) : formatPhone(result.customer.phone))}</p><p>{result.customer.email}</p>{result.customer.temporaryPassword ? <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '8px', border: '1px solid #fecaca', marginBottom: '16px' }}><p style={{ margin: 0, fontSize: '13px', color: '#991b1b', fontWeight: 600 }}>Temporary Login Password</p><p style={{ margin: '4px 0 0 0', fontSize: '20px', letterSpacing: '2px', fontFamily: 'monospace', color: '#7f1d1d', fontWeight: 'bold' }}>{result.customer.temporaryPassword}</p><p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#b91c1c' }}>This password has also been sent via WhatsApp. The customer will be forced to change it on their first login.</p></div> : null}<dl><div><dt>{t('registration.merchant')}</dt><dd>{result.customer.merchant || selectedMerchant}</dd></div><div><dt>{t('orders.order')}</dt><dd>{result.order.order_no}</dd></div><div><dt>{t('orders.amount')}</dt><dd>{formatCurrency(result.order.amount || 0)}</dd></div><div><dt>{t('orders.points')}</dt><dd>{formatPoints(result.order.points_earned)}</dd></div></dl><div className="notification-row"><span className={`tag ${['sent', 'delivered', 'read'].includes(whatsappState) ? 'success' : whatsappState === 'failed' ? 'danger' : 'info'}`}>WhatsApp {whatsappState}</span><span className={`tag ${result.notifications.email.queued || result.notifications.email.sent ? 'success' : 'muted'}`}>Email {result.customer.email ? result.notifications.email.queued ? 'queued' : result.notifications.email.sent ? 'sent' : 'not sent' : 'not provided'}</span></div>{whatsappState === 'failed' && whatsappError ? <div className="form-error">{whatsappError}</div> : null}<div className="result-actions"><button className="button whatsapp" disabled={resendQr.isPending} onClick={() => resendQr.mutate()}><MessageCircle size={16} />{resendQr.isPending ? 'Sending' : t('customers.sendWhatsapp')}</button><button className="button secondary" onClick={downloadQr}><Download size={16} />{t('registration.downloadQr')}</button></div></div>
+            <div className="result-details"><h3>{result.customer.name}</h3><p>{(user.role === 'merchant' ? maskedPhone(result.customer.phone) : formatPhone(result.customer.phone))}</p><p>{result.customer.email}</p>{result.customer.temporaryPassword ? <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '8px', border: '1px solid #fecaca', marginBottom: '16px' }}><p style={{ margin: 0, fontSize: '13px', color: '#991b1b', fontWeight: 600 }}>{uiText("Temporary Login Password")}</p><p style={{ margin: '4px 0 0 0', fontSize: '20px', letterSpacing: '2px', fontFamily: 'monospace', color: '#7f1d1d', fontWeight: 'bold' }}>{result.customer.temporaryPassword}</p><p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#b91c1c' }}>{uiText("This password has also been sent via WhatsApp. The customer will be forced to change it on their first login.")}</p></div> : null}<dl><div><dt>{t('registration.merchant')}</dt><dd>{result.customer.merchant || selectedMerchant}</dd></div><div><dt>{t('orders.order')}</dt><dd>{result.order.order_no}</dd></div><div><dt>{t('orders.amount')}</dt><dd>{formatCurrency(result.order.amount || 0)}</dd></div><div><dt>{t('orders.points')}</dt><dd>{formatPoints(result.order.points_earned)}</dd></div></dl><div className="notification-row"><span className={`tag ${['sent', 'delivered', 'read'].includes(whatsappState) ? 'success' : whatsappState === 'failed' ? 'danger' : 'info'}`}>{uiText("WhatsApp ")}{whatsappState}</span><span className={`tag ${result.notifications.email.queued || result.notifications.email.sent ? 'success' : 'muted'}`}>{uiText("Email ")}{result.customer.email ? result.notifications.email.queued ? uiText("queued") : result.notifications.email.sent ? uiText("sent") : uiText("not sent") : uiText("not provided")}</span></div>{whatsappState === 'failed' && whatsappError ? <div className="form-error">{whatsappError}</div> : null}<div className="result-actions"><button className="button whatsapp" disabled={resendQr.isPending} onClick={() => resendQr.mutate()}><MessageCircle size={16} />{resendQr.isPending ? uiText("Sending") : t('customers.sendWhatsapp')}</button><button className="button secondary" onClick={downloadQr}><Download size={16} />{t('registration.downloadQr')}</button></div></div>
           </div>
         </section>
       ) : null}

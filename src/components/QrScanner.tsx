@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { maskedPhone } from '../maskedPhone';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -104,7 +105,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
         stopCamera(instance),
       ]);
       setCustomer(data.customer);
-      setTransactionMode(payload.transactionMode === 'earn' ? 'earn' : 'combined');
+      setTransactionMode(payload.transactionMode === 'earn' ? "earn" : "combined");
       setNotes('');
       setAmount('');
       setPaymentTransactionId('');
@@ -223,7 +224,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
 
   return postScan || (
     <section className="panel scanner-panel">
-      <div className="panel-heading"><div><h2>{mode === 'redeem' ? 'Redeem Points' : t('scanner.title')}</h2><p>{mode === 'redeem' ? 'Scan customer QR to apply discount' : t('scanner.subtitle')}</p></div><ScanLine /></div>
+      <div className="panel-heading"><div><h2>{mode === 'redeem' ? uiText("Redeem Points") : t('scanner.title')}</h2><p>{mode === 'redeem' ? uiText("Scan customer QR to apply discount") : t('scanner.subtitle')}</p></div><ScanLine /></div>
       <div className="scanner-grid">
         <div>
           <div className="scanner-view">
@@ -241,49 +242,48 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
             <div className="verified-customer">
               <div className="verified-title"><CheckCircle2 /><div><h3>{customer.name}</h3><p>{maskedPhone(customer.phone)} · {customer.id}</p></div></div>
               {customer.isNewToMerchant ? <span className="tag info">{t('scanner.newConnection')}</span> : null}
-              <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)} points</strong></p>
-              <label className="scanner-mode-field">Transaction type
-                <select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
-                  <option value="earn">Issue points</option>
-                  <option value="redeem">Redeem points</option>
-                  <option value="combined">Both: redeem + issue points</option>
+              <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)}{uiText(" points")}</strong></p>
+              <label className="scanner-mode-field">{uiText("Transaction type ")}<select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
+                  <option value="earn">{uiText("Issue points")}</option>
+                  <option value="redeem">{uiText("Redeem points")}</option>
+                  <option value="combined">{uiText("Both: redeem + issue points")}</option>
                 </select>
               </label>
               {redeemResult ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <CheckCircle2 size={48} color="var(--success)" style={{ margin: '0 auto 16px' }} />
-                  <h3 style={{ margin: '0 0 8px' }}>Redemption Successful</h3>
+                  <h3 style={{ margin: '0 0 8px' }}>{uiText("Redemption Successful")}</h3>
                   <div style={{ background: 'var(--bg-inset)', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span>Discount:</span><strong style={{ color: 'var(--success)' }}>₹{redeemResult.discountAmount.toFixed(2)}</strong>
+                      <span>{uiText("Discount:")}</span><strong style={{ color: 'var(--success)' }}>₹{redeemResult.discountAmount.toFixed(2)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Remaining pts:</span><strong>{redeemResult.newBalance} pts</strong>
+                      <span>{uiText("Remaining pts:")}</span><strong>{redeemResult.newBalance}{uiText(" pts")}</strong>
                     </div>
                   </div>
-                  <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); onDone?.(); }}>Done</button>
+                  <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); onDone?.(); }}>{uiText("Done")}</button>
                 </div>
               ) : transactionMode === 'redeem' ? (
                 <>
                   <div className="purchase-fields">
-                    <label>Transaction Amount (₹)<input className="amount-input" type="number" min="100" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                    <label>Points to Redeem (fixed)<input className="amount-input" type="number" value="100" readOnly /></label>
-                    <label>Discount type<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">Percentage (%)</option><option value="flat">Flat (₹)</option></select></label>
-                    <label>{discountType === 'flat' ? 'Discount amount (₹)' : 'Discount percentage (%)'}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label>
+                    <label>{uiText("Transaction Amount (₹)")}<input className="amount-input" type="number" min="100" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+                    <label>{uiText("Points to Redeem (fixed)")}<input className="amount-input" type="number" value="100" readOnly /></label>
+                    <label>{uiText("Discount type")}<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">{uiText("Percentage (%)")}</option><option value="flat">{uiText("Flat (₹)")}</option></select></label>
+                    <label>{discountType === 'flat' ? uiText("Discount amount (₹)") : uiText("Discount percentage (%)")}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label>
                   </div>
-                  <p className="amount-rule" style={{marginBottom: 10}}>Available: {formatPoints(customer.rewardPoints)} pts · Fixed 100 pts · {discountType === 'flat' ? `₹${Number(discountValue || 0).toFixed(2)} flat discount` : `${Number(discountValue || 0)}% discount`}</p>
-                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || Number(pointsToRedeem) < 100 || redeem.isPending} onClick={() => redeem.mutate()}>{redeem.isPending ? 'Processing...' : 'Calculate & Redeem'}</button>
+                  <p className="amount-rule" style={{marginBottom: 10}}>{uiText("Available: ")}{formatPoints(customer.rewardPoints)}{uiText(" pts · Fixed 100 pts · ")}{discountType === 'flat' ? `₹${Number(discountValue || 0).toFixed(2)} flat discount` : `${Number(discountValue || 0)}% discount`}</p>
+                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || Number(pointsToRedeem) < 100 || redeem.isPending} onClick={() => redeem.mutate()}>{redeem.isPending ? uiText("Processing...") : uiText("Calculate & Redeem")}</button>
                 </>
               ) : (
                 <>
                   <div className="purchase-fields">
                     <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="100" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
-                    <label>Points per INR 100<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).filter((option: number) => option >= 1 && option <= 100).map((option: number) => <option key={option} value={option}>{option} pts</option>)}</select></label>
-                    {transactionMode === 'combined' ? <><label>Points to Redeem (fixed)<input className="amount-input" type="number" value="100" readOnly /></label><label>Discount type<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">Percentage (%)</option><option value="flat">Flat (₹)</option></select></label><label>{discountType === 'flat' ? 'Discount amount (₹)' : 'Discount percentage (%)'}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label></> : null}
+                    <label>{uiText("Points per INR 100")}<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{(settings.earnOptions || [5, 10, 20, 30, 50]).filter((option: number) => option >= 1 && option <= 100).map((option: number) => <option key={option} value={option}>{option}{uiText(" pts")}</option>)}</select></label>
+                    {transactionMode === 'combined' ? <><label>{uiText("Points to Redeem (fixed)")}<input className="amount-input" type="number" value="100" readOnly /></label><label>{uiText("Discount type")}<select value={discountType} onChange={(event) => setDiscountType(event.target.value as 'percentage' | 'flat')}><option value="percentage">{uiText("Percentage (%)")}</option><option value="flat">{uiText("Flat (₹)")}</option></select></label><label>{discountType === 'flat' ? uiText("Discount amount (₹)") : uiText("Discount percentage (%)")}<input className="amount-input" type="number" min="0" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} /></label></> : null}
                   </div>
-                  <div className="point-preview"><strong>{formatPoints(points)} points</strong></div>
-                  <p className="amount-rule">INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts</p>
-                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || (transactionMode === 'combined' && Number(pointsToRedeem) < 100) || checkout.isPending} onClick={() => void payAndCheckout()}>{transactionMode === 'combined' ? 'Complete Purchase, Redeem & Issue Points' : t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
+                  <div className="point-preview"><strong>{formatPoints(points)}{uiText(" points")}</strong></div>
+                  <p className="amount-rule">{uiText("INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts")}</p>
+                  <button type="button" className="button primary full-button" disabled={Number(amount) < 100 || (transactionMode === 'combined' && Number(pointsToRedeem) < 100) || checkout.isPending} onClick={() => void payAndCheckout()}>{transactionMode === 'combined' ? uiText("Complete Purchase, Redeem & Issue Points") : t(checkout.isPending ? 'scanner.processing' : 'scanner.complete')}</button>
                 </>
               )}
             </div>

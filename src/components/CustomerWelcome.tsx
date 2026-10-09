@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import type { UserProfile } from '../types';
@@ -70,6 +71,6 @@ export function CustomerWelcome({ user }: { user: UserProfile }) {
   }, [user.id, user.name, user.full_name]);
 
   return message ? <div role="status" style={{ position: 'fixed', zIndex: 10000, top: 'calc(env(safe-area-inset-top, 0px) + 16px)', left: '50%', transform: 'translateX(-50%)', width: 'min(90vw, 420px)', padding: '16px 20px', borderRadius: 18, background: '#ffffffee', color: '#063d46', boxShadow: '0 8px 35px #003d4930', border: '1px solid #a5e7df', display: 'flex', gap: 12, alignItems: 'center' }}>
-    <span style={{ flex: 1 }}>{message}</span><button type="button" aria-label="Dismiss welcome" onClick={() => setMessage('')} style={{ border: 0, background: 'transparent', color: 'inherit', fontSize: 22, minWidth: 44, minHeight: 44 }}>×</button>
+    <span style={{ flex: 1 }}>{message}</span><button type="button" aria-label={uiText("Dismiss welcome")} onClick={() => setMessage('')} style={{ border: 0, background: 'transparent', color: 'inherit', fontSize: 22, minWidth: 44, minHeight: 44 }}>×</button>
   </div> : null;
 }

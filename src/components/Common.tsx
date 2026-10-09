@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight, Download, LoaderCircle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,14 +9,14 @@ import { dateInput, rangeForPeriod } from '../utils';
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle: string; actions?: ReactNode }) {
   return (
     <header className="page-header">
-      <div><h1>{title}</h1><p>{subtitle}</p></div>
+      <div><h1>{uiText(title)}</h1><p>{uiText(subtitle)}</p></div>
       {actions ? <div className="page-actions">{actions}</div> : null}
     </header>
   );
 }
 
 export function LoadingState({ label = 'Loading data' }: { label?: string }) {
-  return <div className="state-panel"><LoaderCircle className="spin" size={22} /><span>{label}</span></div>;
+  return <div className="state-panel"><LoaderCircle className="spin" size={22} /><span>{uiText(label)}</span></div>;
 }
 
 export function ErrorState({ error, retry }: { error: Error; retry?: () => void }) {
@@ -23,7 +24,7 @@ export function ErrorState({ error, retry }: { error: Error; retry?: () => void 
   return (
     <div className="state-panel error-state">
       <AlertCircle size={22} />
-      <span>{error.message}</span>
+      <span>{uiText(error.message)}</span>
       {retry ? <button className="button secondary" onClick={retry}>{t('common.retry')}</button> : null}
     </div>
   );
@@ -135,7 +136,7 @@ export function ExportModal({ open, format, merchantId, isAdmin, defaultSection 
       await downloadExport(`/api/exports/full.${format}?${query}`);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Export failed');
+      setError(cause instanceof Error ? cause.message : "Export failed");
     } finally {
       setBusy(false);
     }
@@ -160,7 +161,7 @@ export function ExportModal({ open, format, merchantId, isAdmin, defaultSection 
             {isAdmin ? <option value="merchants">{t('nav.merchants')}</option> : null}
           </select>
         </label>
-        {error ? <div className="form-error">{error}</div> : null}
+        {error ? <div className="form-error">{uiText(error)}</div> : null}
         <div className="modal-actions">
           <button className="button secondary" onClick={onClose}>{t('offers.cancel')}</button>
           <button className="button primary" disabled={busy} onClick={submit}>

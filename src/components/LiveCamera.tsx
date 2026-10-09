@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
 
@@ -24,5 +25,5 @@ export function LiveCamera({ facing, disabled, label, onCapture }: { facing: 'us
     context.drawImage(frame, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(blob => { if (!blob) { setError('Photo capture failed. Retry.'); return; } onCapture(new File([blob], 'ae-camera.jpg', { type: 'image/jpeg' })); setOpen(false); }, 'image/jpeg', .8);
   }
-  return <><button type="button" className="button secondary ae-camera-open" disabled={disabled} onClick={() => setOpen(true)}><Camera />{label}</button>{open && <div className="modal-backdrop"><div className="modal ae-live-camera" role="dialog" aria-modal="true" aria-label={label}><h2>{label}</h2><video ref={video} autoPlay playsInline muted onLoadedData={() => setReady(true)} style={{ width: '100%', maxHeight: '55vh', borderRadius: 16, background: '#10214b', transform: facing === 'user' ? 'scaleX(-1)' : undefined }} />{error && <p role="alert">{error}</p>}<div className="attendance-actions"><button type="button" className="button secondary" onClick={() => setOpen(false)}>Cancel</button><button type="button" className="button primary" disabled={!ready || !!error} onClick={capture}>Take Photo</button></div></div></div>}</>;
+  return <><button type="button" className="button secondary ae-camera-open" disabled={disabled} onClick={() => setOpen(true)}><Camera />{uiText(label)}</button>{open && <div className="modal-backdrop"><div className="modal ae-live-camera" role="dialog" aria-modal="true" aria-label={uiText(label)}><h2>{uiText(label)}</h2><video ref={video} autoPlay playsInline muted onLoadedData={() => setReady(true)} style={{ width: '100%', maxHeight: '55vh', borderRadius: 16, background: '#10214b', transform: facing === 'user' ? 'scaleX(-1)' : undefined }} />{error && <p role="alert">{error}</p>}<div className="attendance-actions"><button type="button" className="button secondary" onClick={() => setOpen(false)}>{uiText("Cancel")}</button><button type="button" className="button primary" disabled={!ready || !!error} onClick={capture}>{uiText("Take Photo")}</button></div></div></div>}</>;
 }

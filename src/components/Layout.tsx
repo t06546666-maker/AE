@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -81,13 +82,13 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     if (!notificationsOpen) return null;
     return (
       <div className="notification-popover">
-        <strong>Customer orders</strong>
+        <strong>{uiText("Customer orders")}</strong>
         {notifications.data?.notifications.length ? notifications.data.notifications.map((notice) => (
           <Link key={notice.id} to="/customer-orders" onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}>
             <b>{notice.requestNo || notice.title}</b><span>{notice.body}</span>
           </Link>
-        )) : <p>No new customer orders.</p>}
-        <Link to="/customer-orders" onClick={() => setNotificationsOpen(false)}>View all customer orders</Link>
+        )) : <p>{uiText("No new customer orders.")}</p>}
+        <Link to="/customer-orders" onClick={() => setNotificationsOpen(false)}>{uiText("View all customer orders")}</Link>
       </div>
     );
   };
@@ -104,11 +105,11 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     <div className={`app-shell ${user.role === 'merchant' ? 'merchant-shell' : user.role === 'field_manager' ? 'field-shell' : ''}`}>
       <header className="topbar">
         <div className="topbar-left">
-          {(user.role === 'admin' || user.role === 'field_manager') && <button className="icon-button mobile-menu" title="Open menu" onClick={() => setSidebarOpen(true)}><Menu /></button>}
-          <div className="brand"><img src="/logo.png" alt="AE" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
-          {user.role === 'field_manager' && <div className="field-brand-text"><strong>Field Manager</strong><small>Grow · Reach · Track</small></div>}
+          {(user.role === 'admin' || user.role === 'field_manager') && <button className="icon-button mobile-menu" title={uiText("Open menu")} onClick={() => setSidebarOpen(true)}><Menu /></button>}
+          <div className="brand"><img src="/logo.png" alt={uiText("AE")} style={{ height: '36px', width: 'auto', objectFit: 'contain' }} /></div>
+          {user.role === 'field_manager' && <div className="field-brand-text"><strong>{uiText("Field Manager")}</strong><small>{uiText("Grow · Reach · Track")}</small></div>}
         </div>
-        {user.role === 'field_manager' && <form className="field-shell-search" onSubmit={event => { event.preventDefault(); navigate(`/field?section=directory&search=${encodeURIComponent(fieldSearch.trim())}`); }}><Search size={17} /><input aria-label="Search merchants" placeholder="Search merchants, locations…" value={fieldSearch} onChange={event => setFieldSearch(event.target.value)} /><button type="submit">Search</button></form>}
+        {user.role === 'field_manager' && <form className="field-shell-search" onSubmit={event => { event.preventDefault(); navigate(`/field?section=directory&search=${encodeURIComponent(fieldSearch.trim())}`); }}><Search size={17} /><input aria-label={uiText("Search merchants")} placeholder={uiText("Search merchants, locations…")} value={fieldSearch} onChange={event => setFieldSearch(event.target.value)} /><button type="submit">{uiText("Search")}</button></form>}
         <div className="topbar-right">
           <div className="integration-health" title={t('layout.integrationStatus')}>
             <span className={status.data?.resend ? 'online' : 'offline'}>{t('layout.email')}</span>
@@ -121,7 +122,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               onChange={(event) => void i18n.changeLanguage(event.target.value)}
               aria-label={t('language.malayalam')}
             >
-              <option value="en">EN</option>
+              <option value="en">{uiText("EN")}</option>
               <option value="ml">മ</option>
             </select>
           </label>
@@ -129,17 +130,17 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
             {theme === 'dark' ? <Sun /> : <Moon />}
           </button>
           {user.role === 'merchant' ? <div className="notification-menu">
-            <button className="icon-button notification-button" title="Customer order notifications" onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
+            <button className="icon-button notification-button" title={uiText("Customer order notifications")} onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
             {renderNotificationPopover()}
           </div> : null}
-          <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : user.role === 'field_manager' ? 'Field Manager' : t('layout.merchant')}</span>
+          <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : user.role === 'field_manager' ? uiText("Field Manager") : t('layout.merchant')}</span>
           <span className="topbar-user">{user.full_name || user.email}</span>
-          {user.role === 'field_manager' && <Link className="field-shell-avatar" to="/field?section=profile" aria-label="Open My Profile">{(user.full_name || 'Field Manager').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</Link>}
+          {user.role === 'field_manager' && <Link className="field-shell-avatar" to="/field?section=profile" aria-label={uiText("Open My Profile")}>{(user.full_name || 'Field Manager').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</Link>}
           <button className="button secondary signout" onClick={() => void signOut()}><LogOut size={15} />{t('layout.signOut')}</button>
         </div>
       </header>
       <div className="shell-body">
-        {(user.role === 'admin' || user.role === 'field_manager') && sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setSidebarOpen(false)} /> : null}
+        {(user.role === 'admin' || user.role === 'field_manager') && sidebarOpen ? <button className="sidebar-backdrop" aria-label={uiText("Close menu")} onClick={() => setSidebarOpen(false)} /> : null}
         {(user.role === 'admin' || user.role === 'field_manager') && <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
@@ -151,7 +152,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </nav>
           <div className="sidebar-foot" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div><span className="status-dot online" /> {t('layout.secureWorkspace')}</div>
-            {user.role !== 'field_manager' && <Link to="/legal?type=merchant">Terms & Privacy</Link>}
+            {user.role !== 'field_manager' && <Link to="/legal?type=merchant">{uiText("Terms & Privacy")}</Link>}
             <button className="button secondary signout desktop-view-hidden" onClick={() => void signOut()} style={{ width: '100%', justifyContent: 'center' }}>
               <LogOut size={15} />{t('layout.signOut')}
             </button>
@@ -163,14 +164,14 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               {(user.role === 'admin' || user.role === 'field_manager') && <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
                 <Menu size={28} color="#1a1a1a" strokeWidth={2} />
               </button>}
-              <img src="/logo.png" alt="Affiliate AE" style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
+              <img src="/logo.png" alt={uiText("Affiliate AE")} style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
             </div>
             {user.role === 'merchant' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title="Change Language">
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title={uiText("Change Language")}>
                   <Languages size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
-                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle Dark Mode">
+                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title={uiText("Toggle Dark Mode")}>
                   <Moon size={24} color="#1a1a1a" strokeWidth={2} />
                 </button>
                 <div className="notification-menu">
@@ -186,31 +187,31 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           <FieldSignOutContext.Provider value={user.role === 'field_manager' ? signOut : null}>{children}</FieldSignOutContext.Provider>
         </main>
       </div>
-      {user.role === 'field_manager' && <nav className="ae-field-footer" aria-label="Field Manager navigation">{[
+      {user.role === 'field_manager' && <nav className="ae-field-footer" aria-label={uiText("Field Manager navigation")}>{[
         { section: 'home', label: 'Home', Icon: Home },
         { section: 'visits', label: 'Visits', Icon: MapPin },
         { section: 'attendance', label: 'Attendance', Icon: ReceiptText },
         { section: 'routes', label: 'Routes', Icon: MapPin },
         { section: 'profile', label: 'Profile', Icon: UserCog },
-      ].map(({ section, label, Icon }) => { const current = location.pathname === '/field' ? new URLSearchParams(location.search).get('section') || 'home' : location.pathname.startsWith('/field/merchants/') && new URLSearchParams(location.search).get('visit') === '1' ? 'visits' : ''; return <Link key={section} to={`/field?section=${section}`} className={`${current === section ? 'active' : ''} ${section === 'attendance' ? 'attendance' : ''}`} aria-current={current === section ? 'page' : undefined}><Icon size={22} /><span>{label}</span></Link>; })}</nav>}
+      ].map(({ section, label, Icon }) => { const current = location.pathname === '/field' ? new URLSearchParams(location.search).get('section') || 'home' : location.pathname.startsWith('/field/merchants/') && new URLSearchParams(location.search).get('visit') === '1' ? "visits" : ''; return <Link key={section} to={`/field?section=${section}`} className={`${current === section ? 'active' : ''} ${section === 'attendance' ? 'attendance' : ''}`} aria-current={current === section ? 'page' : undefined}><Icon size={22} /><span>{uiText(label)}</span></Link>; })}</nav>}
       {user.role === 'merchant' && (
         <div className="mobile-bottom-nav merchant-bottom-nav">
           <NavLink to="/dashboard" className={({ isActive }) => isActive && new URLSearchParams(location.search).get('view') !== 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Home />
-            <span>Home</span>
+            <span>{uiText("Home")}</span>
           </NavLink>
           <NavLink to="/customer-orders" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <ShoppingBag />
-            <span>Orders</span>
+            <span>{uiText("Orders")}</span>
           </NavLink>
           <NavLink to="/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <Gift />
-            <span>Offers</span>
+            <span>{uiText("Offers")}</span>
           </NavLink>
-          <Link to="/dashboard?view=reports" aria-current={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'page' : undefined} className={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><BarChartIcon /><span>Reports</span></Link>
+          <Link to="/dashboard?view=reports" aria-current={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'page' : undefined} className={location.pathname === '/dashboard' && new URLSearchParams(location.search).get('view') === 'reports' ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><BarChartIcon /><span>{uiText("Reports")}</span></Link>
           <NavLink to="/more" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
             <MoreHorizontal />
-            <span>More</span>
+            <span>{uiText("More")}</span>
           </NavLink>
         </div>
       )}

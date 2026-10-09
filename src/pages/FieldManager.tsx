@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { TimeInput } from '../components/TimeInput';
 import { formatClockTime } from '../utils';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
@@ -137,7 +138,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const navigate = useNavigate();
   type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'profile';
   const section = sectionParams.get('section');
-  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'profile'].includes(section || '') ? section as FieldSection : 'home';
+  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'profile'].includes(section || '') ? section as FieldSection : "home";
   const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
   useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
@@ -416,7 +417,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
           email: finalEmail,
           phone: `+91${cleanPhone}`,
           password,
-          category_id: categoryId === '__other__' ? '__other__' : (categoryId || undefined),
+          category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined),
           new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined,
           address: [address.trim(), locality.trim(), city.trim(), storeState.trim(), pincode.trim()].filter(Boolean).join(', ') || undefined,
           latitude: latitude || undefined,
@@ -552,14 +553,14 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {activeTab === 'onboarding' && (
         <>
           <div className="field-onboarding-title">
-            <h1>Onboard Merchant</h1>
-            <p>Create a new merchant login and add a new merchant to the system.</p>
+            <h1>{uiText("Onboard Merchant")}</h1>
+            <p>{uiText("Create a new merchant login and add a new merchant to the system.")}</p>
           </div>
           <form className="panel merchant-form" onSubmit={handleOnboardSubmit}>
-            <ol className="field-steps" aria-label="Onboarding progress">
+            <ol className="field-steps" aria-label={uiText("Onboarding progress")}>
               {['Business Details', 'Location', 'Image', 'Review'].map((label, index) => (
                 <li key={label} className={index === onboardStep ? 'current' : index < onboardStep ? 'complete' : ''} aria-current={index === onboardStep ? 'step' : undefined}>
-                  <span>{index < onboardStep ? <Check size={16} /> : index + 1}</span>{label}
+                  <span>{index < onboardStep ? <Check size={16} /> : index + 1}</span>{uiText(label)}
                 </li>
               ))}
             </ol>
@@ -582,12 +583,10 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                 />
               </label>
 
-              <label>
-                User ID
-                <input
+              <label>{uiText(" User ID ")}<input
                   value={userId}
                   onChange={(event) => handleUserIdChange(event.target.value)}
-                  placeholder="e.g. store101"
+                  placeholder={uiText("e.g. store101")}
                   required
                 />
               </label>
@@ -598,7 +597,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value.toLowerCase())}
-                  placeholder="e.g. store101@ae-rewards.com"
+                  placeholder={uiText("e.g. store101@ae-rewards.com")}
                   required
                 />
               </label>
@@ -628,14 +627,12 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   minLength={10}
                   required
                 />
-                <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}><Eye size={18} /></button>
+                <button type="button" aria-label={showPassword ? uiText("Hide password") : uiText("Show password")} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}><Eye size={18} /></button>
                 </div>
                 <small>{t('merchants.passwordHelp')}</small>
               </label>
 
-              <label>
-                Category *
-                <select
+              <label>{uiText(" Category * ")}<select
                   required
                   value={categoryId}
                   onChange={(e) => {
@@ -645,53 +642,51 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                     }
                   }}
                 >
-                  <option value="">Select category</option>
+                  <option value="">{uiText("Select category")}</option>
                   {categories.filter(c => c.name.trim().toLowerCase() !== 'other').map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
-                  <option value="__other__">Other</option>
+                  <option value="__other__">{uiText("Other")}</option>
                 </select>
                 {categoryId === '__other__' && (
                   <input
                     type="text"
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
-                    placeholder="Enter new category"
+                    placeholder={uiText("Enter new category")}
                     style={{ marginTop: '6px' }}
                     required
                     autoFocus
                   />
                 )}
               </label>
-              <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} /> Generate User ID & Password</button>
-              <label>Merchant route<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">Select route</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
-          <label>Opening Time<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>Closing Time<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
+              <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} />{uiText(" Generate User ID & Password")}</button>
+              <label>{uiText("Merchant route")}<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">{uiText("Select route")}</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
+          <label>{uiText("Opening Time")}<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>{uiText("Closing Time")}<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
               </>}
               {onboardStep === 1 && <>
-              <label>
-                Address Line *
-                <input
+              <label>{uiText(" Address Line * ")}<input
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
-                  placeholder="Street, city"
+                  placeholder={uiText("Street, city")}
                   required
                 />
               </label>
-              <label>Area / Locality *<input value={locality} onChange={e => setLocality(e.target.value)} required placeholder="e.g. Market Road" /></label>
-              <label>City *<input value={city} onChange={e => setCity(e.target.value)} required /></label>
-              <label>Pincode *<input value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} pattern="[1-9][0-9]{5}" inputMode="numeric" required /></label>
-              <label>State *<input value={storeState} onChange={e => setStoreState(e.target.value)} required /></label>
+              <label>{uiText("Area / Locality *")}<input value={locality} onChange={e => setLocality(e.target.value)} required placeholder={uiText("e.g. Market Road")} /></label>
+              <label>{uiText("City *")}<input value={city} onChange={e => setCity(e.target.value)} required /></label>
+              <label>{uiText("Pincode *")}<input value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} pattern="[1-9][0-9]{5}" inputMode="numeric" required /></label>
+              <label>{uiText("State *")}<input value={storeState} onChange={e => setStoreState(e.target.value)} required /></label>
               <div className="field-location-card">
-                <button type="button" className="field-map-preview" onClick={() => setMapPickerOpen(true)}><MapPinned size={30} /><strong>Select Location on Map</strong><span>{latitude && longitude ? `${latitude}, ${longitude}` : 'Tap to set exact store location'}</span></button>
-                <button type="button" className="button secondary" onClick={captureGps}><MapPin size={16} /> Use Current Location</button>
+                <button type="button" className="field-map-preview" onClick={() => setMapPickerOpen(true)}><MapPinned size={30} /><strong>{uiText("Select Location on Map")}</strong><span>{latitude && longitude ? `${latitude}, ${longitude}` : uiText("Tap to set exact store location")}</span></button>
+                <button type="button" className="button secondary" onClick={captureGps}><MapPin size={16} />{uiText(" Use Current Location")}</button>
               </div>
               </>}
               {onboardStep === 2 && <>
               <label className="field-photo-card">
-                <span className="field-card-title"><Camera size={20} /> Shop Image <small>(Required)</small></span>
-                <span className="field-upload-hint">Upload Photo — JPG or PNG</span>
+                <span className="field-card-title"><Camera size={20} />{uiText(" Shop Image ")}<small>{uiText("(Required)")}</small></span>
+                <span className="field-upload-hint">{uiText("Upload Photo — JPG or PNG")}</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png"
@@ -699,7 +694,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   disabled={isUploadingImage}
                 />
               </label>
-              <p className="field-image-tip">A clear store image helps field staff and customers identify the store easily. JPG or PNG, maximum 5 MB.</p>
+              <p className="field-image-tip">{uiText("A clear store image helps field staff and customers identify the store easily. JPG or PNG, maximum 5 MB.")}</p>
               <LiveCamera facing="environment" disabled={isUploadingImage || create.isPending} label="Take Photo" onCapture={file => void uploadShopFiles([file])} />
               </>}
               {onboardStep === 3 && <div className="field-review">
@@ -707,11 +702,11 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
                   ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
                   ['Merchant Route', merchantRoute || 'Not assigned', 0],
-                  ['Shop Hours', openingTime && closingTime ? `${formatClockTime(openingTime)} – ${formatClockTime(closingTime)}` : 'Not provided', 0],
+                  ['Shop Hours', openingTime && closingTime ? `${formatClockTime(openingTime)} – ${formatClockTime(closingTime)}` : uiText("Not provided"), 0],
                   ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
-                  ['Location', latitude && longitude ? `${latitude}, ${longitude}` : 'Not selected', 1],
-                ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{label}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>Edit</button></div>)}
-                <div className="field-review-row"><div><small>Store Image</small>{shopImages.length ? <img src={shopImages[0].url} alt="Storefront" /> : <strong>No image added</strong>}</div><button type="button" onClick={() => setOnboardStep(2)}>Edit</button></div>
+                  ['Location', latitude && longitude ? `${latitude}, ${longitude}` : uiText("Not selected"), 1],
+                ].map(([label, value, step]) => <div className="field-review-row" key={String(label)}><div><small>{uiText(label)}</small><strong>{value}</strong></div><button type="button" onClick={() => setOnboardStep(Number(step))}>{uiText("Edit")}</button></div>)}
+                <div className="field-review-row"><div><small>{uiText("Store Image")}</small>{shopImages.length ? <img src={shopImages[0].url} alt={uiText("Storefront")} /> : <strong>{uiText("No image added")}</strong>}</div><button type="button" onClick={() => setOnboardStep(2)}>{uiText("Edit")}</button></div>
               </div>}
             </div>
 
@@ -736,7 +731,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                       alt={`Shop ${idx + 1}`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
                       onClick={() => setPreviewImageUrl(img.url)}
-                      title="View full image"
+                      title={uiText("View full image")}
                     />
                     <button
                       type="button"
@@ -757,7 +752,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                         justifyContent: 'center',
                         padding: 0,
                       }}
-                      title="Remove image"
+                      title={uiText("Remove image")}
                     >
                       <X size={11} />
                     </button>
@@ -767,17 +762,15 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
             )}
 
             {isUploadingImage && (
-              <p style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 500, marginBottom: '12px' }}>
-                Uploading shop photo…
-              </p>
+              <p style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 500, marginBottom: '12px' }}>{uiText(" Uploading shop photo… ")}</p>
             )}
 
             {/* Form Action Buttons */}
             <div className="form-actions">
-              {onboardStep > 0 && <button type="button" className="button secondary" disabled={create.isPending} onClick={() => setOnboardStep(onboardStep - 1)}>← Back</button>}
+              {onboardStep > 0 && <button type="button" className="button secondary" disabled={create.isPending} onClick={() => setOnboardStep(onboardStep - 1)}>{uiText("← Back")}</button>}
               <button className="button primary" disabled={create.isPending || isUploadingImage}>
                 <Plus size={16} />
-                {onboardStep < 3 ? 'Next →' : create.isPending ? t('merchants.creating') : t('merchants.add')}
+                {onboardStep < 3 ? uiText("Next →") : create.isPending ? t('merchants.creating') : t('merchants.add')}
               </button>
             </div>
           </form>
@@ -790,11 +783,11 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   <tr>
                     <th>{t('merchants.code')}</th>
                     <th>{t('merchants.storeName')}</th>
-                    <th>Category</th>
+                    <th>{uiText("Category")}</th>
                     <th>{t('login.email')}</th>
                     <th>{t('merchants.phone')}</th>
-                    <th>Address</th>
-                    <th>Action</th>
+                    <th>{uiText("Address")}</th>
+                    <th>{uiText("Action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -817,7 +810,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                                 cursor: 'pointer',
                               }}
                               onClick={() => setPreviewImageUrl(m.image_url!)}
-                              title="Click to view image"
+                              title={uiText("Click to view image")}
                             />
                           ) : (
                             <Store size={18} style={{ color: 'var(--muted)' }} />
@@ -839,14 +832,14 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                               target="_blank"
                               rel="noopener noreferrer"
                               className="icon-button"
-                              title="Chat on WhatsApp"
+                              title={uiText("Chat on WhatsApp")}
                             >
                               <MessageCircle color="#25D366" />
                             </a>
                           )}
                           <button
                             className="icon-button"
-                            title="Check in"
+                            title={uiText("Check in")}
                             disabled={Boolean(activeVisit)}
                             onClick={() => {
                               setSelectedMerchant(m);
@@ -861,9 +854,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   ))}
                   {allMerchants.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
-                        No merchants onboarded yet.
-                      </td>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>{uiText(" No merchants onboarded yet. ")}</td>
                     </tr>
                   )}
                 </tbody>
@@ -897,8 +888,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
             <button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}>
               <X />
             </button>
-            <h2>Select merchant location</h2>
-            <p>Search for a place or click the exact location.</p>
+            <h2>{uiText("Select merchant location")}</h2>
+            <p>{uiText("Search for a place or click the exact location.")}</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               <input
                 value={mapSearch}
@@ -909,7 +900,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                     (event.currentTarget.nextElementSibling as HTMLButtonElement)?.click();
                   }
                 }}
-                placeholder="Search address or place"
+                placeholder={uiText("Search address or place")}
                 style={{ flex: 1 }}
               />
               <button
@@ -942,9 +933,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                     }
                   );
                 }}
-              >
-                Search
-              </button>
+              >{uiText(" Search ")}</button>
             </div>
             <div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} />
             <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
@@ -982,12 +971,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                     { enableHighAccuracy: true, timeout: 10000 }
                   );
                 }}
-              >
-                Use my current location
-              </button>
-              <button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>
-                Use this location
-              </button>
+              >{uiText(" Use my current location ")}</button>
+              <button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>{uiText(" Use this location ")}</button>
             </div>
             {locationMessage ? <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>{locationMessage}</p> : null}
           </div>
@@ -1045,7 +1030,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
             </button>
             <img
               src={previewImageUrl}
-              alt="Store Preview"
+              alt={uiText("Store Preview")}
               style={{
                 display: 'block',
                 maxWidth: '100%',
@@ -1104,30 +1089,30 @@ function FieldCredentialsModal({
         </p>
         {credentials.whatsapp.error ? <small className="form-error">{credentials.whatsapp.error}</small> : null}
         <div className="credential-row">
-          <span>User ID</span>
+          <span>{uiText("User ID")}</span>
           <strong>{displayUserId}</strong>
-          <button className="icon-button" title="Copy" onClick={() => void copy(displayUserId)}>
+          <button className="icon-button" title={uiText("Copy")} onClick={() => void copy(displayUserId)}>
             <Copy />
           </button>
         </div>
         <div className="credential-row">
           <span>{t('merchants.code')}</span>
           <strong>{credentials.merchantCode}</strong>
-          <button className="icon-button" title="Copy" onClick={() => void copy(credentials.merchantCode)}>
+          <button className="icon-button" title={uiText("Copy")} onClick={() => void copy(credentials.merchantCode)}>
             <Copy />
           </button>
         </div>
         <div className="credential-row">
           <span>{t('merchants.loginEmail')}</span>
           <strong>{credentials.loginEmail}</strong>
-          <button className="icon-button" title="Copy" onClick={() => void copy(credentials.loginEmail)}>
+          <button className="icon-button" title={uiText("Copy")} onClick={() => void copy(credentials.loginEmail)}>
             <Copy />
           </button>
         </div>
         <div className="credential-row sensitive">
           <span>{t('merchants.oneTimePassword')}</span>
           <strong>{credentials.temporaryPassword}</strong>
-          <button className="icon-button" title="Copy" onClick={() => void copy(credentials.temporaryPassword)}>
+          <button className="icon-button" title={uiText("Copy")} onClick={() => void copy(credentials.temporaryPassword)}>
             <Copy />
           </button>
         </div>
@@ -1141,8 +1126,7 @@ function FieldCredentialsModal({
               className="button primary"
               style={{ background: '#25D366', borderColor: '#25D366', color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <MessageCircle size={16} /> Send via WhatsApp
-            </a>
+              <MessageCircle size={16} />{uiText(" Send via WhatsApp ")}</a>
           )}
           <button className="button secondary" onClick={onClose}>
             {t('common.close')}

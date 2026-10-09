@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ConfirmationResult, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
@@ -94,11 +95,11 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     } catch (cause: any) {
       const code = cause?.code || '';
       const message = code === 'auth/network-request-failed'
-        ? 'Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains.'
+        ? "Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains."
         : code === 'auth/too-many-requests'
-          ? 'Too many attempts. Please wait a few minutes and try again.'
+          ? "Too many attempts. Please wait a few minutes and try again."
           : code === 'auth/code-expired'
-            ? 'This OTP has expired. Tap Resend OTP and enter the newest code.'
+            ? "This OTP has expired. Tap Resend OTP and enter the newest code."
           : cause?.message || 'Unable to send the verification code.';
       setError(message);
       window.recaptchaVerifier?.clear();
@@ -147,24 +148,24 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   }
 
   return <main className="ae-auth-page"><section className="ae-auth-signup">
-    <Link className="ae-auth-back" to="/customer/login" aria-label="Back to login"><ArrowLeft/></Link>
-    <header><img src="/logo.png" alt="AE"/><h1>Create an Account</h1><p>Where customers meet business and beyond</p></header>
-    <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>Account Details</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>Verify &amp; Join</li></ol>
-    <h2>{step === 'details' ? 'Your Details' : 'Verify your phone'}</h2><p className="ae-auth-subtitle">{step === 'details' ? 'Let’s create your AE account' : `Enter the code sent to +91 ${phone}`}</p>
+    <Link className="ae-auth-back" to="/customer/login" aria-label={uiText("Back to login")}><ArrowLeft/></Link>
+    <header><img src="/logo.png" alt={uiText("AE")}/><h1>{uiText("Create an Account")}</h1><p>{uiText("Where customers meet business and beyond")}</p></header>
+    <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>{uiText("Account Details")}</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>{uiText("Verify &amp; Join")}</li></ol>
+    <h2>{step === 'details' ? uiText("Your Details") : uiText("Verify your phone")}</h2><p className="ae-auth-subtitle">{step === 'details' ? uiText("Let’s create your AE account") : `Enter the code sent to +91 ${phone}`}</p>
     {error && <div className="form-error" role="alert">{error}</div>}
     {step === 'details' ? <form onSubmit={e => {e.preventDefault(); void sendOtp();}}>
-      <label className="ae-auth-field"><UserRound/><input aria-label="Full name" placeholder="Full Name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} required/></label>
-      <label className="ae-auth-field"><Mail/><input aria-label="Email (optional)" placeholder="Email (optional)" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}/></label>
-      <label className="ae-auth-field"><Phone/><input aria-label="Mobile number" placeholder="+91 · Mobile Number" type="tel" autoComplete="tel-national" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} required/></label>
-      <label className="ae-auth-field"><LockKeyhole/><input aria-label="Create password" placeholder="Create Password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} required/><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
-      <label className="ae-auth-field"><LockKeyhole/><input aria-label="Confirm password" placeholder="Confirm Password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
-      <button className="ae-auth-primary" disabled={loading}>{loading ? 'Sending code…' : 'Continue'}<ArrowRight/></button>
+      <label className="ae-auth-field"><UserRound/><input aria-label={uiText("Full name")} placeholder={uiText("Full Name")} autoComplete="name" value={name} onChange={e => setName(e.target.value)} required/></label>
+      <label className="ae-auth-field"><Mail/><input aria-label={uiText("Email (optional)")} placeholder={uiText("Email (optional)")} type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}/></label>
+      <label className="ae-auth-field"><Phone/><input aria-label={uiText("Mobile number")} placeholder={uiText("+91 · Mobile Number")} type="tel" autoComplete="tel-national" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} required/></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Create password")} placeholder={uiText("Create Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} required/><button type="button" aria-label={showPassword ? uiText("Hide password") : uiText("Show password")} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Confirm password")} placeholder={uiText("Confirm Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
+      <button className="ae-auth-primary" disabled={loading}>{loading ? uiText("Sending code…") : uiText("Continue")}<ArrowRight/></button>
     </form> : <form onSubmit={verifyOtp}>
-      <label className="ae-auth-field"><Phone/><input aria-label="6-digit OTP" placeholder="6-digit OTP" inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>
-      <button className="ae-auth-primary" disabled={loading || otp.length !== 6}>{loading ? 'Creating account…' : 'Verify & Create Account'}<ArrowRight/></button>
-      <button type="button" className="ae-auth-secondary" disabled={loading || cooldown > 0} onClick={() => void sendOtp()}>{cooldown ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}</button>
+      <label className="ae-auth-field"><Phone/><input aria-label={uiText("6-digit OTP")} placeholder={uiText("6-digit OTP")} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>
+      <button className="ae-auth-primary" disabled={loading || otp.length !== 6}>{loading ? uiText("Creating account…") : uiText("Verify & Create Account")}<ArrowRight/></button>
+      <button type="button" className="ae-auth-secondary" disabled={loading || cooldown > 0} onClick={() => void sendOtp()}>{cooldown ? `Resend OTP in ${cooldown}s` : uiText("Resend OTP")}</button>
     </form>}
     <div id="signup-recaptcha-container"/>
-    <p className="ae-auth-bottom">Already have an account? <Link to="/customer/login">Login</Link></p>
+    <p className="ae-auth-bottom">{uiText("Already have an account? ")}<Link to="/customer/login">{uiText("Login")}</Link></p>
   </section></main>;
 }

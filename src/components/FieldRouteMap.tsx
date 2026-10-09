@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useRef, useState } from 'react';
 import { loadMaps } from './FieldMerchantMapper';
 
@@ -61,5 +62,5 @@ export function FieldRouteMap({ merchants }: { merchants: Stop[] }) {
     } catch { if (request === generation.current) setError('Road route unavailable. Check Directions API settings and merchant locations.'); }
     finally { if (request === generation.current) setBusy(false); }
   }
-  return <article className="route-summary" style={{ display: 'block' }}><h2>Route map</h2><p>Select stops in visit order, using the map or checkboxes.</p><div ref={host} aria-label="Merchant route map" style={{ height: 320, borderRadius: 16 }} />{merchants.length > stops.length && <p>{merchants.length - stops.length} merchants need valid GPS coordinates before they can be mapped.</p>}<div>{stops.map(stop => <label key={stop.id} style={{ display: 'block', padding: 8 }}><input type="checkbox" checked={chosen.includes(stop.id)} onChange={() => toggle(stop.id)} /> {chosen.includes(stop.id) ? `${chosen.indexOf(stop.id) + 1}. ` : ''}{stop.name}</label>)}</div><button className="button primary" disabled={!ready || busy || chosen.length < 2} onClick={() => void build()}>{busy ? 'Calculating…' : 'Build road route'}</button>{summary && <p>{summary}</p>}{error && <p role="alert">{error}</p>}</article>;
+  return <article className="route-summary" style={{ display: 'block' }}><h2>{uiText("Route map")}</h2><p>{uiText("Select stops in visit order, using the map or checkboxes.")}</p><div ref={host} aria-label={uiText("Merchant route map")} style={{ height: 320, borderRadius: 16 }} />{merchants.length > stops.length && <p>{merchants.length - stops.length}{uiText(" merchants need valid GPS coordinates before they can be mapped.")}</p>}<div>{stops.map(stop => <label key={stop.id} style={{ display: 'block', padding: 8 }}><input type="checkbox" checked={chosen.includes(stop.id)} onChange={() => toggle(stop.id)} /> {chosen.includes(stop.id) ? `${chosen.indexOf(stop.id) + 1}. ` : ''}{stop.name}</label>)}</div><button className="button primary" disabled={!ready || busy || chosen.length < 2} onClick={() => void build()}>{busy ? uiText("Calculating…") : uiText("Build road route")}</button>{summary && <p>{summary}</p>}{error && <p role="alert">{error}</p>}</article>;
 }

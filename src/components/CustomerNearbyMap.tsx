@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
@@ -39,7 +40,7 @@ async function getCurrentLocation(): Promise<Coordinates> {
 export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocation, onLocate }: { merchants: CustomerMerchant[]; selectedMerchantId?: string; shoppingLocation?: Coordinates | null; onLocate?: () => Promise<any> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const [status, setStatus] = useState(mapsKey ? 'Tap Locate AE to find merchants near you.' : 'Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.');
+  const [status, setStatus] = useState(mapsKey ? "Tap Locate AE to find merchants near you." : "Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.");
   const locatedMerchants = useMemo(() => merchants.filter((m) => Number.isFinite(m.latitude) && Number.isFinite(m.longitude)), [merchants]);
 
   useEffect(() => {
@@ -92,15 +93,15 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocat
         map.setZoom(13);
         new google.maps.Marker({ map, position: { lat: location.latitude, lng: location.longitude }, title: 'You are here' });
       }
-      setStatus(locatedMerchants.length ? `${locatedMerchants.length} merchant${locatedMerchants.length === 1 ? '' : 's'} with saved locations found.` : 'Your location is ready. No merchant locations have been added yet.');
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'We could not determine your location.'); }
+      setStatus(locatedMerchants.length ? `${locatedMerchants.length} merchant${locatedMerchants.length === 1 ? '' : 's'} with saved locations found.` : "Your location is ready. No merchant locations have been added yet.");
+    } catch (error) { setStatus(error instanceof Error ? error.message : "We could not determine your location."); }
   }
 
   return <section id="customer-nearby-map" className="px-5 mb-6">
     <div className="bg-gray-100 rounded-3xl h-56 relative overflow-hidden shadow-inner border border-gray-200">
       <div ref={containerRef} className="absolute inset-0" />
-      {!mapsKey && <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 to-blue-50 text-center px-7"><div><MapPin className="mx-auto mb-2 text-[#087a4b]" /><strong className="block text-gray-800">Nearby with Google Maps</strong><p className="mt-1 text-xs text-gray-500">Add your Maps key to show real merchant pins.</p></div></div>}
-      <button type="button" onClick={() => void locate()} className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#087a4b] shadow-lg"><LocateFixed size={16} /> Locate AE</button>
+      {!mapsKey && <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 to-blue-50 text-center px-7"><div><MapPin className="mx-auto mb-2 text-[#087a4b]" /><strong className="block text-gray-800">{uiText("Nearby with Google Maps")}</strong><p className="mt-1 text-xs text-gray-500">{uiText("Add your Maps key to show real merchant pins.")}</p></div></div>}
+      <button type="button" onClick={() => void locate()} className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#087a4b] shadow-lg"><LocateFixed size={16} />{uiText(" Locate AE")}</button>
     </div>
     <p className="mt-2 text-xs text-gray-500">{status}</p>
   </section>;

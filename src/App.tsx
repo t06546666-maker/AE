@@ -9,6 +9,8 @@ import { AddCustomer } from './pages/AddCustomer';
 import { Administrators } from './pages/Administrators';
 import { ChangePassword } from './pages/ChangePassword';
 import { Legal } from './pages/Legal';
+import { AccountDeletion } from './pages/AccountDeletion';
+import { useTranslation } from 'react-i18next';
 import { LegalGate } from './components/LegalGate';
 import { ReadOnlyProfiles } from './pages/ReadOnlyProfiles';
 import { Customers } from './pages/Customers';
@@ -80,6 +82,7 @@ function RoleRoute({ user, role, children }: { user: UserProfile; role: Role; ch
 }
 
 export function App() {
+  useTranslation(undefined, { bindI18n: 'languageChanged loaded' });
   const [user, setUser] = useState<UserProfile | null>(null);
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
   const [restoreError, setRestoreError] = useState('');
@@ -234,6 +237,7 @@ export function App() {
     return () => { active = false; };
   }, [restoreAttempt]);
 
+  if (location.pathname === '/delete-account') return <AccountDeletion />;
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Legal />;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;

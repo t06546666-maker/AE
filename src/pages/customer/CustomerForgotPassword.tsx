@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 
 declare global {
   interface Window {
@@ -55,9 +56,9 @@ export function CustomerForgotPassword() {
     } catch (err: any) {
       const code = err?.code || '';
       const message = code === 'auth/network-request-failed'
-        ? 'Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains.'
+        ? "Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains."
         : code === 'auth/too-many-requests'
-          ? 'Too many attempts. Please wait a few minutes and try again.'
+          ? "Too many attempts. Please wait a few minutes and try again."
           : err?.message || 'Failed to send SMS code.';
       setError(message);
       if (window.recaptchaVerifier) {
@@ -109,16 +110,14 @@ export function CustomerForgotPassword() {
       <div className="login-screen">
         <div className="login-form-panel" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
           <div className="login-form" style={{ textAlign: 'center' }}>
-            <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
-            <h2>Password Reset!</h2>
-            <p>Your customer password has been successfully reset.</p>
+            <div className="login-mobile-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+            <h2>{uiText("Password Reset!")}</h2>
+            <p>{uiText("Your customer password has been successfully reset.")}</p>
             <button 
               onClick={() => window.location.href = '/customer/login'} 
               className="button primary login-button" 
               style={{ marginTop: '24px' }}
-            >
-              Back to Login
-            </button>
+            >{uiText(" Back to Login ")}</button>
           </div>
         </div>
       </div>
@@ -129,16 +128,14 @@ export function CustomerForgotPassword() {
     <div className="login-screen">
       <div className="login-form-panel" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
         <div className="login-form">
-          <div className="login-mobile-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
-          <h2>Reset Password</h2>
+          <div className="login-mobile-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+          <h2>{uiText("Reset Password")}</h2>
           <label className="login-language"><Languages size={17} /><select value={i18n.language.startsWith('ml') ? 'ml' : 'en'} onChange={(event) => void i18n.changeLanguage(event.target.value)} aria-label={t('language.malayalam')}><option value="en">{t('language.english')}</option><option value="ml">{t('language.malayalam')}</option></select></label>
-          <p>We'll send a 6-digit SMS code to your number.</p>
+          <p>{uiText("We'll send a 6-digit SMS code to your number.")}</p>
           {step === 'phone' && (
             <div style={{ margin: '18px 0 4px' }}>
               <div id="recaptcha-container"></div>
-              <small style={{ display: 'block', marginTop: '8px', color: '#6b7280' }}>
-                Complete the security check when it appears, then the SMS code will be sent.
-              </small>
+              <small style={{ display: 'block', marginTop: '8px', color: '#6b7280' }}>{uiText(" Complete the security check when it appears, then the SMS code will be sent. ")}</small>
             </div>
           )}
           
@@ -147,7 +144,7 @@ export function CustomerForgotPassword() {
           {step === 'phone' ? (
             <form onSubmit={requestOtp}>
               <label>
-                <span>Phone Number</span>
+                <span>{uiText("Phone Number")}</span>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <span style={{ position: 'absolute', left: '16px', fontWeight: 'bold', color: '#6b7280' }}>+91</span>
                   <input
@@ -157,7 +154,7 @@ export function CustomerForgotPassword() {
                     onBlur={() => {
                       if (/^[6-9]\d{9}$/.test(phone) && !loading) void sendOtp();
                     }}
-                    placeholder="Enter 10-digit number"
+                    placeholder={uiText("Enter 10-digit number")}
                     style={{ width: '100%', paddingLeft: '54px' }}
                     required
                   />
@@ -169,13 +166,13 @@ export function CustomerForgotPassword() {
                 className="button primary login-button"
                 style={{ marginTop: '24px' }}
               >
-                {loading ? 'Sending...' : 'Send SMS Code'}
+                {loading ? uiText("Sending...") : uiText("Send SMS Code")}
               </button>
             </form>
           ) : (
             <form onSubmit={resetPassword}>
               <label>
-                <span>Enter 6-digit Code</span>
+                <span>{uiText("Enter 6-digit Code")}</span>
                 <input
                   type="text"
                   value={otp}
@@ -187,12 +184,12 @@ export function CustomerForgotPassword() {
                 />
               </label>
               <label>
-                <span>New Password</span>
+                <span>{uiText("New Password")}</span>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
+                  placeholder={uiText("Min. 8 characters")}
                   style={{ width: '100%' }}
                   required
                   minLength={8}
@@ -204,15 +201,13 @@ export function CustomerForgotPassword() {
                 className="button primary login-button"
                 style={{ marginTop: '24px' }}
               >
-                {loading ? 'Resetting...' : 'Reset Password'}
+                {loading ? uiText("Resetting...") : uiText("Reset Password")}
               </button>
               <button
                 type="button"
                 onClick={() => setStep('phone')}
                 style={{ width: '100%', marginTop: '16px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
-              >
-                Use a different number
-              </button>
+              >{uiText(" Use a different number ")}</button>
             </form>
           )}
 
@@ -221,9 +216,7 @@ export function CustomerForgotPassword() {
               onClick={() => window.location.href = '/customer/login'} 
               className="button secondary" 
               style={{ width: '100%', textDecoration: 'none', textAlign: 'center' }}
-            >
-              Cancel
-            </button>
+            >{uiText(" Cancel ")}</button>
           </div>
         </div>
       </div>

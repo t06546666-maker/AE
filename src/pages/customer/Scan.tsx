@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
@@ -30,7 +31,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
       <div className="bg-white rounded-b-[32px] overflow-hidden z-20 shadow-sm relative">
         <header className="flex items-center justify-between px-5 py-4">
           <Link to="/customer/home" className="text-gray-800"><ArrowLeft size={24} /></Link>
-          <h1 className="text-[18px] font-bold text-gray-900">My QR Code</h1>
+          <h1 className="text-[18px] font-bold text-gray-900">{uiText("My QR Code")}</h1>
           <div className="w-6" /> {/* Spacer for centering */}
         </header>
       </div>
@@ -48,22 +49,20 @@ export function CustomerScan({ user }: { user: UserProfile }) {
           {/* QR Code Container */}
           <div className="absolute inset-4 bg-white rounded-xl flex items-center justify-center overflow-hidden">
             {qrSrc ? (
-              <img src={qrSrc} alt="Your QR Code" className="w-full h-full object-cover" />
+              <img src={qrSrc} alt={uiText("Your QR Code")} className="w-full h-full object-cover" />
             ) : (
               <div className="animate-pulse bg-gray-200 w-full h-full rounded-xl"></div>
             )}
           </div>
         </div>
 
-        <p className="rounded-xl bg-white/90 px-4 py-3 text-[15px] font-semibold text-black tracking-wide text-center mb-12">
-          Show this QR to an AE merchant to earn points for every purchase.
-        </p>
+        <p className="rounded-xl bg-white/90 px-4 py-3 text-[15px] font-semibold text-black tracking-wide text-center mb-12">{uiText(" Show this QR to an AE merchant to earn points for every purchase. ")}</p>
 
         {/* Bottom Button (Adapted from "Enter Code Manually") */}
         <div className="w-full max-w-[320px]">
           <div className="w-full bg-white rounded-[16px] py-4 px-6 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg cursor-pointer">
             <User size={20} className="text-gray-600" />
-            <span className="text-[16px] font-bold text-gray-900">ID: {customerId}</span>
+            <span className="text-[16px] font-bold text-gray-900">{uiText("ID: ")}{customerId}</span>
           </div>
         </div>
       </div>

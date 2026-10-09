@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { SIX_HOUR_LABELS } from '../utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +20,7 @@ const emptyDashboard: DashboardData = {
 
 function useChartDashboard(period: Period, from: string, to: string) {
   const range = rangeForChartPeriod(period, from, to);
-  const bucket = period === 'today' ? 'six-hour' : period === 'month' ? 'weekly' : 'daily';
+  const bucket = period === 'today' ? "six-hour" : period === 'month' ? "weekly" : "daily";
   return useQuery({
     queryKey: ['dashboard', 'chart', range?.from, range?.to, bucket],
     queryFn: ({ signal }) => apiFetch<DashboardData>(
@@ -63,14 +64,14 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
       {/* Account Settings & Exports */}
       <div className="mobile-section" style={{ marginTop: 24 }}>
         <div className="mobile-section-header">
-          <h3>Account & Tools</h3>
+          <h3>{uiText("Account & Tools")}</h3>
         </div>
         <div className="mobile-transactions" style={{ boxShadow: 'none', padding: 0 }}>
           <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setExportFormat('xlsx')}>
             <div className="mobile-transaction-avatar green" style={{ width: 40, height: 40 }}><FileSpreadsheet size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
-              <h4>Export to Excel</h4>
-              <p>Download full business reports</p>
+              <h4>{uiText("Export to Excel")}</h4>
+              <p>{uiText("Download full business reports")}</p>
             </div>
             <ChevronRight color="#94a3b8" />
           </button>
@@ -78,8 +79,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setExportFormat('pdf')}>
             <div className="mobile-transaction-avatar pink" style={{ width: 40, height: 40 }}><FileText size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
-              <h4>Export to PDF</h4>
-              <p>Download visual summaries</p>
+              <h4>{uiText("Export to PDF")}</h4>
+              <p>{uiText("Download visual summaries")}</p>
             </div>
             <ChevronRight color="#94a3b8" />
           </button>
@@ -87,8 +88,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setSubscribeOpen(true)}>
             <div className="mobile-transaction-avatar blue" style={{ width: 40, height: 40 }}><ShieldCheck size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
-              <h4>Subscription</h4>
-              <p>Free trial · Subscriptions coming soon</p>
+              <h4>{uiText("Subscription")}</h4>
+              <p>{uiText("Free trial · Subscriptions coming soon")}</p>
             </div>
             <ChevronRight color="#94a3b8" />
           </button>
@@ -96,8 +97,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           <Link to="/reward-settings" className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0' }}>
             <div className="mobile-transaction-avatar" style={{ width: 40, height: 40, background: '#f1f5f9', color: '#64748b' }}><Settings size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
-              <h4>Reward Settings</h4>
-              <p>Configure points and expiry</p>
+              <h4>{uiText("Reward Settings")}</h4>
+              <p>{uiText("Configure points and expiry")}</p>
             </div>
             <ChevronRight color="#94a3b8" />
           </Link>
@@ -105,9 +106,9 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
       </div>
 
       {/* Help and Support */}
-      {user.role === 'merchant' && <button type="button" className="mobile-help-btn" style={{ width: '100%', marginTop: 24, cursor: 'pointer' }} onClick={() => setFeedbackOpen(true)}><div className="mobile-help-btn-left"><MessageCircle size={20}/><div style={{ textAlign: 'left' }}><strong>Feedback to AE</strong><p style={{ margin: '4px 0', fontSize: 12 }}>Share suggestions or report an app issue</p></div></div><ChevronRight size={20}/></button>}
+      {user.role === 'merchant' && <button type="button" className="mobile-help-btn" style={{ width: '100%', marginTop: 24, cursor: 'pointer' }} onClick={() => setFeedbackOpen(true)}><div className="mobile-help-btn-left"><MessageCircle size={20}/><div style={{ textAlign: 'left' }}><strong>{uiText("Feedback to AE")}</strong><p style={{ margin: '4px 0', fontSize: 12 }}>{uiText("Share suggestions or report an app issue")}</p></div></div><ChevronRight size={20}/></button>}
       <div className="mobile-help-support" style={{ marginTop: 24 }}>
-        <p>Need help?<br/>Find quick answers or chat with our support team.</p>
+        <p>{uiText("Need help?")}<br/>{uiText("Find quick answers or chat with our support team.")}</p>
         <button type="button" className="mobile-help-btn" style={{ width: '100%', cursor: 'pointer' }} aria-expanded={supportOpen} aria-controls="merchant-help-support" onClick={() => setSupportOpen(open => !open)}>
           <div className="mobile-help-btn-left">
             <Headset size={20} color="#64748b" />
@@ -116,14 +117,14 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           <ChevronRight size={20} color="#94a3b8" />
         </button>
         {supportOpen && <section id="merchant-help-support" className="panel" style={{ marginTop: 16, textAlign: 'left' }}>
-          <h2>Help &amp; Support</h2>
-          <p>Need assistance with your merchant account, points, QR scanning, or product lists? Chat with us on WhatsApp or email our support team.</p>
+          <h2>{uiText("Help &amp; Support")}</h2>
+          <p>{uiText("Need assistance with your merchant account, points, QR scanning, or product lists? Chat with us on WhatsApp or email our support team.")}</p>
           <div className="form-actions" style={{ flexWrap: 'wrap', margin: '20px 0' }}>
-            <a className="button whatsapp" href="https://wa.me/917306010846?text=Hello%20Affiliate%20AE%20support%2C%20I%20need%20help%20with%20my%20merchant%20account." target="_blank" rel="noopener noreferrer"><MessageCircle size={19}/>Chat on WhatsApp</a>
-            <a className="button secondary" href="mailto:info@affiliateinnovations.co.in?subject=Merchant%20support"><Mail size={19}/>Email Support</a>
+            <a className="button whatsapp" href="https://wa.me/917306010846?text=Hello%20Affiliate%20AE%20support%2C%20I%20need%20help%20with%20my%20merchant%20account." target="_blank" rel="noopener noreferrer"><MessageCircle size={19}/>{uiText("Chat on WhatsApp")}</a>
+            <a className="button secondary" href="mailto:info@affiliateinnovations.co.in?subject=Merchant%20support"><Mail size={19}/>{uiText("Email Support")}</a>
           </div>
-          <p style={{ overflowWrap: 'anywhere', color: 'var(--text-muted)' }}>info@affiliateinnovations.co.in</p>
-          <h3 style={{ marginTop: 24 }}>Frequently Asked Questions</h3>
+          <p style={{ overflowWrap: 'anywhere', color: 'var(--text-muted)' }}>{uiText("info@affiliateinnovations.co.in")}</p>
+          <h3 style={{ marginTop: 24 }}>{uiText("Frequently Asked Questions")}</h3>
           {[
             ['How do I issue points to a customer?', 'Scan the customer’s My QR Code, select Issue Only, enter the purchase amount, check the points, and confirm the transaction.'],
             ['How do I redeem customer points?', 'Scan the customer’s Redeem QR Code to open Redeem + Issue. Redemption uses 100 points. Enter the purchase amount and discount, review the calculation, and confirm.'],
@@ -146,11 +147,10 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             fontSize: 15, fontWeight: 600,
           }}
         >
-          <LogOut size={20} color="#ef4444" />
-          Sign out
-        </button>
+          <LogOut size={20} color="#ef4444" />{uiText(" Sign out ")}</button>
       </div>
 
+      <div className="mobile-section"><Link className="button secondary" to="/privacy">{uiText("Privacy Policy")}</Link> <Link className="button secondary" to="/delete-account">{uiText("Delete account and data")}</Link></div>
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
       {feedbackOpen && <MerchantFeedback onClose={() => setFeedbackOpen(false)}/>}
       

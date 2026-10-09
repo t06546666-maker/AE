@@ -17,6 +17,7 @@ const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { billUpi } = require('./backend/bill-upi.cjs');
+const languagePacks = { en: require('./backend/locales/en.json'), ml: require('./backend/locales/ml.json') };
 let initializeApp;
 let cert;
 let getAuth;
@@ -2178,6 +2179,14 @@ app.delete('/api/merchant-categories/:id', requireAuth, async (req, res) => {
 });
 
 // Public, non-personal dashboard copy; backend updates reach installed apps.
+app.get('/api/languages/:locale', (req, res) => {
+  if (!Object.hasOwn(languagePacks, req.params.locale)) return res.status(404).json({ error: 'Unsupported language' });
+  const translations=languagePacks[req.params.locale];
+  const version=crypto.createHash('sha256').update(JSON.stringify(translations)).digest('hex').slice(0,16);
+  res.setHeader('Cache-Control','no-store');
+  res.json({ schemaVersion: 1, locale: req.params.locale, version, translations });
+});
+
 app.get('/api/daily-greetings', (req, res) => {
   const role = req.query.role;
   if (role !== 'customer' && role !== 'merchant') {

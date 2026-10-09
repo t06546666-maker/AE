@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { useState, type FormEvent } from 'react';
 import { Languages, LockKeyhole } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
       });
       onChanged();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Password change failed');
+      setError(cause instanceof Error ? cause.message : "Password change failed");
     } finally {
       setBusy(false);
     }
@@ -42,17 +43,15 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
               value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
               onChange={(event) => void i18n.changeLanguage(event.target.value)}
             >
-              <option value="en">EN</option>
+              <option value="en">{uiText("EN")}</option>
               <option value="ml">മലയാളം</option>
             </select>
           </label>
         </div>
-        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
-        <h1>Setup Your Password</h1>
-        <p>You must set a permanent password for your customer account to continue.</p>
-        <label>
-          New Password
-          <input
+        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+        <h1>{uiText("Setup Your Password")}</h1>
+        <p>{uiText("You must set a permanent password for your customer account to continue.")}</p>
+        <label>{uiText(" New Password ")}<input
             type="password"
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
@@ -72,7 +71,7 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
             required
           />
         </label>
-        <small className="password-help">Password must be at least 8 characters long.</small>
+        <small className="password-help">{uiText("Password must be at least 8 characters long.")}</small>
         {error ? <div className="form-error">{error}</div> : null}
         <button className="button primary login-button" disabled={busy}>
           {busy ? t('password.changing') : t('password.change')}

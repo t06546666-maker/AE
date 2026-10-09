@@ -1,9 +1,10 @@
+import { uiText } from '../uiText';
 import { SIX_HOUR_LABELS } from '../utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { 
-  Bell, ChevronRight, Download, Gift, Headset, Home, IndianRupee, Menu, MoreHorizontal, ReceiptText, QrCode, ScanLine, Sparkles, Tag, UserRoundCheck, Users, X, BadgeIndianRupee 
+import {
+  Bell, ChevronRight, Download, Gift, Headset, Home, IndianRupee, Menu, MoreHorizontal, ReceiptText, QrCode, ScanLine, Sparkles, Tag, UserRoundCheck, Users, X, BadgeIndianRupee
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
@@ -30,7 +31,7 @@ function useDashboard(period: Period, from: string, to: string) {
 
 function useChartDashboard(period: Period, from: string, to: string) {
   const range = rangeForChartPeriod(period, from, to);
-  const bucket = period === 'today' ? 'six-hour' : period === 'month' ? 'weekly' : 'daily';
+  const bucket = period === 'today' ? "six-hour" : period === 'month' ? "weekly" : "daily";
   return useQuery({
     queryKey: ['dashboard', 'chart', range?.from, range?.to, bucket],
     queryFn: ({ signal }) => apiFetch<DashboardData>(
@@ -69,7 +70,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#3b28cc', color: 'white', borderRadius: '8px 8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Headset size={20} color="white" />
-            <h2 style={{ margin: 0, fontSize: 16, color: 'white' }}>AE Support Chat</h2>
+            <h2 style={{ margin: 0, fontSize: 16, color: 'white' }}>{uiText("AE Support Chat")}</h2>
           </div>
           <button className="icon-button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', padding: 0 }}><X size={24} color="white" /></button>
         </div>
@@ -81,7 +82,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div style={{ padding: 16, background: 'white', borderTop: '1px solid #f1f5f9', borderRadius: '0 0 8px 8px' }}>
-          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 10px', fontWeight: 600, textTransform: 'uppercase' }}>Frequently Asked Questions</p>
+          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 10px', fontWeight: 600, textTransform: 'uppercase' }}>{uiText("Frequently Asked Questions")}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {faqs.map((faq, i) => (
               <button key={i} onClick={() => ask(faq.q, faq.a)} style={{ background: '#f1f5f9', border: 'none', padding: '10px 14px', borderRadius: 20, fontSize: 12, color: '#334155', cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}>
@@ -111,7 +112,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
 
   const dashboard = useDashboard(period, from, to);
   const data = dashboard.data || emptyDashboard;
-  
+
   const recentOrders = useQuery({
     queryKey: ['recent-orders'],
     queryFn: ({ signal }) => apiFetch<{ orders: Order[] }>(`/api/orders?page=1&pageSize=5`, { signal }),
@@ -126,7 +127,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
 
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const retention = useDashboard(retentionPeriod, retentionFrom, retentionTo);
-  
+
   const merchantQuery = useQuery({
     queryKey: ['merchant', user.merchant_id],
     queryFn: ({ signal }) => apiFetch<{ data: Merchant }>(`/api/merchants/${user.merchant_id}`, { signal }),
@@ -144,7 +145,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
   const maxOrders = Math.max(1, ...chartData.intervals.map((item) => item.orders));
   const maxRevenue = Math.max(1, ...chartData.intervals.map((item) => item.revenue));
   const chartNeedsScroll = chartPeriod === 'custom' && chartData.intervals.length > 7;
-  
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return t('dashboard.goodMorning', 'Good morning!');
@@ -205,7 +206,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
               <div className="mobile-summary-card-icon"><Users size={24} strokeWidth={1.5} /></div>
               <p>{t('dashboard.customers', 'Customers')}</p>
               <strong>{formatCurrency(data.summary.totalCustomers)}</strong>
-              <small>New: {retentionData.retention.todayVisits}</small> 
+              <small>{uiText("New: ")}{retentionData.retention.todayVisits}</small>
             </div>
             <div className="mobile-summary-card rewards">
               <div className="mobile-summary-card-icon"><Gift size={24} strokeWidth={1.5} /></div>
@@ -257,7 +258,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
       ) : null}
 
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin={user.role === 'admin'} onClose={() => setExportFormat(null)} />
-      
+
       {/* Recent Transactions */}
       {user.role === 'merchant' ? (
         <div className="mobile-section">
@@ -266,8 +267,8 @@ export function Dashboard({ user }: { user: UserProfile }) {
             <Link to="/orders">{t('common.viewAll', 'View all')}</Link>
           </div>
           <div className="mobile-transactions">
-            {recentOrders.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> : 
-             !recentOrders.data?.orders?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>No recent transactions.</p> :
+            {recentOrders.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> :
+             !recentOrders.data?.orders?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>{uiText("No recent transactions.")}</p> :
               recentOrders.data?.orders.slice(0, 5).map((order) => (
               <Link to={`/orders?search=${order.orderNo}`} key={order.id} className="mobile-transaction-item" style={{ textDecoration: 'none' }}>
                 <div className="mobile-transaction-avatar blue">{initials(order.customer || '?')}</div>
@@ -295,14 +296,14 @@ export function Dashboard({ user }: { user: UserProfile }) {
             </div>
           </div>
           <ReportDates period={chartPeriod} from={chartFrom} to={chartTo} setFrom={setChartFrom} setTo={setChartTo} />
-          
+
           <div style={{ marginBottom: 16 }}>
             <strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>{t('dashboard.salesOverview', 'Sales Overview')}</strong>
             <div className="chart-legend" style={{ marginTop: 0, marginBottom: 16 }}>
               <span><i className="orders" style={{ background: '#3b28cc'}} /> {t('dashboard.orders', 'Orders')}</span>
               <span><i className="revenue" style={{ background: '#16a34a'}} /> {t('dashboard.revenue', 'Revenue (₹)')}</span>
             </div>
-            {chart.isFetching ? <div className="inline-loading">Updating chart...</div> : null}
+            {chart.isFetching ? <div className="inline-loading">{uiText("Updating chart...")}</div> : null}
             {chart.isError ? <ErrorState error={chart.error} retry={() => chart.refetch()} /> : null}
             <div className="chart-scroll">
               <div className={`grouped-chart${chartPeriod === 'today' ? '' : ' daily-chart'}`} style={chartPeriod === 'today' ? undefined : { gridTemplateColumns: `repeat(${chartData.intervals.length}, minmax(${chartNeedsScroll ? 28 : 0}px, 1fr))`, minWidth: chartNeedsScroll ? `${chartData.intervals.length * 38}px` : '100%' }}>
@@ -311,7 +312,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
                     <div className="chart-bars">
                       <div className="chart-bar orders" style={{ height: `${Math.max(4, item.orders / maxOrders * 100)}%`, background: '#3b28cc' }} title={`${item.orders} orders`} />
                       <div className="chart-bar revenue" style={{ height: `${Math.max(4, item.revenue / maxRevenue * 100)}%`, background: '#16a34a' }} title={formatCurrency(item.revenue)} />
-                    </div><span>{item.label}</span>
+                    </div><span>{uiText(item.label)}</span>
                   </div>
                 ))}
               </div>
@@ -325,12 +326,12 @@ export function Dashboard({ user }: { user: UserProfile }) {
       {user.role === 'merchant' ? (
         <div className="mobile-section">
           <div className="mobile-section-header">
-            <h3>Top Customers Today</h3>
-            <Link to="/customers">View all</Link>
+            <h3>{uiText("Top Customers Today")}</h3>
+            <Link to="/customers">{uiText("View all")}</Link>
           </div>
           <div className="mobile-transactions">
-            {topCustomers.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> : 
-             !topCustomers.data?.customers?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>No customers today.</p> :
+            {topCustomers.isPending ? <LoadingState label={t('common.loading', 'Loading...')} /> :
+             !topCustomers.data?.customers?.length ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px', margin: 0 }}>{uiText("No customers today.")}</p> :
               topCustomers.data.customers.slice(0, 3).map((customer, index) => (
               <div className="mobile-transaction-item" key={customer.id}>
                 <div className={`mobile-transaction-avatar ${index === 0 ? 'green' : index === 1 ? 'pink' : 'blue'}`}>{index + 1}</div>
@@ -339,7 +340,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
                   <p>{customer.orderCount || 1} {t('dashboard.orders', 'orders')} • ₹{formatCurrency(customer.totalSpend || 0)}</p>
                 </div>
                 <div className="mobile-transaction-amount">
-                  <span style={{ color: '#16a34a', fontWeight: 600 }}>+{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints ?? 0)} pts</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>+{formatPoints(customer.totalRewardPoints ?? customer.rewardPoints ?? 0)}{uiText(" pts")}</span>
                 </div>
               </div>
             ))}
@@ -351,17 +352,17 @@ export function Dashboard({ user }: { user: UserProfile }) {
       {user.role === 'merchant' ? (
         <div className="mobile-section">
           <div className="mobile-transactions" style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>Rewards Summary</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>{uiText("Rewards Summary")}</h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Issued</span>
-              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.rewardPointsIssued || 0)} pts</strong>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>{uiText("Total Points Issued")}</span>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.rewardPointsIssued || 0)}{uiText(" pts")}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Total Points Redeemed</span>
-              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.totalPointsRedeemed || 0)} pts</strong>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>{uiText("Total Points Redeemed")}</span>
+              <strong style={{ fontSize: 14, color: '#1a1a1a' }}>{formatPoints(data.summary.totalPointsRedeemed || 0)}{uiText(" pts")}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Pending Liability</span>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>{uiText("Pending Liability")}</span>
               <strong style={{ fontSize: 14, color: '#ea580c' }}>{formatCurrency((data.summary.rewardPointsIssued || 0) * 0.1)}</strong>
             </div>
           </div>
@@ -373,8 +374,8 @@ export function Dashboard({ user }: { user: UserProfile }) {
         <div className="mobile-section">
           <div style={{ background: '#f5f3ff', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Create offers and attract<br/>more customers</h3>
-              <Link to="/offers?create=1" className="button" style={{ background: 'white', color: '#3b28cc', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'inline-block', textDecoration: 'none' }}>Create Offer</Link>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>{uiText("Create offers and attract")}<br/>{uiText("more customers")}</h3>
+              <Link to="/offers?create=1" className="button" style={{ background: 'white', color: '#3b28cc', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'inline-block', textDecoration: 'none' }}>{uiText("Create Offer")}</Link>
             </div>
             <div style={{ background: '#3b28cc', width: 64, height: 64, borderRadius: 16, display: 'grid', placeItems: 'center' }}>
               <Gift size={32} color="white" />
@@ -387,12 +388,12 @@ export function Dashboard({ user }: { user: UserProfile }) {
       {user.role === 'merchant' ? (
         <div className="mobile-section">
           <div style={{ background: '#f8fafc', borderRadius: 16, padding: 20 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>Need help?</h3>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 16px' }}>Visit our Help Center or contact support.</p>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px' }}>{uiText("Need help?")}</h3>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 16px' }}>{uiText("Visit our Help Center or contact support.")}</p>
             <button onClick={() => setHelpOpen(true)} style={{ background: 'white', width: '100%', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12, color: '#1a1a1a', fontWeight: 600, fontSize: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Headset size={20} color="#1a1a1a" strokeWidth={2} />
-                <span>Help & Support</span>
+                <span>{uiText("Help & Support")}</span>
               </div>
               <ChevronRight size={18} color="#1a1a1a" strokeWidth={2.5} />
             </button>

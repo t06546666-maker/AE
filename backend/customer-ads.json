@@ -1,3 +1,3 @@
 [
-  { "id": "ae-launch-poster", "title": "AE — connecting local businesses and customers", "description": "AE promotional poster for Chittur and Thathamangalam", "theme": "blue", "icon": "store", "action": "Explore AE shops", "url": "/customer/explore", "test": false, "imageUrl": "https://www.affiliateae.co.in/ads/ae-launch-poster.png" }
+  { "id": "ae-launch-poster", "title": "AE — connecting local businesses and customers", "description": "AE promotional poster for Chittur and Thathamangalam", "theme": "blue", "icon": "store", "action": "Explore AE shops", "url": "/customer/explore", "test": false, "imageUrl": "https://www.affiliateae.co.in/ads/ae-launch-poster.png", "imageUrls": { "en": "https://www.affiliateae.co.in/ads/ae-launch-poster-en.png", "ml": "https://www.affiliateae.co.in/ads/ae-launch-poster.png" } }
 ]

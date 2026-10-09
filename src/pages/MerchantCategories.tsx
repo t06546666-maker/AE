@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
@@ -52,17 +53,17 @@ export function MerchantCategories() {
 
   return (
     <>
-      <PageHeader title="Merchant Categories" subtitle="Manage categories for shops and merchants to help customers find them." />
+      <PageHeader title={uiText("Merchant Categories")} subtitle="Manage categories for shops and merchants to help customers find them." />
       
       <form className="panel" onSubmit={submit}>
         <div className="panel-heading">
-          <div><h2>Add Category</h2><p>Create a new category for merchants.</p></div>
+          <div><h2>{uiText("Add Category")}</h2><p>{uiText("Create a new category for merchants.")}</p></div>
           <Plus />
         </div>
         <div className="flex gap-4 items-end px-6 pb-6">
-          <label className="flex-1 m-0">Category Name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Food, Retail, Health" required /></label>
+          <label className="flex-1 m-0">{uiText("Category Name")}<input value={name} onChange={(event) => setName(event.target.value)} placeholder={uiText("e.g. Food, Retail, Health")} required /></label>
           <button className="button primary" disabled={create.isPending}>
-            <Plus size={16} />{create.isPending ? 'Adding...' : 'Add Category'}
+            <Plus size={16} />{create.isPending ? uiText("Adding...") : uiText("Add Category")}
           </button>
         </div>
       </form>
@@ -73,20 +74,20 @@ export function MerchantCategories() {
         <section className="table-panel">
           <div className="table-scroll">
             <table>
-              <thead><tr><th>Category Name</th><th>Actions</th></tr></thead>
+              <thead><tr><th>{uiText("Category Name")}</th><th>{uiText("Actions")}</th></tr></thead>
               <tbody>
                 {categoriesQuery.data?.categories.map((category) => (
                   <tr key={category.id}>
                     <td><strong>{category.name}</strong></td>
                     <td>
                       <div className="table-actions">
-                        <button className="icon-button danger-icon" title="Delete category" disabled={remove.isPending} onClick={() => deleteCategory(category)}><Trash2 /></button>
+                        <button className="icon-button danger-icon" title={uiText("Delete category")} disabled={remove.isPending} onClick={() => deleteCategory(category)}><Trash2 /></button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {categoriesQuery.data?.categories.length === 0 && (
-                  <tr><td colSpan={2} className="text-center py-8 text-gray-500">No categories found. Add one above.</td></tr>
+                  <tr><td colSpan={2} className="text-center py-8 text-gray-500">{uiText("No categories found. Add one above.")}</td></tr>
                 )}
               </tbody>
             </table>

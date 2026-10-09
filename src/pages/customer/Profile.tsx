@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
@@ -63,22 +64,18 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
                 className="w-full text-center text-[16px] font-bold border-b-2 border-[#087a4b] bg-transparent outline-none text-gray-900 py-1"
-                placeholder="Your name"
+                placeholder={uiText("Your name")}
                 autoFocus
               />
               <div className="flex gap-2 mt-1">
                 <button
                   onClick={() => setEditMode(false)}
                   className="px-4 py-1.5 text-[12px] font-bold bg-gray-200 text-gray-600 rounded-full"
-                >
-                  Cancel
-                </button>
+                >{uiText(" Cancel ")}</button>
                 <button
                   onClick={() => setEditMode(false)}
                   className="px-4 py-1.5 text-[12px] font-bold bg-[#087a4b] text-white rounded-full"
-                >
-                  Save
-                </button>
+                >{uiText(" Save ")}</button>
               </div>
             </div>
           ) : (
@@ -88,9 +85,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               <button
                 onClick={() => setEditMode(true)}
                 className="text-[12px] font-bold text-gray-500 mt-2 hover:text-[#087a4b] transition-colors"
-              >
-                Edit Profile
-              </button>
+              >{uiText(" Edit Profile ")}</button>
             </>
           )}
         </div>
@@ -102,19 +97,19 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Star size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">My Points</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("My Points")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Clock size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">My Transactions</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("My Transactions")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
           <Link to="/customer/favorites" className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
-            <div className="flex items-center space-x-4"><Heart size={20} className="text-red-400" /><span className="font-semibold text-[15px] text-gray-800">My Favorite Stores</span></div>
+            <div className="flex items-center space-x-4"><Heart size={20} className="text-red-400" /><span className="font-semibold text-[15px] text-gray-800">{uiText("My Favorite Stores")}</span></div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
         </div>
@@ -124,35 +119,39 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
           <button onClick={() => { setSelectedFaq(null); setShowHelp(true); }} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <HelpCircle size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">Help & Support</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("Help & Support")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
           <button onClick={() => { setFeedbackStatus(''); setShowFeedback(true); }} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
-            <div className="flex items-center space-x-4"><MessageCircle size={20} className="text-gray-400" /><span className="font-semibold text-[15px] text-gray-800">Feedback & Reviews</span></div><ChevronRight size={18} className="text-gray-400" />
+            <div className="flex items-center space-x-4"><MessageCircle size={20} className="text-gray-400" /><span className="font-semibold text-[15px] text-gray-800">{uiText("Feedback & Reviews")}</span></div><ChevronRight size={18} className="text-gray-400" />
           </button>
           <button onClick={() => setShowSettings(true)} className="w-full p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Settings size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">App Settings</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("App Settings")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
           <button onClick={() => setShowContact(true)} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <Mail size={20} className="text-gray-400" />
-              <span className="font-semibold text-[15px] text-gray-800">Contact</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("Contact")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
         </div>
 
+        <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+          <Link to="/privacy" className="p-4 flex items-center justify-between border-b border-gray-100"><span>{uiText("Privacy Policy")}</span><ChevronRight size={18}/></Link>
+          <Link to="/delete-account" className="p-4 flex items-center justify-between"><span>{uiText("Delete account and data")}</span><ChevronRight size={18}/></Link>
+        </div>
         {/* Section 3 */}
         <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
           <button onClick={onLogout} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
               <LogOut size={20} className="text-gray-800" />
-              <span className="font-semibold text-[15px] text-gray-800">Sign Out</span>
+              <span className="font-semibold text-[15px] text-gray-800">{uiText("Sign Out")}</span>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </button>
@@ -164,11 +163,11 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowHelp(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2"><MessageCircle size={20} className="text-[#087a4b]" /><h2 className="text-[18px] font-bold text-gray-900">Help & Support</h2></div>
+              <div className="flex items-center gap-2"><MessageCircle size={20} className="text-[#087a4b]" /><h2 className="text-[18px] font-bold text-gray-900">{uiText("Help & Support")}</h2></div>
               <button onClick={() => setShowHelp(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="mb-5 rounded-[16px] bg-gray-50 p-4">
-              <p className="mb-3 text-[13px] font-bold text-gray-800">Quick answers</p>
+              <p className="mb-3 text-[13px] font-bold text-gray-800">{uiText("Quick answers")}</p>
               {[
                 ['points', 'How do I earn AE Points?', 'Scan your AE QR at a participating shop after purchase. Points are added to your account once the transaction is confirmed.'],
                 ['redeem', 'How do I redeem points?', 'Open Rewards, choose an available reward, and tap Redeem. Your points balance will update after confirmation.'],
@@ -182,8 +181,8 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               ))}
             </div>
             <div className="mb-4 rounded-[16px] border border-[#bfe8d2] bg-[#effaf4] p-4">
-              <p className="text-[13px] font-bold text-gray-900">Still need help?</p>
-              <p className="mt-1 text-[12px] text-gray-600">Chat with support on WhatsApp or email us.</p>
+              <p className="text-[13px] font-bold text-gray-900">{uiText("Still need help?")}</p>
+              <p className="mt-1 text-[12px] text-gray-600">{uiText("Chat with support on WhatsApp or email us.")}</p>
             </div>
             <div className="space-y-3">
               <button onClick={handleWhatsAppHelp} className="w-full flex items-center gap-4 p-4 bg-green-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
@@ -191,8 +190,8 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <Phone size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-[14px] text-gray-900">Chat on WhatsApp</p>
-                  <p className="text-[12px] text-gray-500">Get instant support</p>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("Chat on WhatsApp")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("Get instant support")}</p>
                 </div>
               </button>
               <a href="mailto:info@affiliateinnovations.co.in" className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
@@ -200,8 +199,8 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   <Mail size={18} className="text-gray-600" />
                 </div>
                 <div>
-                  <p className="font-bold text-[14px] text-gray-900">Email Support</p>
-                  <p className="text-[12px] text-gray-500">info@affiliateinnovations.co.in</p>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("Email Support")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("info@affiliateinnovations.co.in")}</p>
                 </div>
               </a>
             </div>
@@ -212,13 +211,13 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
       {showFeedback && (
         <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowFeedback(false)}>
           <form onSubmit={submitFeedback} className="feedback-modal bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center"><h2 className="text-[18px] font-bold text-gray-900">Feedback & Reviews</h2><button type="button" onClick={() => setShowFeedback(false)}><X size={22} className="text-gray-500" /></button></div>
-            <div className="flex gap-2"><button type="button" onClick={() => setFeedbackType('app')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'app' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>App feedback</button><button type="button" onClick={() => setFeedbackType('merchant')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'merchant' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>Merchant review</button></div>
-            {feedbackType === 'merchant' && <select value={feedbackMerchant} onChange={e => setFeedbackMerchant(e.target.value)} required className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Select a merchant</option>{(merchantData?.merchants || []).map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>}
-            {feedbackType === 'merchant' && <select value={feedbackRating} onChange={e => setFeedbackRating(e.target.value)} className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">Rating (optional)</option>{[5,4,3,2,1].map(value => <option key={value} value={value}>{value} / 5</option>)}</select>}
-            <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} required minLength={2} maxLength={2000} rows={4} placeholder={feedbackType === 'app' ? 'Tell us about the AE app' : 'Review your experience with this merchant'} className="w-full rounded-xl border border-gray-200 p-3 text-sm" />
+            <div className="flex justify-between items-center"><h2 className="text-[18px] font-bold text-gray-900">{uiText("Feedback & Reviews")}</h2><button type="button" onClick={() => setShowFeedback(false)}><X size={22} className="text-gray-500" /></button></div>
+            <div className="flex gap-2"><button type="button" onClick={() => setFeedbackType('app')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'app' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>{uiText("App feedback")}</button><button type="button" onClick={() => setFeedbackType('merchant')} className={`flex-1 rounded-xl p-3 text-[12px] font-bold ${feedbackType === 'merchant' ? 'bg-[#087a4b] text-white' : 'bg-gray-100 text-gray-600'}`}>{uiText("Merchant review")}</button></div>
+            {feedbackType === 'merchant' && <select value={feedbackMerchant} onChange={e => setFeedbackMerchant(e.target.value)} required className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">{uiText("Select a merchant")}</option>{(merchantData?.merchants || []).map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>}
+            {feedbackType === 'merchant' && <select value={feedbackRating} onChange={e => setFeedbackRating(e.target.value)} className="w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">{uiText("Rating (optional)")}</option>{[5,4,3,2,1].map(value => <option key={value} value={value}>{value} / 5</option>)}</select>}
+            <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} required minLength={2} maxLength={2000} rows={4} placeholder={feedbackType === 'app' ? uiText("Tell us about the AE app") : uiText("Review your experience with this merchant")} className="w-full rounded-xl border border-gray-200 p-3 text-sm" />
             {feedbackStatus && <p className="text-sm text-[#087a4b]">{feedbackStatus}</p>}
-            <button type="submit" className="w-full rounded-xl bg-[#087a4b] p-3 font-bold text-white">Send feedback</button>
+            <button type="submit" className="w-full rounded-xl bg-[#087a4b] p-3 font-bold text-white">{uiText("Send feedback")}</button>
           </form>
         </div>
       )}
@@ -228,13 +227,13 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowContact(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[18px] font-bold text-gray-900">Contact</h2>
+              <h2 className="text-[18px] font-bold text-gray-900">{uiText("Contact")}</h2>
               <button onClick={() => setShowContact(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="space-y-4 text-[13px] text-gray-600 leading-relaxed">
-              <p>Affiliate Innovations</p>
-              <p><a href="https://wa.me/917306010846" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></p>
-              <p><a href="mailto:info@affiliateinnovations.co.in">Email Support: info@affiliateinnovations.co.in</a></p>
+              <p>{uiText("Affiliate Innovations")}</p>
+              <p><a href="https://wa.me/917306010846" target="_blank" rel="noopener noreferrer">{uiText("Chat on WhatsApp")}</a></p>
+              <p><a href="mailto:info@affiliateinnovations.co.in">{uiText("Email Support: info@affiliateinnovations.co.in")}</a></p>
             </div>
           </div>
         </div>
@@ -245,14 +244,14 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40" onClick={() => setShowSettings(false)}>
           <div className="bg-white rounded-t-[32px] w-full max-w-[430px] p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[18px] font-bold text-gray-900">App Settings</h2>
+              <h2 className="text-[18px] font-bold text-gray-900">{uiText("App Settings")}</h2>
               <button onClick={() => setShowSettings(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
                 <div>
-                  <p className="font-bold text-[14px] text-gray-900">Push Notifications</p>
-                  <p className="text-[12px] text-gray-500">Earn alerts & offers</p>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("Push Notifications")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("Earn alerts & offers")}</p>
                 </div>
                 <button 
                   onClick={() => requestPush()}
@@ -263,8 +262,8 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
                 <div>
-                  <p className="font-bold text-[14px] text-gray-900">WhatsApp Alerts</p>
-                  <p className="text-[12px] text-gray-500">Point updates via WhatsApp</p>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("WhatsApp Alerts")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("Point updates via WhatsApp")}</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -279,8 +278,8 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
                 <div>
-                  <p className="font-bold text-[14px] text-gray-900">Location Services</p>
-                  <p className="text-[12px] text-gray-500">Find nearby merchants</p>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("Location Services")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("Find nearby merchants")}</p>
                 </div>
                 <button 
                   onClick={() => requestLocation()}

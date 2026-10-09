@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, Check, Gift, ImagePlus, Pencil, Search, Send, X } from 'lucide-react';
@@ -43,7 +44,7 @@ export function Offers({ user }: { user: UserProfile }) {
   useEffect(() => {
     if (user.role === 'merchant' && searchParams.get('create') === '1') {
       setFormOpen(true);
-      setAudience(searchParams.get('audience') === 'loyal' ? 'loyal' : 'all');
+      setAudience(searchParams.get('audience') === 'loyal' ? "loyal" : "all");
       const next = new URLSearchParams(searchParams);
       next.delete('create');
       setSearchParams(next, { replace: true });
@@ -96,7 +97,7 @@ export function Offers({ user }: { user: UserProfile }) {
       body.set('expiresAt', new Date(`${expiresAt}T23:59:59+05:30`).toISOString());
       if (image) body.set('image', image);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
-        method: editing ? 'PUT' : 'POST',
+        method: editing ? "PUT" : "POST",
         body,
       });
     },
@@ -181,16 +182,12 @@ export function Offers({ user }: { user: UserProfile }) {
               {t('offers.expiry')}
               <input type="date" min={tomorrowInput()} value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} required />
             </label>
-            <label>
-              Category
-              <select value={category} onChange={(event) => setCategory(event.target.value)}>
-                <option value="">General</option>
+            <label>{uiText(" Category ")}<select value={category} onChange={(event) => setCategory(event.target.value)}>
+                <option value="">{uiText("General")}</option>
                 {OFFER_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label className="offer-description-field">
-              Audience
-              <select value={audience} disabled={Boolean(editing)} onChange={event => setAudience(event.target.value as 'all' | 'loyal')}><option value="all">All customers</option><option value="loyal">Loyal customers only (5+ purchases at your store)</option></select>
+            <label className="offer-description-field">{uiText(" Audience ")}<select value={audience} disabled={Boolean(editing)} onChange={event => setAudience(event.target.value as 'all' | 'loyal')}><option value="all">{uiText("All customers")}</option><option value="loyal">{uiText("Loyal customers only (5+ purchases at your store)")}</option></select>
             </label>
             <label className="offer-description-field">
               {t('offers.description')}
@@ -214,7 +211,7 @@ export function Offers({ user }: { user: UserProfile }) {
       {user.role === 'merchant' && !formOpen ? (
         <button className="mobile-offer-create" onClick={() => { resetForm(); setFormOpen(true); }}>
           <ImagePlus size={19} />
-          <span><strong>{t('offers.create')}</strong><small>Add an image, details and expiry date</small></span>
+          <span><strong>{t('offers.create')}</strong><small>{uiText("Add an image, details and expiry date")}</small></span>
         </button>
       ) : null}
 

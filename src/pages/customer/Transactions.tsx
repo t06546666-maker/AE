@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { formatDateTime } from '../../utils';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Star, Gift, Wallet, IndianRupee } from 'lucide-react';
@@ -36,7 +37,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
       <header className="flex justify-between items-center px-5 py-4 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-gray-800">
           <Link to="/customer/profile"><ArrowLeft size={24} /></Link>
-          <h1 className="text-lg font-bold">Your Points</h1>
+          <h1 className="text-lg font-bold">{uiText("Your Points")}</h1>
         </div>
       </header>
 
@@ -46,34 +47,34 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
           <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-center relative z-10">
             <div>
-              <p className="text-[13px] font-medium text-green-50/90 mb-1">Total AE Points</p>
+              <p className="text-[13px] font-medium text-green-50/90 mb-1">{uiText("Total AE Points")}</p>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-inner">
                   <span className="text-white font-bold text-lg leading-none">★</span>
                 </div>
                 <span className="text-[32px] font-bold tracking-tight">{availablePoints}</span>
               </div>
-              <p className="text-[11px] text-green-50/70 mt-1">Points expire 1 year from issue date</p>
+              <p className="text-[11px] text-green-50/70 mt-1">{uiText("Points expire 1 year from issue date")}</p>
             </div>
             <ChevronRight size={24} className="text-white/80" />
           </div>
         </div>
 
-        <div className="glass-stats"><div><Star size={16}/><strong>{allEarned.toLocaleString('en-IN')}</strong><span>Earned on this page</span></div><div><Gift size={16}/><strong>{allRedeemed.toLocaleString('en-IN')}</strong><span>Redeemed on this page</span></div><div><Wallet size={16}/><strong>{availablePoints.toLocaleString('en-IN')}</strong><span>Available</span></div><div><IndianRupee size={16}/><strong>₹{transactions.filter(t => t.type === 'earn').reduce((sum,t) => sum + Number(t.amount || 0),0).toLocaleString('en-IN')}</strong><span>Purchases on this page</span></div></div>
-        <section className="glass-points-chart"><h2>Points &amp; Purchases</h2><p>● Points earned　<span style={{color:'#1476ed'}}>● Purchase amount (₹)</span></p><div className="glass-chart-bars">{transactions.filter(t => t.type === 'earn').slice().reverse().map(t => <div key={t.id} title={`${t.merchant_name}: ${t.points} points · ₹${t.amount ?? 'Unavailable'}`}><i style={{height:`${Math.max(2,t.points / Math.max(1,...transactions.map(x=>x.points))*100)}%`}}/><b style={{height:`${Math.max(2,Number(t.amount || 0) / Math.max(1,...transactions.map(x=>Number(x.amount || 0)))*100)}%`}}/></div>)}</div><p className="mt-3">Recorded purchases on this page</p></section>
+        <div className="glass-stats"><div><Star size={16}/><strong>{allEarned.toLocaleString('en-IN')}</strong><span>{uiText("Earned on this page")}</span></div><div><Gift size={16}/><strong>{allRedeemed.toLocaleString('en-IN')}</strong><span>{uiText("Redeemed on this page")}</span></div><div><Wallet size={16}/><strong>{availablePoints.toLocaleString('en-IN')}</strong><span>{uiText("Available")}</span></div><div><IndianRupee size={16}/><strong>₹{transactions.filter(t => t.type === 'earn').reduce((sum,t) => sum + Number(t.amount || 0),0).toLocaleString('en-IN')}</strong><span>{uiText("Purchases on this page")}</span></div></div>
+        <section className="glass-points-chart"><h2>{uiText("Points &amp; Purchases")}</h2><p>{uiText("● Points earned ")}<span style={{color:'#1476ed'}}>{uiText("● Purchase amount (₹)")}</span></p><div className="glass-chart-bars">{transactions.filter(t => t.type === 'earn').slice().reverse().map(t => <div key={t.id} title={`${t.merchant_name}: ${t.points} points · ₹${t.amount ?? 'Unavailable'}`}><i style={{height:`${Math.max(2,t.points / Math.max(1,...transactions.map(x=>x.points))*100)}%`}}/><b style={{height:`${Math.max(2,Number(t.amount || 0) / Math.max(1,...transactions.map(x=>Number(x.amount || 0)))*100)}%`}}/></div>)}</div><p className="mt-3">{uiText("Recorded purchases on this page")}</p></section>
         {/* Stats Row */}
         <div className="hidden flex justify-between px-2">
           <div className="text-center">
             <p className="text-[16px] font-bold text-gray-900">{allEarned}</p>
-            <p className="text-[12px] font-medium text-gray-500">Earned</p>
+            <p className="text-[12px] font-medium text-gray-500">{uiText("Earned")}</p>
           </div>
           <div className="text-center">
             <p className="text-[16px] font-bold text-gray-900">{allRedeemed}</p>
-            <p className="text-[12px] font-medium text-gray-500">Redeemed</p>
+            <p className="text-[12px] font-medium text-gray-500">{uiText("Redeemed")}</p>
           </div>
           <div className="text-center">
             <p className="text-[16px] font-bold text-[#087a4b]">{availablePoints}</p>
-            <p className="text-[12px] font-medium text-gray-500">Available</p>
+            <p className="text-[12px] font-medium text-gray-500">{uiText("Available")}</p>
           </div>
         </div>
 
@@ -86,9 +87,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 ? 'text-[#087a4b] border-b-2 border-[#087a4b]'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
-          >
-            Transactions
-          </button>
+          >{uiText(" Transactions ")}</button>
           <button
             onClick={() => setActiveTab('summary')}
             className={`flex-1 pb-3 text-[14px] font-bold transition-colors ${
@@ -96,9 +95,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 ? 'text-[#087a4b] border-b-2 border-[#087a4b]'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
-          >
-            Summary
-          </button>
+          >{uiText(" Summary ")}</button>
         </div>
 
         {/* Tab Content */}
@@ -107,9 +104,9 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
             {/* Transactions List */}
             <div className="space-y-0 divide-y divide-gray-100 bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden mt-6">
               {isLoading ? (
-                <div className="py-12 text-center text-gray-400">Loading transactions...</div>
+                <div className="py-12 text-center text-gray-400">{uiText("Loading transactions...")}</div>
               ) : transactions.length === 0 ? (
-                <div className="py-12 text-center text-gray-400">No transactions found.</div>
+                <div className="py-12 text-center text-gray-400">{uiText("No transactions found.")}</div>
               ) : (
                 transactions.map((t, idx) => (
                   <div key={t.id} className="glass-transaction-row p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
@@ -126,11 +123,11 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                     </div>
                     <div className="text-right">
                       <p className={`font-bold text-[16px] ${t.type !== 'redeem' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
-                        {t.type !== 'redeem' ? '+' : '-'}{t.points}<small>Points</small>
+                        {t.type !== 'redeem' ? '+' : '-'}{t.points}<small>{uiText("Points")}</small>
                       </p>
-                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'bonus' ? 'Loyalty bonus' : t.type === 'earn' ? 'Purchase' : 'Redemption'}</p>
+                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'bonus' ? uiText("Loyalty bonus") : t.type === 'earn' ? uiText("Purchase") : uiText("Redemption")}</p>
                     </div>
-                    <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? 'Purchase' : 'Transaction'}</small></div>
+                    <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? uiText("Purchase") : uiText("Transaction")}</small></div>
                   </div>
                 ))
               )}
@@ -142,17 +139,13 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   disabled={page === 1}
                   onClick={() => setPage(p => p - 1)}
                   className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-gray-500 font-medium">Page {page} of {data.pagination.totalPages}</span>
+                >{uiText(" Previous ")}</button>
+                <span className="text-sm text-gray-500 font-medium">{uiText("Page ")}{page}{uiText(" of ")}{data.pagination.totalPages}</span>
                 <button
                   disabled={page === data.pagination.totalPages}
                   onClick={() => setPage(p => p + 1)}
                   className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
-                >
-                  Next
-                </button>
+                >{uiText(" Next ")}</button>
               </div>
             )}
           </>
@@ -160,14 +153,14 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
           /* Summary Tab */
           <div className="space-y-3 mt-2">
             <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
-              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">Points Breakdown</p>
+              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">{uiText("Points Breakdown")}</p>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-[#087a4b] font-bold text-[13px]">+</div>
                     <div>
-                      <p className="font-bold text-[14px] text-gray-900">Total Earned</p>
-                      <p className="text-[12px] text-gray-500">From purchases</p>
+                      <p className="font-bold text-[14px] text-gray-900">{uiText("Total Earned")}</p>
+                      <p className="text-[12px] text-gray-500">{uiText("From purchases")}</p>
                     </div>
                   </div>
                   <p className="font-bold text-[18px] text-[#087a4b]">+{allEarned}</p>
@@ -176,8 +169,8 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center text-red-500 font-bold text-[13px]">-</div>
                     <div>
-                      <p className="font-bold text-[14px] text-gray-900">Total Redeemed</p>
-                      <p className="text-[12px] text-gray-500">Used for rewards</p>
+                      <p className="font-bold text-[14px] text-gray-900">{uiText("Total Redeemed")}</p>
+                      <p className="text-[12px] text-gray-500">{uiText("Used for rewards")}</p>
                     </div>
                   </div>
                   <p className="font-bold text-[18px] text-red-500">-{allRedeemed}</p>
@@ -186,8 +179,8 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-[#f59e0b] rounded-full flex items-center justify-center text-white font-bold text-[13px]">★</div>
                     <div>
-                      <p className="font-bold text-[14px] text-gray-900">Available Balance</p>
-                      <p className="text-[12px] text-gray-500">Ready to use</p>
+                      <p className="font-bold text-[14px] text-gray-900">{uiText("Available Balance")}</p>
+                      <p className="text-[12px] text-gray-500">{uiText("Ready to use")}</p>
                     </div>
                   </div>
                   <p className="font-bold text-[18px] text-gray-900">{availablePoints}</p>
@@ -195,15 +188,15 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
               </div>
             </div>
             <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
-              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">Activity Stats</p>
+              <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">{uiText("Activity Stats")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-[14px] p-4 text-center">
                   <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'earn').length}</p>
-                  <p className="text-[12px] font-medium text-gray-500 mt-1">Purchases</p>
+                  <p className="text-[12px] font-medium text-gray-500 mt-1">{uiText("Purchases")}</p>
                 </div>
                 <div className="bg-gray-50 rounded-[14px] p-4 text-center">
                   <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'redeem').length}</p>
-                  <p className="text-[12px] font-medium text-gray-500 mt-1">Redemptions</p>
+                  <p className="text-[12px] font-medium text-gray-500 mt-1">{uiText("Redemptions")}</p>
                 </div>
               </div>
             </div>

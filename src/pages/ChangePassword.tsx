@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useState, type FormEvent } from 'react';
 import { Languages, LockKeyhole } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +27,7 @@ export function ChangePassword({ onChanged }: { onChanged: () => void }) {
       });
       onChanged();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Password change failed');
+      setError(cause instanceof Error ? cause.message : "Password change failed");
     } finally {
       setBusy(false);
     }
@@ -43,12 +44,12 @@ export function ChangePassword({ onChanged }: { onChanged: () => void }) {
               value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
               onChange={(event) => void i18n.changeLanguage(event.target.value)}
             >
-              <option value="en">EN</option>
+              <option value="en">{uiText("EN")}</option>
               <option value="ml">മലയാളം</option>
             </select>
           </label>
         </div>
-        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt="AE" style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
+        <div className="login-mobile-brand password-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 160, height: 'auto', margin: '0 auto 20px' }} /></div>
         <h1>{t('password.title')}</h1>
         <p>{t('password.subtitle')}</p>
         <label>

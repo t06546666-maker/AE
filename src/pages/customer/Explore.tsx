@@ -1,3 +1,4 @@
+import { uiText } from '../../uiText';
 import { CustomerShopCard } from '../../components/CustomerShopCard';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Search, ChevronRight, X, Heart } from 'lucide-react';
@@ -93,7 +94,7 @@ export function CustomerExplore() {
       <header className="flex justify-between items-center px-5 py-4 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-gray-800">
           <Link to="/customer/home"><ArrowLeft size={24} /></Link>
-          <h1 className="text-lg font-bold">Nearby Merchants</h1>
+          <h1 className="text-lg font-bold">{uiText("Nearby Merchants")}</h1>
         </div>
         <button onClick={handleSearchToggle} className="text-gray-800">
           {searchOpen ? <X size={24} /> : <Search size={24} />}
@@ -110,7 +111,7 @@ export function CustomerExplore() {
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onBlur={() => { setSearch(inputValue); setPage(1); }}
-            placeholder="Search merchants..."
+            placeholder={uiText("Search merchants...")}
             className="w-full bg-gray-50 border border-gray-200 rounded-[12px] px-4 py-2.5 text-[14px] font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#087a4b] focus:ring-1 focus:ring-[#087a4b] transition-all"
           />
         </form>
@@ -126,9 +127,7 @@ export function CustomerExplore() {
                 ? 'bg-[#087a4b] text-white shadow-md shadow-green-600/20'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
-          >
-            All
-          </button>
+          >{uiText(" All ")}</button>
           {categoriesQuery.data?.categories?.map((cat) => (
             <button
               key={cat.id}
@@ -147,22 +146,22 @@ export function CustomerExplore() {
 
       <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} shoppingLocation={userLocation} onLocate={locateUser} />
       <div className="mx-5 mb-3 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-        <div><p className="text-[13px] font-bold text-[#087a4b]">Merchants near you</p><p className="text-[11px] text-gray-500">Sorted by distance from your current location</p></div>
-        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">Use current GPS</button>
+        <div><p className="text-[13px] font-bold text-[#087a4b]">{uiText("Merchants near you")}</p><p className="text-[11px] text-gray-500">{uiText("Sorted by distance from your current location")}</p></div>
+        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">{uiText("Use current GPS")}</button>
       </div>
 
       {/* Merchant List */}
       <div className="glass-merchants ae-shop-grid">
         {isLoading ? (
-          <div className="py-12 text-center text-gray-400">Loading merchants...</div>
+          <div className="py-12 text-center text-gray-400">{uiText("Loading merchants...")}</div>
         ) : merchants.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">No merchants found{search ? ` for "${search}"` : ''}.</div>
+          <div className="py-12 text-center text-gray-400">{uiText("No merchants found")}{search ? ` for "${search}"` : ''}.</div>
         ) : (
           sortedMerchants.map(merchant => <CustomerShopCard key={merchant.id} merchant={merchant} onOpen={() => void openMerchant(merchant)} favorite={favorites.includes(merchant.id)} onFavorite={() => toggleFavorite(merchant.id)} distance={distanceKm(merchant.latitude, merchant.longitude)} />)
         )}
       </div>
 
-      {detailMerchant ? <div className="fixed inset-0 z-[100] grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-5" onClick={() => setDetailMerchant(null)}><section className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 pb-28 sm:rounded-3xl sm:pb-5" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2><p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p><p className="mt-1 text-sm font-bold text-[#3158f5]">{distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'} km away</p></div><button onClick={() => setDetailMerchant(null)} className="text-2xl text-gray-400">×</button></div>{detailMerchant.latitude != null && detailMerchant.longitude != null ? <a className="mb-5 block rounded-xl bg-[#087a4b] px-4 py-3 text-center font-bold text-white" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${detailMerchant.latitude},${detailMerchant.longitude}`}>Get directions</a> : null}<p className="text-sm text-gray-600">{detailMerchant.address}</p><div className="ae-shop-gallery">{Array.from(new Set([detailMerchant.image_url, ...(detailMerchant.images || [])].filter((image): image is string => !!image))).map(image => <a key={image} href={image} target="_blank" rel="noopener noreferrer"><img src={image} alt={`${detailMerchant.merchant_name} shop photo`} loading="lazy" /></a>)}</div><h3 className="mb-2 font-bold">Write a review</h3><div className="flex gap-1">{[1,2,3,4,5].map(star => <button key={star} onClick={() => setReviewRating(star)} className={`text-2xl ${star <= reviewRating ? 'text-amber-400' : 'text-gray-300'}`}>★</button>)}</div><textarea value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder="Share your experience" className="mt-2 min-h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" />{reviewError && <p role="alert" className="text-sm text-red-600">{reviewError}</p>}<button disabled={reviewBusy || reviewMessage.trim().length < 2} onClick={() => void submitReview()} className="mt-2 rounded-xl bg-[#3158f5] px-4 py-2 text-sm font-bold text-white">Submit review</button><h3 className="mb-2 mt-6 font-bold">Customer reviews</h3>{reviews.length ? reviews.map(review => <div key={review.id} className="border-b border-gray-100 py-3"><div className="text-amber-400">{'★'.repeat(review.rating || 0)}<span className="ml-2 text-xs text-gray-500">{review.customerName}</span></div><p className="mt-1 text-sm text-gray-700">{review.message}</p></div>) : <p className="text-sm text-gray-500">No reviews yet.</p>}</section></div> : null}
+      {detailMerchant ? <div className="fixed inset-0 z-[100] grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-5" onClick={() => setDetailMerchant(null)}><section className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 pb-28 sm:rounded-3xl sm:pb-5" onClick={event => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2><p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p><p className="mt-1 text-sm font-bold text-[#3158f5]">{distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'}{uiText(" km away")}</p></div><button onClick={() => setDetailMerchant(null)} className="text-2xl text-gray-400">×</button></div>{detailMerchant.latitude != null && detailMerchant.longitude != null ? <a className="mb-5 block rounded-xl bg-[#087a4b] px-4 py-3 text-center font-bold text-white" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${detailMerchant.latitude},${detailMerchant.longitude}`}>{uiText("Get directions")}</a> : null}<p className="text-sm text-gray-600">{detailMerchant.address}</p><div className="ae-shop-gallery">{Array.from(new Set([detailMerchant.image_url, ...(detailMerchant.images || [])].filter((image): image is string => !!image))).map(image => <a key={image} href={image} target="_blank" rel="noopener noreferrer"><img src={image} alt={`${detailMerchant.merchant_name} shop photo`} loading="lazy" /></a>)}</div><h3 className="mb-2 font-bold">{uiText("Write a review")}</h3><div className="flex gap-1">{[1,2,3,4,5].map(star => <button key={star} onClick={() => setReviewRating(star)} className={`text-2xl ${star <= reviewRating ? 'text-amber-400' : 'text-gray-300'}`}>★</button>)}</div><textarea value={reviewMessage} onChange={event => setReviewMessage(event.target.value)} placeholder={uiText("Share your experience")} className="mt-2 min-h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" />{reviewError && <p role="alert" className="text-sm text-red-600">{reviewError}</p>}<button disabled={reviewBusy || reviewMessage.trim().length < 2} onClick={() => void submitReview()} className="mt-2 rounded-xl bg-[#3158f5] px-4 py-2 text-sm font-bold text-white">{uiText("Submit review")}</button><h3 className="mb-2 mt-6 font-bold">{uiText("Customer reviews")}</h3>{reviews.length ? reviews.map(review => <div key={review.id} className="border-b border-gray-100 py-3"><div className="text-amber-400">{'★'.repeat(review.rating || 0)}<span className="ml-2 text-xs text-gray-500">{review.customerName}</span></div><p className="mt-1 text-sm text-gray-700">{review.message}</p></div>) : <p className="text-sm text-gray-500">{uiText("No reviews yet.")}</p>}</section></div> : null}
 
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex justify-between items-center pt-4 pb-6 px-5">
@@ -170,17 +169,13 @@ export function CustomerExplore() {
             disabled={page === 1}
             onClick={() => setPage(p => p - 1)}
             className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-500 font-medium">Page {page} of {data.pagination.totalPages}</span>
+          >{uiText(" Previous ")}</button>
+          <span className="text-sm text-gray-500 font-medium">{uiText("Page ")}{page}{uiText(" of ")}{data.pagination.totalPages}</span>
           <button
             disabled={page === data.pagination.totalPages}
             onClick={() => setPage(p => p + 1)}
             className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full text-sm font-bold disabled:opacity-50"
-          >
-            Next
-          </button>
+          >{uiText(" Next ")}</button>
         </div>
       )}
     </div>

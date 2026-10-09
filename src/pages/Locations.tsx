@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
@@ -71,38 +72,34 @@ export function Locations() {
 
   return (
     <>
-      <PageHeader title="Locations" subtitle="Manage network locations and codes." />
+      <PageHeader title={uiText("Locations")} subtitle="Manage network locations and codes." />
       
       <form className="panel" onSubmit={submit}>
         <div className="panel-heading">
           <div>
-            <h2>Add Location</h2>
-            <p>Create a new location code to assign merchants to.</p>
+            <h2>{uiText("Add Location")}</h2>
+            <p>{uiText("Create a new location code to assign merchants to.")}</p>
           </div>
           <MapPin />
         </div>
         <div className="two-column-form">
-          <label>
-            Location Code
-            <input
+          <label>{uiText(" Location Code ")}<input
               value={code}
               onChange={(event) => setCode(event.target.value.toUpperCase())}
-              placeholder="e.g. PALAKKAD-001"
+              placeholder={uiText("e.g. PALAKKAD-001")}
               required
             />
           </label>
-          <label>
-            Location Name
-            <input
+          <label>{uiText(" Location Name ")}<input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Palakkad Main"
+              placeholder={uiText("e.g. Palakkad Main")}
               required
             />
           </label>
         </div>
         <button className="button primary" disabled={create.isPending}>
-          <Plus size={16} />{create.isPending ? 'Creating...' : 'Add Location'}
+          <Plus size={16} />{create.isPending ? uiText("Creating...") : uiText("Add Location")}
         </button>
       </form>
 
@@ -116,10 +113,10 @@ export function Locations() {
             <table>
               <thead>
                 <tr>
-                  <th>Location Code</th>
-                  <th>Location Name</th>
-                  <th>Created At</th>
-                  <th>Actions</th>
+                  <th>{uiText("Location Code")}</th>
+                  <th>{uiText("Location Name")}</th>
+                  <th>{uiText("Created At")}</th>
+                  <th>{uiText("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -129,7 +126,7 @@ export function Locations() {
                     <td>{network.name}</td>
                     <td>{formatDate(network.created_at)}</td>
                     <td>
-                      <button className="icon-button danger-icon" title="Delete Location" onClick={() => deleteNetwork(network)}>
+                      <button className="icon-button danger-icon" title={uiText("Delete Location")} onClick={() => deleteNetwork(network)}>
                         <Trash2 />
                       </button>
                     </td>
@@ -139,7 +136,7 @@ export function Locations() {
             </table>
           </div>
           {!networks.data?.networks.length ? (
-            <EmptyState>No locations found. Add one above.</EmptyState>
+            <EmptyState>{uiText("No locations found. Add one above.")}</EmptyState>
           ) : null}
         </section>
       )}

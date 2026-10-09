@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useState } from 'react';
 import { BookOpen, ChevronRight, FileText, HelpCircle, MapPin, Search, ShieldCheck } from 'lucide-react';
 import '../field-policy.css';
@@ -17,11 +18,11 @@ export function FieldPolicy() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const visible = guidelines.filter(g => (tab === 'Overview' || g.section === tab) && `${g.title} ${g.summary} ${g.details.join(' ')}`.toLowerCase().includes(search.toLowerCase()));
   return <section className="field-policy">
-    <header><div><h1>Policy &amp; Guidelines</h1><p>Important information and working guidance for field staff</p></div><label className="fp-search"><Search size={17} /><input aria-label="Search guidelines" placeholder="Search in policy…" value={search} onChange={e => setSearch(e.target.value)} /></label></header>
-    <nav className="fp-tabs" aria-label="Guideline categories">{['Overview', 'KYC & Compliance', 'Visit Guidelines', 'FAQ'].map(item => <button key={item} aria-pressed={tab === item} onClick={() => { setTab(item); setExpanded(null); }}>{item}</button>)}</nav>
-    <div className="fp-banner"><span><FileText size={30} /></span><div><h2>Field Operations Guide</h2><p>Use these instructions for merchant onboarding and visits. Official company policies require Admin approval.</p></div><ShieldCheck size={44} /></div>
-    <p className="fp-notice">Operational guidance reflects the current app. KYC rules, support contacts and the company code of conduct are not yet approved or configured.</p>
-    <div className="fp-cards">{visible.map(g => <article key={g.id}><span className={`fp-icon ${g.id}`}><g.icon size={24} /></span><h2>{g.title}</h2><p>{g.summary}</p><button aria-expanded={expanded === g.id} aria-controls={`guide-${g.id}`} onClick={() => setExpanded(expanded === g.id ? null : g.id)}>{expanded === g.id ? 'Hide Details' : g.section === 'FAQ' ? 'View FAQs' : 'View Details'}<ChevronRight size={15} /></button>{expanded === g.id && <ul id={`guide-${g.id}`}>{g.details.map(detail => <li key={detail}>{detail}</li>)}</ul>}</article>)}</div>
-    {!visible.length && <p className="fp-empty">No guidelines match your search. Try another keyword.</p>}
+    <header><div><h1>{uiText("Policy &amp; Guidelines")}</h1><p>{uiText("Important information and working guidance for field staff")}</p></div><label className="fp-search"><Search size={17} /><input aria-label={uiText("Search guidelines")} placeholder={uiText("Search in policy…")} value={search} onChange={e => setSearch(e.target.value)} /></label></header>
+    <nav className="fp-tabs" aria-label={uiText("Guideline categories")}>{['Overview', 'KYC & Compliance', 'Visit Guidelines', 'FAQ'].map(item => <button key={item} aria-pressed={tab === item} onClick={() => { setTab(item); setExpanded(null); }}>{item}</button>)}</nav>
+    <div className="fp-banner"><span><FileText size={30} /></span><div><h2>{uiText("Field Operations Guide")}</h2><p>{uiText("Use these instructions for merchant onboarding and visits. Official company policies require Admin approval.")}</p></div><ShieldCheck size={44} /></div>
+    <p className="fp-notice">{uiText("Operational guidance reflects the current app. KYC rules, support contacts and the company code of conduct are not yet approved or configured.")}</p>
+    <div className="fp-cards">{visible.map(g => <article key={g.id}><span className={`fp-icon ${g.id}`}><g.icon size={24} /></span><h2>{g.title}</h2><p>{g.summary}</p><button aria-expanded={expanded === g.id} aria-controls={`guide-${g.id}`} onClick={() => setExpanded(expanded === g.id ? null : g.id)}>{expanded === g.id ? uiText("Hide Details") : g.section === 'FAQ' ? uiText("View FAQs") : uiText("View Details")}<ChevronRight size={15} /></button>{expanded === g.id && <ul id={`guide-${g.id}`}>{g.details.map(detail => <li key={detail}>{detail}</li>)}</ul>}</article>)}</div>
+    {!visible.length && <p className="fp-empty">{uiText("No guidelines match your search. Try another keyword.")}</p>}
   </section>;
 }

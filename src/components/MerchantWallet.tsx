@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IndianRupee, CreditCard, Activity, Coins, CalendarClock, CheckCircle2 } from 'lucide-react';
@@ -126,8 +127,8 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
           <Coins size={24} />
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>Merchant Wallet & Access</h3>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Manage your dashboard subscription and point balance</p>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>{uiText("Merchant Wallet & Access")}</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>{uiText("Manage your dashboard subscription and point balance")}</p>
         </div>
       </div>
 
@@ -143,24 +144,23 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
         gap: '16px'
       }}>
         <div>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Current Balance</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>{uiText("Current Balance")}</span>
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {currentPoints} <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>Points</span>
+            {currentPoints} <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>{uiText("Points")}</span>
           </div>
         </div>
         
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Subscription Status</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>{uiText("Subscription Status")}</span>
           {isExpired ? (
              <div style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                <Activity size={16} />
-               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>Expired / Inactive</span>
+               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{uiText("Expired / Inactive")}</span>
              </div>
           ) : (
              <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                <CheckCircle2 size={16} />
-               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>
-                 Active until {expiryDate?.toLocaleDateString()}
+               <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{uiText(" Active until ")}{expiryDate?.toLocaleDateString()}
                </span>
              </div>
           )}
@@ -175,10 +175,8 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
 
       {isExpired ? (
         <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--error)', padding: '20px', borderRadius: '8px' }}>
-          <h4 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>Dashboard Access Locked</h4>
-          <p style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--text-muted)' }}>
-            Your monthly subscription is inactive. Set up AutoPay for ₹200/month to restore dashboard access. Each renewal grants you 100 reward points!
-          </p>
+          <h4 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>{uiText("Dashboard Access Locked")}</h4>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.95rem', color: 'var(--text-muted)' }}>{uiText(" Your monthly subscription is inactive. Set up AutoPay for ₹200/month to restore dashboard access. Each renewal grants you 100 reward points! ")}</p>
           <button 
             className="btn btn-primary" 
             onClick={handlePurchaseSubscription}
@@ -186,22 +184,18 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
             style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px' }}
           >
             <CalendarClock size={18} />
-            {loading ? 'Setting up AutoPay...' : 'Setup AutoPay (₹200/mo)'}
+            {loading ? uiText("Setting up AutoPay...") : uiText("Setup AutoPay (₹200/mo)")}
           </button>
         </div>
       ) : (
         <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
             <div>
-              <h4 style={{ margin: '0 0 8px 0' }}>Top Up Points</h4>
-              <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)' }}>
-                Purchase more points to continue issuing rewards to your customers. (1 Point = ₹1)
-              </p>
+              <h4 style={{ margin: '0 0 8px 0' }}>{uiText("Top Up Points")}</h4>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)' }}>{uiText(" Purchase more points to continue issuing rewards to your customers. (1 Point = ₹1) ")}</p>
             </div>
             {hasMandate && (
-              <span style={{ background: 'var(--success-light)', color: 'var(--success)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                AutoPay Active
-              </span>
+              <span style={{ background: 'var(--success-light)', color: 'var(--success)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{uiText(" AutoPay Active ")}</span>
             )}
           </div>
           
@@ -231,7 +225,7 @@ export default function MerchantWallet({ merchant, onUpdate }: MerchantWalletPro
             </button>
           </div>
           {topUpAmount < 50 && (
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--error)' }}>Minimum top-up is ₹50.</p>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--error)' }}>{uiText("Minimum top-up is ₹50.")}</p>
           )}
         </div>
       )}

@@ -1,3 +1,4 @@
+import { uiText } from '../uiText';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -41,14 +42,14 @@ export function CustomerBillPopup({ customerId }: { customerId: string }) {
   }
   if (!bill) return null;
   return <div className="modal-backdrop ae-bill-backdrop"><section className="modal ae-bill" role="dialog" aria-modal="true" aria-labelledby="ae-bill-title">
-    <header className="ae-bill-header"><span className="ae-bill-icon"><ReceiptText size={22}/></span><div><h2 id="ae-bill-title">Your bill</h2><p>{bill.merchantName}</p></div><button type="button" className="icon-button" aria-label="Close bill" disabled={busy} onClick={() => void dismiss()}><X size={20}/></button></header>
-    <div className="ae-bill-amount"><span>Amount to pay</span><strong>{formatCurrency(bill.payable)}</strong><small>After your AE discount</small></div>
-    <dl className="ae-bill-breakdown"><div><dt>Bill total</dt><dd>{formatCurrency(bill.total)}</dd></div><div><dt>Discount</dt><dd>− {formatCurrency(bill.discount)}</dd></div></dl>
-    {bill.upiId && <p className="ae-bill-recipient">Pay to <strong>{bill.upiId}</strong></p>}
-    {apps && apps.length > 0 ? <div className="ae-bill-apps"><h3>Open your preferred app</h3><div>{apps.map(app => <button type="button" key={app.id} className="ae-bill-app" disabled={opening} onClick={() => void openApp(app.id)}><span className={`ae-bill-app-mark ${app.name === 'PhonePe' ? 'phonepe' : app.name === 'Paytm' ? 'paytm' : ''}`} aria-hidden="true">{app.name === 'Google Pay' ? 'G' : app.name === 'PhonePe' ? 'P' : app.name === 'Paytm' ? 'paytm' : 'B'}</span><span>{app.name}</span><ArrowUpRight size={16}/></button>)}</div></div> : <button type="button" className="button primary ae-bill-pay" disabled={opening || busy} onClick={() => void pay()}>{opening ? 'Finding apps…' : 'Pay'}<ChevronRight size={18}/></button>}
-    {apps && bill.upiUrl && <button type="button" className="ae-bill-later" disabled={opening} onClick={() => void openApp('')}>Other UPI app</button>}
+    <header className="ae-bill-header"><span className="ae-bill-icon"><ReceiptText size={22}/></span><div><h2 id="ae-bill-title">{uiText("Your bill")}</h2><p>{bill.merchantName}</p></div><button type="button" className="icon-button" aria-label={uiText("Close bill")} disabled={busy} onClick={() => void dismiss()}><X size={20}/></button></header>
+    <div className="ae-bill-amount"><span>{uiText("Amount to pay")}</span><strong>{formatCurrency(bill.payable)}</strong><small>{uiText("After your AE discount")}</small></div>
+    <dl className="ae-bill-breakdown"><div><dt>{uiText("Bill total")}</dt><dd>{formatCurrency(bill.total)}</dd></div><div><dt>{uiText("Discount")}</dt><dd>− {formatCurrency(bill.discount)}</dd></div></dl>
+    {bill.upiId && <p className="ae-bill-recipient">{uiText("Pay to ")}<strong>{bill.upiId}</strong></p>}
+    {apps && apps.length > 0 ? <div className="ae-bill-apps"><h3>{uiText("Open your preferred app")}</h3><div>{apps.map(app => <button type="button" key={app.id} className="ae-bill-app" disabled={opening} onClick={() => void openApp(app.id)}><span className={`ae-bill-app-mark ${app.name === 'PhonePe' ? 'phonepe' : app.name === 'Paytm' ? 'paytm' : ''}`} aria-hidden="true">{app.name === 'Google Pay' ? 'G' : app.name === 'PhonePe' ? 'P' : app.name === 'Paytm' ? uiText("paytm") : 'B'}</span><span>{app.name}</span><ArrowUpRight size={16}/></button>)}</div></div> : <button type="button" className="button primary ae-bill-pay" disabled={opening || busy} onClick={() => void pay()}>{opening ? uiText("Finding apps…") : uiText("Pay")}<ChevronRight size={18}/></button>}
+    {apps && bill.upiUrl && <button type="button" className="ae-bill-later" disabled={opening} onClick={() => void openApp('')}>{uiText("Other UPI app")}</button>}
     {error && <p role="alert" className="form-error">{error}</p>}
-    <p className="ae-bill-note">{bill.upiUrl ? 'Recipient and payable amount open in your UPI app. Check the recipient before paying. AE does not confirm payment.' : 'Opens your UPI app only. No payment details are shared and AE does not confirm payment.'}</p>
-    <button type="button" className="ae-bill-later" disabled={busy} onClick={() => void dismiss()}>{busy ? 'Closing…' : 'Close for now'}</button>
+    <p className="ae-bill-note">{bill.upiUrl ? uiText("Recipient and payable amount open in your UPI app. Check the recipient before paying. AE does not confirm payment.") : uiText("Opens your UPI app only. No payment details are shared and AE does not confirm payment.")}</p>
+    <button type="button" className="ae-bill-later" disabled={busy} onClick={() => void dismiss()}>{busy ? uiText("Closing…") : uiText("Close for now")}</button>
   </section></div>;
 }
