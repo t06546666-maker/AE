@@ -1611,5 +1611,9 @@
   "ui.One purchase": "ഒരു വാങ്ങൽ",
   "ui.2-3 purchases": "2-3 വാങ്ങലുകൾ",
   "ui.4+ purchases": "4 അല്ലെങ്കിൽ അതിലധികം വാങ്ങലുകൾ",
-  "ui.A quick view of occasional and regular customers. Each recorded purchase counts as a visit.": "ഇടയ്ക്കിടെയും പതിവായും വരുന്ന ഉപഭോക്താക്കളുടെ ഒരു സംക്ഷിപ്ത ചിത്രം. രേഖപ്പെടുത്തിയ ഓരോ വാങ്ങലും ഒരു സന്ദർശനമായി കണക്കാക്കുന്നു."
+  "ui.A quick view of occasional and regular customers. Each recorded purchase counts as a visit.": "ഇടയ്ക്കിടെയും പതിവായും വരുന്ന ഉപഭോക്താക്കളുടെ ഒരു സംക്ഷിപ്ത ചിത്രം. രേഖപ്പെടുത്തിയ ഓരോ വാങ്ങലും ഒരു സന്ദർശനമായി കണക്കാക്കുന്നു.",
+  "ui.How often customers shop in the selected period": "തിരഞ്ഞെടുത്ത കാലയളവിൽ ഉപഭോക്താക്കൾ എത്ര തവണ വാങ്ങുന്നു",
+  "ui.No purchases recorded in this period.": "ഈ കാലയളവിൽ വാങ്ങലുകളൊന്നും രേഖപ്പെടുത്തിയിട്ടില്ല.",
+  "ui.Customer frequency period": "ഉപഭോക്തൃ സന്ദർശനങ്ങളുടെ കാലയളവ്",
+  "ui.Offer performance period": "ഓഫറിന്റെ പ്രകടന കാലയളവ്"
 }

@@ -1773,5 +1773,9 @@
   "ui.One purchase": "One purchase",
   "ui.2-3 purchases": "2-3 purchases",
   "ui.4+ purchases": "4+ purchases",
-  "ui.A quick view of occasional and regular customers. Each recorded purchase counts as a visit.": "A quick view of occasional and regular customers. Each recorded purchase counts as a visit."
+  "ui.A quick view of occasional and regular customers. Each recorded purchase counts as a visit.": "A quick view of occasional and regular customers. Each recorded purchase counts as a visit.",
+  "ui.How often customers shop in the selected period": "How often customers shop in the selected period",
+  "ui.No purchases recorded in this period.": "No purchases recorded in this period.",
+  "ui.Customer frequency period": "Customer frequency period",
+  "ui.Offer performance period": "Offer performance period"
 }
