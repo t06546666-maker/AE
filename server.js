@@ -4232,19 +4232,28 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
   });
 });
 
+async function checkoutBillDatabase() {
+  await firebaseInitializationPromise;
+  if (!firebaseInitialized) throw new Error('Firebase Admin is unavailable');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  return getFirestore();
+}
+
 app.get('/api/customer/checkout-bills', requireCustomerAuth, async (req, res) => {
   try {
-    const snapshot = await getFirestore().collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
+    const database = await checkoutBillDatabase();
+    const snapshot = await database.collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
     const bills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
     res.setHeader('Cache-Control', 'no-store');
     return res.json({ bills });
-  } catch (error) { return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
+  } catch (error) { console.warn('Checkout bill lookup failed:', error.message); return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
 });
 app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async (req, res) => {
   if (!/^[a-zA-Z0-9_-]{1,150}$/.test(req.params.id)) return res.status(400).json({ error: 'Invalid bill' });
   try {
-    const ref = getFirestore().collection('ae_checkout_bills').doc(req.params.id);
-    await getFirestore().runTransaction(async tx => {
+    const database = await checkoutBillDatabase();
+    const ref = database.collection('ae_checkout_bills').doc(req.params.id);
+    await database.runTransaction(async tx => {
       const doc = await tx.get(ref);
       if (!doc.exists || doc.data().customerId !== req.customer.id) throw new Error('Bill not found');
       tx.update(ref, { dismissed: true });
@@ -4332,8 +4341,9 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     const billId = String(purchase.order_id || purchase.id || '');
     if (/^[a-zA-Z0-9_-]{1,150}$/.test(billId)) {
       try {
-        const billRef = getFirestore().collection('ae_checkout_bills').doc(billId);
-        await getFirestore().runTransaction(async tx => {
+        const database = await checkoutBillDatabase();
+        const billRef = database.collection('ae_checkout_bills').doc(billId);
+        await database.runTransaction(async tx => {
           if ((await tx.get(billRef)).exists) return;
           tx.set(billRef, { customerId: purchase.customer_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)), createdAt: Date.now(), dismissed: false });
         });
