@@ -2616,6 +2616,15 @@ app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'
   return res.json({ success: true, balance: Number(data) });
 });
 
+app.get('/api/offers-performance', requireAuth, requireRole('merchant'), async (req, res) => {
+  const merchantId = req.auth.profile.merchant_id;
+  if (!merchantId) return res.status(404).json({ error: 'Merchant not found' });
+  const { data: offers, error } = await supabaseAdmin.from('offers').select('id,title').eq('merchant_id', merchantId).order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  // Never infer offer usage from campaign deliveries or unrelated shop sales.
+  return res.json({ trackingAvailable: false, offers: (offers || []).map(offer => ({ ...offer, purchases: null })) });
+});
+
 app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (req, res) => {
   const merchantId = req.auth.profile.merchant_id;
   if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });

@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from 
 import type { Offer, OfferStatus, Pagination, UserProfile } from '../types';
 import { formatDate } from '../utils';
 import { useToast } from '../toast';
+import { OfferPerformance } from '../components/OfferPerformance';
 
 type OffersResponse = { offers: Offer[]; pagination: Pagination };
 const OFFER_CATEGORIES = ['Food & Dining', 'Fashion', 'Beauty', 'Services', 'Travel', 'Other'];
@@ -164,6 +165,7 @@ export function Offers({ user }: { user: UserProfile }) {
         ) : undefined}
       />
 
+      {user.role === 'merchant' && !formOpen && <OfferPerformance merchantId={user.merchant_id} />}
       {user.role === 'merchant' && formOpen ? (
         <form className="panel offer-form" onSubmit={submit}>
           <div className="panel-heading">

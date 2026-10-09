@@ -1600,5 +1600,16 @@
   "ui.Contact admin to update your business details.": "വ്യാപാര വിവരങ്ങൾ പുതുക്കാൻ അഡ്മിനെ ബന്ധപ്പെടുക.",
   "ui.Shop photos": "കടയുടെ ചിത്രങ്ങൾ",
   "ui.Opening time": "തുറക്കുന്ന സമയം",
-  "ui.Closing time": "അടയ്ക്കുന്ന സമയം"
+  "ui.Closing time": "അടയ്ക്കുന്ന സമയം",
+  "ui.Offer performance": "ഓഫറിന്റെ പ്രകടനം",
+  "ui.Purchases linked to each offer": "ഓരോ ഓഫറുമായി ബന്ധപ്പെട്ട വാങ്ങലുകൾ",
+  "ui.Create an offer to see it here.": "ഇവിടെ കാണാൻ ഒരു ഓഫർ സൃഷ്ടിക്കുക.",
+  "ui.Not tracked": "രേഖപ്പെടുത്തിയിട്ടില്ല",
+  "ui.Purchase-to-offer tracking is not available yet. Counts will appear once purchases are linked to offers.": "വാങ്ങലുകളെ ഓഫറുകളുമായി ബന്ധിപ്പിക്കുന്ന സൗകര്യം നിലവിൽ ലഭ്യമല്ല. ബന്ധിപ്പിച്ച ശേഷം വാങ്ങലുകളുടെ എണ്ണം ഇവിടെ കാണാം.",
+  "ui.Customer visit frequency": "ഉപഭോക്താക്കളുടെ സന്ദർശന ആവൃത്തി",
+  "ui.How often customers shop in the selected month": "തിരഞ്ഞെടുത്ത മാസത്തിൽ ഉപഭോക്താക്കൾ എത്ര തവണ വാങ്ങുന്നു",
+  "ui.One purchase": "ഒരു വാങ്ങൽ",
+  "ui.2-3 purchases": "2-3 വാങ്ങലുകൾ",
+  "ui.4+ purchases": "4 അല്ലെങ്കിൽ അതിലധികം വാങ്ങലുകൾ",
+  "ui.A quick view of occasional and regular customers. Each recorded purchase counts as a visit.": "ഇടയ്ക്കിടെയും പതിവായും വരുന്ന ഉപഭോക്താക്കളുടെ ഒരു സംക്ഷിപ്ത ചിത്രം. രേഖപ്പെടുത്തിയ ഓരോ വാങ്ങലും ഒരു സന്ദർശനമായി കണക്കാക്കുന്നു."
 }
