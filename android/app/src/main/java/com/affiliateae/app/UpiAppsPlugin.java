@@ -1,6 +1,7 @@
 package com.affiliateae.app;
 
 import android.content.Intent;
+import android.net.Uri;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -23,6 +24,23 @@ public class UpiAppsPlugin extends Plugin {
     }
     @PluginMethod public void open(PluginCall call) {
         String id = call.getString("id", "");
+        String url = call.getString("url", "");
+        if (!url.isEmpty()) {
+            try {
+                Uri uri = Uri.parse(url);
+                String amount = uri.getQueryParameter("am");
+                String recipient = uri.getQueryParameter("pa");
+                if (!"upi".equals(uri.getScheme()) || !"pay".equals(uri.getHost()) || recipient == null || !recipient.matches("[a-zA-Z0-9._-]{2,}@[a-zA-Z0-9.-]{2,}") || !"INR".equals(uri.getQueryParameter("cu")) || amount == null || !amount.matches("[0-9]+\\.[0-9]{2}") || Double.parseDouble(amount)<=0) {
+                    call.reject("Invalid UPI payment details"); return;
+                }
+                boolean allowed = id.isEmpty(); for (String pkg : PACKAGES) if (pkg.equals(id)) allowed = true;
+                if (!allowed) { call.reject("Unsupported app"); return; }
+                Intent payment = new Intent(Intent.ACTION_VIEW, uri);
+                if (!id.isEmpty()) payment.setPackage(id);
+                getActivity().startActivity(id.isEmpty() ? Intent.createChooser(payment, "Choose UPI app") : payment);
+                call.resolve(); return;
+            } catch (Exception e) { call.reject("This UPI app could not open the payment. Try another app."); return; }
+        }
         boolean allowed = false; for (String pkg : PACKAGES) if (pkg.equals(id)) allowed = true;
         if (!allowed) { call.reject("Unsupported app"); return; }
         Intent intent = getContext().getPackageManager().getLaunchIntentForPackage(id);

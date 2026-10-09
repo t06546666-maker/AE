@@ -118,7 +118,7 @@ begin
   from public.orders
   where orders.customer_id = v_customer.id;
 
-  v_points := floor(p_amount * p_reward_percentage / 100);
+  v_points := least(100, floor(p_amount * p_reward_percentage / 100));
 
   insert into public.orders (
     order_no, customer_id, merchant_id, amount, location,

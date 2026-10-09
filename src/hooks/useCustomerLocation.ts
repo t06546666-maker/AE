@@ -1,11 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { loadGoogleMaps } from '../components/CustomerNearbyMap';
 
 export function useCustomerLocation() {
-  return useQuery({
+  const client = useQueryClient();
+  const selected = useQuery<{ latitude: number; longitude: number; area: string } | null>({ queryKey: ['customer', 'selected-location'], queryFn: async () => null, initialData: null, enabled: false, staleTime: Infinity, gcTime: Infinity });
+  const gps = useQuery({
     queryKey: ['customer', 'current-location'],
+    enabled: !selected.data,
     queryFn: async () => {
       let coords: { latitude: number; longitude: number };
       if (Capacitor.isNativePlatform()) {
@@ -33,4 +36,18 @@ export function useCustomerLocation() {
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
+  return {
+    ...gps,
+    data: selected.data || gps.data,
+    error: selected.data ? null : gps.error,
+    isFetching: selected.data ? false : gps.isFetching,
+    selectLocation: (location: { latitude: number; longitude: number; area: string }) => {
+      client.setQueryData(['customer', 'selected-location'], location);
+    },
+    refetch: async () => {
+      const result = await gps.refetch();
+      if (!result.isError) client.setQueryData(['customer', 'selected-location'], null);
+      return result;
+    },
+  };
 }

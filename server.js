@@ -16,6 +16,7 @@ const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
+const { billUpi } = require('./backend/bill-upi.cjs');
 let initializeApp;
 let cert;
 let getAuth;
@@ -2664,6 +2665,11 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
 const defaultMerchantPaymentSettings = { upiId: '', displayName: '', paymentEnabled: false, provider: 'upi', mode: 'live' };
 function merchantPaymentKey(id) { return `merchant_payment_settings_${cleanText(id, 100)}`; }
 async function readMerchantPaymentSettings(id) {
+  try {
+    const database = await checkoutBillDatabase();
+    const settings = await database.collection('ae_merchant_payment_settings').doc(String(id)).get();
+    if (settings.exists) return { ...defaultMerchantPaymentSettings, ...settings.data() };
+  } catch (error) { console.warn('Merchant payment settings lookup failed:', error.message); }
   const { data } = await supabaseAdmin.from('app_settings').select('value').eq('key', merchantPaymentKey(id)).maybeSingle();
   try {
     return { ...defaultMerchantPaymentSettings, ...(data?.value ? JSON.parse(data.value) : {}) };
@@ -2678,8 +2684,10 @@ app.patch('/api/merchants/:id/payment-settings', requireAuth, async (req, res) =
   const upiId = cleanText(req.body.upiId, 120).toLowerCase();
   if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
   const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'upi', mode: 'live' };
-  const { error } = await supabaseAdmin.from('app_settings').upsert({ key: merchantPaymentKey(req.params.id), value: JSON.stringify(value) });
-  if (error) return res.status(400).json({ success: false, error: error.message });
+  try {
+    const database = await checkoutBillDatabase();
+    await database.collection('ae_merchant_payment_settings').doc(req.params.id).set(value);
+  } catch (error) { return res.status(503).json({ success: false, error: 'Could not save merchant payment settings.' }); }
   res.json({ success: true, data: value });
 });
 
@@ -4243,7 +4251,8 @@ app.get('/api/customer/checkout-bills', requireCustomerAuth, async (req, res) =>
   try {
     const database = await checkoutBillDatabase();
     const snapshot = await database.collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
-    const bills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
+    const pending = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
+    const bills = await Promise.all(pending.map(async bill => ({ ...bill, ...billUpi(bill.merchantId ? await readMerchantPaymentSettings(bill.merchantId) : null, bill) })));
     res.setHeader('Cache-Control', 'no-store');
     return res.json({ bills });
   } catch (error) { console.warn('Checkout bill lookup failed:', error.message); return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
@@ -4345,7 +4354,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
         const billRef = database.collection('ae_checkout_bills').doc(billId);
         await database.runTransaction(async tx => {
           if ((await tx.get(billRef)).exists) return;
-          tx.set(billRef, { customerId: purchase.customer_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)), createdAt: Date.now(), dismissed: false });
+          tx.set(billRef, { customerId: purchase.customer_id, merchantId: req.auth.profile.merchant_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)), createdAt: Date.now(), dismissed: false });
         });
         await pushToCustomer(purchase.customer_id, 'Your checkout bill', `${merchantName}: total ₹${amount.toFixed(2)}, discount ₹${Number(redemptionContext?.discountAmount || 0).toFixed(2)}, payable ₹${Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)).toFixed(2)}.`, { url: '/customer/home', type: 'checkout_bill', billId });
       } catch (error) { console.warn('Checkout bill notification failed:', error.message); }

@@ -5,7 +5,7 @@ const route = source.match(/app.get\('\/api\/customer\/checkout-bills',[\s\S]*?\
 let handler;
 let filters = [];
 const query = { where(field, op, value) { filters.push([field, op, value]); return this; }, async get() { return { docs: [{ id: 'recent', data: () => ({ customerId: 'owned', createdAt: Date.now(), total: 100, discount: 5, payable: 95 }) }, { id: 'old', data: () => ({ customerId: 'owned', createdAt: Date.now() - 2 * 86400000 }) }] }; } };
-new Function('app','requireCustomerAuth','checkoutBillDatabase',route)({ get: (_path,_auth,fn) => { handler=fn; } },()=>{},async()=>({ collection:()=>query }));
+new Function('app','requireCustomerAuth','checkoutBillDatabase','billUpi',route)({ get: (_path,_auth,fn) => { handler=fn; } },()=>{},async()=>({ collection:()=>query }),require('../backend/bill-upi.cjs').billUpi);
 (async()=>{
  let body;
  await handler({ customer:{id:'owned'} },{ setHeader(){},json(value){body=value;},status(){return this;} });
@@ -19,6 +19,6 @@ new Function('app','requireCustomerAuth','checkoutBillDatabase',route)({ get: (_
  assert.ok(!route.includes('getFirestore()'));
  const java=fs.readFileSync('android/app/src/main/java/com/affiliateae/app/UpiAppsPlugin.java','utf8');
  assert.ok(java.includes('getLaunchIntentForPackage'));
- assert.ok(!java.includes('upi://pay'));
- console.log('Passed: customer-scoped bill lookup, stale-bill exclusion, payable amount and app-only Android launcher.');
+ assert.ok(java.includes('"upi".equals(uri.getScheme())'));
+console.log('Passed: customer-scoped bill lookup, stale-bill exclusion, payable amount and restricted Android UPI launcher.');
 })().catch(error=>{console.error(error);process.exit(1);});

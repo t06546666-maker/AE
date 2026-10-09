@@ -145,10 +145,10 @@ export function CustomerExplore() {
         </div>
       </div>
 
-      <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} />
+      <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} shoppingLocation={userLocation} onLocate={locateUser} />
       <div className="mx-5 mb-3 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
         <div><p className="text-[13px] font-bold text-[#087a4b]">Merchants near you</p><p className="text-[11px] text-gray-500">Sorted by distance from your current location</p></div>
-        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">Update location</button>
+        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">Use current GPS</button>
       </div>
 
       {/* Merchant List */}

@@ -125,7 +125,7 @@ begin
   where o.customer_id = v_customer.id
     and o.merchant_id = p_merchant_id;
 
-  v_points := round(p_amount * p_reward_percentage / 100, 2);
+  v_points := least(100, round(p_amount * p_reward_percentage / 100, 2));
 
   insert into public.orders (
     order_no, customer_id, merchant_id, amount, location,

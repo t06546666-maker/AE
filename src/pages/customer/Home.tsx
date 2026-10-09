@@ -100,10 +100,10 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </Link>
 
         <nav className="ae-home-shortcuts" aria-label="Customer quick actions">
-          <Link to="/customer/explore" className="shops"><ShoppingBag/><span>Nearby Shops</span></Link>
-          <Link to="/customer/offers" className="offers"><Tags/><span>Offers</span></Link>
           <Link to="/customer/scan" className="qr"><QrCode/><span>My QR Code</span></Link>
           <Link to="/customer/rewards" className="redeem"><Gift/><span>Redeem Points</span></Link>
+          <Link to="/customer/explore" className="shops"><ShoppingBag/><span>Nearby Shops</span></Link>
+          <Link to="/customer/offers" className="offers"><Tags/><span>Offers</span></Link>
         </nav>
         <CustomerAds />
         {/* Merchant offers grid */}

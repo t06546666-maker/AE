@@ -89,7 +89,7 @@ begin
   where o.customer_id = v_customer.id
     and o.merchant_id = p_merchant_id;
 
-  v_points := round(p_amount * p_reward_percentage / 100, 2);
+  v_points := least(100, round(p_amount * p_reward_percentage / 100, 2));
   v_order_no := 'AE-' || to_char(clock_timestamp(), 'YYMMDDHH24MISSMS');
 
   insert into public.orders (

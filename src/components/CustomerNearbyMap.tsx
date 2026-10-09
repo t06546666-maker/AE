@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { LocateFixed, MapPin } from 'lucide-react';
@@ -36,11 +36,11 @@ async function getCurrentLocation(): Promise<Coordinates> {
   ));
 }
 
-export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants: CustomerMerchant[]; selectedMerchantId?: string }) {
+export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocation, onLocate }: { merchants: CustomerMerchant[]; selectedMerchantId?: string; shoppingLocation?: Coordinates | null; onLocate?: () => Promise<any> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [status, setStatus] = useState(mapsKey ? 'Tap Locate AE to find merchants near you.' : 'Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.');
-  const locatedMerchants = merchants.filter((m) => Number.isFinite(m.latitude) && Number.isFinite(m.longitude));
+  const locatedMerchants = useMemo(() => merchants.filter((m) => Number.isFinite(m.latitude) && Number.isFinite(m.longitude)), [merchants]);
 
   useEffect(() => {
     if (!mapsKey || !containerRef.current) return;
@@ -66,14 +66,22 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId }: { merchants
         mapRef.current.fitBounds(bounds, 48);
         if (locatedMerchants.length === 1) mapRef.current.setZoom(14);
       }
-      getCurrentLocation().then((location) => { if (!active || !mapRef.current) return; mapRef.current.setCenter({ lat: location.latitude, lng: location.longitude }); mapRef.current.setZoom(13); new google.maps.Marker({ map: mapRef.current, position: { lat: location.latitude, lng: location.longitude }, title: 'You are here', icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }); setStatus('Showing your current location.'); }).catch(() => undefined);
+      if (shoppingLocation) {
+        mapRef.current.setCenter({ lat: shoppingLocation.latitude, lng: shoppingLocation.longitude });
+        mapRef.current.setZoom(13);
+        new google.maps.Marker({ map: mapRef.current, position: { lat: shoppingLocation.latitude, lng: shoppingLocation.longitude }, title: 'Selected shopping location' });
+        setStatus('Showing shops around your selected shopping location.');
+      } else if (!onLocate) {
+        getCurrentLocation().then((location) => { if (!active || !mapRef.current) return; mapRef.current.setCenter({ lat: location.latitude, lng: location.longitude }); mapRef.current.setZoom(13); setStatus('Showing your current location.'); }).catch(() => undefined);
+      }
     }).catch(() => active && setStatus('Google Maps could not load. Check your API key and allowed domains.'));
     return () => { active = false; };
-  }, [locatedMerchants]);
+  }, [locatedMerchants, shoppingLocation?.latitude, shoppingLocation?.longitude]);
 
   useEffect(() => { const merchant = locatedMerchants.find((item) => item.id === selectedMerchantId); if (merchant && mapRef.current) { mapRef.current.panTo({ lat: merchant.latitude!, lng: merchant.longitude! }); mapRef.current.setZoom(16); } }, [selectedMerchantId, locatedMerchants]);
 
   async function locate() {
+    if (onLocate) { const result = await onLocate(); if (result?.isError) setStatus(result.error?.message || 'Could not find your GPS location.'); return; }
     try {
       setStatus('Finding your location…');
       const location = await getCurrentLocation();

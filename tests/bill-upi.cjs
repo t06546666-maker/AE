@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const { billUpi } = require('../backend/bill-upi.cjs');
+const bill = { id:'test-checkout', payable:4750, merchantName:'Test shop' };
+const settings = { upiId:'testmerchant@upi', displayName:'Test shop', pilotUpiEnabled:true };
+const result = billUpi(settings,bill);
+const uri = new URL(result.upiUrl);
+assert.equal(uri.protocol,'upi:');
+assert.equal(uri.host,'pay');
+assert.equal(uri.searchParams.get('pa'),settings.upiId);
+assert.equal(uri.searchParams.get('am'),'4750.00');
+assert.equal(uri.searchParams.get('cu'),'INR');
+assert.equal(billUpi(null,bill).upiUrl,null);
+assert.equal(billUpi({...settings,pilotUpiEnabled:false},bill).upiUrl,null);
+assert.equal(billUpi({...settings,upiId:'invalid'},bill).upiUrl,null);
+assert.equal(billUpi(settings,{...bill,payable:0}).upiUrl,null);
+assert.equal(billUpi(settings,{...bill,payable:-1}).upiUrl,null);
+assert.equal(billUpi(settings,{...bill,payable:Infinity}).upiUrl,null);
+console.log('Passed: correct UPI recipient and net bill amount, merchant-scoped enablement, invalid/zero amount rejection.');
