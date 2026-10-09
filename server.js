@@ -2619,10 +2619,31 @@ app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'
 app.get('/api/offers-performance', requireAuth, requireRole('merchant'), async (req, res) => {
   const merchantId = req.auth.profile.merchant_id;
   if (!merchantId) return res.status(404).json({ error: 'Merchant not found' });
-  const { data: offers, error } = await supabaseAdmin.from('offers').select('id,title').eq('merchant_id', merchantId).order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  // Never infer offer usage from campaign deliveries or unrelated shop sales.
-  return res.json({ trackingAvailable: false, offers: (offers || []).map(offer => ({ ...offer, purchases: null })) });
+  const from = Date.parse(req.query.from), to = Date.parse(req.query.to);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to-from > 366*86400000) return res.status(400).json({ error: 'Choose a valid date range of up to one year.' });
+  try {
+    const offers = [];
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await supabaseAdmin.from('offers').select('id,title,status,reviewed_at,broadcast_at,expires_at').eq('merchant_id', merchantId).eq('status','approved').order('created_at', { ascending:false }).order('id').range(offset,offset+499);
+      if (error) throw error;
+      offers.push(...(data || []));
+      if ((data || []).length < 500) break;
+    }
+    const { offerWindow } = require('./backend/offer-performance.cjs');
+    const result = [];
+    const now = Date.now();
+    for (let index=0; index<offers.length; index+=4) {
+      result.push(...await Promise.all(offers.slice(index,index+4).map(async offer => {
+        const window = offerWindow(offer,from,to,now);
+        if (!window) return { id:offer.id,title:offer.title,purchases:null,startUnknown:true };
+        if (window.empty) return { id:offer.id,title:offer.title,purchases:0 };
+        const { count,error } = await supabaseAdmin.from('orders').select('id',{count:'exact',head:true}).eq('merchant_id',merchantId).gte('created_at',window.from).lt('created_at',window.to);
+        if(error) throw error;
+        return { id:offer.id,title:offer.title,purchases:count || 0 };
+      })));
+    }
+    return res.json({ offers:result,measurement:'offer_period_purchases' });
+  } catch(error) { return res.status(500).json({ error:error.message }); }
 });
 
 app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (req, res) => {

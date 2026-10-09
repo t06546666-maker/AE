@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const {offerWindow}=require('../backend/offer-performance.cjs');
+const d=value=>Date.parse(value+'T00:00:00+05:30');
+const offer={status:'approved',reviewed_at:new Date(d('2026-10-05')).toISOString(),expires_at:new Date(d('2026-10-10')).toISOString()};
+let window=offerWindow(offer,d('2026-10-01'),d('2026-11-01'),d('2026-10-09'));
+assert.equal(Date.parse(window.from),d('2026-10-05'));assert.equal(Date.parse(window.to),d('2026-10-09'));
+window=offerWindow(offer,d('2026-10-07'),d('2026-10-08'),d('2026-10-09'));
+assert.equal(Date.parse(window.from),d('2026-10-07'));assert.equal(Date.parse(window.to),d('2026-10-08'));
+assert.ok(offerWindow(offer,d('2026-09-01'),d('2026-10-01'),d('2026-10-09')).empty);
+assert.equal(offerWindow({...offer,status:'pending'},d('2026-10-01'),d('2026-11-01')),null);
+assert.equal(offerWindow({...offer,reviewed_at:null},d('2026-10-01'),d('2026-11-01')),null);
+assert.equal(offerWindow({...offer,reviewed_at:null,broadcast_at:offer.reviewed_at},d('2026-10-01'),d('2026-11-01')).empty,false);
+console.log('PASS: approval, expiry, IST date intersections, future cutoff and unknown start');

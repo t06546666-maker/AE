@@ -1783,5 +1783,9 @@
   "ui.First-purchase offer": "First-purchase offer",
   "ui.Loyal-customer offer": "Loyal-customer offer",
   "ui.Demo preview": "Demo preview",
-  "ui.Sample data for reference only. Date selection does not change these example values.": "Sample data for reference only. Date selection does not change these example values."
+  "ui.Sample data for reference only. Date selection does not change these example values.": "Sample data for reference only. Date selection does not change these example values.",
+  "ui.Purchases during approved offer dates": "Purchases during approved offer dates",
+  "ui.Start date unavailable": "Start date unavailable",
+  "ui.No approved offers yet.": "No approved offers yet.",
+  "ui.All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases.": "All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases."
 }
