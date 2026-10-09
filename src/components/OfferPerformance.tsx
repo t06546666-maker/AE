@@ -6,7 +6,8 @@ import { LoadingState, ErrorState } from './Common';
 
 type Performance = { offers:{id:string;title:string;purchases:number|null;startUnknown?:boolean}[] };
 export function OfferPerformance({merchantId}: { merchantId: string | null }) {
-  const period = useGraphPeriod();
+  const savedMonth = localStorage.getItem(`ae-reporting-month:${merchantId}`) || undefined;
+  const period = useGraphPeriod(savedMonth);
   const data = useQuery({ queryKey:['offer-performance',merchantId,period.range?.from,period.range?.to], queryFn:({signal})=>apiFetch<Performance>(`/api/offers-performance?${queryString(period.range || {})}`,{signal}), enabled:!!merchantId && !!period.range,refetchInterval:30000 });
   const maximum = Math.max(1,...(data.data?.offers.map(offer=>offer.purchases || 0) || []));
   return <section className="panel" style={{ marginBottom: 24 }} aria-labelledby="offer-performance-title">

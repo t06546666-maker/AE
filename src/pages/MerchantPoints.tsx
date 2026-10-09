@@ -17,7 +17,8 @@ const number = (n: number) => Number(n).toLocaleString('en-IN', { maximumFractio
 export function MerchantPoints({ user }: { user: UserProfile }) {
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
   const [date, setDate] = useState(() => indiaDate(new Date()));
-  const range = (period === 'date' ? rangeForChartPeriod('custom', date, date) : rangeForChartPeriod(period))!;
+  const reportingMonth = localStorage.getItem(`ae-reporting-month:${user.merchant_id}`) || undefined;
+  const range = (period === 'date' ? rangeForChartPeriod('custom', date, date) : rangeForChartPeriod(period,undefined,undefined,reportingMonth))!;
   const query = useQuery({ queryKey: ['merchant-point-insights', user.merchant_id, range.from, range.to], queryFn: ({ signal }) => apiFetch<Insights>(`/api/merchants/${user.merchant_id}/point-insights?${new URLSearchParams(range)}`, { signal }), refetchInterval: 30000 });
   const data = query.data;
   const chartPeriod = period === 'date' ? "today" : period;

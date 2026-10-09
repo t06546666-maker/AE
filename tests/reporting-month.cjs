@@ -1,0 +1,10 @@
+const fs=require('node:fs');const ts=require('typescript');const assert=require('node:assert/strict');
+const source=fs.readFileSync('src/utils.ts','utf8');const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const exported={};new Function('exports',code)(exported);
+const leap=exported.rangeForChartPeriod('month',undefined,undefined,'2024-02');
+assert.equal(leap.from,'2024-02-01T00:00:00+05:30');assert.equal(leap.to,'2024-03-01T00:00:00+05:30');
+assert.equal((Date.parse(leap.to)-Date.parse(leap.from))/86400000,29);
+const december=exported.rangeForChartPeriod('month',undefined,undefined,'2025-12');assert.equal(december.to,'2026-01-01T00:00:00+05:30');
+assert.deepEqual(exported.rangeForChartPeriod('today',undefined,undefined,'2024-02'),exported.rangeForChartPeriod('today'));
+assert.deepEqual(exported.rangeForChartPeriod('custom','2024-02-12','2024-02-12','2025-12'),exported.rangeForChartPeriod('custom','2024-02-12','2024-02-12'));
+console.log('PASS: selected-month ranges, leap year, year rollover and explicit date overrides');

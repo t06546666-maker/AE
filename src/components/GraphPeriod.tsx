@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { indiaDate } from '../pages/merchantAnalytics';
 import { rangeForChartPeriod } from '../utils';
 import { uiText } from '../uiText';
-export function useGraphPeriod() {
+export function useGraphPeriod(reportingMonth?: string) {
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
   const [date, setDate] = useState(indiaDate(new Date()));
-  const range = period === 'date' ? rangeForChartPeriod('custom', date, date) : rangeForChartPeriod(period);
+  const range = period === 'date' ? rangeForChartPeriod('custom', date, date) : rangeForChartPeriod(period, undefined, undefined, reportingMonth);
   return { period, setPeriod, date, setDate, range };
 }
 export function GraphPeriod({ state, label }: { state: ReturnType<typeof useGraphPeriod>; label: string }) {

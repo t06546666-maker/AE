@@ -1788,5 +1788,7 @@
   "ui.Start date unavailable": "Start date unavailable",
   "ui.No approved offers yet.": "No approved offers yet.",
   "ui.All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases.": "All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases.",
-  "ui.Reporting year": "Reporting year"
+  "ui.Reporting year": "Reporting year",
+  "ui.Choose reporting month": "Choose reporting month",
+  "ui.Apply month": "Apply month"
 }

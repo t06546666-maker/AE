@@ -2,8 +2,8 @@ import type { MerchantAnalytics } from '../pages/merchantAnalytics';
 import { uiText } from '../uiText';
 import { GraphPeriod, useGraphPeriod } from './GraphPeriod';
 
-export function CustomerFrequency({ model }: { model: MerchantAnalytics }) {
-  const period = useGraphPeriod();
+export function CustomerFrequency({ model, month }: { model: MerchantAnalytics; month?: string }) {
+  const period = useGraphPeriod(month);
   const counts = new Map<string, number>();
   const from = Date.parse(period.range!.from), to = Date.parse(period.range!.to);
   for (const order of model.customers.flatMap(customer => customer.visits)) {

@@ -70,12 +70,12 @@ function GrowthChart({ model }: { model: MerchantAnalytics }) {
   </section>;
 }
 
-function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
+function SalesSnapshot({ model, month }: { model: MerchantAnalytics; month: string }) {
   const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
   const [salesDate, setSalesDate] = useState(() => indiaDate(new Date()));
   const [mixPeriod, setMixPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
   const [mixDate, setMixDate] = useState(() => indiaDate(new Date()));
-  const mixRange = (mixPeriod === 'date' ? rangeForChartPeriod('custom', mixDate, mixDate) : rangeForChartPeriod(mixPeriod))!;
+  const mixRange = (mixPeriod === 'date' ? rangeForChartPeriod('custom', mixDate, mixDate) : rangeForChartPeriod(mixPeriod,undefined,undefined,month))!;
   const mixStart = Date.parse(mixRange.from);
   const mixEnd = Date.parse(mixRange.to);
   const activeCustomers = model.customers.filter(customer => customer.visits.some(order => {
@@ -84,7 +84,7 @@ function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
   }));
   const freshCount = activeCustomers.filter(customer => customer.first && Date.parse(customer.first) >= mixStart).length;
   const returningCount = activeCustomers.length - freshCount;
-  const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod === 'date' ? "today" : salesPeriod, (salesPeriod === 'date' ? rangeForChartPeriod('custom', salesDate, salesDate) : rangeForChartPeriod(salesPeriod))!);
+  const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod === 'date' ? "today" : salesPeriod, (salesPeriod === 'date' ? rangeForChartPeriod('custom', salesDate, salesDate) : rangeForChartPeriod(salesPeriod,undefined,undefined,month))!);
   const max = Math.max(1, ...weeks.map(week => week.sales));
   const newShare = activeCustomers.length ? Math.round(freshCount / activeCustomers.length * 100) : 0;
   const returningShare = activeCustomers.length ? 100 - newShare : 0;
@@ -93,11 +93,11 @@ function SalesSnapshot({ model }: { model: MerchantAnalytics }) {
 
 function currentCount(model: MerchantAnalytics) { return model.current.active.length.toLocaleString('en-IN'); }
 
-function ActivitySnapshot({ model }: { model: MerchantAnalytics }) {
-  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'date'>('today');
+function ActivitySnapshot({ model, month }: { model: MerchantAnalytics; month: string }) {
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'date'>('month');
   const [chosenDate, setChosenDate] = useState(() => indiaDate(new Date()));
   const chartPeriod = period === 'date' ? "today" : period;
-  const range = (period === 'date' ? rangeForChartPeriod('custom', chosenDate, chosenDate) : rangeForChartPeriod(period))!;
+  const range = (period === 'date' ? rangeForChartPeriod('custom', chosenDate, chosenDate) : rangeForChartPeriod(period,undefined,undefined,month))!;
   const start = Date.parse(range.from);
   const end = Date.parse(range.to);
   const dayMs = 24 * 60 * 60 * 1000;
@@ -151,8 +151,9 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
   const [params, setParams] = useSearchParams();
   const view = location.pathname === '/customers' ? "customers" : ['insights', 'reports'].includes(params.get('view') || '') ? params.get('view')! : "overview";
   const currentMonth = indiaDate(new Date()).slice(0, 7);
-  const requestedMonth = params.get('month') || currentMonth;
+  const requestedMonth = params.get('month') || localStorage.getItem(`ae-reporting-month:${user.merchant_id}`) || currentMonth;
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) && requestedMonth <= currentMonth && requestedMonth >= '2000-01' ? requestedMonth : currentMonth;
+  useEffect(() => { localStorage.setItem(`ae-reporting-month:${user.merchant_id}`,month); }, [month,user.merchant_id]);
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const [filter, setFilter] = useState('All');
@@ -208,8 +209,8 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     <div className="mo-content" key={view}>
     {view === 'overview' && <>
       <div className="mo-stats">{metrics.map(({ label, value, before, icon: Icon, color, hint }) => <article key={label} className={`mo-stat ${color}`}><div className="mo-stat-label"><span className={`mo-icon ${color}`}><Icon size={21} /></span><span>{uiText(label)}</span></div><strong className="mo-stat-value">{label === 'Total sales' ? formatCurrency(value) : value.toLocaleString('en-IN')}</strong><span className="mo-stat-hint">{hint}</span><Change value={value} previous={before} label={model.comparisonLabel} /></article>)}</div>
-      <SalesSnapshot model={model} />
-      <ActivitySnapshot model={model} />
+      <SalesSnapshot key={`sales-${month}`} model={model} month={month} />
+      <ActivitySnapshot key={`activity-${month}`} model={model} month={month} />
       <div className="mo-columns"><GrowthChart key={month} model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>{uiText("Quick insights")}</h2><p>{uiText("Small insights. Better decisions.")}</p></div><Lightbulb size={21} /></div><div className="mo-quick-list">
         <div><span className="mo-icon green"><RefreshCw size={20} /></span><p><strong>{percent(current.returning.length)}{uiText("% returned")}</strong><small>{uiText("Had purchased before this month")}</small></p></div>
         <div><span className="mo-icon violet"><IndianRupee size={20} /></span><p><strong>{formatCurrency(current.average)}</strong><small>{uiText("Average spend per recorded visit")}</small></p></div>
@@ -226,7 +227,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
       </div>
       <section className="mo-panel mo-tools"><div><h2>{uiText("Keep your business moving")}</h2><p>{uiText("All your everyday tools, one tap away.")}</p></div><div className="mo-tool-grid">{[{ to: '/offers?create=1', title: 'Create offers', icon: Gift, color: 'pink' }, { to: href('customers'), title: 'Know customers', icon: Users, color: 'violet' }, { to: href('insights'), title: 'Track growth', icon: TrendingUp, color: 'amber' }, { to: href('reports'), title: 'Get reports', icon: BarChart3, color: 'blue' }].map(({ to, title, icon: Icon, color }) => <Link to={to} key={title}><span className={`mo-icon ${color}`}><Icon size={24} /></span><strong>{title}</strong><ChevronRight size={16} /></Link>)}</div></section>
     </>}
-    {view === 'customers' && <CustomerFrequency model={model} />}
+    {view === 'customers' && <CustomerFrequency key={month} model={model} month={month} />}
     {view === 'customers' && <section className="mo-panel mo-customer-panel"><div className="mo-panel-heading"><div><h2>{uiText("Customer list ")}<span className="mo-count">{model.customers.length}</span></h2><p>{uiText("All linked customers • lifetime activity at your business")}</p></div><Link to="/add-customer" className="mo-close" aria-label={uiText("Add customer")}><UserPlus size={21} /></Link></div><label className="mo-search"><Search size={19} /><input aria-label={uiText("Search customers")} placeholder={uiText("Search name, phone or customer ID")} value={search} onChange={e => setSearch(e.target.value)} />{search && <button onClick={() => setSearch('')} aria-label={uiText("Clear customer search")}><X size={17} /></button>}</label><div className="mo-segmented" aria-label={uiText("Filter customers")}>{['All', 'Returning', 'New', 'No visits'].map(f => <button key={f} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f} <span>{model.customers.filter(c => f === 'All' || (f === 'Returning' ? c.visits.length >= 2 : f === 'New' ? c.visits.length === 1 : !c.visits.length)).length}</span></button>)}</div><p className="mo-note">{uiText("New: one recorded visit. Returning: two or more. Customers without purchases are included.")}</p><div className="mo-customer-list">{filtered.slice((customerPage - 1) * 20, customerPage * 20).map((c, index) => <button className="mo-customer" key={c.id} onClick={() => selectCustomer(c.id)}><span className={`mo-avatar ${['violet', 'blue', 'amber', 'green'][index % 4]}`}>{initials(c.name)}</span><span className="mo-customer-name"><strong>{c.name}</strong><small>{c.visits.length} {c.visits.length === 1 ? uiText("visit") : uiText("visits")}{c.visits.length >= 5 && ' · Loyal'}</small></span><span className="mo-customer-spend"><strong>{formatCurrency(c.spend)}</strong><small>{uiText("Total spent")}</small></span><ChevronRight size={17} /></button>)}</div>{!filtered.length && <div className="mo-empty"><Users size={28} /><h3>{search || filter !== 'All' ? uiText("No matching customers") : uiText("Your relationships start here")}</h3><p>{search || filter !== 'All' ? uiText("Try another search or customer filter.") : uiText("Add your first customer to start tracking their visits.")}</p></div>}{filtered.length > 20 && <div className="mo-pagination"><button disabled={customerPage === 1} onClick={() => setCustomerPage(p => p - 1)}>{uiText("Previous")}</button><span>{customerPage} / {Math.ceil(filtered.length / 20)}</span><button disabled={customerPage * 20 >= filtered.length} onClick={() => setCustomerPage(p => p + 1)}>{uiText("Next")}</button></div>}</section>}
     {view === 'insights' && <section className="mo-panel"><div className="mo-panel-heading"><div><h2>{uiText("Understand your customers")}</h2><p>{uiText("Patterns from recorded purchases in the selected month.")}</p></div><TrendingUp size={22} /></div><div className="mo-segmented">{['Visits', 'Spending', 'Retention'].map(t => <button key={t} aria-pressed={insight === t} onClick={() => setInsight(t)}>{t}</button>)}</div>{insight === 'Visits' ? <><h3 className="mo-section-title">{uiText("When customers visit")}</h3><VisitHeatmap key={month} model={model} /></> : insight === 'Spending' ? <><h3 className="mo-section-title">{uiText("Who contributes to your sales?")}</h3>{[{ label: 'New customers', value: model.newSpend, color: '#16a078' }, { label: 'Returning customers', value: model.returningSpend, color: '#1875eb' }].map(s => <div className="mo-spend-row" key={s.label}><div><span>{uiText(s.label)}</span><strong>{formatCurrency(s.value)}</strong></div><div className="mo-progress"><span style={{ width: `${current.sales ? s.value / current.sales * 100 : 0}%`, background: s.color }} /></div></div>)}<p className="mo-note">{uiText("Average recorded purchase: ")}{formatCurrency(current.average)}{uiText(". New/returning uses the same monthly cohorts as the growth chart.")}</p></> : <><h3 className="mo-section-title">{uiText("Customers who come back")}</h3><div className="mo-retention"><strong>{percent(current.returning.length)}%</strong><p>{uiText("of this month’s purchasing customers had bought from you in an earlier month.")}</p></div><p className="mo-note">{current.returning.length}{uiText(" returning out of ")}{current.active.length}{uiText(" purchasing customers. This is a returning-customer share, not a cohort retention rate.")}</p><LoyalCustomers /></>}{!current.orders.length && <p className="mo-empty">{uiText("No purchases recorded in this month.")}</p>}</section>}
     {view === 'reports' && <section className="mo-panel"><h2>{uiText("Simple reports. Clear decisions.")}</h2><p className="mo-subtitle">{uiText("Export your data as CSV for Excel or Google Sheets.")}</p><div className="mo-report-list">{[{ kind: 'summary', title: 'Customer & sales summary', detail: 'Selected month’s sales and customer totals', icon: Users, color: 'blue' }, { kind: 'visits', title: 'Visit frequency', detail: 'Weekdays and times your customers visit', icon: BarChart3, color: 'violet' }, { kind: 'customers', title: 'Top customers', detail: 'All customers, ranked by lifetime spending', icon: Crown, color: 'amber' }, { kind: 'comparison', title: 'Monthly comparison', detail: model.comparisonLabel, icon: TrendingUp, color: 'green' }].map(({ kind, title, detail, icon: Icon, color }) => <button key={kind} onClick={() => exportReport(kind)}><span className={`mo-icon ${color}`}><Icon size={22} /></span><span><strong>{title}</strong><small>{detail}</small></span><Download size={19} /></button>)}</div><p className="mo-note" role="status">{downloaded}</p><Link to="/orders" className="mo-primary">{uiText("View purchase history ")}<ArrowRight size={18} /></Link></section>}

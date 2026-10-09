@@ -78,8 +78,12 @@ export function rangeForPeriod(period: Period, customFrom?: string, customTo?: s
   return { from: indiaIso(start), to: indiaIso(end) };
 }
 
-export function rangeForChartPeriod(period: Period, customFrom?: string, customTo?: string) {
+export function rangeForChartPeriod(period: Period, customFrom?: string, customTo?: string, reportingMonth?: string) {
   if (period === 'custom') return rangeForPeriod(period, customFrom, customTo);
+  if (period === 'month' && reportingMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(reportingMonth)) {
+    const next = new Date(Date.UTC(Number(reportingMonth.slice(0,4)),Number(reportingMonth.slice(5)),1));
+    return {from:`${reportingMonth}-01T00:00:00+05:30`,to:`${next.toISOString().slice(0,10)}T00:00:00+05:30`};
+  }
 
   // Use the Indian calendar regardless of the browser's timezone.
   const indiaToday = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
