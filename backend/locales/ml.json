@@ -1625,5 +1625,6 @@
   "ui.Purchases during approved offer dates": "അംഗീകരിച്ച ഓഫറിന്റെ കാലയളവിലുള്ള വാങ്ങലുകൾ",
   "ui.Start date unavailable": "തുടക്ക തീയതി ലഭ്യമല്ല",
   "ui.No approved offers yet.": "അംഗീകരിച്ച ഓഫറുകൾ ഇതുവരെ ഇല്ല.",
-  "ui.All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases.": "ഓഫർ കാലയളവിലെ കടയുടെ എല്ലാ വാങ്ങലുകളും; ഓഫർ ഉപയോഗിച്ചതിന്റെ സ്ഥിരീകരണമല്ല. ഒരേസമയം നിലവിലുള്ള ഓഫറുകളിൽ ഒരേ വാങ്ങലുകൾ ഉൾപ്പെടാം."
+  "ui.All shop purchases during the offer period, not confirmed offer usage. Overlapping offers may include the same purchases.": "ഓഫർ കാലയളവിലെ കടയുടെ എല്ലാ വാങ്ങലുകളും; ഓഫർ ഉപയോഗിച്ചതിന്റെ സ്ഥിരീകരണമല്ല. ഒരേസമയം നിലവിലുള്ള ഓഫറുകളിൽ ഒരേ വാങ്ങലുകൾ ഉൾപ്പെടാം.",
+  "ui.Reporting year": "റിപ്പോർട്ടിന്റെ വർഷം"
 }
