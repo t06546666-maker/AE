@@ -1,0 +1,45 @@
+// Isolated local training fixture. No real account, network API calls or record writes.
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { Layout } from '../src/components/Layout';
+import { FieldManager } from '../src/pages/FieldManager';
+import { FieldMerchantVisit } from '../src/pages/FieldMerchantVisit';
+import { MerchantOverview } from '../src/pages/MerchantOverview';
+import { RewardSettingsPage } from '../src/pages/RewardSettings';
+import { AddCustomer } from '../src/pages/AddCustomer';
+import { CustomerOrders } from '../src/pages/CustomerOrders';
+import { Offers } from '../src/pages/Offers';
+import { ScannedCheckout } from '../src/components/ScannedCheckout';
+import { ToastProvider } from '../src/toast';
+import '../src/i18n';
+import '../src/styles.css';
+if (!import.meta.env.DEV) throw Error('Development preview only');
+const mode = new URLSearchParams(location.search).get('screen') || 'home';
+const merchantMode = ['dashboard','settings','offers','checkout','issue','addcustomer','orders','reports'].includes(mode);
+const user = { id:'training-manager', merchant_id: merchantMode?'shop1':null, role:merchantMode?'merchant' as const:'field_manager' as const, full_name:merchantMode?'AE Training Store':'Training Manager', email:'training@example.invalid' };
+const merchants = [{id:'shop1',name:'AE Training Store',merchant_code:'DEMO001',phone:'',email:'training@example.invalid',address:'Chittur, Palakkad',latitude:10.7,longitude:76.75,route_name:'Chittur 1',opening_time:'09:00:00',closing_time:'20:00:00',category_id:'retail',merchant_categories:{name:'Retail'}}];
+const visit = {id:'training-visit',merchant_id:'shop1',status:'active',check_in_at:new Date(Date.now()-900000).toISOString(),merchants:{name:'AE Training Store',merchant_code:'DEMO001'},photos:[]};
+Object.defineProperty(navigator,'geolocation',{value:{watchPosition:(cb:any)=>{cb({timestamp:Date.now(),coords:{latitude:10.7001,longitude:76.75,accuracy:8}});return 1;},clearWatch:()=>{},getCurrentPosition:(cb:any)=>cb({timestamp:Date.now(),coords:{latitude:10.7001,longitude:76.75,accuracy:8}})}});
+const customers=[{id:'demo-customer',name:'Training Customer',phone:'',email:'',registeredAt:'2026-10-01T10:00:00Z'}];
+window.fetch=async input=>{
+ const url=String(input); let payload:any={};
+ if(url.includes('/api/field/merchants/shop1/profile'))payload={merchant:merchants[0],activityRecorded:true};
+ else if(url.includes('/api/field/merchants'))payload={merchants};
+ else if(url.includes('/api/field/visits'))payload={visits:mode==='report'?[visit]:[]};
+ else if(url.includes('/api/field/attendance'))payload={attendance:null,requests:[]};
+ else if(url.includes('/api/field/route-plan'))payload={plan:{route_name:'Chittur 1',work_date:'2026-10-07'},workDate:'2026-10-07'};
+ else if(url.includes('/api/merchant-categories'))payload={categories:[{id:'retail',name:'Retail'},{id:'grocery',name:'Grocery'}]};
+ else if(url.includes('/api/settings/reward'))payload={merchantEarnPoints:20,merchantRedeemDiscount:5,merchantDiscountType:'percentage',earnOptions:[5,10,20,30,50],redeemOptions:[1,2,5,10],subscription:{price:0,points:0,days:30}};
+ else if(url.includes('/point-balance'))payload={balance:2000,pointBalance:2000};
+ else if(url.includes('/api/customers'))payload={customers,pagination:{total:1,totalPages:1}};
+ else if(url.includes('/api/orders'))payload={orders:[],pagination:{total:0,totalPages:1}};
+ else if(url.includes('/api/offers'))payload={offers:[],pagination:{total:0,totalPages:1}};
+ else if(url.includes('/api/notifications'))payload={notifications:[],unreadCount:0};
+ return new Response(JSON.stringify(payload),{headers:{'Content-Type':'application/json'}});
+};
+const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+const path=mode==='addcustomer'?'/add-customer':mode==='orders'?'/customer-orders':mode==='reports'?'/dashboard?view=reports':mode==='checkout'||mode==='issue'?'/checkout':mode==='checkin'||mode==='report'?'/field/merchants/shop1?visit=1':mode==='dashboard'?'/dashboard':mode==='settings'?'/reward-settings':mode==='offers'?'/offers?create=1':`/field?section=${mode}`;
+function CheckoutPreview(){ const [combined,setCombined]=React.useState(mode==='checkout'); const [amount,setAmount]=React.useState('1000'); const [rate,setRate]=React.useState(20); const [discountType,setDiscountType]=React.useState<'flat'|'percentage'>('percentage'); const [discountValue,setDiscountValue]=React.useState('5'); const [notes,setNotes]=React.useState(''); return <ScannedCheckout customer={{id:'DEMO-CUSTOMER',name:'Training Customer',phone:'',email:'',registeredAt:'2026-10-01',rewardPoints:500}} combined={combined} setCombined={setCombined} amount={amount} setAmount={setAmount} rate={rate} setRate={setRate} rates={[5,10,20,30,50]} discountType={discountType} setDiscountType={setDiscountType} discountValue={discountValue} setDiscountValue={setDiscountValue} points={100} notes={notes} setNotes={setNotes} busy={false} onSubmit={()=>{}} onBack={()=>{}} paymentLocked={false}/>; }
+createRoot(document.getElementById('root')!).render(<ToastProvider><QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><Layout user={user} onLogout={()=>{}}><Routes><Route path="/add-customer" element={<AddCustomer user={user}/>}/><Route path="/customer-orders" element={<CustomerOrders user={user}/>}/><Route path="/checkout" element={<CheckoutPreview/>}/><Route path="/field" element={<FieldManager user={user}/>} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit/>}/><Route path="/dashboard" element={<MerchantOverview user={user}/>}/><Route path="/reward-settings" element={<RewardSettingsPage user={user}/>}/><Route path="/offers" element={<Offers user={user}/>}/></Routes></Layout></MemoryRouter></QueryClientProvider></ToastProvider>);

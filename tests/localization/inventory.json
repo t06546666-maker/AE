@@ -1,0 +1,8457 @@
+[
+  {
+    "text": "__other__",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "— this unlocks the manager’s next check-in and records you as the closing Admin.",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": ". Call",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": ". New/returning uses the same monthly cohorts as the growth chart.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": ". Obtain advice on applicable provisions and commencement before adoption.",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": ". Sign in at /field using the password you set.",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "· Challenge:",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "· closes next day",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "· Use a separate browser profile to sign in as the manager while keeping Admin open.",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "· View Profile",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "(custom)",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "(IST)",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "(Required)",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "#0064ff",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "#3b28cc",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "#ffffff",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "% Discount",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "% retained",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "% returned",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "← Back",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "← Back to Field Managers",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "+ Add",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "+91 · Mobile number",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx"
+    ]
+  },
+  {
+    "text": "+91 · Mobile Number",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "● Points earned",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "● Purchase amount (₹)",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "₹10–₹49: 2 points · ₹50–₹99: 5 points · ₹100+: selected rate",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "₹250 Purchase",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "10:00 AM–6:30 PM",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "100 AE Points!",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "100 Points",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "150–180 stores",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "200 Points Redeemed",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "50 metres",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "6-digit OTP",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "A clear store image helps field staff and customers identify the store easily. JPG or PNG, maximum 5 MB.",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "A Google Maps API key is required for the live map. Merchant details remain available.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Accept & Continue",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Acceptance could not be saved.",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "accepted",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Account & Tools",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Account created for",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Account Details",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Account type",
+    "files": [
+      "src\\components\\AuthShell.tsx"
+    ]
+  },
+  {
+    "text": "Action",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Actions",
+    "files": [
+      "src\\pages\\Locations.tsx",
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "active",
+    "files": [
+      "src\\components\\Common.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Active",
+    "files": [
+      "src\\pages\\FieldManagers.tsx",
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Active products are available immediately in WhatsApp.",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Active sessions",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Active until",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Active visits — Admin override",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Activity",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Activity could not load:",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Activity Stats",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Add an image, details and expiry date",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Add Category",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Add customer",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Add favorite",
+    "files": [
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "Add Field Manager",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Add Location",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Add optional image",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Add product",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Add your first customer to start tracking their visits.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Add your Maps key to show real merchant pins.",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Adding...",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Address",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Address Line *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Admin closed:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Admin controlled",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Admin controls what this merchant can use.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Admin editable",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "admins.add",
+    "files": [
+      "src\\pages\\Administrators.tsx"
+    ]
+  },
+  {
+    "text": "admins.creating",
+    "files": [
+      "src\\pages\\Administrators.tsx"
+    ]
+  },
+  {
+    "text": "Ads are unavailable.",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Advertisement",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "AE",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx",
+      "src\\pages\\ChangePassword.tsx",
+      "src\\pages\\customer\\CustomerChangePassword.tsx",
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\ForgotPassword.tsx",
+      "src\\pages\\Legal.tsx",
+      "src\\pages\\ResetPassword.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx",
+      "src\\components\\LegalGate.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "AE advertisements",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "AE loyalty points. Thank you for your loyalty!",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "AE loyalty points. Thank you for your loyalty!”",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "AE Points",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "AE Points ·",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "AE Support Chat",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "AE. Where customers meet businesses, beyond. Chittur shopping street.",
+    "files": [
+      "src\\components\\AuthShell.tsx"
+    ]
+  },
+  {
+    "text": "Affiliate AE",
+    "files": [
+      "src\\components\\Layout.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "AFFILIATE AE · ADMIN PANEL",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Affiliate Innovations",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx",
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Affiliate Innovations · Chittur, Palakkad, Kerala – 678101",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Affiliate Innovations, Chittur, Palakkad, Kerala, India - 678101.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "After paying, return to AE. Your merchant will confirm receipt. Opening UPI does not mark this as paid.",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "After your AE discount",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "alert",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "all",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "All",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "All Categories",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "All customer requests across the AE merchant network.",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "All customers",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "All linked customers • lifetime activity at your business",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "All Locations",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "All Merchants",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "All merchants (",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "All routes",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "All statuses",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "All time",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "All Visits",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "All your everyday tools, one tap away.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Allocate merchant points",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Allocate points",
+    "files": [
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Allocated by Admin · Deducted when you issue customer points",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Allocating…",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Already have an account?",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "AM",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "AM or PM",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "Amount",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Amount to pay",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Anonymous",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Anonymous customer reviews about your store",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Any issues faced at the outlet?",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "App feedback",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "App feedback and merchant reviews",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "App Settings",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Apply Code",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Apply for Leave",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Apply Non-Field Work",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Applying...",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Approval queue",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Approve",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "approved",
+    "files": [
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Area / Locality *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Ask Admin to allocate points before issuing customer rewards.",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Ask your admin to create your field manager account.",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Assigned Merchants",
+    "files": [
+      "src\\pages\\LocationProfile.tsx"
+    ]
+  },
+  {
+    "text": "Assigned Territory",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "at",
+    "files": [
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "At least 10 characters, including uppercase, lowercase, a number and a symbol.",
+    "files": [
+      "src\\pages\\FieldManagers.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "attendance",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Attendance",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Attendance data unavailable. Check the attendance migration.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Attendance recorded",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Attendance reference selfie",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Audience",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "auto",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "AutoPay Active",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Availability",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "available",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Available",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Available AE Points",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Available Balance",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Available merchant points",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Available points · View details →",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Available points to issue",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Available:",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Average recorded purchase:",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Average spend per recorded visit",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Awarding...",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Back",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Back to dashboard",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Back to edit",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Back to home",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx",
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "Back to Locations",
+    "files": [
+      "src\\pages\\LocationProfile.tsx"
+    ]
+  },
+  {
+    "text": "Back to login",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Back to Login",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Back to merchants",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Back to profile",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx"
+    ]
+  },
+  {
+    "text": "Back to visits",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Balance",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Based on",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Based on recorded purchases",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Basic",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Basic Information",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Before using your account, review the documents below. Only you can accept for your account.",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "bg-[#087a4b]",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "bg-[#087a4b] text-white",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "bg-[#087a4b] text-white shadow-md shadow-green-600/20",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "bg-amber-100 text-amber-700",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "bg-emerald-100 text-emerald-700",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "bg-gray-100 text-gray-500",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "bg-gray-100 text-gray-600",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "bg-gray-300",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "bg-green-100 text-green-700",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "bg-red-100 text-red-700",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "bg-red-500",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Bill total",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "blue",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "bonus",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Bonus points",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Both: redeem + issue points",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Browse merchants",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx"
+    ]
+  },
+  {
+    "text": "Build road route",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "Business dashboard sections",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Business name",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Business reports",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Calculate & Redeem",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Calculate, Redeem & Issue",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Calculating…",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "Call",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Cancel",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\Products.tsx",
+      "src\\components\\AdminForceCloseVisit.tsx",
+      "src\\components\\FieldAttendance.tsx",
+      "src\\components\\FieldRoutePlanning.tsx",
+      "src\\components\\LiveCamera.tsx",
+      "src\\components\\LoyalCustomers.tsx",
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Capture a selfie. Allow location access to record your starting location.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Capture shop photo",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Capture the outlet photo, review it, then Start Visit. GPS must be within 50 metres of the merchant.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Carried forward",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Category",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\Offers.tsx",
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Category (Optional)",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Category *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Category Name",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Challenge status",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Challenge:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Change Language",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Change Password",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Change route",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Change route?",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Chat on WhatsApp",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Chat with support on WhatsApp or email us.",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Check in",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Check In",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Check-in Activity",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Check-in location",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Check-in Radius",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Check-in range required",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Check-in Time",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Check-in uses your browser GPS. The server validates the 50-metre merchant radius. No planned or missed visits are invented.",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Check-out Time",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Checked In",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Chittur, Palakkad, Kerala, India – 678101. Full registered street address to be confirmed.",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Choose a merchant and send a text list or photo directly to them.",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Choose advertisement",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Choose Date",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Choose shopping location",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Choose your location",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "City *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Clear customer search",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Click to view image",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Close",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Close bill",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Close customer profile",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Close feedback",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Close for now",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Close location picker",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Close menu",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Close subscription",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Closed by Admin",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Closing Time",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Closing…",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx",
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Code:",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "Collapse",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "combined",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "complete",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Complete Purchase, Redeem & Issue Points",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Complete the security check when it appears, then the SMS code will be sent.",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Completed",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldProfile.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Configure earning and redemption rates",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Configure points and expiry",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Configure where this merchant receives customer payments.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Confirm",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Confirm bonus",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Confirm Force Close",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Confirm New Password",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Confirm password",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Confirm Password",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Contact",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Contact Admin to update account details. Employee ID and work location have not been configured.",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Contact Affiliate Innovations",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Continue",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Copied!",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Copy",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Could not search this area.",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Coverage",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Coverage guide only. Merchant counts below are planned targets, not completed visits.",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Coverage Summary",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Create a new category for merchants.",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Create a new location code to assign merchants to.",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Create a new merchant login and add a new merchant to the system.",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Create Account",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx"
+    ]
+  },
+  {
+    "text": "Create an Account",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Create an account, then share its email, password and the field portal link with your manager.",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Create New Password",
+    "files": [
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Create offer",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Create Offer",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Create offer for all loyal customers",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Create offers and attract",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Create password",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Create Password",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Created At",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Creating account…",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Creating...",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "credential-delivery error",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "credential-delivery success",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "CRM & customer management",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Cumulative distinct purchasing customers: total, new and returning. Use the day slider below for exact counts.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "current",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Current Balance",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Current balance available to issue to customers",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Current Password",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "customer",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Customer",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx",
+      "src\\components\\AuthShell.tsx"
+    ]
+  },
+  {
+    "text": "Customer growth",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer growth day",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer ID / Phone",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Customer insights",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer limit",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Customer list",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer mix",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer mix period",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer order notifications",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Customer orders",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Customer profile",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer QR for Redeem + Issue",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Customer quick actions",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Customer remaining points:",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Customer reviews",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Customer Reviews & Feedback",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Customer Reviews &amp; Feedback",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customer since",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Customers",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Customers and merchants currently connected",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Customers and Rewards",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "Customers can earn and redeem points over time. Redemption uses exactly 100 points per transaction.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Customers who come back",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "daily",
+    "files": [
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Daily attendance",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Daily meeting after working hours to discuss progress.",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "daily-chart",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "danger",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\Orders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "dark",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Dashboard Access Locked",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Dashboard Summary",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "dashboard.addBuyer",
+    "files": [
+      "src\\pages\\Customers.tsx",
+      "src\\pages\\Orders.tsx"
+    ]
+  },
+  {
+    "text": "dashboard.addCustomer",
+    "files": [
+      "src\\pages\\Customers.tsx",
+      "src\\pages\\Orders.tsx"
+    ]
+  },
+  {
+    "text": "dashboard.adminSubtitle",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "dashboard.merchantSubtitle",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Date",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "day",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Day",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Day completed",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Day in progress",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Days",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Decline & Sign Out",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Delete",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Delete account and data",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Delete category",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Delete Location",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Delete merchant",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Delete your AE account",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Demo",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Description",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Description (optional)",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Discount",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Discount amount (₹)",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Discount applied and points deducted.",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Discount given per 100 points redeemed",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Discount is calculated from the purchase amount entered at checkout.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Discount percentage (%)",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Discount to apply:",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Discount type",
+    "files": [
+      "src\\pages\\RewardSettings.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Discount value",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Discount:",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Dismiss welcome",
+    "files": [
+      "src\\components\\CustomerWelcome.tsx"
+    ]
+  },
+  {
+    "text": "Display name",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Distance at Check-in",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Done",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Download full business reports",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Download visual summaries",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Draft v1 · 3 October 2026 · For business and legal review, not a compliance certification. Publishing this page does not record acceptance or obtain consent.",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Duration",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "e.g. Chittur, Palakkad",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "e.g. CUST-123 or phone number",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "e.g. Food, Retail, Health",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "e.g. Market Road",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "e.g. Palakkad Main",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "e.g. PALAKKAD-001",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "e.g. store101",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "E.g., Purchase at store, special offer etc.",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "earn",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Earn alerts & offers",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "earned",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Earned",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Earned on this page",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Earning Example:",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Earning Examples",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Edit",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Edit merchant",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Edit merchant details",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Edit product",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Edit Profile",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Email",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\FieldManagers.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Email (optional)",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Email address",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Email deletion request",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Email our support team using the button below. Include your registered phone number or email and your account role. You can make a request without reinstalling or signing in to AE.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Email Support",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "en",
+    "files": [
+      "src\\pages\\ChangePassword.tsx",
+      "src\\pages\\customer\\CustomerChangePassword.tsx",
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "EN",
+    "files": [
+      "src\\pages\\ChangePassword.tsx",
+      "src\\pages\\customer\\CustomerChangePassword.tsx",
+      "src\\pages\\customer\\Home.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Enable UPI payments",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "End date and time",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "End Day",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Ended:",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "English",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Enter 10-digit number",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Enter 6-digit Code",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Enter code here",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Enter it below to claim your points.",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Enter new category",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Enter purchase amount first",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Enter your new secure password below to regain access.",
+    "files": [
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Enterprise",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "error",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Every relationship starts with knowing your customer.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Exactly 100 points are redeemed in one bill.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Excel",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "existing",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Expired / Inactive",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Expiry date",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Explore",
+    "files": [
+      "src\\components\\CustomerLayout.tsx"
+    ]
+  },
+  {
+    "text": "Explore a day",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Export failed",
+    "files": [
+      "src\\components\\Common.tsx"
+    ]
+  },
+  {
+    "text": "Export report",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Export to Excel",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Export to PDF",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Export your data as CSV for Excel or Google Sheets.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "failed",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Failed to send reset link",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Failed to update password",
+    "files": [
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Featured Offers Near You",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Feedback & Reviews",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Feedback about",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Feedback to AE",
+    "files": [
+      "src\\pages\\More.tsx",
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Feedback:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "field",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Field Manager",
+    "files": [
+      "src\\components\\FieldProfile.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "FIELD MANAGER",
+    "files": [
+      "src\\components\\FieldHome.tsx"
+    ]
+  },
+  {
+    "text": "Field Manager Login",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Field Manager navigation",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Field Managers",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Field Operations Guide",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "field-onboarding",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "field-shell",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Filter customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Filter date",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Filter merchants by route",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "Find location",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Find nearby merchants",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Find quick answers or chat with our support team.",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Finding apps…",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Finish your current visit before starting another.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Firebase could not load the reCAPTCHA challenge. Check your connection and add localhost and 127.0.0.1 in Firebase Authorized domains.",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "First-time customer",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Five or more recorded purchases at your store. Bonus points do not count as purchases.",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Five things that matter, measured against last month.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Flat (₹)",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Flat ₹",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Flat discount amount (₹)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Flat discount amount in rupees",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Flat Rupees (₹)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "flex-end",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "flex-start",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Follow-up date *",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Follow-up required",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Follow-up:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Force close visit",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Force Close Visit",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Forgot password?",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Forgot Password?",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "form-error",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "fpr-success",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Free",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Free trial · Subscriptions coming soon",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Frequently Asked Questions",
+    "files": [
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "From",
+    "files": [
+      "src\\pages\\Feedback.tsx",
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "From orders",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "From purchase amount",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "From purchases",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "from the merchant",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Full name",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Full Name",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Future routes — TBD:",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "General",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Generate login email & password",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Generate User ID & Password",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Get directions",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Get instant support",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Give loyalty points",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Give loyalty points to",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Good",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Good Afternoon",
+    "files": [
+      "src\\components\\FieldHome.tsx"
+    ]
+  },
+  {
+    "text": "Good Evening",
+    "files": [
+      "src\\components\\FieldHome.tsx"
+    ]
+  },
+  {
+    "text": "Good Morning",
+    "files": [
+      "src\\components\\FieldHome.tsx"
+    ]
+  },
+  {
+    "text": "Good morning,",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Got it",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "GPS Accuracy",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "GPS accuracy ±",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "GPS accuracy:",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "GPS Added",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "GPS Coordinates",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "GPS Missing",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "green",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Grow · Reach · Track",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Guideline categories",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Had purchased before this month",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Have a referral code?",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Help & Support",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Help &amp; Support",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Help us improve Affiliate AE. Share your experience, suggest a feature, or tell us about an issue.",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Here’s what’s happening across your network today.",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Hi,",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Hidden",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Hide Details",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Hide password",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Hide product",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Historical balance was not captured. Future monthly balances will be recorded automatically.",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "home",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Home",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Hour",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "How are customers counted?",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "How many points a customer earns for every ₹100 spent.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "How much discount customers get for every 100 points.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "I agree to the Terms for my role.",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "I have read and acknowledge the Privacy Policy.",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "ID:",
+    "files": [
+      "src\\pages\\customer\\Scan.tsx"
+    ]
+  },
+  {
+    "text": "If an account exists with that email, a password reset link has been sent. Please check your inbox.",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "if you need help.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "If your device has no email app, send the request to",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Important information and working guidance for field staff",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Important Rules",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "In progress",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "In Progress",
+    "files": [
+      "src\\components\\FieldProfile.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "India Standard Time",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "India Standard Time (IST)",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "info",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\Customers.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\Orders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "INR 10-49: 2 pts · INR 50-99: 5 pts · INR 100+: selected rate per INR 100 · Maximum 100 pts",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Invite & Earn",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "is-merchant",
+    "files": [
+      "src\\components\\AuthShell.tsx"
+    ]
+  },
+  {
+    "text": "Issue Only",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Issue points",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Issue Points",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Issue reported",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Issued",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Items",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Items needing your attention",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "JPG or PNG, maximum 5 MB.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Jump straight into common tasks",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Keep your business moving",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "km away",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "Language",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Last 30 Days",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Last 7 Days",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Last session",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Latest 200 records per category. Summary counts below refer to loaded records, except the all-time onboarding total.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Latitude",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Leave",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "left-1",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Legal documents",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Less",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Let’s create your AE account",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Lifetime activity at your business •",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "light",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "line-clamp-2",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Linked to this merchant",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Live",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Live balance from your account",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Live data",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Live reading",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Live totals from Supabase",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Loading activity...",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Loading activity…",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Loading ads…",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Loading attendance…",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Loading favorites...",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx"
+    ]
+  },
+  {
+    "text": "Loading feedback…",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Loading merchants...",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Loading offers...",
+    "files": [
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Loading QR…",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Loading today’s route…",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Loading transactions...",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Loading visit history…",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Loading visits…",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Loading your journey...",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Loading…",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx",
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Locate AE",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Locating…",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Location",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Location Code",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Location filter",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Location Name",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Location search is unavailable. Try again.",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Location Services",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Location unavailable",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Locations",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "Login",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Login / logout",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Login to your AE account",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx"
+    ]
+  },
+  {
+    "text": "Login:",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Logout:",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Longitude",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "loyal",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Loyal customer",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Loyal customers",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Loyal customers only (5+ purchases at your store)",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Loyalty bonus",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Manage your dashboard subscription and point balance",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Manage your store, customers & rewards",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Manager",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Manager records",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Managers",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Map",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Maximum 100 points can be applied in a single bill.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Maximum 100 points issued per purchase.",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Maximum 100 points per purchase",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Maximum 5,000 points can be issued per month.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "MeitY data-protection rules",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Merchant",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\FieldManagers.tsx",
+      "src\\pages\\ProductLists.tsx",
+      "src\\pages\\Products.tsx",
+      "src\\components\\AuthShell.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Access",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Categories",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "Merchant customers",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Merchant feedback *",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Merchant feedback to AE",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Merchant GPS location must be added before a visit can start.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Merchant information",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Login",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Mapper",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Merchant onboarding and submitted updates",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Merchant payments are currently disabled.",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Profile",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "Merchant profiles viewed",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Merchant removed",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Merchant review",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Merchant route",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Merchant route map",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "Merchant updates awaiting approval",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Merchant Wallet & Access",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Merchant WhatsApp product catalogues.",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "merchant-shell",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "merchants",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx",
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Merchants",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx",
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Merchants (",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Merchants Mapped",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Merchants near you",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "merchants need valid GPS coordinates before they can be mapped.",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "Merchants on your route",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Merchants Reached measures unique merchants in loaded visit history, not geographic area coverage.",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "merchants.messageFailed",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "merchants.messageSent",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "metres",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Min",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "Min: 100, Max: 1000",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Min. 8 characters",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Minimum top-up is ₹50.",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Minute",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "Missing GPS",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "ml",
+    "files": [
+      "src\\pages\\ChangePassword.tsx",
+      "src\\pages\\customer\\CustomerChangePassword.tsx",
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Mobile number",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "mobile-bottom-nav-item",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "mobile-bottom-nav-item active",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Mode",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Monthly ₹",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "More",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "more customers",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "morning",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "muted",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "My Favorite Stores",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx",
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "My Points",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "My Profile",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "My QR Code",
+    "files": [
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\customer\\Scan.tsx"
+    ]
+  },
+  {
+    "text": "My requests",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "My Transactions",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "My visits to this merchant",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Name",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "nav.addBuyer",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "nav.addCustomer",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Nearby Merchants",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Nearby Shops",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Nearby with Google Maps",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Need assistance with your merchant account, points, QR scanning, or product lists? Chat with us on WhatsApp or email our support team.",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Need help?",
+    "files": [
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "negative",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Net payable",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Network composition",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Network snapshot",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "neutral",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "New",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "New and returning customers, month to date",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "New balance after txn",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "New customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "New Password",
+    "files": [
+      "src\\pages\\customer\\CustomerChangePassword.tsx",
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\ResetPassword.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "New to AE?",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx"
+    ]
+  },
+  {
+    "text": "New vs returning",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "New WhatsApp orders appear here automatically. Updating a request sends the customer a status message.",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "New:",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "New: one recorded visit. Returning: two or more. Customers without purchases are included.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Next",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Notifications.tsx",
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "Next →",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "No active offers",
+    "files": [
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "No active offers right now.",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "No active visits.",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "No activity in either period",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No attendance records for this selection.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "No categories found. Add one above.",
+    "files": [
+      "src\\pages\\MerchantCategories.tsx"
+    ]
+  },
+  {
+    "text": "No Category",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "No customers linked to this merchant.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "No customers today.",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "No customers with five purchases yet.",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "No favorite stores yet",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx"
+    ]
+  },
+  {
+    "text": "No feedback has been submitted yet.",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "No field managers created yet.",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "No guidelines match your search. Try another keyword.",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "No image added",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "No locations found. Add one above.",
+    "files": [
+      "src\\pages\\Locations.tsx"
+    ]
+  },
+  {
+    "text": "No matching area found. Try the town name or postcode.",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "No matching customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No matching merchants.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "No matching visits.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "No merchant feedback yet.",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "No merchants are assigned to this route yet. Select their route during onboarding.",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "No merchants assigned to this location yet.",
+    "files": [
+      "src\\pages\\LocationProfile.tsx"
+    ]
+  },
+  {
+    "text": "No merchants found",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "No merchants found.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "No merchants match your search.",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "No merchants onboarded yet.",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "No new customer orders.",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "No point activity recorded for this period.",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "No previous baseline",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No product lists received yet.",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "No product lists sent yet.",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "No product lists submitted yet.",
+    "files": [
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "No products yet.",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "No purchase or redemption activity yet.",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "No purchases recorded in this month.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No purchases recorded yet.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No purchases yet",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No recent activity",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "No recent transactions.",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "No records.",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx",
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "No requests yet.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "No reviews yet.",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "No saved GPS locations match these filters.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "No sessions",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "No transactions found.",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "No visits recorded",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "No visits recorded in this period.",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "No visits recorded yet.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "No visits yet",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "No WhatsApp customer orders yet.",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "No work requests.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Non-field work",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Non-field Work",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "none",
+    "files": [
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "None",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Not configured",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "not provided",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Not provided",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Not recorded",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx",
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Not selected",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "not sent",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Not yet",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Notes (optional)",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Notifications",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "of",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "of this month’s purchasing customers had bought from you in an earlier month.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "off",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Offer limit",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Offers",
+    "files": [
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\customer\\Offers.tsx",
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Offers follow the existing Admin approval process and are visible only to eligible customers.",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Offers use your existing offer workflow; they are not sent privately from this profile.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "offers.adminSubtitle",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.create",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.created",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.editResubmit",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.merchantSubtitle",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.resubmit",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.retry",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.retrying",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.submit",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offers.updated",
+    "files": [
+      "src\\pages\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "offline",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Offline",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "On a ₹",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "On a ₹1,000 order",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Onboard Merchant",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Onboarded merchant",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Onboarding progress",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Onboarding steps",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "online",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "open",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Open active visit",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Open customer QR codes and existing tools",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Open Field Manager portal ↗",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Open in Google Maps ↗",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Open menu",
+    "files": [
+      "src\\components\\CustomerLayout.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Open merchant",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Open My Profile",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Open Visit",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Open Visit Report",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Open your preferred app",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Opening an email draft does not send your request or delete your account. Send the email to submit your request. Never include a password, OTP, UPI PIN or full payment-card details.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Opening Time",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Opening…",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Opens your UPI app only. No payment details are shared and AE does not confirm payment.",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Operational guidance reflects the current app. KYC rules, support contacts and the company code of conduct are not yet approved or configured.",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Operations pulse",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Optional marketing and device permissions are separate from this acknowledgement.",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Optional visit report image",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "order",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Orders",
+    "files": [
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Orders customers request through AE WhatsApp.",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Orders, points, and retention for this store only.",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Other",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Other UPI app",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "overview",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "page",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\components\\AuthShell.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Page",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Paid subscription active",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "password",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Password",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\FieldManagers.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Password change failed",
+    "files": [
+      "src\\pages\\ChangePassword.tsx",
+      "src\\pages\\customer\\CustomerChangePassword.tsx"
+    ]
+  },
+  {
+    "text": "Password change required",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Password must be at least 8 characters long.",
+    "files": [
+      "src\\pages\\customer\\CustomerChangePassword.tsx"
+    ]
+  },
+  {
+    "text": "Password Reset",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Password Reset!",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Password update failed.",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Patterns from recorded purchases in the selected month.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Pause slides",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Pay",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Pay to",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Pay with a UPI app",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "Payment & UPI settings",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Payment requests",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "Payment requests unavailable.",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "Payments",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "paytm",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "PDF",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Peak",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "pending",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Pending Liability",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Pending payments",
+    "files": [
+      "src\\components\\CustomerPaymentRequests.tsx"
+    ]
+  },
+  {
+    "text": "Pending reviews",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Pending updates",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "per 100 points (fixed 100 points per bill)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Percentage (%)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Performance period",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Performance Summary",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Phone",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Phone Number",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "phonepe",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Photo not added",
+    "files": [
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "Pincode *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "pink",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Plan",
+    "files": [
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Plan details will be announced when subscriptions are ready.",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Plan your merchant visits for today.",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Planned: 25–30 stores",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Play slides",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Please do not include passwords, OTPs, or customer personal information.",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Please wait…",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "PM",
+    "files": [
+      "src\\components\\TimeInput.tsx"
+    ]
+  },
+  {
+    "text": "Point updates via WhatsApp",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "points",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\customer\\Notifications.tsx",
+      "src\\components\\LoyalCustomers.tsx",
+      "src\\components\\MerchantPointBalance.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Points",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\RewardSettings.tsx",
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Points (1–100)",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Points &amp; Purchases",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Points added per subscription",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points are capped at 100 per purchase",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points Breakdown",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Points can be earned and used across multiple transactions.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points expire 1 year from issue date",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Points given per ₹100 purchase",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points graph date",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Points graph period",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Points issued",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Points issued vs redeemed",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Points options per ₹100 purchase",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points per ₹100",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "points per ₹100 purchase (maximum 100 points per bill)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Points per INR 100",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Points redeemed",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Points to add",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Points to be added",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Points to be issued",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Points to Redeem",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Points to redeem (fixed)",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Points to Redeem (fixed)",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Policy &amp; Guidelines",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "positive",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "POST",
+    "files": [
+      "src\\pages\\Offers.tsx",
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Premium",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Preparing visit…",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Previous",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx",
+      "src\\pages\\customer\\Notifications.tsx",
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\components\\FieldMerchantDirectory.tsx"
+    ]
+  },
+  {
+    "text": "Price",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Price (INR)",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "primary",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "privacy",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Privacy contact",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Privacy Policy",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Problems (optional)",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Problems:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Processing...",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Processing…",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Product",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Product added",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Product catalogue",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Product List",
+    "files": [
+      "src\\components\\CustomerLayout.tsx"
+    ]
+  },
+  {
+    "text": "Product list full preview",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Product lists",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Product Lists",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Product name",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Product updated",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Products",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Products customers can choose in the AE WhatsApp chat.",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Profile",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx",
+      "src\\components\\CustomerLayout.tsx"
+    ]
+  },
+  {
+    "text": "Profile details are read-only · Full authorised contact details · Latest 200 records per activity category.",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "Profile loaded, but activity logging is unavailable. Admin must apply the activity migration.",
+    "files": [
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "Profile sections",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Profile-view activity could not be recorded.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Profile-view tracking is unavailable.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "profiles",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Provider",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "pts",
+    "files": [
+      "src\\pages\\Customers.tsx",
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Pts",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "pts · Fixed 100 pts ·",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "purchase",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Purchase",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Purchase activity by weekday and six-hour period in India Standard Time",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Purchase amount (₹)",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Purchase and redemption activity",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Purchase more points to continue issuing rewards to your customers. (1 Point = ₹1)",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Purchase rhythm",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Purchase rhythm date",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Purchase rhythm period",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "purchases",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Purchases",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Purchases on this page",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "purchasing customers. This is a returning-customer share, not a cohort retention rate.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Push Notifications",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "PUT",
+    "files": [
+      "src\\pages\\Offers.tsx",
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "queued",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Quick actions",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Quick answers",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Quick insights",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Quote needed",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Rating (optional)",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Reached",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Read anonymous customer messages about your store",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Read the AE Privacy Policy",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Read the Privacy Policy (",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Read your Terms (",
+    "files": [
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Ready to use",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Reason",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Reason (mandatory)",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Reason *",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Received",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Recent Activity",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Recipient and payable amount open in your UPI app. Check the recipient before paying. AE does not confirm payment.",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Record a purchase to get started",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Record notes, problems, feedback and follow-up details in the visit report. Review everything before ending the visit.",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Record the merchant’s feedback",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "recorded purchases",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Recorded purchases on this page",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Recorded visits",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Recorded visits by six-hour slot",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Recorded visits by week of this month",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Recorded visits Monday–Sunday",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Recover access to your account by entering your email address below.",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Redeem + Issue",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Redeem + Receive",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Redeem points",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Redeem Points",
+    "files": [
+      "src\\pages\\customer\\Home.tsx",
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Redeem QR",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "redeemed",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Redeemed",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Redeemed on this page",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "redemption",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Redemption",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Redemption Example:",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Redemption Examples",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Redemption Successful",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Redemption uses exactly 100 points",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Redemptions",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Refer a Friend",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "registration.registering",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "registration.registerSend",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Reject",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "rejected",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Remaining balance from the previous month",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Remaining pts:",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Remove / retake",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Remove favorite",
+    "files": [
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "Remove image",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Remove photo",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Report image preview",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Reporting month",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Reports",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Request",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Request account and data deletion",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Requests are submitted as pending, not automatically approved.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Resend OTP",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Reset Password",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Resetting...",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Retake optional image",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Retake selfie",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Retake shop photo",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Retention",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Retry",
+    "files": [
+      "src\\components\\CustomerAds.tsx",
+      "src\\components\\FieldAttendance.tsx",
+      "src\\components\\FieldMerchantMapper.tsx",
+      "src\\components\\FieldRoutePlanning.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Return to Login",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Return within 50 metres to submit and end this visit.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Returning",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Returning customer",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "returning out of",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Revenue recorded for the selected period",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Review",
+    "files": [
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Review merchant details",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Review reference:",
+    "files": [
+      "src\\pages\\Legal.tsx"
+    ]
+  },
+  {
+    "text": "Review visit details",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Review your experience with this merchant",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Reward Settings",
+    "files": [
+      "src\\pages\\More.tsx",
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Rewards Summary",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "right-1",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "roadmap",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Role",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Route map",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "Route Selection",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Sales and customer growth",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "Sales by six-hour slot · INR",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Sales by week of this month · INR",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Sales Monday–Sunday · INR",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Sales overview",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Sales overview date",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Sales overview period",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "satellite",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Satellite",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Save",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Save Admin Settings",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Save changes",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Save more at AE businesses near you",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Save payment settings",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Save product",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Save Settings",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Save subscription & features",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Saved visit report image",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Saving...",
+    "files": [
+      "src\\pages\\Products.tsx",
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Saving…",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\RewardSettings.tsx",
+      "src\\components\\FieldAttendance.tsx",
+      "src\\components\\FieldRoutePlanning.tsx",
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "scaleX(-1)",
+    "files": [
+      "src\\components\\LiveCamera.tsx"
+    ]
+  },
+  {
+    "text": "Scan another customer",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Scan customer QR",
+    "files": [
+      "src\\pages\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Scan customer QR to apply discount",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Scan QR",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "scanner.complete",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "scanner.processing",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "scanner.scan",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "scanner.starting",
+    "files": [
+      "src\\components\\QrScanner.tsx"
+    ]
+  },
+  {
+    "text": "Search",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Search address or place",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Search customer orders",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Search customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Search for a place or click the exact location.",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Search guidelines",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Search in policy…",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Search location, store or merchant ID…",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Search merchant locations",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Search merchants",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Search merchants for check-in",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Search merchants, locations…",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Search merchants...",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Search merchants…",
+    "files": [
+      "src\\components\\FieldMerchantDirectory.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Search name, phone or customer ID",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Search products",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Searching…",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "secondary",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "See shops near your selected area.",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Select a merchant",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Select a rating",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Select a recorded visit or check in at a merchant to view activity.",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Select category",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Select location on map",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Select Location on Map",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Select merchant",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Select merchant location",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Select reason",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Select route",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Select route?",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Select stops in visit order, using the map or checkboxes.",
+    "files": [
+      "src\\components\\FieldRouteMap.tsx"
+    ]
+  },
+  {
+    "text": "selected",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx",
+      "src\\components\\FieldRoutePlanning.tsx",
+      "src\\components\\FieldVisits.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Selected graph period · purchases and loyalty rewards",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Selected graph period · redeemed at your shop",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Send a new product list",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Send feedback",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Send Product List",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Send Reset Link",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Send SMS Code",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Send via WhatsApp",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Sending",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Sending code…",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Sending...",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Sending…",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "sent",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Sent",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "Sent to merchants",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Set how customers earn points and how they can redeem them at your store.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Setting up AutoPay...",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Setup AutoPay (₹200/mo)",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Setup Your Password",
+    "files": [
+      "src\\pages\\customer\\CustomerChangePassword.tsx"
+    ]
+  },
+  {
+    "text": "Share Code",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Share suggestions or report an app issue",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Share your code with friends. When they sign up, you both get",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Share your experience",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Shop hours:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Shop Image",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Shop photo captured for this visit",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Shop photo preview",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Shop photo review",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Show password",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Show this product in WhatsApp",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Show this QR to an AE merchant to earn points for every purchase.",
+    "files": [
+      "src\\pages\\customer\\Scan.tsx"
+    ]
+  },
+  {
+    "text": "Show this QR to your merchant to redeem 100 points and earn points on your purchase.",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Sign in failed",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Sign in to visit merchants and submit field reports",
+    "files": [
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Sign out",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Sign Out",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Signed in",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Signing in…",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\Login.tsx"
+    ]
+  },
+  {
+    "text": "Signing out…",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Simple reports. Clear decisions.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "six-hour",
+    "files": [
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Small insights. Better decisions.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "smooth",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Sorted by distance from your current location",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Sponsored",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Start a merchant visit",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Start date and time",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Start Day",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Start Visit",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Start your day, record attendance and manage work requests.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Started:",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx",
+      "src\\components\\AdminForceCloseVisit.tsx",
+      "src\\components\\AdminManagerOverview.tsx",
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Starting…",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "State *",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Statistics use the loaded visit history (up to 200 records), not lifetime totals.",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "status",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Status",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\FieldManagers.tsx",
+      "src\\pages\\ProductLists.tsx"
+    ]
+  },
+  {
+    "text": "step",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Still need help?",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Store address",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Store Image",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Store Preview",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Storefront",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Street, city",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Submit & End Visit",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Submit request",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Submit review",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Submitted",
+    "files": [
+      "src\\pages\\FieldManagers.tsx"
+    ]
+  },
+  {
+    "text": "Submitted product list",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Submitted update",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Subscription",
+    "files": [
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Subscription & feature access",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Subscription coming soon",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Subscription duration (days)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Subscription plan grid",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Subscription price (₹)",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "Subscription Status",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "success",
+    "files": [
+      "src\\pages\\AddCustomer.tsx",
+      "src\\pages\\CustomerOrders.tsx",
+      "src\\pages\\Customers.tsx",
+      "src\\pages\\Merchants.tsx",
+      "src\\pages\\Orders.tsx",
+      "src\\pages\\ProductLists.tsx",
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Successfully Redeemed!",
+    "files": [
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Suggestions and app issues submitted by merchants.",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Summary",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Sunday:",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Support will verify that the account belongs to you before processing the request. Specify if you want to delete the whole account and its associated personal data or only particular data.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "Take attendance selfie",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Take Photo",
+    "files": [
+      "src\\components\\LiveCamera.tsx"
+    ]
+  },
+  {
+    "text": "Tap Locate AE to find merchants near you.",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Tap the heart icon on a merchant to save it here.",
+    "files": [
+      "src\\pages\\customer\\Favorites.tsx"
+    ]
+  },
+  {
+    "text": "Tap to set exact store location",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Tap to view full list",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Tell the AE team what works well or what we can improve…",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Tell us about the AE app",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Temporary Login Password",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "Terms & Privacy",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Terms &amp; Privacy",
+    "files": [
+      "src\\pages\\Legal.tsx",
+      "src\\components\\LegalGate.tsx"
+    ]
+  },
+  {
+    "text": "Territory coverage and manager assignment require backend support and are not enabled yet.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Test",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "text",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx",
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Login.tsx",
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "text-[#087a4b]",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "text-[#087a4b] border-b-2 border-[#087a4b]",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "text-[#22c55e]",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "text-[#c43745]",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "text-amber-400",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "text-gray-300",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "text-gray-400 hover:text-gray-600",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "text-gray-900",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Thank you for your loyalty! 💙",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Thank you! Your feedback has been sent to the AE team.",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "The customer will see: “You received",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "These points are added to the merchant’s existing balance.",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "These values apply to new merchant subscriptions and the point choices shown to merchants.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "This awards bonus points without recording a purchase.",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "This customer needs 100 points at this store to redeem. Choose Issue Only to continue.",
+    "files": [
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "This merchant has no saved GPS location.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "This month",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "This Month",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "This OTP has expired. Tap Resend OTP and enter the newest code.",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "This password has also been sent via WhatsApp. The customer will be forced to change it on their first login.",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "This week",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "This Week",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "time",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "To",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "today",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\MerchantPoints.tsx",
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Today",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx",
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Today’s route",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "Today's Visits (",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Toggle Dark Mode",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Too many attempts. Please wait a few minutes and try again.",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx",
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Top Customers Today",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Top Up Points",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Total AE Points",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Total Earned",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Total Merchants",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Total orders",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Total Points Issued",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Total Points Redeemed",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Total Redeemed",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Total spent",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "total visits",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Total Visits",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Town, area or postcode",
+    "files": [
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Track field visits, check-ins and activity for your merchants",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Transaction",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Transaction Amount (₹)",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\RedemptionModal.tsx"
+    ]
+  },
+  {
+    "text": "Transaction type",
+    "files": [
+      "src\\components\\QrScanner.tsx",
+      "src\\components\\ScannedCheckout.tsx"
+    ]
+  },
+  {
+    "text": "Transactions",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx",
+      "src\\pages\\ReadOnlyProfiles.tsx"
+    ]
+  },
+  {
+    "text": "Transactions today",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "true",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "Try again",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "Try another search or customer filter.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Type the products you need...",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Unable to create QR. Please reload this page.",
+    "files": [
+      "src\\pages\\customer\\Rewards.tsx"
+    ]
+  },
+  {
+    "text": "Unable to load · Retry",
+    "files": [
+      "src\\components\\MerchantPointBalance.tsx"
+    ]
+  },
+  {
+    "text": "Unable to load feedback.",
+    "files": [
+      "src\\pages\\Feedback.tsx"
+    ]
+  },
+  {
+    "text": "Unavailable",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Understand your customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Uninstalling AE or signing out does not delete backend records. Deleting an AE account does not reverse payments already made directly to a merchant or remove that merchant's independent records.",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "unread",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Update",
+    "files": [
+      "src\\pages\\CustomerOrders.tsx"
+    ]
+  },
+  {
+    "text": "Update Password",
+    "files": [
+      "src\\pages\\ResetPassword.tsx",
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Updated",
+    "files": [
+      "src\\pages\\Products.tsx"
+    ]
+  },
+  {
+    "text": "Updating chart...",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Updating...",
+    "files": [
+      "src\\pages\\ResetPassword.tsx"
+    ]
+  },
+  {
+    "text": "Updating…",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "UPI ID",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Upload a product-list photo",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Upload Photo — JPG or PNG",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Upload Photo (required)",
+    "files": [
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Uploading shop photo…",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Use a different number",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Use current GPS",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Use Current Location",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\components\\CustomerLocationBar.tsx"
+    ]
+  },
+  {
+    "text": "Use my current location",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Use only when a manager cannot return to the shop to check out. No checkout GPS will be recorded.",
+    "files": [
+      "src\\components\\AdminForceCloseVisit.tsx"
+    ]
+  },
+  {
+    "text": "Use these instructions for merchant onboarding and visits. Official company policies require Admin approval.",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "Use this location",
+    "files": [
+      "src\\pages\\FieldManager.tsx",
+      "src\\pages\\Merchants.tsx"
+    ]
+  },
+  {
+    "text": "Used for rewards",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "User ID",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "Valid till",
+    "files": [
+      "src\\pages\\customer\\Offers.tsx"
+    ]
+  },
+  {
+    "text": "Values above each pair: issued / redeemed. Redemption does not replenish your available allocation.",
+    "files": [
+      "src\\pages\\MerchantPoints.tsx"
+    ]
+  },
+  {
+    "text": "Vandithalavam, Nallepily, Kozhijam Para, 5th Mile",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Verify & Create Account",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Verify &amp; Join",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Verify your phone",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "View all",
+    "files": [
+      "src\\pages\\customer\\Home.tsx",
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "View All",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "View all customer orders",
+    "files": [
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "View attendance reference photo",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "View Details",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "View FAQs",
+    "files": [
+      "src\\components\\FieldPolicy.tsx"
+    ]
+  },
+  {
+    "text": "View full image",
+    "files": [
+      "src\\pages\\FieldManager.tsx"
+    ]
+  },
+  {
+    "text": "View location on map",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "View map",
+    "files": [
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "View merchant",
+    "files": [
+      "src\\pages\\Merchants.tsx",
+      "src\\components\\FieldRoutePlanning.tsx"
+    ]
+  },
+  {
+    "text": "View merchant locations and identify stores that need GPS coordinates.",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "View on Map ↗",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "View purchase history",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "View reference photos",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "View reports",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "View shop",
+    "files": [
+      "src\\components\\CustomerShopCard.tsx"
+    ]
+  },
+  {
+    "text": "View your account, field activity and security settings",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "visit",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Visit actions are available only within 50 metres with a fresh, accurate GPS reading. Outside this radius, the visit remains open; it is not ended automatically.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Visit actions available within 50 metres",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Visit history",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Visit in progress",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Visit Notes",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Visit our Help Center or contact support.",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "Visit Report",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Visiting hours:",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "visits",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx",
+      "src\\components\\Layout.tsx"
+    ]
+  },
+  {
+    "text": "Visits &amp; Check-in",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "Visits this month",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "w-2 bg-gray-300",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "w-5 bg-blue-600",
+    "files": [
+      "src\\components\\CustomerAds.tsx"
+    ]
+  },
+  {
+    "text": "waiting",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Waiting for a fresh reading",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Waiting for GPS location…",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "We are working on subscriptions. No subscription payment is required during the free pilot.",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "We could not determine your location.",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "We'll send a 6-digit SMS code to your number.",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "We'll send a password reset link to your email.",
+    "files": [
+      "src\\pages\\ForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "week",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "weekly",
+    "files": [
+      "src\\pages\\Dashboard.tsx",
+      "src\\pages\\More.tsx"
+    ]
+  },
+  {
+    "text": "Weekly off · On-call support",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Weekly route reference",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Weekly target:",
+    "files": [
+      "src\\components\\FieldRouteReference.tsx"
+    ]
+  },
+  {
+    "text": "Welcome back",
+    "files": [
+      "src\\pages\\customer\\CustomerLogin.tsx"
+    ]
+  },
+  {
+    "text": "What happened during your visit?",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "What happens next",
+    "files": [
+      "src\\pages\\AccountDeletion.tsx"
+    ]
+  },
+  {
+    "text": "What needs attention today",
+    "files": [
+      "src\\pages\\AdminDashboard.tsx"
+    ]
+  },
+  {
+    "text": "WhatsApp",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "WhatsApp Alerts",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "WhatsApp message failed",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "WhatsApp QR message sent",
+    "files": [
+      "src\\pages\\AddCustomer.tsx"
+    ]
+  },
+  {
+    "text": "When customers visit",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Where customers meet business and beyond",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "white",
+    "files": [
+      "src\\pages\\Dashboard.tsx"
+    ]
+  },
+  {
+    "text": "whitespace-pre-wrap",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Who contributes to your sales?",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "With GPS Location",
+    "files": [
+      "src\\components\\FieldMerchantMapper.tsx"
+    ]
+  },
+  {
+    "text": "Within 50 m",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Within 50 metres. Ready to submit.",
+    "files": [
+      "src\\pages\\FieldMerchantVisit.tsx"
+    ]
+  },
+  {
+    "text": "Work Details",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Work Location",
+    "files": [
+      "src\\components\\FieldProfile.tsx"
+    ]
+  },
+  {
+    "text": "Work requests unavailable.",
+    "files": [
+      "src\\components\\AdminManagerOverview.tsx"
+    ]
+  },
+  {
+    "text": "Write a review",
+    "files": [
+      "src\\pages\\customer\\Explore.tsx"
+    ]
+  },
+  {
+    "text": "Yearly ₹",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "yet",
+    "files": [
+      "src\\components\\FieldVisits.tsx"
+    ]
+  },
+  {
+    "text": "You are on a free trial.",
+    "files": [
+      "src\\components\\SubscriptionModal.tsx"
+    ]
+  },
+  {
+    "text": "You can change these settings anytime.",
+    "files": [
+      "src\\pages\\RewardSettings.tsx"
+    ]
+  },
+  {
+    "text": "You must set a permanent password for your customer account to continue.",
+    "files": [
+      "src\\pages\\customer\\CustomerChangePassword.tsx"
+    ]
+  },
+  {
+    "text": "You received",
+    "files": [
+      "src\\pages\\customer\\Notifications.tsx"
+    ]
+  },
+  {
+    "text": "your",
+    "files": [
+      "src\\components\\LoyalCustomers.tsx"
+    ]
+  },
+  {
+    "text": "Your AE Points",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Your attendance location is available to Admin.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Your attendance selfie preview",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Your bill",
+    "files": [
+      "src\\components\\CustomerBillPopup.tsx"
+    ]
+  },
+  {
+    "text": "Your busiest day this month",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Your busiest times will appear after you record customer purchases.",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Your business health",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "YOUR BUSINESS, CLOSER",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Your Customer Journey",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Your customer password has been successfully reset.",
+    "files": [
+      "src\\pages\\customer\\CustomerForgotPassword.tsx"
+    ]
+  },
+  {
+    "text": "Your customers",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  },
+  {
+    "text": "Your Details",
+    "files": [
+      "src\\pages\\customer\\CustomerSignup.tsx"
+    ]
+  },
+  {
+    "text": "Your feedback",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Your journey is currently unavailable.",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Your location is ready. No merchant locations have been added yet.",
+    "files": [
+      "src\\components\\CustomerNearbyMap.tsx"
+    ]
+  },
+  {
+    "text": "Your location is recorded when you submit attendance and is visible to Admin.",
+    "files": [
+      "src\\components\\FieldAttendance.tsx"
+    ]
+  },
+  {
+    "text": "Your merchants. Your route. Your day.",
+    "files": [
+      "src\\components\\FieldHome.tsx"
+    ]
+  },
+  {
+    "text": "Your monthly subscription is inactive. Set up AutoPay for ₹200/month to restore dashboard access. Each renewal grants you 100 reward points!",
+    "files": [
+      "src\\components\\MerchantWallet.tsx"
+    ]
+  },
+  {
+    "text": "Your name",
+    "files": [
+      "src\\pages\\customer\\Profile.tsx"
+    ]
+  },
+  {
+    "text": "Your Points",
+    "files": [
+      "src\\pages\\customer\\Transactions.tsx"
+    ]
+  },
+  {
+    "text": "Your purchases across AE merchants.",
+    "files": [
+      "src\\pages\\customer\\Home.tsx"
+    ]
+  },
+  {
+    "text": "Your QR Code",
+    "files": [
+      "src\\pages\\customer\\Scan.tsx"
+    ]
+  },
+  {
+    "text": "Your rating (optional)",
+    "files": [
+      "src\\components\\MerchantFeedback.tsx"
+    ]
+  },
+  {
+    "text": "Your Referral Code",
+    "files": [
+      "src\\pages\\customer\\Referral.tsx"
+    ]
+  },
+  {
+    "text": "Your relationships start here",
+    "files": [
+      "src\\pages\\MerchantOverview.tsx"
+    ]
+  }
+]

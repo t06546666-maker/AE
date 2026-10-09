@@ -30,7 +30,7 @@ export function MerchantPoints({ user }: { user: UserProfile }) {
       <div className="mo-columns" style={{ margin: '20px 0', flexWrap: 'wrap' }}>
         <section className="mo-panel"><h2>{uiText("Carried forwarded from Last Month")}</h2><h1 aria-label={data.carriedForward === null ? uiText('Not recorded') : undefined}>{data.carriedForward === null ? '—' : number(data.carriedForward)}</h1></section>
         <section className="mo-panel"><h2>{uiText("Points issued by You")}</h2><h1>{number(issued.reduce((s,b) => s+b.sales,0))}</h1></section>
-        <section className="mo-panel"><h2>{uiText("Points redeemed by You")}</h2><h1>{number(redeemed.reduce((s,b) => s+b.sales,0))}</h1></section>
+        <section className="mo-panel"><h2>{uiText("Points redeemed by Customer")}</h2><h1>{number(redeemed.reduce((s,b) => s+b.sales,0))}</h1></section>
       </div>
     </>}
     <section className="mo-panel"><div className="mo-panel-heading"><div><h2>{uiText("Points issued vs redeemed")}</h2><p>{uiText("AE Points · ")}{period === 'date' ? date : period === 'today' ? uiText("Today") : period === 'week' ? uiText("This week") : uiText("This month")}</p></div><div><select aria-label={uiText("Points graph period")} value={period} onChange={e => setPeriod(e.target.value as typeof period)}><option value="today">{uiText("Today")}</option><option value="week">{uiText("This Week")}</option><option value="month">{uiText("This Month")}</option><option value="date">{uiText("Choose Date")}</option></select>{period === 'date' && <input type="date" aria-label={uiText("Points graph date")} max={indiaDate(new Date())} value={date} onChange={e => { if(e.target.value) setDate(e.target.value); }}/>}</div></div>
