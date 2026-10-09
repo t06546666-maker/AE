@@ -1615,5 +1615,11 @@
   "ui.How often customers shop in the selected period": "തിരഞ്ഞെടുത്ത കാലയളവിൽ ഉപഭോക്താക്കൾ എത്ര തവണ വാങ്ങുന്നു",
   "ui.No purchases recorded in this period.": "ഈ കാലയളവിൽ വാങ്ങലുകളൊന്നും രേഖപ്പെടുത്തിയിട്ടില്ല.",
   "ui.Customer frequency period": "ഉപഭോക്തൃ സന്ദർശനങ്ങളുടെ കാലയളവ്",
-  "ui.Offer performance period": "ഓഫറിന്റെ പ്രകടന കാലയളവ്"
+  "ui.Offer performance period": "ഓഫറിന്റെ പ്രകടന കാലയളവ്",
+  "ui.No merchants match this route and search.": "ഈ റൂട്ടിലും തിരച്ചിലിലും പൊരുത്തപ്പെടുന്ന കടകളില്ല.",
+  "ui.Weekend offer": "വാരാന്ത്യ ഓഫർ",
+  "ui.First-purchase offer": "ആദ്യ വാങ്ങലിനുള്ള ഓഫർ",
+  "ui.Loyal-customer offer": "സ്ഥിരം ഉപഭോക്താക്കൾക്കുള്ള ഓഫർ",
+  "ui.Demo preview": "മാതൃകാ കാഴ്ച",
+  "ui.Sample data for reference only. Date selection does not change these example values.": "റഫറൻസിനുള്ള മാതൃകാ വിവരങ്ങൾ മാത്രം. തീയതി തിരഞ്ഞെടുക്കുമ്പോൾ ഈ ഉദാഹരണത്തിലെ സംഖ്യകൾ മാറില്ല."
 }

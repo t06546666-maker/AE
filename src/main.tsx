@@ -8,6 +8,7 @@ import './i18n';
 import './styles.css';
 import './customer-glass.css';
 import './customer-home-polish.css';
+import './malayalam-layout.css';
 
 window.setTimeout(() => {
   sessionStorage.removeItem('ae_script_refresh');

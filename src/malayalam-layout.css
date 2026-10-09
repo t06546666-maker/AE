@@ -1,0 +1,43 @@
+/* Malayalam copy needs natural wrapping and more vertical room.
+   Scope adjustments to interface containers; never reposition shop images. */
+html[lang="ml"] body { font-family: "Nirmala UI", "Noto Sans Malayalam", system-ui, sans-serif; }
+html[lang="ml"] :is(main,section,article,header,nav,form,fieldset,div,label,button,a,input,select,textarea,dl,dt,dd) { min-width:0; box-sizing:border-box; }
+html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,a,dt,dd,strong,small) { overflow-wrap:anywhere; word-break:normal; }
+html[lang="ml"] :is(input,select,textarea) { max-width:100%; }
+html[lang="ml"] :is(.panel,.modal,.mo-panel,.mobile-transactions,.field-merchant-card,.field-location-card) { max-width:100%; }
+html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,select,a,dt,dd) { letter-spacing: normal; line-height: 1.6; }
+html[lang="ml"] :is(.panel-heading,.page-header,.mo-panel-heading,.mobile-transaction-item) { flex-wrap: wrap; }
+html[lang="ml"] :is(.page-header>div,.mo-panel-heading>div,.mobile-transaction-info,.fv-merchant>div) { min-width:0; }
+html[lang="ml"] :is(.button,.mo-header-action,.mo-tabs a,.mo-segmented button,.fv-tabs button) { white-space:normal; height:auto; overflow-wrap:break-word; }
+html[lang="ml"] :is(.mo-header-action span,.mo-customer-name strong,.mobile-transaction-info h4) { white-space:normal; text-overflow:clip; overflow-wrap:break-word; }
+html[lang="ml"] :is(.button,.mobile-transaction-item,.fv-merchant,.ae-home-shortcuts a) > svg { flex-shrink:0; }
+html[lang="ml"] :is(.ae-home-shortcuts,.mo-stats,.mo-tool-grid) > * { min-width:0; }
+html[lang="ml"] .ae-home-shortcuts a { justify-content:center; min-height:110px; height:auto; gap:10px; }
+html[lang="ml"] .ae-home-shortcuts a span { line-height:1.7; white-space:normal; overflow-wrap:break-word; }
+html[lang="ml"] :is(.customer-shop-card,.ae-shop-gallery,.fv-merchant,.mo-customer) img { flex-shrink:0; max-width:100%; }
+html[lang="ml"] .ae-shop-gallery img { display:block; width:100%; object-fit:cover; }
+html[lang="ml"] .fv-merchant { align-items:center; }
+html[lang="ml"] :is(.mo-segmented,.fv-tabs) { align-items:stretch; }
+html[lang="ml"] :is(.panel-heading,.mo-panel-heading) select { max-width:100%; }
+html[lang="ml"] :is(.fv-badge,.tag,.field-card-title) { white-space:normal; }
+html[lang="ml"] .field-page-title { flex-wrap:wrap; gap:12px; }
+html[lang="ml"] .field-merchant-card>img { width:64px; height:64px; object-fit:cover; flex:0 0 64px; }
+html[lang="ml"] .field-merchant-card>div { flex:1; min-width:0; }
+html[lang="ml"] :is(.mobile-bottom-nav,.field-bottom-nav) { align-items:stretch; }
+html[lang="ml"] .mobile-bottom-nav-item { flex:1 1 0; min-width:0; padding-inline:3px; }
+html[lang="ml"] .mobile-bottom-nav-item span { white-space:normal; font-size:10px; line-height:1.5; text-align:center; }
+html[lang="ml"] :is(.mobile-transaction-item,.fv-merchant,.fv-visit) { gap:8px; }
+html[lang="ml"] .fv-merchant button { flex:0 1 95px; white-space:normal; }
+@media(max-width:480px) {
+ html[lang="ml"] .ae-home-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ html[lang="ml"] .mo-panel-heading { align-items:flex-start; gap:12px; }
+ html[lang="ml"] .mo-panel-heading>div { max-width:100%; }
+ html[lang="ml"] .mo-tabs a { padding:8px 5px; }
+ html[lang="ml"] .customer-modern-greeting h2 { flex-wrap:wrap; }
+ html[lang="ml"] .customer-home-points { padding-right:92px!important; }
+ html[lang="ml"] .customer-home-points:before { width:85px; height:100px; }
+ html[lang="ml"] .customer-home-points>div>svg { right:-71px; }
+ html[lang="ml"] .fv-activity dl { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+ html[lang="ml"] :is(.two-column-form,.form-grid) { grid-template-columns:minmax(0,1fr); }
+ html[lang="ml"] :is(.page-actions,.modal-actions,.form-actions) { flex-wrap:wrap; gap:8px; }
+}

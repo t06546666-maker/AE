@@ -1777,5 +1777,11 @@
   "ui.How often customers shop in the selected period": "How often customers shop in the selected period",
   "ui.No purchases recorded in this period.": "No purchases recorded in this period.",
   "ui.Customer frequency period": "Customer frequency period",
-  "ui.Offer performance period": "Offer performance period"
+  "ui.Offer performance period": "Offer performance period",
+  "ui.No merchants match this route and search.": "No merchants match this route and search.",
+  "ui.Weekend offer": "Weekend offer",
+  "ui.First-purchase offer": "First-purchase offer",
+  "ui.Loyal-customer offer": "Loyal-customer offer",
+  "ui.Demo preview": "Demo preview",
+  "ui.Sample data for reference only. Date selection does not change these example values.": "Sample data for reference only. Date selection does not change these example values."
 }

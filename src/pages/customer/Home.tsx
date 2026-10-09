@@ -12,7 +12,6 @@ import { apiFetch } from '../../api';
 import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
-import { CustomerAds } from '../../components/CustomerAds';
 import './home-reference.css';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
@@ -74,7 +73,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       </header>
 
       <div className="px-4 pt-2 space-y-6">
-        <CustomerAds />
         {/* Greeting */}
         <div className="customer-modern-greeting">
           <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">{uiText(" Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
@@ -105,7 +103,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <Link to="/customer/explore" className="shops"><ShoppingBag/><span>{uiText("Nearby Shops")}</span></Link>
           <Link to="/customer/offers" className="offers"><Tags/><span>{uiText("Offers")}</span></Link>
         </nav>
-        <CustomerAds />
         {/* Merchant offers grid */}
         <section className="pt-1">
           <div className="mb-3 flex items-end justify-between">
