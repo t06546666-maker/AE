@@ -76,7 +76,7 @@
 }
 
 /* Shared Kerala street artwork; all branding and labels are live UI. */
-.ae-auth-login{background:#f6f2e9 url('/auth-kerala-street.png') center/cover fixed;}
+.ae-auth-login{background-color:#f6f2e9;background-image:linear-gradient(to bottom,#ffffff42,#fffaf018 55%,#fffaf04d),url('/auth-kerala-street.png');background-position:center;background-size:cover;background-attachment:fixed;}
 .ae-auth-login .ae-auth-window{background:transparent;box-shadow:none;overflow:visible;}
 .ae-auth-login .ae-auth-hero,.ae-auth-login.is-merchant .ae-auth-hero{background:none;aspect-ratio:auto;height:auto;min-height:330px;padding:32px 20px 90px;text-align:center;}
 .ae-auth-brand{display:block;width:160px;height:auto;margin:0 auto 12px;}

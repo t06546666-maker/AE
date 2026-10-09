@@ -11,7 +11,6 @@ export function AuthShell({ merchant = false, children }: { merchant?: boolean; 
   return <main className={`ae-auth-page ae-auth-login ${merchant ? 'is-merchant' : ''}`}><div className="ae-auth-window"><header className="ae-auth-hero">
     <img className="ae-auth-brand" src="/logo.png" alt="AE" />
     <h2>{uiText('Where customers meet businesses and beyond')}</h2>
-    <p className="ae-auth-tagline">{uiText('Customers and businesses, together in one digital space.')}</p>
     <div className="ae-auth-values">{[{ label:'Merchants', Icon:Store }, { label:'Customers', Icon:UserRound }, { label:'Trust', Icon:Handshake }, { label:'Growth', Icon:TrendingUp }].map(({ label, Icon }) => <div key={label}><span><Icon aria-hidden="true" /></span><strong>{uiText(label)}</strong></div>)}</div>
   </header><section className="ae-auth-sheet"><RoleSwitch merchant={merchant} />{children}</section></div></main>;
 }
