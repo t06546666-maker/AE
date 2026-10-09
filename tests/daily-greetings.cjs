@@ -13,10 +13,14 @@ for (const role of ['customer', 'merchant']) {
   const settings = { messages: config[role], rotationStart: config.rotationStart };
   for (let day = 0; day < 15; day++) {
     assert.equal(dailyMessage(settings, start + day * 86400000), settings.messages[day]);
-    assert.equal(dailyMessage(settings, start + day * 86400000 + 86399999), settings.messages[day]);
+    assert.equal(dailyMessage(settings, start + day * 86400000 + 86399999), settings.messages[day].replace('Good morning', 'Good evening'));
   }
   assert.equal(dailyMessage(settings, start + 15 * 86400000), settings.messages[0]);
   assert.equal(dailyMessage(settings, start - 1), settings.messages[14]);
+  for (const [hours, greeting] of [[11.999, 'Good morning'], [12, 'Good afternoon'], [16.999, 'Good afternoon'], [17, 'Good evening'], [23.999, 'Good evening']]) {
+    assert.equal(dailyMessage(settings, start + hours * 3600000), settings.messages[0].replace('Good morning', greeting));
+  }
+  assert.equal(dailyMessage(settings, start + 86400000 + 18 * 3600000), settings.messages[1]);
   const expanded = { ...settings, messages: Array.from({ length: 30 }, (_, i) => `Message ${i + 1}`) };
   assert.equal(dailyMessage(expanded, start + 29 * 86400000), 'Message 30');
   assert.equal(dailyMessage(expanded, start + 30 * 86400000), 'Message 1');
@@ -37,4 +41,4 @@ for (const role of ['customer', 'merchant', 'admin', undefined]) {
     assert.equal(cache, 'no-store');
   } else assert.equal(status, 400);
 }
-console.log('Passed: backend endpoint, role validation, 15/30-day rotation and India midnight boundaries.');
+console.log('Passed: backend endpoint, 15/30-day rotation, IST greeting boundaries and unchanged neutral messages.');

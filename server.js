@@ -4232,6 +4232,27 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
   });
 });
 
+app.get('/api/customer/checkout-bills', requireCustomerAuth, async (req, res) => {
+  try {
+    const snapshot = await getFirestore().collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
+    const bills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ bills });
+  } catch (error) { return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
+});
+app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async (req, res) => {
+  if (!/^[a-zA-Z0-9_-]{1,150}$/.test(req.params.id)) return res.status(400).json({ error: 'Invalid bill' });
+  try {
+    const ref = getFirestore().collection('ae_checkout_bills').doc(req.params.id);
+    await getFirestore().runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      if (!doc.exists || doc.data().customerId !== req.customer.id) throw new Error('Bill not found');
+      tx.update(ref, { dismissed: true });
+    });
+    return res.json({ success: true });
+  } catch { return res.status(404).json({ error: 'Could not close bill' }); }
+});
+
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
@@ -4253,7 +4274,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     });
   }
   const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);
-  if (paymentSettings.paymentEnabled) {
+  if (paymentSettings.paymentEnabled && req.body.paymentMode !== 'pilot_app_only') {
     if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
     const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,customer_id,status,amount,customers(customer_code)').eq('id', paymentTransactionId).maybeSingle();
     const paymentRewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
@@ -4307,6 +4328,19 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     .eq('id', req.auth.profile.merchant_id)
     .maybeSingle();
   const merchantName = merchantForNotification?.name || 'your merchant';
+  if (req.body.paymentMode === 'pilot_app_only') {
+    const billId = String(purchase.order_id || purchase.id || '');
+    if (/^[a-zA-Z0-9_-]{1,150}$/.test(billId)) {
+      try {
+        const billRef = getFirestore().collection('ae_checkout_bills').doc(billId);
+        await getFirestore().runTransaction(async tx => {
+          if ((await tx.get(billRef)).exists) return;
+          tx.set(billRef, { customerId: purchase.customer_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)), createdAt: Date.now(), dismissed: false });
+        });
+        await pushToCustomer(purchase.customer_id, 'Your checkout bill', `${merchantName}: total ₹${amount.toFixed(2)}, discount ₹${Number(redemptionContext?.discountAmount || 0).toFixed(2)}, payable ₹${Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)).toFixed(2)}.`, { url: '/customer/home', type: 'checkout_bill', billId });
+      } catch (error) { console.warn('Checkout bill notification failed:', error.message); }
+    }
+  }
   if (redemption) await pushToCustomer(purchase.customer_id, 'Points redeemed', `${merchantName} redeemed ${pointsToRedeem} points. Discount: ₹${Number(redemptionContext.discountAmount).toFixed(2)}.`, { url: '/customer/transactions', transactionId: redemption.id, merchantName });
   await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId: purchase.id, merchantName });
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });

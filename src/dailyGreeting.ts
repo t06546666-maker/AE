@@ -14,7 +14,11 @@ const validConfig = (value: unknown): value is GreetingConfig => {
 export function dailyMessage(config: GreetingConfig, now = Date.now()) {
   const day = Math.floor((now + 330 * 60_000) / 86_400_000);
   const firstDay = Math.floor(Date.parse(`${config.rotationStart}T00:00:00Z`) / 86_400_000);
-  return config.messages[((day - firstDay) % config.messages.length + config.messages.length) % config.messages.length];
+  const message = config.messages[((day - firstDay) % config.messages.length + config.messages.length) % config.messages.length];
+  const hour = new Date(now + 330 * 60_000).getUTCHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  // Adapt existing time-specific greetings only; never prepend one to neutral messages.
+  return message.replace(/\bGood (?:morning|afternoon|evening)\b/gi, greeting);
 }
 
 export function useDailyGreeting(role: 'customer' | 'merchant') {

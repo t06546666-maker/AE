@@ -1,0 +1,20 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync('server.js', 'utf8');
+const route = source.match(/app.get\('\/api\/customer\/checkout-bills',[\s\S]*?\n\}\);/)[0];
+let handler;
+let filters = [];
+const query = { where(field, op, value) { filters.push([field, op, value]); return this; }, async get() { return { docs: [{ id: 'recent', data: () => ({ customerId: 'owned', createdAt: Date.now(), total: 100, discount: 5, payable: 95 }) }, { id: 'old', data: () => ({ customerId: 'owned', createdAt: Date.now() - 2 * 86400000 }) }] }; } };
+new Function('app','requireCustomerAuth','getFirestore',route)({ get: (_path,_auth,fn) => { handler=fn; } },()=>{},()=>({ collection:()=>query }));
+(async()=>{
+ let body;
+ await handler({ customer:{id:'owned'} },{ setHeader(){},json(value){body=value;},status(){return this;} });
+ assert.deepEqual(filters,[['customerId','==','owned'],['dismissed','==',false]]);
+ assert.equal(body.bills.length,1);
+ assert.equal(body.bills[0].payable,95);
+ assert.equal(body.bills[0].id,'recent');
+ const java=fs.readFileSync('android/app/src/main/java/com/affiliateae/app/UpiAppsPlugin.java','utf8');
+ assert.ok(java.includes('getLaunchIntentForPackage'));
+ assert.ok(!java.includes('upi://pay'));
+ console.log('Passed: customer-scoped bill lookup, stale-bill exclusion, payable amount and app-only Android launcher.');
+})().catch(error=>{console.error(error);process.exit(1);});
