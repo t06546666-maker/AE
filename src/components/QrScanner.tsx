@@ -30,7 +30,7 @@ function cameraErrorMessage(cause: unknown, t: TFunction) {
   return message || t('scanner.failed');
 }
 
-export default function QrScanner({ settings, autoStart = false, mode = 'earn', merchantId }: { settings: RewardSettings; autoStart?: boolean; mode?: 'earn' | 'redeem'; merchantId?: string; }) {
+export default function QrScanner({ settings, autoStart = false, mode = 'earn', merchantId, onDone }: { settings: RewardSettings; autoStart?: boolean; mode?: 'earn' | 'redeem'; merchantId?: string; onDone?: () => void; }) {
   const { t } = useTranslation();
   const [scanner, setScanner] = useState<ScannerInstance | null>(null);
   const [customer, setCustomer] = useState<(Customer & { isNewToMerchant?: boolean }) | null>(null);
@@ -279,7 +279,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
                       <span>Remaining pts:</span><strong>{redeemResult.newBalance} pts</strong>
                     </div>
                   </div>
-                  <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); }}>Done</button>
+                  <button type="button" className="button primary full-button" onClick={() => { setRedeemResult(null); setCustomer(null); onDone?.(); }}>Done</button>
                 </div>
               ) : transactionMode === 'redeem' ? (
                 <>

@@ -1,0 +1,13 @@
+.merchant-points::before { display: none; }
+.merchant-points > .mo-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.merchant-points .mo-bar-item { min-width: 0; }
+.merchant-points .mo-bar-item span { min-height: 0; }
+.merchant-points .mo-bars { gap: 5px; padding-inline: 0; height: 195px; }
+.merchant-points .mo-bar-item strong { white-space: normal; text-align: center; overflow-wrap: anywhere; }
+.merchant-points .mo-panel-heading > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 700px) {
+  .merchant-points > .mo-columns { grid-template-columns: 1fr; }
+  .merchant-points .mo-panel-heading { flex-wrap: wrap; gap: 12px; }
+  .merchant-points .mo-bar-item > div { gap: 3px !important; }
+  .merchant-points .mo-bar-item span { width: 12px !important; }
+}

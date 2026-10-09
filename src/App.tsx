@@ -15,6 +15,7 @@ import { Customers } from './pages/Customers';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MerchantOverview } from './pages/MerchantOverview';
+import { MerchantPoints } from './pages/MerchantPoints';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
@@ -298,6 +299,7 @@ export function App() {
         <Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
+          <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />

@@ -2586,6 +2586,17 @@ app.get('/api/merchants/:id/point-balance', requireAuth, async (req, res) => {
   return res.json({ balance: Number(data.point_balance || 0) });
 });
 
+app.get('/api/merchants/:id/point-insights', requireAuth, async (req, res) => {
+  if (req.auth.profile.role !== 'admin' && (req.auth.profile.role !== 'merchant' || req.auth.profile.merchant_id !== req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  const from = Date.parse(req.query.from);
+  const to = Date.parse(req.query.to);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 32 * 86400000) return res.status(400).json({ error: 'Select a valid date range of up to 32 days.' });
+  const { data, error } = await supabaseAdmin.rpc('merchant_point_insights', { p_merchant_id: req.params.id, p_from: new Date(from).toISOString(), p_to: new Date(to).toISOString() });
+  if (error) return res.status(503).json({ error: 'Point insights are unavailable. Apply supabase-merchant-point-insights.sql first.' });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json(data);
+});
+
 app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'), async (req, res) => {
   const points = req.body.points;
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

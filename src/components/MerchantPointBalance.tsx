@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Coins } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from './Common';
 
 export function MerchantPointBalance({ merchantId, compact = false }: { merchantId: string; compact?: boolean }) {
   const query = useQuery({ queryKey: ['merchant-points', merchantId], queryFn: ({ signal }) => apiFetch<{ balance: number }>(`/api/merchants/${merchantId}/point-balance`, { signal }), refetchInterval: 30000 });
-  if (compact) return <section className="mo-points-compact" aria-label="Available merchant points"><Coins size={22}/><div><span>Available points</span>{query.isPending ? <strong>Loading…</strong> : query.isError ? <button type="button" onClick={() => query.refetch()}>Unable to load · Retry</button> : <strong>{query.data.balance.toLocaleString('en-IN')} <small>points</small></strong>}</div></section>;
+  if (compact) return <section className="mo-points-compact" aria-label="Available merchant points"><Coins size={22}/><div><Link to="/merchant-points" style={{ color: 'inherit' }}><span>Available points · View details →</span>{query.isPending ? <strong>Loading…</strong> : !query.isError && <strong>{query.data.balance.toLocaleString('en-IN')} <small>points</small></strong>}</Link>{query.isError && <button type="button" onClick={() => query.refetch()}>Unable to load · Retry</button>}</div></section>;
   return <section className="mo-points-balance" aria-label="Available merchant points"><Coins size={40}/><div><span>Available points to issue</span>{query.isPending ? <LoadingState/> : query.isError ? <ErrorState error={query.error} retry={() => query.refetch()}/> : <><strong>{query.data.balance.toLocaleString('en-IN')} <small>points</small></strong><p>{query.data.balance === 0 ? 'Ask Admin to allocate points before issuing customer rewards.' : 'Allocated by Admin · Deducted when you issue customer points'}</p></>}</div></section>;
 }
 

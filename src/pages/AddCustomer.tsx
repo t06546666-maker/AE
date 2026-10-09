@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { CheckCircle2, Download, MessageCircle, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiFetch, queryString } from '../api';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
@@ -40,6 +40,7 @@ interface PhoneRegistrationStatus {
 
 export function AddCustomer({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState('');
   const [amount, setAmount] = useState(''); const [merchantId, setMerchantId] = useState(user.merchant_id || '');
   const [percentage, setPercentage] = useState(1);
@@ -96,6 +97,10 @@ export function AddCustomer({ user }: { user: UserProfile }) {
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['merchant-overview'] });
+      void queryClient.invalidateQueries({ queryKey: ['merchant-points'] });
+      void queryClient.invalidateQueries({ queryKey: ['merchant-point-insights'] });
+      navigate('/dashboard', { replace: true });
     },
     onError(error) { showToast(error.message, 'error'); },
   });
@@ -153,7 +158,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <div className="point-preview"><span>{t('registration.pointsIssued')}<small style={{ display: 'block', marginTop: 4 }}>Maximum 100 points per purchase</small></span><strong>{formatPoints(points)} points</strong></div>
         </div>
         {user.role === 'admin' ? <label className="merchant-select">{t('registration.assignMerchant')}<select value={merchantId} onChange={(event) => setMerchantId(event.target.value)} required>{merchants.data?.merchants.map((merchant) => <option key={merchant.id} value={merchant.id}>{merchant.name}</option>)}</select></label> : null}
-        <div className="form-actions"><button className="button primary" disabled={createCustomer.isPending}><UserPlus size={17} />{t(createCustomer.isPending ? 'registration.registering' : 'registration.registerSend')}</button><Link className="button secondary" to="/orders">{t('registration.cancel')}</Link></div>
+        <div className="form-actions"><button className="button primary" disabled={createCustomer.isPending}><UserPlus size={17} />{t(createCustomer.isPending ? 'registration.registering' : 'registration.registerSend')}</button><Link className="button secondary" to="/dashboard" replace>{t('registration.cancel')}</Link></div>
       </form>
       {result ? (
         <section className="panel registration-result">
