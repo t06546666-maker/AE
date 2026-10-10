@@ -26,6 +26,7 @@ import { LocationProfile } from './pages/LocationProfile';
 import { MerchantProfile } from './pages/MerchantProfile';
 import { AdminMerchantDetails } from './pages/AdminMerchantDetails';
 import { AdminCustomers, AdminCustomerDetails } from './pages/AdminCustomers';
+import { LegalNavigation } from './components/LegalNavigation';
 import { useUsageTracking } from './useUsageTracking';
 import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
@@ -243,7 +244,7 @@ export function App() {
   }, [restoreAttempt]);
 
   if (location.pathname === '/delete-account') return <AccountDeletion />;
-  if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Legal />;
+  if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
   if (!user) {

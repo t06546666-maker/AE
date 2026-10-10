@@ -1706,5 +1706,6 @@
   "ui.No linked merchants.": "ബന്ധിപ്പിച്ച വ്യാപാരികളില്ല.",
   "ui.Complete field manager history": "ഫീൽഡ് മാനേജറുടെ പൂർണ്ണ പ്രവർത്തന ചരിത്രം",
   "ui.Browse all recorded history with pagination. Missing record categories show an error, not invented data.": "പേജുകൾ മാറ്റി എല്ലാ രേഖകളും കാണാം. ലഭ്യമല്ലാത്ത വിഭാഗങ്ങളിൽ പിശക് സന്ദേശം കാണിക്കും; സാങ്കൽപ്പിക വിവരങ്ങൾ കാണിക്കില്ല.",
-  "ui.Open attachment": "അറ്റാച്ച്മെന്റ് തുറക്കുക"
+  "ui.Open attachment": "അറ്റാച്ച്മെന്റ് തുറക്കുക",
+  "ui.Back to app": "ആപ്പിലേക്ക് മടങ്ങുക"
 }

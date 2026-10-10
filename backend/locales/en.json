@@ -1868,5 +1868,6 @@
   "ui.No linked merchants.": "No linked merchants.",
   "ui.Complete field manager history": "Complete field manager history",
   "ui.Browse all recorded history with pagination. Missing record categories show an error, not invented data.": "Browse all recorded history with pagination. Missing record categories show an error, not invented data.",
-  "ui.Open attachment": "Open attachment"
+  "ui.Open attachment": "Open attachment",
+  "ui.Back to app": "Back to app"
 }
