@@ -29,8 +29,8 @@ interface CreateMerchantResponse {
   whatsapp: CredentialResult['whatsapp'];
 }
 
-export function Merchants() {
-  const [showOnboarding, setShowOnboarding] = useState(false);
+export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
+  const [showOnboarding, setShowOnboarding] = useState(onboardingOnly);
   const [allocation, setAllocation] = useState<Merchant | null>(null);
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -204,10 +204,10 @@ export function Merchants() {
   }
 
   return (
-    <div className="admin-directory-page">
-      <PageHeader title={t('merchants.title')} subtitle={uiText('Stores and linked customers across your network')} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
+    <div className={`admin-directory-page ${onboardingOnly?'admin-onboarding-only':''}`}>
+      <PageHeader title={onboardingOnly?uiText('Add merchant'):t('merchants.title')} subtitle={onboardingOnly?t('merchants.createSecure'):uiText('Stores and linked customers across your network')} actions={onboardingOnly?<Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link>:<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
       <div className="admin-directory-metrics"><article><span>{uiText('Matching merchants')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.pagination.total.toLocaleString('en-IN')}</strong></article><article><span>{uiText('Categories')}</span><strong>{categoriesQuery.isPending?'…':categoriesQuery.isError?'—':categoriesQuery.data?.categories.length}</strong></article><article><span>{uiText('Showing on this page')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.merchants.length}</strong></article></div>
-      {showOnboarding && <form className="panel merchant-form" onSubmit={submit}>
+      {(onboardingOnly || showOnboarding) && <form className="panel merchant-form" onSubmit={submit}>
         <div className="panel-heading">
           <div><h2>{t('merchants.add')}</h2><p>{t('merchants.createSecure')}</p></div>
           <Plus />
@@ -250,7 +250,7 @@ export function Merchants() {
         <label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={uiText('Search merchants')} aria-label={t('common.search')} /></label>
       </div>
 
-      {merchants.isPending ? <LoadingState label={t('common.loading')} /> : merchants.isError ? (
+      {!onboardingOnly && (merchants.isPending ? <LoadingState label={t('common.loading')} /> : merchants.isError ? (
         <ErrorState error={merchants.error} retry={() => merchants.refetch()} />
       ) : (
         <section className="table-panel">
@@ -281,7 +281,7 @@ export function Merchants() {
           {!merchants.data?.merchants.length ? <EmptyState>{uiText("No merchants found.")}</EmptyState> : null}
           <PaginationBar pagination={merchants.data?.pagination} onPage={setPage} />
         </section>
-      )}
+      ))}
 
       <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />

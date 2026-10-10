@@ -15,15 +15,13 @@ import { FieldSignOutContext } from './FieldSignOutContext';
 
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
-  ['/add-customer', 'nav.addCustomer', Plus],
-  ['/customer-product-lists', 'Product Lists', ReceiptText],
-  ['/customers', 'nav.customers', Users],
   ['/merchants', 'nav.merchants', Building2],
-    ['/merchant-categories', 'Categories', Building2],
-  ['/offers', 'nav.offers', Gift],
-  ['/reward-settings', 'nav.rewardSettings', Settings2],
-  ['/feedback', 'Feedback & Reviews', MessageSquare],
+  ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],
+  ['/orders', 'Reports', BarChartIcon],
+  ['/add-customer', 'nav.addCustomer', Plus],
+  ['/add-merchant', 'Add merchant', Plus],
+  ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 
 const merchantNav = [
