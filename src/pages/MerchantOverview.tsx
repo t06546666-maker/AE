@@ -154,7 +154,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
   const view = location.pathname === '/customers' ? (params.get('group') ? 'purchase-group' : 'customers') : ['insights', 'reports'].includes(params.get('view') || '') ? params.get('view')! : "overview";
   const currentMonth = indiaDate(new Date()).slice(0, 7);
   const requestedMonth = params.get('month') || localStorage.getItem(`ae-reporting-month:${user.merchant_id}`) || currentMonth;
-  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) && requestedMonth <= currentMonth && requestedMonth >= '2000-01' ? requestedMonth : currentMonth;
+  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) && requestedMonth <= `${currentMonth.slice(0,4)}-12` && requestedMonth >= '2000-01' ? requestedMonth : currentMonth;
   useEffect(() => { localStorage.setItem(`ae-reporting-month:${user.merchant_id}`,month); }, [month,user.merchant_id]);
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
