@@ -1,7 +1,7 @@
 import { uiText } from '../../uiText';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle } from 'lucide-react';
+import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle, ShieldCheck, UserRoundMinus } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useCustomerMerchants } from '../../hooks/useCustomerData';
@@ -143,8 +143,14 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
         </div>
 
         <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
-          <Link to="/privacy" className="p-4 flex items-center justify-between border-b border-gray-100"><span>{uiText("Privacy Policy")}</span><ChevronRight size={18}/></Link>
-          <Link to="/delete-account" className="p-4 flex items-center justify-between"><span>{uiText("Delete account and data")}</span><ChevronRight size={18}/></Link>
+          <Link to="/privacy" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+            <div className="flex items-center space-x-4"><ShieldCheck size={20} className="text-gray-400" /><span className="font-semibold text-[15px] text-gray-800">{uiText("Privacy Policy")}</span></div>
+            <ChevronRight size={18} className="text-gray-400" />
+          </Link>
+          <Link to="/delete-account" className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
+            <div className="flex items-center space-x-4"><UserRoundMinus size={20} className="text-gray-400" /><span className="font-semibold text-[15px] text-gray-800">{uiText("Delete account and data")}</span></div>
+            <ChevronRight size={18} className="text-gray-400" />
+          </Link>
         </div>
         {/* Section 3 */}
         <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
