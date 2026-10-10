@@ -1659,5 +1659,17 @@
   "ui.End date must be on or after start date.": "അവസാന തീയതി തുടക്ക തീയതിയിലോ അതിന് ശേഷമോ ആയിരിക്കണം.",
   "ui.Sales target (₹)": "വിൽപ്പന ലക്ഷ്യം (₹)",
   "ui.Target amount": "ലക്ഷ്യത്തുക",
-  "ui.No sales target set for this period.": "ഈ കാലയളവിലെ വിൽപ്പന ലക്ഷ്യം നിശ്ചയിച്ചിട്ടില്ല."
+  "ui.No sales target set for this period.": "ഈ കാലയളവിലെ വിൽപ്പന ലക്ഷ്യം നിശ്ചയിച്ചിട്ടില്ല.",
+  "ui.Back to customers": "ഉപഭോക്താക്കളിലേക്ക് മടങ്ങുക",
+  "ui.Customers by purchase amount": "വാങ്ങൽ തുക അനുസരിച്ചുള്ള ഉപഭോക്താക്കൾ",
+  "ui.matching customers": "പൊരുത്തപ്പെടുന്ന ഉപഭോക്താക്കൾ",
+  "ui.matching purchases": "പൊരുത്തപ്പെടുന്ന വാങ്ങലുകൾ",
+  "ui.Create offer for this group": "ഈ വിഭാഗത്തിനായി ഓഫർ സൃഷ്ടിക്കുക",
+  "ui.No customers in this range for the selected dates.": "തിരഞ്ഞെടുത്ത തീയതികളിൽ ഈ തുകയുടെ പരിധിയിൽ ഉപഭോക്താക്കളില്ല.",
+  "ui.Purchases by bill amount": "ബിൽ തുക അനുസരിച്ചുള്ള വാങ്ങലുകൾ",
+  "ui.Select a bar to view matching customers": "പൊരുത്തപ്പെടുന്ന ഉപഭോക്താക്കളെ കാണാൻ ഒരു ബാർ തിരഞ്ഞെടുക്കുക",
+  "ui.Purchase amount period": "വാങ്ങൽ തുകയുടെ കാലയളവ്",
+  "ui.Bars count bills. The customer list shows each matching customer once.": "ബാറുകൾ ബില്ലുകളുടെ എണ്ണം കാണിക്കുന്നു. പട്ടികയിൽ ഓരോ ഉപഭോക്താവും ഒരിക്കൽ മാത്രം കാണിക്കും.",
+  "ui.Selected purchase group": "തിരഞ്ഞെടുത്ത വാങ്ങൽ വിഭാഗം",
+  "ui.This offer is restricted to the selected purchase-amount group and dates.": "ഈ ഓഫർ തിരഞ്ഞെടുത്ത വാങ്ങൽ തുകയുടെ വിഭാഗത്തിനും തീയതികൾക്കും മാത്രമുള്ളതാണ്."
 }

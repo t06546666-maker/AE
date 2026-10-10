@@ -1821,5 +1821,17 @@
   "ui.End date must be on or after start date.": "End date must be on or after start date.",
   "ui.Sales target (₹)": "Sales target (₹)",
   "ui.Target amount": "Target amount",
-  "ui.No sales target set for this period.": "No sales target set for this period."
+  "ui.No sales target set for this period.": "No sales target set for this period.",
+  "ui.Back to customers": "Back to customers",
+  "ui.Customers by purchase amount": "Customers by purchase amount",
+  "ui.matching customers": "matching customers",
+  "ui.matching purchases": "matching purchases",
+  "ui.Create offer for this group": "Create offer for this group",
+  "ui.No customers in this range for the selected dates.": "No customers in this range for the selected dates.",
+  "ui.Purchases by bill amount": "Purchases by bill amount",
+  "ui.Select a bar to view matching customers": "Select a bar to view matching customers",
+  "ui.Purchase amount period": "Purchase amount period",
+  "ui.Bars count bills. The customer list shows each matching customer once.": "Bars count bills. The customer list shows each matching customer once.",
+  "ui.Selected purchase group": "Selected purchase group",
+  "ui.This offer is restricted to the selected purchase-amount group and dates.": "This offer is restricted to the selected purchase-amount group and dates."
 }

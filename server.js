@@ -2418,7 +2418,17 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     if (result.error) return res.status(503).json({ error: 'Unable to verify loyalty eligibility.' });
     if (result.count >= 5) eligibleMerchants.add(merchantId);
   }
-  const visibleOffers = (offers || []).filter(o => o.audience !== 'loyal' || eligibleMerchants.has(o.merchant_id));
+  const eligibleSegments=new Set();
+  for(const offer of (offers || []).filter(offer=>offer.audience==='purchase_range')) {
+    try {
+      const {purchaseSegment}=require('./backend/purchase-segment.cjs');const segment=purchaseSegment(offer.purchase_segment);
+      let query=supabaseAdmin.from('orders').select('id',{count:'exact',head:true}).eq('merchant_id',offer.merchant_id).eq('customer_id',req.customer.id).gte('created_at',segment.from).lt('created_at',segment.to).gte('amount',segment.min);
+      if(segment.max!==null)query=query.lt('amount',segment.max);
+      const result=await query;if(result.error)return res.status(503).json({error:'Unable to verify offer eligibility.'});
+      if(result.count>0)eligibleSegments.add(offer.id);
+    }catch { /* Invalid targeting metadata must never expose a restricted offer. */ }
+  }
+  const visibleOffers = (offers || []).filter(o => o.audience==='purchase_range'?eligibleSegments.has(o.id):o.audience !== 'loyal' || eligibleMerchants.has(o.merchant_id));
   const mappedOffers = await Promise.all(visibleOffers.map(async o => ({
     id: o.id,
     title: o.title,
@@ -3527,6 +3537,11 @@ app.post(
     const title = cleanText(req.body.title, 120);
     const description = cleanText(req.body.description, 1000);
     const category = cleanText(req.body.category, 80) || null;
+    let segment=null;
+    if(req.body.audience==='purchase_range') {
+      try {segment=require('./backend/purchase-segment.cjs').purchaseSegment(JSON.parse(req.body.purchaseSegment || '{}'));}
+      catch(error){return res.status(400).json({error:error.message});}
+    }
     const expiresAt = new Date(req.body.expiresAt);
     if (!title || !description || !Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
       return res.status(400).json({
@@ -3549,7 +3564,8 @@ app.post(
         title,
         description,
         category,
-        audience: req.body.audience === 'loyal' ? 'loyal' : 'all',
+        audience: segment?'purchase_range':req.body.audience === 'loyal' ? 'loyal' : 'all',
+        ...(segment?{purchase_segment:segment}:{}),
         image_path: imagePath,
         expires_at: expiresAt.toISOString(),
         status: 'pending',

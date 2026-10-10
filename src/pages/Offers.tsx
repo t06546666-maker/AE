@@ -33,7 +33,8 @@ export function Offers({ user }: { user: UserProfile }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [audience, setAudience] = useState<'all' | 'loyal'>('all');
+  const [audience, setAudience] = useState<'all' | 'loyal' | 'purchase_range'>('all');
+  const [segment,setSegment]=useState<{group:string;from:string;to:string}|null>(null);
   const [expiresAt, setExpiresAt] = useState(tomorrowInput());
   const [image, setImage] = useState<File | null>(null);
   const [rejecting, setRejecting] = useState<Offer | null>(null);
@@ -45,7 +46,9 @@ export function Offers({ user }: { user: UserProfile }) {
   useEffect(() => {
     if (user.role === 'merchant' && searchParams.get('create') === '1') {
       setFormOpen(true);
-      setAudience(searchParams.get('audience') === 'loyal' ? "loyal" : "all");
+      const isRange=searchParams.get('audience')==='purchase_range';
+      setAudience(isRange?'purchase_range':searchParams.get('audience')==='loyal'?'loyal':'all');
+      setSegment(isRange?{group:searchParams.get('group')||'',from:searchParams.get('from')||'',to:searchParams.get('to')||''}:null);
       const next = new URLSearchParams(searchParams);
       next.delete('create');
       setSearchParams(next, { replace: true });
@@ -72,6 +75,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setDescription('');
     setCategory('');
     setAudience('all');
+    setSegment(null);
     setExpiresAt(tomorrowInput());
     setImage(null);
   }
@@ -95,6 +99,7 @@ export function Offers({ user }: { user: UserProfile }) {
       body.set('description', description.trim());
       body.set('category', category);
       body.set('audience', audience);
+      if(segment && audience==='purchase_range')body.set('purchaseSegment',JSON.stringify(segment));
       body.set('expiresAt', new Date(`${expiresAt}T23:59:59+05:30`).toISOString());
       if (image) body.set('image', image);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
@@ -189,10 +194,11 @@ export function Offers({ user }: { user: UserProfile }) {
                 {OFFER_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label className="offer-description-field">{uiText(" Audience ")}<select value={audience} disabled={Boolean(editing)} onChange={event => setAudience(event.target.value as 'all' | 'loyal')}><option value="all">{uiText("All customers")}</option><option value="loyal">{uiText("Loyal customers only (5+ purchases at your store)")}</option></select>
+            <label className="offer-description-field">{uiText(" Audience ")}<select value={audience} disabled={Boolean(editing)} onChange={event => setAudience(event.target.value as 'all' | 'loyal' | 'purchase_range')}><option value="all">{uiText("All customers")}</option><option value="loyal">{uiText("Loyal customers only (5+ purchases at your store)")}</option>{(segment || editing?.audience==='purchase_range')&&<option value="purchase_range">{uiText('Selected purchase group')}</option>}</select>
             </label>
             <label className="offer-description-field">
               {t('offers.description')}
+              {audience==='purchase_range'&&<p>{uiText('This offer is restricted to the selected purchase-amount group and dates.')}</p>}
               <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} required />
             </label>
             <label className="offer-image-field">

@@ -70,6 +70,18 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
         </Link>
+        <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
+          <Languages size={16} />
+          <select
+            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
+            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
+            onChange={(event) => void i18n.changeLanguage(event.target.value)}
+            aria-label={t('language.malayalam')}
+          >
+            <option value="en">{uiText("EN")}</option>
+            <option value="ml">മ</option>
+          </select>
+        </label></div>
       </header>
 
       <div className="px-4 pt-2 space-y-6">
@@ -150,18 +162,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           </div>
         </div>
 
-        <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
-          <Languages size={16} />
-          <select
-            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
-            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
-            onChange={(event) => void i18n.changeLanguage(event.target.value)}
-            aria-label={t('language.malayalam')}
-          >
-            <option value="en">{uiText("EN")}</option>
-            <option value="ml">മ</option>
-          </select>
-        </label></div>
+
         {/* Personal customer journey: counts come from all purchases, not recent activity. */}
         <section className="customer-modern-list-card rounded-[18px] p-4 shadow-sm" aria-labelledby="customer-journey-title">
           <h3 id="customer-journey-title" className="text-[16px] font-bold text-gray-900">{uiText("Your Customer Journey")}</h3>
