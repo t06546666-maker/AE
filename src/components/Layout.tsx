@@ -63,7 +63,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
   });
   const notifications = useQuery({
     queryKey: ['notifications'],
-    queryFn: ({ signal }) => apiFetch<{ notifications: Array<{ id: string; title: string; body: string; readAt: string | null; requestNo: string }>; unreadCount: number }>('/api/notifications?limit=6', { signal }),
+    queryFn: ({ signal }) => apiFetch<{ notifications: Array<{ id: string; title: string; body: string; readAt: string | null; requestNo: string; url?:string }>; unreadCount: number }>('/api/notifications?limit=6', { signal }),
     enabled: user.role === 'merchant',
     refetchInterval: 15_000,
   });
@@ -84,7 +84,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
       <div className="notification-popover">
         <strong>{uiText("Customer orders")}</strong>
         {notifications.data?.notifications.length ? notifications.data.notifications.map((notice) => (
-          <Link key={notice.id} to="/customer-orders" onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}>
+          <Link key={notice.id} to={notice.url || '/customer-orders'} onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}>
             <b>{notice.requestNo || notice.title}</b><span>{notice.body}</span>
           </Link>
         )) : <p>{uiText("No new customer orders.")}</p>}

@@ -527,7 +527,8 @@ async function getMerchantRewardSettings(merchantId) {
 // earn 10 points per completed INR 100, capped at 100 points.
 function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
   const value = Number(amount || 0);
-  if (value < 10) return 0;
+  if (!Number.isFinite(value) || value < 1) return 0;
+  if (value < 10) return 1;
   if (value < 50) return 2;
   if (value < 100) return 5;
   const rate = Math.max(0, Math.min(100, Number(pointsPer100) || 10));
@@ -572,7 +573,7 @@ async function processPurchase(params, idempotencyKey) {
     }
   }
   // -------------------------------------
-
+  if (!result.error && result.data?.length) scheduleBackground(() => checkSalesTarget(params.p_merchant_id).catch(error => console.warn('Sales target check failed:',error.message)));
   return result;
 }
 
@@ -1485,6 +1486,16 @@ async function sendWelcomeEmail(purchase) {
 }
 
 // --- AE Settlement Engine Modules ---
+// Mask customer names before merchant JSON responses leave the server.
+// Admin responses, customer self-service and persisted/notification data stay intact.
+app.use(['/api/customers','/api/orders','/api/customer-orders','/api/merchant/loyal-customers','/api/checkouts','/api/redemptions'], requireAuth, (req,res,next) => {
+  if (req.auth.profile.role === 'merchant') {
+    const { maskCustomerResponse } = require('./backend/customer-name-mask.cjs');
+    const original = res.json.bind(res);
+    res.json = body => original(maskCustomerResponse(body));
+  }
+  next();
+});
 app.use('/api/networks', requireAuth, networksRouter);
 app.use('/api/customers', requireAuth, (req, res, next) => {
   if (!['admin', 'merchant'].includes(req.auth.profile.role)) return res.status(403).json({ error: 'Customer data is restricted to Admin and Merchant roles' });
@@ -2616,6 +2627,56 @@ app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'
   return res.json({ success: true, balance: Number(data) });
 });
 
+async function recordedTargetSales(merchantId,range) {
+  let sales=0;
+  for(let offset=0;;offset+=500) {
+    const {data,error}=await supabaseAdmin.from('orders').select('id,amount').eq('merchant_id',merchantId).gte('created_at',range.from).lt('created_at',range.to).lte('created_at',new Date().toISOString()).order('id').range(offset,offset+499);
+    if(error)throw error;
+    for(const row of data || [])sales+=Math.round(Number(row.amount)*100);
+    if((data || []).length<500)break;
+  }
+  return sales/100;
+}
+async function checkSalesTarget(merchantId,onlyKey) {
+  const database=await checkoutBillDatabase();
+  const {targetRange}=require('./backend/sales-target.cjs');
+  const docs=onlyKey?[await database.collection('ae_sales_targets').doc(`${merchantId}_${onlyKey}`).get()]:(await database.collection('ae_sales_targets').where('merchantId','==',merchantId).get()).docs;
+  for(const snap of docs) {
+  if(!snap.exists||!snap.data().amount||snap.data().notified)continue;
+  const stored=snap.data();const range=stored.from&&stored.to?stored:targetRange({month:stored.month});
+  if(Date.parse(range.from)>Date.now() || (!onlyKey && Date.parse(range.to)<Date.now()))continue;
+  const ref=snap.ref;const sales=await recordedTargetSales(merchantId,range);
+  const claimed=await database.runTransaction(async transaction=>{
+    const current=await transaction.get(ref);const target=current.data();
+    if(!target?.amount||target.notified||sales<target.amount)return false;
+    transaction.update(ref,{notified:true,achievedAt:new Date().toISOString(),achievedSales:sales});return true;
+  });
+  if(claimed)await pushToMerchant(merchantId,'Sales target achieved! 🎉',`Congratulations! Your recorded AE sales reached your ${range.label || range.month} target.`,{url:`/dashboard?month=${range.month}`,type:'sales_target',month:range.month});
+  }
+}
+app.get('/api/merchant/sales-target',requireAuth,requireRole('merchant'),async(req,res)=>{
+  const merchantId=req.auth.profile.merchant_id;if(!merchantId)return res.status(404).json({error:'Merchant not found'});
+  try {
+    const {targetRange,progress}=require('./backend/sales-target.cjs');const range=targetRange(req.query);
+    const database=await checkoutBillDatabase();
+    const [target,sales]=await Promise.all([database.collection('ae_sales_targets').doc(`${merchantId}_${range.key}`).get(),recordedTargetSales(merchantId,range)]);
+    res.json({...range,...progress(Number(target.data()?.amount || 0),sales)});
+  }catch(error){res.status(400).json({error:error.message});}
+});
+app.put('/api/merchant/sales-target',requireAuth,requireRole('merchant'),async(req,res)=>{
+  const merchantId=req.auth.profile.merchant_id;if(!merchantId)return res.status(404).json({error:'Merchant not found'});
+  const amount=Number(req.body.amount);
+  if(!Number.isFinite(amount)||amount<1||amount>100000000)return res.status(400).json({error:'Enter a sales target between ₹1 and ₹10,00,00,000.'});
+  try {
+    const {targetRange}=require('./backend/sales-target.cjs');const range=targetRange(req.body);
+    if(Date.parse(range.to)<=Date.now())return res.status(400).json({error:'Set or edit targets for current or future dates only.'});
+    const database=await checkoutBillDatabase();
+    await database.collection('ae_sales_targets').doc(`${merchantId}_${range.key}`).set({merchantId,...range,amount:Math.round(amount*100)/100,updatedAt:new Date().toISOString()},{merge:true});
+    await checkSalesTarget(merchantId,range.key);
+    res.json({success:true});
+  }catch(error){res.status(500).json({error:error.message});}
+});
+
 app.get('/api/offers-performance', requireAuth, requireRole('merchant'), async (req, res) => {
   const merchantId = req.auth.profile.merchant_id;
   if (!merchantId) return res.status(404).json({ error: 'Merchant not found' });
@@ -3342,10 +3403,25 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
     title: item.title, body: item.body, readAt: item.read_at, createdAt: item.created_at,
     requestNo: item.customer_orders?.request_no || '', status: item.customer_orders?.status || '',
   }));
+  if(req.auth.profile.role === 'merchant') {
+    try {
+      const database=await checkoutBillDatabase();
+      const targets=await database.collection('ae_sales_targets').where('merchantId','==',req.auth.profile.merchant_id).get();
+      targets.docs.forEach(doc=>{const target=doc.data();if(target.notified)notifications.push({id:`sales-target:${doc.id}`,merchantId:target.merchantId,customerOrderId:null,title:'Sales target achieved!',body:`Your recorded AE sales reached your ${target.label || target.month} target.`,readAt:target.readAt || null,createdAt:target.achievedAt,requestNo:'',status:'',url:`/dashboard?month=${target.month}`});});
+      notifications.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+      notifications.splice(limit);
+    }catch(error){console.warn('Sales target notifications unavailable:',error.message);}
+  }
   res.json({ success: true, notifications, unreadCount: notifications.filter((item) => !item.readAt).length });
 });
 
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
+  if(req.params.id.startsWith('sales-target:')) {
+    if(req.auth.profile.role!=='merchant')return res.status(403).json({error:'Forbidden'});
+    const docId=req.params.id.slice('sales-target:'.length);
+    if(!docId.startsWith(`${req.auth.profile.merchant_id}_`) || !/^[a-zA-Z0-9_-]+$/.test(docId))return res.status(403).json({error:'Forbidden'});
+    try {const database=await checkoutBillDatabase();await database.collection('ae_sales_targets').doc(docId).update({readAt:new Date().toISOString()});return res.json({success:true});}catch(error){return res.status(500).json({error:error.message});}
+  }
   let query = supabaseAdmin.from('merchant_notifications').update({ read_at: new Date().toISOString() })
     .eq('id', cleanText(req.params.id, 100));
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
@@ -4146,11 +4222,11 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     (email && !isEmail(email)) ||
     !merchantId ||
     !Number.isFinite(amount) ||
-    amount < 10
+    amount < 1
   ) {
     return res.status(400).json({
       success: false,
-      error: `Enter valid customer details and a purchase amount of ₹10 or more.`,
+      error: `Enter valid customer details and a purchase amount of ₹1 or more.`,
     });
   }
 
@@ -4332,11 +4408,11 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
-    amount < 100
+    amount < (pointsToRedeem > 0 ? 100 : 1)
   ) {
     return res.status(400).json({
       success: false,
-      error: `Purchase must be at least 100.`,
+      error: pointsToRedeem > 0 ? 'Purchase must be at least ₹100 when redeeming points.' : 'Purchase must be at least ₹1.',
     });
   }
   const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);

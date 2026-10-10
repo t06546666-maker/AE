@@ -1,4 +1,5 @@
 import { ReportingMonth } from '../components/ReportingMonth';
+import { SalesTarget } from '../components/SalesTarget';
 import { uiText } from '../uiText';
 import { SIX_HOUR_LABELS } from '../utils';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
@@ -209,6 +210,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     <div className="mo-content" key={view}>
     {view === 'overview' && <>
       <div className="mo-stats">{metrics.map(({ label, value, before, icon: Icon, color, hint }) => <article key={label} className={`mo-stat ${color}`}><div className="mo-stat-label"><span className={`mo-icon ${color}`}><Icon size={21} /></span><span>{uiText(label)}</span></div><strong className="mo-stat-value">{label === 'Total sales' ? formatCurrency(value) : value.toLocaleString('en-IN')}</strong><span className="mo-stat-hint">{hint}</span><Change value={value} previous={before} label={model.comparisonLabel} /></article>)}</div>
+      <SalesTarget merchantId={user.merchant_id} month={month} />
       <SalesSnapshot key={`sales-${month}`} model={model} month={month} />
       <ActivitySnapshot key={`activity-${month}`} model={model} month={month} />
       <div className="mo-columns"><GrowthChart key={month} model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>{uiText("Quick insights")}</h2><p>{uiText("Small insights. Better decisions.")}</p></div><Lightbulb size={21} /></div><div className="mo-quick-list">

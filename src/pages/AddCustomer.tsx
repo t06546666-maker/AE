@@ -123,7 +123,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Enter a valid 10-digit Indian mobile number', 'error');
-    if (!Number.isFinite(Number(amount)) || Number(amount) < 10) return showToast('Enter a purchase amount of ₹10 or more', 'error');
+    if (!Number.isFinite(Number(amount)) || Number(amount) < 1) return showToast('Enter a purchase amount of ₹1 or more', 'error');
     createCustomer.mutate();
   }
 
@@ -136,7 +136,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   if (settings.isError) return <ErrorState error={settings.error} retry={() => settings.refetch()} />;
   const options = settings.data?.earnOptions || [5, 10, 20, 30, 50];
   const eligibleAmount = Math.max(0, Math.min(Number(amount) || 0, 10000));
-  const points = eligibleAmount < 10 ? 0 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
+  const points = eligibleAmount < 1 ? 0 : eligibleAmount < 10 ? 1 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
   const selectedMerchant = merchants.data?.merchants.find((merchant) => merchant.id === merchantId)?.name || '';
   const liveWhatsapp = whatsappStatus.data;
   const whatsappState = liveWhatsapp?.status
@@ -154,7 +154,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
           <label>{t('registration.emailAddress')} <small>{t('registration.optional')}</small><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         </div>
         <div className="purchase-fields registration-purchase">
-          <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="10" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">{uiText("₹10–₹49: 2 points · ₹50–₹99: 5 points · ₹100+: selected rate")}</span></label>
+          <label>{t('registration.purchaseAmount')}<input className="amount-input" type="number" min="1" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /><span className="amount-rule">{uiText("₹1–₹9: 1 point · ₹10–₹49: 2 points · ₹50–₹99: 5 points · ₹100+: selected rate")}</span></label>
           <label>{uiText("Points per ₹100")}<select value={percentage} onChange={(event) => setPercentage(Number(event.target.value))}>{options.map((option) => <option key={option} value={option}>{option}{uiText(" Pts")}</option>)}</select></label>
           <div className="point-preview"><span>{t('registration.pointsIssued')}<small style={{ display: 'block', marginTop: 4 }}>{uiText("Maximum 100 points per purchase")}</small></span><strong>{formatPoints(points)}{uiText(" points")}</strong></div>
         </div>

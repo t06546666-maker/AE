@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const {maskCustomerName,maskCustomerResponse}=require('../backend/customer-name-mask.cjs');
+assert.equal(maskCustomerName('Safar Ali'),'S*** A***');
+assert.equal(maskCustomerName('A'),'A***');
+assert.equal(maskCustomerName('S***'),'S***');
+assert.equal(maskCustomerName('  Safar  '),'S***');
+const data={customers:[{name:'Safar',id:'CM123',phone:'123',merchant:{name:'Shop'}}],orders:[{customer:'Ali',merchant:'Shop',amount:100}],customer:{name:'Nila',email:'a@b.c'}};
+const masked=maskCustomerResponse(data);
+assert.equal(masked.customers[0].name,'S***');assert.equal(masked.orders[0].customer,'A***');assert.equal(masked.customer.name,'N***');
+assert.equal(masked.customers[0].merchant.name,'Shop');assert.equal(masked.orders[0].merchant,'Shop');assert.equal(data.customers[0].name,'Safar');
+assert.equal(masked.customers[0].id,'CM123');
+console.log('PASS: merchant customer names masked, IDs/shop names unchanged, source records preserved');

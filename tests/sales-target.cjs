@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');const {monthRange,progress,targetRange}=require('../backend/sales-target.cjs');
+assert.equal(monthRange('2024-02').to,'2024-03-01T00:00:00+05:30');assert.throws(()=>monthRange('2026-13'));
+assert.equal(progress(100000,76000).percent,76);assert.equal(progress(100000,76000).remaining,24000);
+assert.equal(progress(100,100).achieved,true);assert.equal(progress(100,150).percent,100);assert.equal(progress(100,150).remaining,0);
+assert.equal(progress(0,150).target,null);console.log('PASS: monthly target progress, exact achievement, over-target and no-target states');
+const day=targetRange({period:'day',from:'2026-10-10'});assert.equal(day.to,'2026-10-11T00:00:00+05:30');
+const week=targetRange({period:'week',from:'2026-10-11'});assert.equal(week.startDate,'2026-10-05');assert.equal(week.endDate,'2026-10-11');
+const custom=targetRange({period:'custom',from:'2026-10-10',to:'2026-10-19'});assert.equal((Date.parse(custom.to)-Date.parse(custom.from))/86400000,10);
+assert.throws(()=>targetRange({period:'custom',from:'2026-10-19',to:'2026-10-10'}));assert.throws(()=>targetRange({period:'day',from:'2026-02-30'}));
+assert.equal(targetRange({period:'month',month:'2024-02'}).endDate,'2024-02-29');
+assert.notEqual(day.key,custom.key);console.log('PASS: daily, Monday-Sunday weekly, inclusive custom dates, leap months and separate target keys');
