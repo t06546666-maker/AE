@@ -14,6 +14,7 @@ import { useToast } from '../toast';
 import { AllocateMerchantPoints } from '../components/MerchantPointBalance';
 import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
 import { LiveCamera } from '../components/LiveCamera';
+import '../admin-directory.css';
 
 interface CredentialResult {
   merchantCode: string;
@@ -29,6 +30,7 @@ interface CreateMerchantResponse {
 }
 
 export function Merchants() {
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [allocation, setAllocation] = useState<Merchant | null>(null);
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -202,9 +204,10 @@ export function Merchants() {
   }
 
   return (
-    <>
-      <PageHeader title={t('merchants.title')} subtitle={t('merchants.subtitle')} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button></>} />
-      <form className="panel merchant-form" onSubmit={submit}>
+    <div className="admin-directory-page">
+      <PageHeader title={t('merchants.title')} subtitle={uiText('Stores and linked customers across your network')} actions={<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
+      <div className="admin-directory-metrics"><article><span>{uiText('Matching merchants')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.pagination.total.toLocaleString('en-IN')}</strong></article><article><span>{uiText('Categories')}</span><strong>{categoriesQuery.isPending?'…':categoriesQuery.isError?'—':categoriesQuery.data?.categories.length}</strong></article><article><span>{uiText('Showing on this page')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.merchants.length}</strong></article></div>
+      {showOnboarding && <form className="panel merchant-form" onSubmit={submit}>
         <div className="panel-heading">
           <div><h2>{t('merchants.add')}</h2><p>{t('merchants.createSecure')}</p></div>
           <Plus />
@@ -241,10 +244,10 @@ export function Merchants() {
           <Plus size={16} />{create.isPending ? t('merchants.creating') : onboardStep < 3 ? uiText("Next") : t('merchants.add')}
         </button>
         <button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}><MapPinned size={16} />{uiText(" Select location on map")}</button>
-      </form>
+      </form>}
 
       <div className="list-toolbar">
-        <label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('common.search')} /></label>
+        <label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={uiText('Search merchants')} aria-label={t('common.search')} /></label>
       </div>
 
       {merchants.isPending ? <LoadingState label={t('common.loading')} /> : merchants.isError ? (
@@ -253,15 +256,13 @@ export function Merchants() {
         <section className="table-panel">
           <div className="table-scroll">
             <table>
-              <thead><tr><th>{t('merchants.code')}</th><th>{t('merchants.storeName')}</th><th>{uiText("Category")}</th><th>{t('login.email')}</th><th>{t('merchants.phone')}</th><th>{t('merchants.joined')}</th><th>{t('dashboard.orders')}</th><th>{t('merchants.actions')}</th></tr></thead>
+              <thead><tr><th>{t('merchants.storeName')}</th><th>{uiText('Category')}</th><th>{uiText('Contact')}</th><th>{t('merchants.joined')}</th><th>{t('dashboard.orders')}</th><th>{t('merchants.actions')}</th></tr></thead>
               <tbody>
                 {merchants.data?.merchants.map((merchant) => (
                   <tr key={merchant.id}>
-                    <td><strong>{merchant.merchantCode}</strong>{merchant.mustChangePassword ? <small className="table-note">{uiText("Password change required")}</small> : null}</td>
-                    <td><strong>{merchant.name}</strong></td>
+                    <td><Link className="admin-merchant-name" to={`/merchants/${merchant.id}`}><span className="admin-directory-avatar">{merchant.name.slice(0,1)}</span><span><strong>{merchant.name}</strong><small>{merchant.merchantCode}</small></span></Link>{merchant.mustChangePassword ? <small className="table-note">{uiText('Password change required')}</small> : null}</td>
                     <td>{merchant.category || <span className="text-gray-400">{uiText("None")}</span>}</td>
-                    <td>{merchant.email}</td>
-                    <td>{merchant.phone}</td>
+                    <td><span className="admin-contact-stack"><span>{merchant.email}</span><small>{merchant.phone}</small></span></td>
                     <td>{formatDate(merchant.joined)}</td>
                     <td>{merchant.orderCount ?? 0}</td>
                     <td>
@@ -286,7 +287,7 @@ export function Merchants() {
       <ExportModal open={Boolean(exportFormat)} format={exportFormat || 'xlsx'} isAdmin defaultSection="merchants" fixedSection onClose={() => setExportFormat(null)} />
       {allocation && <AllocateMerchantPoints merchantId={allocation.id} name={allocation.name} onClose={() => setAllocation(null)}/>}
       {mapPickerOpen ? <div className="modal-backdrop" onClick={() => setMapPickerOpen(false)}><div className="modal" onClick={(event) => event.stopPropagation()}><button type="button" className="icon-button modal-close" onClick={() => setMapPickerOpen(false)}><X /></button><h2>{uiText("Select merchant location")}</h2><p>{uiText("Search for a place or click the exact location.")}</p><div style={{ display: 'flex', gap: 8, marginBottom: 10 }}><input value={mapSearch} onChange={event => setMapSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); (event.currentTarget.nextElementSibling as HTMLButtonElement)?.click(); } }} placeholder={uiText("Search address or place")} style={{ flex: 1 }} /><button type="button" className="button secondary" onClick={() => { const google = (window as any).google; if (!mapSearch.trim() || !google?.maps || !mapRef.current) return; setLocationMessage('Searching...'); new google.maps.Geocoder().geocode({ address: mapSearch.trim() }, (results: any[], status: string) => { const point = results?.[0]?.geometry?.location; if (status !== 'OK' || !point) { setLocationMessage('Place not found. Try a more specific address.'); return; } const position = { lat: point.lat(), lng: point.lng() }; setLatitude(position.lat.toFixed(6)); setLongitude(position.lng.toFixed(6)); mapRef.current.setCenter(position); mapRef.current.setZoom(16); markerRef.current?.setMap(null); markerRef.current = new google.maps.Marker({ map: mapRef.current, position, title: results[0].formatted_address }); setLocationMessage('Location selected.'); }); }}>{uiText("Search")}</button></div><div ref={pickerRef} style={{ height: 360, borderRadius: 12, overflow: 'hidden' }} /><div className="form-actions"><button type="button" className="button secondary" onClick={() => { setLocationMessage(''); if (!navigator.geolocation) { setLocationMessage('Location is not supported by this browser.'); return; } setLocationMessage('Finding your location...'); navigator.geolocation.getCurrentPosition(({ coords }) => { const lat = coords.latitude.toFixed(6); const lng = coords.longitude.toFixed(6); setLatitude(lat); setLongitude(lng); const position = { lat: coords.latitude, lng: coords.longitude }; mapRef.current?.setCenter(position); mapRef.current?.setZoom(16); const google = (window as any).google; if (google?.maps && mapRef.current) { markerRef.current?.setMap(null); markerRef.current = new google.maps.Marker({ map: mapRef.current, position, title: 'Your current location' }); } setLocationMessage('Current location selected.'); }, () => setLocationMessage('Unable to get your location. Allow location access and try again.'), { enableHighAccuracy: true, timeout: 10000 }); }}>{uiText("Use my current location")}</button><button type="button" className="button primary" onClick={() => setMapPickerOpen(false)}>{uiText("Use this location")}</button></div>{locationMessage ? <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>{locationMessage}</p> : null}</div></div> : null}
-    </>
+    </div>
   );
 }
 

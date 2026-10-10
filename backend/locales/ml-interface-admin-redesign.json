@@ -1,0 +1,23 @@
+{
+ "Your network at a glance":"നിങ്ങളുടെ നെറ്റ്‌വർക്കിന്റെ സംക്ഷിപ്ത വിവരം",
+ "All registered stores":"രജിസ്റ്റർ ചെയ്ത എല്ലാ കടകളും",
+ "All customer accounts":"എല്ലാ ഉപഭോക്തൃ അക്കൗണ്ടുകളും",
+ "Today’s recorded purchases":"ഇന്ന് രേഖപ്പെടുത്തിയ വാങ്ങലുകൾ",
+ "Issued today":"ഇന്ന് നൽകിയ പോയിന്റുകൾ",
+ "Needs attention":"ശ്രദ്ധിക്കേണ്ട കാര്യങ്ങൾ",
+ "Review requests and manage your network":"അപേക്ഷകൾ പരിശോധിച്ച് നെറ്റ്‌വർക്ക് നിയന്ത്രിക്കുക",
+ "Field manager updates":"ഫീൽഡ് മാനേജർ അപ്‌ഡേറ്റുകൾ",
+ "Offer count covers the loaded records. Open Offers for all reviews.":"ലോഡ് ചെയ്ത രേഖകളിലെ ഓഫറുകളുടെ എണ്ണമാണ് കാണിക്കുന്നത്. എല്ലാ അപേക്ഷകളും കാണാൻ ഓഫറുകൾ തുറക്കുക.",
+ "Some review counts are unavailable. Open the section to retry.":"ചില അപേക്ഷകളുടെ എണ്ണം ലഭ്യമല്ല. വീണ്ടും ശ്രമിക്കാൻ ആ വിഭാഗം തുറക്കുക.",
+ "Some account totals could not be loaded. Refresh to retry.":"ചില അക്കൗണ്ടുകളുടെ എണ്ണം ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കാൻ പേജ് പുതുക്കുക.",
+ "Signed in as":"ലോഗിൻ ചെയ്തിരിക്കുന്നത്",
+ "Admin directories":"അഡ്മിൻ പട്ടികകൾ",
+ "Stores and linked customers":"കടകളും ബന്ധിപ്പിച്ച ഉപഭോക്താക്കളും",
+ "Profiles and onboarding source":"പ്രൊഫൈലുകളും രജിസ്ട്രേഷൻ ഉറവിടവും",
+ "Visits, attendance and onboarding":"സന്ദർശനങ്ങൾ, ഹാജർ, രജിസ്ട്രേഷൻ",
+ "Recorded purchases today":"ഇന്ന് രേഖപ്പെടുത്തിയ വാങ്ങലുകൾ",
+ "Actual AE records, not total business sales":"യഥാർത്ഥ AE രേഖകൾ; കടയുടെ മൊത്തം വിൽപ്പനയല്ല",
+ "View transactions":"ഇടപാടുകൾ കാണുക",
+ "Platform activity":"പ്ലാറ്റ്‌ഫോം ഉപയോഗം",
+ "More activity details":"കൂടുതൽ ഉപയോഗ വിവരങ്ങൾ"
+}

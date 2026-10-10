@@ -1767,7 +1767,11 @@ app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_mana
 });
 app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,res) => {
   const paging=paginationFromRequest(req,25,100);
+  const source=String(req.query.source||'all');
+  if(!['all','self','merchant','unknown'].includes(source))return res.status(400).json({error:'Invalid onboarding source'});
   let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id',{count:'exact'}).order('created_at',{ascending:false});
+  if(source==='unknown')query=query.is('registration_source',null);
+  else if(source!=='all')query=query.eq('registration_source',source);
   if(paging.search) query=query.or(`name.ilike.%${paging.search}%,customer_code.ilike.%${paging.search}%,phone.ilike.%${paging.search}%`);
   const result=await query.range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});

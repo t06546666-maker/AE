@@ -1,0 +1,21 @@
+{
+ "Field operations, attendance and merchant onboarding":"ഫീൽഡ് പ്രവർത്തനങ്ങൾ, ഹാജർ, വ്യാപാരി രജിസ്ട്രേഷൻ",
+ "Registered field managers":"രജിസ്റ്റർ ചെയ്ത ഫീൽഡ് മാനേജർമാർ",
+ "Matching managers":"തിരച്ചിലിൽ കണ്ടെത്തിയ മാനേജർമാർ",
+ "Pending updates in loaded records":"ലോഡ് ചെയ്ത രേഖകളിലെ തീർപ്പാക്കാത്ത അപ്‌ഡേറ്റുകൾ",
+ "Search field managers":"ഫീൽഡ് മാനേജർമാരെ തിരയുക",
+ "Last recorded session":"അവസാനം രേഖപ്പെടുത്തിയ സെഷൻ",
+ "Session record":"സെഷൻ രേഖ",
+ "No sessions in loaded records":"ലോഡ് ചെയ്ത രേഖകളിൽ സെഷനുകളില്ല",
+ "No logout recorded":"ലോഗൗട്ട് രേഖപ്പെടുത്തിയിട്ടില്ല",
+ "View manager":"മാനേജറെ കാണുക",
+ "No matching field managers.":"തിരച്ചിലിൽ ഫീൽഡ് മാനേജർമാരെ കണ്ടെത്തിയില്ല.",
+ "Session and update summaries cover the latest 200 loaded records. A session without logout does not prove the manager is online.":"സെഷൻ, അപ്‌ഡേറ്റ് സംഗ്രഹങ്ങൾ അവസാനം ലോഡ് ചെയ്ത 200 രേഖകളെ അടിസ്ഥാനമാക്കിയുള്ളതാണ്. ലോഗൗട്ട് ഇല്ലാത്ത സെഷൻ മാനേജർ ഓൺലൈനിലാണെന്ന് തെളിയിക്കുന്നില്ല.",
+ "No pending updates in loaded records.":"ലോഡ് ചെയ്ത രേഖകളിൽ തീർപ്പാക്കാത്ത അപ്‌ഡേറ്റുകളില്ല.",
+ "Back to Field Managers":"ഫീൽഡ് മാനേജർമാരുടെ പട്ടികയിലേക്ക് മടങ്ങുക",
+ "Visits in profile snapshot":"പ്രൊഫൈൽ സംഗ്രഹത്തിലെ സന്ദർശനങ്ങൾ",
+ "Profile snapshot counts cover up to 200 records. Use the history tabs below to browse all records.":"പ്രൊഫൈൽ സംഗ്രഹത്തിൽ പരമാവധി 200 രേഖകളാണ് ഉൾപ്പെടുന്നത്. എല്ലാ രേഖകളും കാണാൻ താഴെയുള്ള ചരിത്ര വിഭാഗങ്ങൾ ഉപയോഗിക്കുക.",
+ "Record details":"രേഖയുടെ വിശദാംശങ്ങൾ",
+ "View recorded location":"രേഖപ്പെടുത്തിയ സ്ഥലം കാണുക",
+ "Submitted details":"സമർപ്പിച്ച വിശദാംശങ്ങൾ"
+}

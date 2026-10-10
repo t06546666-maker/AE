@@ -1,50 +1,46 @@
-import { uiText } from '../uiText';
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { Activity, ArrowUpRight, Building2, ChevronRight, CircleDollarSign, Gift, ListChecks, Plus, ReceiptText, ShieldCheck, Users } from 'lucide-react';
+import { Building2, CalendarDays, ChevronRight, CircleDollarSign, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { apiFetch, queryString } from '../api';
+import { apiFetch } from '../api';
 import type { DashboardData, Merchant, Offer, UserProfile } from '../types';
 import { dateInput, formatCurrency, formatPoints } from '../utils';
-import '../admin-dashboard.css';
+import { uiText } from '../uiText';
 import { AdminUsage } from '../components/AdminUsage';
-
-const empty: DashboardData = { summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 }, intervals: [], retention: { lifetimeCustomers: 0, selectedVisits: 0, todayVisits: 0, weekVisits: 0, monthVisits: 0 } };
+import { ErrorState, LoadingState } from '../components/Common';
+import '../admin-dashboard.css';
 
 export function AdminDashboard({ user }: { user: UserProfile }) {
-  const today = dateInput();
-  const dashboard = useQuery({ queryKey: ['admin-dashboard', today], queryFn: () => apiFetch<DashboardData>(`/api/dashboard?from=${today}&to=${today}`) });
-  const customers = useQuery({ queryKey: ['admin-dashboard-customers'], queryFn: () => apiFetch<{ customers: unknown[]; pagination?: { total?: number } }>('/api/customers?page=1&pageSize=1') });
-  const merchants = useQuery({ queryKey: ['admin-dashboard-merchants'], queryFn: () => apiFetch<{ merchants: Merchant[]; pagination?: { total?: number } }>('/api/merchants?page=1&pageSize=1') });
-  const offers = useQuery({ queryKey: ['admin-dashboard-offers'], queryFn: () => apiFetch<{ offers: Offer[] }>('/api/offers?page=1&pageSize=50') });
-  const lists = useQuery({ queryKey: ['admin-dashboard-lists'], queryFn: () => apiFetch<{ requests: Array<{ id: string; status: string; product_list?: string; merchants?: { name?: string }; customers?: { name?: string } }> }>('/api/product-list-requests') });
-  const data = dashboard.data || empty;
-  const merchantTotal = merchants.data?.pagination?.total ?? merchants.data?.merchants?.length ?? 0;
-  const customerTotal = customers.data?.pagination?.total ?? customers.data?.customers?.length ?? data.summary.totalCustomers;
-  const pendingOffers = (offers.data?.offers || []).filter((item) => item.status === 'pending');
-  const pendingLists = (lists.data?.requests || []).filter((item) => item.status === 'pending');
-  const max = Math.max(1, ...data.intervals.map((item) => item.revenue));
-  const name = user.full_name?.split(' ')[0] || 'Admin';
-
-  return <div className="admin-dashboard">
-    <div className="admin-dashboard-heading"><div><p className="admin-eyebrow">{uiText("AFFILIATE AE · ADMIN PANEL")}</p><h1>{uiText("Good morning, ")}{name} <span aria-hidden>👋</span></h1><p>{uiText("Here’s what’s happening across your network today.")}</p></div><div className="admin-heading-actions"><span className="admin-date-chip">{uiText("Today ")}<ChevronRight size={15} /></span><Link className="button primary" to="/offers"><ArrowUpRight size={16} />{uiText(" Export report")}</Link></div></div>
-    <div className="admin-kpis">
-      <Kpi icon={<Users />} label="Total customers" value={customerTotal.toLocaleString()} tone="blue" />
-      <Kpi icon={<Building2 />} label="Registered merchants" value={merchantTotal.toLocaleString()} tone="purple" />
-      <Kpi icon={<CircleDollarSign />} label="Total sales" value={formatCurrency(data.summary.totalRevenue)} tone="green" />
-      <Kpi icon={<Gift />} label="Points issued" value={formatPoints(data.summary.rewardPointsIssued)} tone="orange" />
-    </div>
-    <AdminUsage />
-    <div className="admin-dashboard-grid">
-      <section className="admin-card admin-chart-card"><div className="admin-card-title"><div><h2>{uiText("Sales and customer growth")}</h2><p>{uiText("Revenue recorded for the selected period")}</p></div><Link to="/orders">{uiText("View reports ")}<ArrowUpRight size={15} /></Link></div><div className="admin-bars">{(data.intervals.length ? data.intervals : [{ label: 'Today', revenue: 0, orders: 0 }]).map((item) => <div className="admin-bar-column" key={item.label}><div className="admin-bar" style={{ height: `${Math.max(8, (item.revenue / max) * 150)}px` }} title={formatCurrency(item.revenue)} /><span>{uiText(item.label)}</span></div>)}</div></section>
-      <section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Approval queue")}</h2><p>{uiText("Items needing your attention")}</p></div><ListChecks size={20} /></div><QueueRow icon={<Gift />} label="Offers awaiting review" count={pendingOffers.length} href="/offers" /><QueueRow icon={<ReceiptText />} label="Product lists" count={pendingLists.length} href="/customer-product-lists" /><QueueRow icon={<ShieldCheck />} label="Merchant accounts" count={0} href="/merchants" /></section>
-    </div>
-    <div className="admin-dashboard-grid lower"><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Quick actions")}</h2><p>{uiText("Jump straight into common tasks")}</p></div></div><div className="admin-quick-actions"><QuickAction icon={<Plus />} text="Add customer" href="/add-customer" /><QuickAction icon={<Building2 />} text="Add merchant" href="/merchants" /><QuickAction icon={<Gift />} text="Review offers" href="/offers" /><QuickAction icon={<Activity />} text="Reward settings" href="/reward-settings" /></div></section><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Network snapshot")}</h2><p>{uiText("Live totals from Supabase")}</p></div></div><div className="admin-snapshot"><div><strong>{data.summary.totalOrders.toLocaleString()}</strong><span>{uiText("Transactions today")}</span></div><div><strong>{data.retention.monthVisits.toLocaleString()}</strong><span>{uiText("Visits this month")}</span></div><div><strong>{pendingOffers.length + pendingLists.length}</strong><span>{uiText("Pending reviews")}</span></div></div></section></div>
-    <div className="admin-dashboard-grid admin-analytics-grid"><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Network composition")}</h2><p>{uiText("Customers and merchants currently connected")}</p></div><Users size={20} /></div><div className="admin-donut-row"><div className="admin-donut" style={{ background: `conic-gradient(#3158f5 0 ${customerTotal + merchantTotal ? customerTotal / (customerTotal + merchantTotal) * 100 : 0}%, #7b55ed 0 100%)` }}><strong>{(customerTotal + merchantTotal).toLocaleString()}<small>{uiText("profiles")}</small></strong></div><div className="admin-legend"><span><i className="customer" />{uiText("Customers ")}<b>{customerTotal.toLocaleString()}</b></span><span><i className="merchant" />{uiText("Merchants ")}<b>{merchantTotal.toLocaleString()}</b></span></div></div></section><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Operations pulse")}</h2><p>{uiText("What needs attention today")}</p></div><Activity size={20} /></div><PulseRow label="Offers awaiting review" value={pendingOffers.length} max={Math.max(1, pendingOffers.length, pendingLists.length)} tone="purple" /><PulseRow label="Product lists awaiting review" value={pendingLists.length} max={Math.max(1, pendingOffers.length, pendingLists.length)} tone="blue" /><PulseRow label="Transactions recorded" value={data.summary.totalOrders} max={Math.max(1, data.summary.totalOrders, data.retention.monthVisits)} tone="green" /></section></div>
-  </div>;
+ const today=dateInput();
+ const dashboard=useQuery({queryKey:['admin-dashboard',today],queryFn:()=>apiFetch<DashboardData>(`/api/dashboard?from=${today}&to=${today}`)});
+ const customers=useQuery({queryKey:['admin-dashboard-customer-count'],queryFn:()=>apiFetch<{pagination:{total:number}}>('/api/admin/customers?page=1&pageSize=1')});
+ const merchants=useQuery({queryKey:['admin-dashboard-merchants'],queryFn:()=>apiFetch<{merchants:Merchant[];pagination?:{total?:number}}>('/api/merchants?page=1&pageSize=1')});
+ const offers=useQuery({queryKey:['admin-dashboard-offers'],queryFn:()=>apiFetch<{offers:Offer[];pagination?:{total?:number}}>('/api/offers?page=1&pageSize=50')});
+ const lists=useQuery({queryKey:['admin-dashboard-lists'],queryFn:()=>apiFetch<{requests:Array<{status:string}>}>('/api/product-list-requests')});
+ const pendingOffers=offers.data?.offers.filter(item=>item.status==='pending').length;
+ const pendingLists=lists.data?.requests.filter(item=>item.status==='pending').length;
+ const moreOffers=(offers.data?.pagination?.total||0)>(offers.data?.offers.length||0);
+ const count=(loading:boolean,error:boolean,n:number|undefined)=>loading?'…':error||n==null?'—':n.toLocaleString('en-IN');
+ return <div className="admin-dashboard admin-overview-v2">
+ <header className="admin-dashboard-heading"><div><p className="admin-eyebrow">{uiText('AE ADMIN')}</p><h1>{uiText('Overview')}</h1><p>{uiText('Your network at a glance')}</p></div><div className="admin-date-chip"><CalendarDays size={18}/><time dateTime={today}>{new Date(`${today}T12:00:00`).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</time></div></header>
+ <div className="admin-kpis">
+ <Kpi icon={<Building2/>} label="Registered merchants" value={count(merchants.isPending,merchants.isError,merchants.data?.pagination?.total)} tone="blue" hint="All registered stores"/>
+ <Kpi icon={<Users/>} label="Customers" value={count(customers.isPending,customers.isError,customers.data?.pagination.total)} tone="purple" hint="All customer accounts"/>
+ <Kpi icon={<CircleDollarSign/>} label="Recorded sales" value={dashboard.isPending?'…':dashboard.isError?'—':formatCurrency(dashboard.data!.summary.totalRevenue)} tone="green" hint="Today’s recorded purchases"/>
+ <Kpi icon={<Gift/>} label="Points issued" value={dashboard.isPending?'…':dashboard.isError?'—':formatPoints(dashboard.data!.summary.rewardPointsIssued)} tone="orange" hint="Issued today"/>
+ </div>
+ {(customers.isError||merchants.isError)&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}
+ <div className="admin-dashboard-grid admin-overview-main"><AdminUsage/><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText('Needs attention')}</h2><p>{uiText('Review requests and manage your network')}</p></div><ListChecks size={20}/></div>
+ <Queue icon={<Gift/>} label="Offer approvals" count={offers.isPending?'…':offers.isError?'—':`${pendingOffers}${moreOffers?'+':''}`} href="/offers"/>
+ <Queue icon={<ReceiptText/>} label="Product lists" count={count(lists.isPending,lists.isError,pendingLists)} href="/customer-product-lists"/>
+ <Queue icon={<UserCog/>} label="Field manager updates" count="→" href="/field-managers"/>
+ {moreOffers&&<p className="admin-data-note">{uiText('Offer count covers the loaded records. Open Offers for all reviews.')}</p>}
+ {(offers.isError||lists.isError)&&<p role="alert" className="admin-data-note">{uiText('Some review counts are unavailable. Open the section to retry.')}</p>}
+ <div className="admin-attention-footer"><span>{uiText('Signed in as')}</span><strong>{user.full_name||uiText('Admin')}</strong></div></section></div>
+ <nav className="admin-directory-cards" aria-label={uiText('Admin directories')}><Directory icon={<Building2/>} title="Merchants" description="Stores and linked customers" href="/merchants" tone="blue"/><Directory icon={<Users/>} title="Customers" description="Profiles and onboarding source" href="/customers" tone="purple"/><Directory icon={<UserCog/>} title="Field Managers" description="Visits, attendance and onboarding" href="/field-managers" tone="green"/></nav>
+ <section className="admin-card admin-recorded-summary"><div className="admin-card-title"><div><h2>{uiText('Recorded purchases today')}</h2><p>{uiText('Actual AE records, not total business sales')}</p></div><Link to="/orders">{uiText('View transactions')}<ChevronRight size={16}/></Link></div>{dashboard.isPending?<LoadingState/>:dashboard.isError?<ErrorState error={dashboard.error} retry={()=>void dashboard.refetch()}/>:<div className="admin-snapshot"><div><strong>{dashboard.data!.summary.totalOrders.toLocaleString('en-IN')}</strong><span>{uiText('Transactions today')}</span></div><div><strong>{formatCurrency(dashboard.data!.summary.totalRevenue)}</strong><span>{uiText('Recorded sales')}</span></div><div><strong>{formatPoints(dashboard.data!.summary.rewardPointsIssued)}</strong><span>{uiText('Points issued')}</span></div></div>}</section>
+ </div>;
 }
-
-function Kpi({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: string }) { return <div className={`admin-kpi ${tone}`}><div className="admin-kpi-icon">{icon}</div><div><span>{uiText(label)}</span><strong>{value}</strong><small><ArrowUpRight size={13} />{uiText(" Live data")}</small></div></div>; }
-function QueueRow({ icon, label, count, href }: { icon: ReactNode; label: string; count: number; href: string }) { return <Link className="admin-queue-row" to={href}><span className="admin-queue-icon">{icon}</span><span>{uiText(label)}</span><strong>{count}</strong><ChevronRight size={16} /></Link>; }
-function QuickAction({ icon, text, href }: { icon: ReactNode; text: string; href: string }) { return <Link className="admin-quick-action" to={href}>{icon}<span>{text}</span><ChevronRight size={15} /></Link>; }
-function PulseRow({ label, value, max, tone }: { label: string; value: number; max: number; tone: string }) { return <div className="admin-pulse-row"><div><span>{uiText(label)}</span><strong>{value.toLocaleString()}</strong></div><div className="admin-pulse-track"><i className={tone} style={{ width: `${Math.min(100, value / max * 100)}%` }} /></div></div>; }
+function Kpi({icon,label,value,tone,hint}:{icon:ReactNode;label:string;value:string;tone:string;hint:string}){return <article className={`admin-kpi ${tone}`}><span className="admin-kpi-icon">{icon}</span><div><span>{uiText(label)}</span><strong>{value}</strong><small>{uiText(hint)}</small></div></article>;}
+function Queue({icon,label,count,href}:{icon:ReactNode;label:string;count:string;href:string}){return <Link className="admin-queue-row" to={href}><span className="admin-queue-icon">{icon}</span><span>{uiText(label)}</span><strong>{count}</strong><ChevronRight size={16}/></Link>;}
+function Directory({icon,title,description,href,tone}:{icon:ReactNode;title:string;description:string;href:string;tone:string}){return <Link className={`admin-directory-card ${tone}`} to={href}><span className="admin-directory-icon">{icon}</span><div><h2>{uiText(title)}</h2><p>{uiText(description)}</p></div><span className="admin-directory-open">{uiText('Open')}<ChevronRight size={17}/></span></Link>;}
