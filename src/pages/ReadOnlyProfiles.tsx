@@ -5,6 +5,7 @@ import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
 import { AdminForceCloseVisit } from '../components/AdminForceCloseVisit';
 import { AdminManagerOverview } from '../components/AdminManagerOverview';
+import { AdminFieldHistory } from '../components/AdminFieldHistory';
 
 function Records({ title, rows }: { title: string; rows: Record<string, unknown>[] }) {
   const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
@@ -18,6 +19,6 @@ export function ReadOnlyProfiles({ kind }: { kind: 'manager' | 'merchant' | 'fie
   if (query.isPending) return <LoadingState />;
   if (query.isError) return <ErrorState error={query.error} retry={() => void query.refetch()} />;
   const data = query.data;
-  if (kind === 'manager') return <AdminManagerOverview data={data} />;
+  if (kind === 'manager') return <><AdminManagerOverview data={data} /><AdminFieldHistory id={id} /></>;
   return <div className="dashboard-page"><Link to={kind === 'field-merchant' ? '/field?section=directory' : '/merchants'}>{uiText("← Back")}</Link><h1>{uiText("Merchant Profile")}</h1><p>{uiText("Profile details are read-only · Full authorised contact details · Latest 200 records per activity category.")}</p><Records title={uiText("Profile")} rows={[data.profile || data.merchant]} />{data.summary && <Records title={uiText("Dashboard Summary")} rows={[data.summary]} />}{data.customers && <Records title={uiText("Customers and Rewards")} rows={data.customers} />}{kind === 'field-merchant' && data.activityRecorded === false && <p role="alert">{uiText("Profile loaded, but activity logging is unavailable. Admin must apply the activity migration.")}</p>}{kind === 'merchant' && (records.isPending ? <LoadingState /> : records.isError ? <ErrorState error={records.error} retry={() => void records.refetch()} /> : <><Records title={uiText("Transactions")} rows={records.data.orders || []} /><Records title={uiText("Payments")} rows={records.data.payments || []} /></>)}</div>;
 }

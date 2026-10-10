@@ -1765,6 +1765,47 @@ app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_mana
   const activity = await supabaseAdmin.from('field_manager_activity').insert({ manager_id: req.auth.profile.id, merchant_id: merchant.id, action: 'merchant_profile_view' });
   res.json({ merchant, activityRecorded: !activity.error });
 });
+app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,res) => {
+  const paging=paginationFromRequest(req,25,100);
+  let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id',{count:'exact'}).order('created_at',{ascending:false});
+  if(paging.search) query=query.or(`name.ilike.%${paging.search}%,customer_code.ilike.%${paging.search}%,phone.ilike.%${paging.search}%`);
+  const result=await query.range(paging.from,paging.to);
+  if(result.error)return res.status(500).json({error:result.error.message});
+  res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
+});
+app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), async(req,res)=>{
+  const result=await supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id').eq('id',req.params.id).maybeSingle();
+  if(result.error)return res.status(500).json({error:result.error.message});
+  if(!result.data)return res.status(404).json({error:'Customer not found'});
+  const memberships=await supabaseAdmin.from('customer_merchants').select('merchant_id,reward_points,qr_scans,joined_at,merchants(id,name,merchant_code)').eq('customer_id',req.params.id).order('joined_at');
+  if(memberships.error)return res.status(500).json({error:memberships.error.message});
+  let onboardingMerchant=null;
+  if(result.data.merchant_id){
+    const merchant=await supabaseAdmin.from('merchants').select('id,name,merchant_code').eq('id',result.data.merchant_id).maybeSingle();
+    if(merchant.error)return res.status(500).json({error:merchant.error.message});
+    onboardingMerchant=merchant.data;
+  }
+  res.json({customer:result.data,memberships:memberships.data,onboardingMerchant});
+});
+app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), async(req,res)=>{
+  const selections={orders:['orders','id,order_no,merchant_id,amount,reward_points,source,created_at,merchants(name,merchant_code)'],redemptions:['point_redemptions','id,merchant_id,transaction_amount,points_redeemed,discount_amount,created_at,merchants(name,merchant_code)'],payments:['payment_transactions','id,merchant_id,amount,status,created_at,merchants(name,merchant_code)']};
+  const selection=selections[req.query.type||'orders'];
+  if(!selection)return res.status(400).json({error:'Invalid activity type'});
+  const paging=paginationFromRequest(req,25,100);
+  const result=await supabaseAdmin.from(selection[0]).select(selection[1],{count:'exact'}).eq('customer_id',req.params.id).order('created_at',{ascending:false}).range(paging.from,paging.to);
+  if(result.error)return res.status(500).json({error:result.error.message});
+  res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
+});
+app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin'),async(req,res)=>{
+  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
+  const selection=selections[req.query.type||'visits'];
+  if(!selection)return res.status(400).json({error:'Invalid record type'});
+  const paging=paginationFromRequest(req,25,100);
+  const result=await supabaseAdmin.from(selection[0]).select(selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false}).range(paging.from,paging.to);
+  if(result.error)return res.status(500).json({error:result.error.message});
+  function safe(value){if(Array.isArray(value))return value.map(safe);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!/password|token|secret|credential/i.test(key)).map(([key,item])=>[key,safe(item)]));return value;}
+  res.json({records:safe(result.data),pagination:paginationMeta(paging,result.count)});
+});
 app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
   const { data: profile, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('id', req.params.id).eq('role', 'field_manager').maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
@@ -1785,6 +1826,81 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   if (fatal) return res.status(500).json({ error: fatal.error.message });
   res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error, attendance: attendance.data || [], attendanceAvailable: !attendance.error, workRequests: workRequests.data || [], workRequestsAvailable: !workRequests.error, onboardedTotal: onboarded.error ? null : onboarded.count });
 });
+async function recordUsage(req,res) {
+  const actor=req.customer?{id:req.customer.id,role:'customer',merchant_id:null}:req.auth.profile;
+  const platform=req.body.platform;
+  if(!['web','android'].includes(platform))return res.status(400).json({error:'Invalid platform'});
+  const installationId=String(req.body.installationId || '');
+  if(installationId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(installationId))return res.status(400).json({error:'Invalid installation identifier'});
+  try {
+    const database=await checkoutBillDatabase();const now=new Date().toISOString();const day=new Date(Date.now()+330*60000).toISOString().slice(0,10);
+    const actorKey=`${actor.role}:${actor.id}`;const hash=crypto.createHash('sha256').update(actorKey).digest('hex');
+    const profile=database.collection('ae_usage_users').doc(hash),daily=database.collection('ae_usage_daily').doc(`${day}_${hash}`);
+    await database.runTransaction(async transaction=>{
+      const [previous,previousDaily]=await Promise.all([transaction.get(profile),transaction.get(daily)]);
+      const base={actorKey,role:actor.role,merchantId:actor.merchant_id || null};
+      if(!previous.exists||Date.parse(now)-Date.parse(previous.data().lastSeen)>=60000||!previousDaily.data()?.platforms?.[platform]) {
+        transaction.set(profile,{...base,lastSeen:now,firstSeen:previous.data()?.firstSeen || now,platforms:{...previous.data()?.platforms,[platform]:true}},{merge:true});
+      }
+      if(!previousDaily.data()?.platforms?.[platform])transaction.set(daily,{...base,day,platforms:{[platform]:true}},{merge:true});
+    });
+    if(platform==='android'&&installationId) {
+      const ref=database.collection('ae_android_installations').doc(installationId);
+      await database.runTransaction(async transaction=>{const existing=await transaction.get(ref);if(!existing.exists)transaction.create(ref,{firstSeen:now,platform:'android'});});
+    }
+    res.json({success:true});
+  }catch(error){res.status(503).json({error:'Usage tracking is temporarily unavailable.'});}
+}
+app.post('/api/usage',requireAuth,recordUsage);
+app.post('/api/customer/usage',requireCustomerAuth,recordUsage);
+app.get('/api/admin/usage',requireAuth,requireRole('admin'),async(req,res)=>{
+  const from=Date.parse(req.query.from),to=Date.parse(req.query.to);
+  if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>32*86400000)return res.status(400).json({error:'Choose a date range of up to 31 days.'});
+  try {
+    const database=await checkoutBillDatabase();const {summarizeUsage}=require('./backend/usage-metrics.cjs');
+    const startDay=new Date(from+330*60000).toISOString().slice(0,10),lastDay=new Date(to-1+330*60000).toISOString().slice(0,10);
+    const [days,recent,installs]=await Promise.all([
+      database.collection('ae_usage_daily').where('day','>=',startDay).where('day','<=',lastDay).get(),
+      database.collection('ae_usage_users').where('lastSeen','>=',new Date(Date.now()-5*60000).toISOString()).get(),
+      database.collection('ae_android_installations').count().get(),
+    ]);
+    const trackedSince=await database.collection('ae_usage_users').orderBy('firstSeen').limit(1).get();
+    res.json({...summarizeUsage(days.docs.map(doc=>doc.data())),recentlyActive:summarizeUsage(recent.docs.map(doc=>doc.data())),trackedAndroidInstallations:installs.data().count,trackedSince:trackedSince.docs[0]?.data().firstSeen || null});
+  }catch(error){res.status(503).json({error:'Usage metrics are temporarily unavailable.'});}
+});
+
+app.get('/api/admin/merchants/:id/details',requireAuth,requireRole('admin'),async(req,res)=>{
+  const {data,error}=await supabaseAdmin.from('merchants').select('*,merchant_categories(name)').eq('id',req.params.id).maybeSingle();
+  if(error)return res.status(500).json({error:error.message});if(!data)return res.status(404).json({error:'Merchant not found'});
+  const allowed=['id','merchant_code','name','email','phone','address','latitude','longitude','category_id','merchant_categories','route_name','opening_time','closing_time','image_url','images','created_at','point_balance','reward_rate_bps','earn_points_per_100','redeem_discount_per_100','redeem_discount_type','redeem_flat_amount','subscription_expires_at'];
+  res.json({merchant:Object.fromEntries(allowed.filter(key=>key in data).map(key=>[key,data[key]]))});
+});
+app.get('/api/admin/merchants/:id/activity',requireAuth,requireRole('admin'),async(req,res)=>{
+  const paging=paginationFromRequest(req,25,100);const type=String(req.query.type || 'orders');
+  const configs={
+    customers:['customer_merchants','customer_id,reward_points,qr_scans,joined_at,customers(id,customer_code,name,phone,email,created_at)','joined_at'],
+    orders:['orders','id,order_no,customer_id,amount,reward_points,reward_percentage,is_returning,source,location,email_sent,created_at,customers(id,customer_code,name,phone,email)','created_at'],
+    redemptions:['point_redemptions','id,customer_id,transaction_amount,points_redeemed,discount_percentage,discount_amount,created_at,customers(id,customer_code,name,phone,email)','created_at'],
+    payments:['payment_transactions','id,customer_id,amount,status,created_at,customers(id,customer_code,name,phone,email)','created_at'],
+    offers:['offers','id,title,description,audience,status,expires_at,created_at','created_at'],
+  };
+  if(!Object.hasOwn(configs,type))return res.status(400).json({error:'Invalid activity category'});
+  const [table,columns,dateField]=configs[type];
+  let query=supabaseAdmin.from(table).select(columns,{count:'exact'}).eq('merchant_id',req.params.id).order(dateField,{ascending:false});
+  if(req.query.customerId) {
+    if(type==='offers')return res.status(400).json({error:'Offers are merchant-level records.'});
+    query=query.eq('customer_id',String(req.query.customerId));
+  }
+  if(req.query.from||req.query.to) {
+    const from=Date.parse(String(req.query.from)),to=Date.parse(String(req.query.to));
+    if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from)return res.status(400).json({error:'Choose valid dates'});
+    query=query.gte(dateField,new Date(from).toISOString()).lt(dateField,new Date(to).toISOString());
+  }
+  const {data,error,count}=await query.range(paging.from,paging.to);
+  if(error)return res.status(500).json({error:error.message});
+  res.json({records:data || [],pagination:paginationMeta(paging,count)});
+});
+
 app.get('/api/admin/merchants/:id/records', requireAuth, requireRole('admin'), async (req, res) => {
   const results = await Promise.all([
     supabaseAdmin.from('orders').select('id,order_no,customer_id,amount,reward_points,created_at').eq('merchant_id', req.params.id).order('created_at', { ascending: false }).limit(200),

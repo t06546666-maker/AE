@@ -7,6 +7,7 @@ import { apiFetch, queryString } from '../api';
 import type { DashboardData, Merchant, Offer, UserProfile } from '../types';
 import { dateInput, formatCurrency, formatPoints } from '../utils';
 import '../admin-dashboard.css';
+import { AdminUsage } from '../components/AdminUsage';
 
 const empty: DashboardData = { summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 }, intervals: [], retention: { lifetimeCustomers: 0, selectedVisits: 0, todayVisits: 0, weekVisits: 0, monthVisits: 0 } };
 
@@ -29,10 +30,11 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
     <div className="admin-dashboard-heading"><div><p className="admin-eyebrow">{uiText("AFFILIATE AE · ADMIN PANEL")}</p><h1>{uiText("Good morning, ")}{name} <span aria-hidden>👋</span></h1><p>{uiText("Here’s what’s happening across your network today.")}</p></div><div className="admin-heading-actions"><span className="admin-date-chip">{uiText("Today ")}<ChevronRight size={15} /></span><Link className="button primary" to="/offers"><ArrowUpRight size={16} />{uiText(" Export report")}</Link></div></div>
     <div className="admin-kpis">
       <Kpi icon={<Users />} label="Total customers" value={customerTotal.toLocaleString()} tone="blue" />
-      <Kpi icon={<Building2 />} label="Active merchants" value={merchantTotal.toLocaleString()} tone="purple" />
+      <Kpi icon={<Building2 />} label="Registered merchants" value={merchantTotal.toLocaleString()} tone="purple" />
       <Kpi icon={<CircleDollarSign />} label="Total sales" value={formatCurrency(data.summary.totalRevenue)} tone="green" />
       <Kpi icon={<Gift />} label="Points issued" value={formatPoints(data.summary.rewardPointsIssued)} tone="orange" />
     </div>
+    <AdminUsage />
     <div className="admin-dashboard-grid">
       <section className="admin-card admin-chart-card"><div className="admin-card-title"><div><h2>{uiText("Sales and customer growth")}</h2><p>{uiText("Revenue recorded for the selected period")}</p></div><Link to="/orders">{uiText("View reports ")}<ArrowUpRight size={15} /></Link></div><div className="admin-bars">{(data.intervals.length ? data.intervals : [{ label: 'Today', revenue: 0, orders: 0 }]).map((item) => <div className="admin-bar-column" key={item.label}><div className="admin-bar" style={{ height: `${Math.max(8, (item.revenue / max) * 150)}px` }} title={formatCurrency(item.revenue)} /><span>{uiText(item.label)}</span></div>)}</div></section>
       <section className="admin-card"><div className="admin-card-title"><div><h2>{uiText("Approval queue")}</h2><p>{uiText("Items needing your attention")}</p></div><ListChecks size={20} /></div><QueueRow icon={<Gift />} label="Offers awaiting review" count={pendingOffers.length} href="/offers" /><QueueRow icon={<ReceiptText />} label="Product lists" count={pendingLists.length} href="/customer-product-lists" /><QueueRow icon={<ShieldCheck />} label="Merchant accounts" count={0} href="/merchants" /></section>

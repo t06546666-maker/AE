@@ -1,0 +1,23 @@
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useParams } from 'react-router-dom';
+import { apiFetch, queryString } from '../api';
+import { LoadingState, ErrorState, PaginationBar } from '../components/Common';
+import { formatDateTime, formatCurrency } from '../utils';
+import type { Pagination } from '../types';
+import { uiText } from '../uiText';
+type Row=Record<string,any>;
+export function AdminCustomers(){
+ const [page,setPage]=useState(1),[search,setSearch]=useState('');
+ useEffect(()=>setPage(1),[search]);
+ const q=useQuery({queryKey:['admin-customer-directory',page,search],queryFn:({signal})=>apiFetch<{records:Row[];pagination:Pagination}>(`/api/admin/customers?${queryString({page,pageSize:25,search})}`,{signal})});
+ return <div className="dashboard-page"><h1>{uiText('Customers')}</h1><p>{uiText('All customer accounts, including self-registered customers without a merchant.')}</p><label className="search-field">{uiText('Search customers')}<input value={search} onChange={e=>setSearch(e.target.value)}/></label>{q.isPending?<LoadingState/>:q.isError?<ErrorState error={q.error} retry={()=>void q.refetch()}/>:<><div className="customer-grid">{q.data.records.map(c=><Link className="panel" key={c.id} to={`/customers/${c.id}`}><h2>{c.name}</h2><p>{c.customer_code}</p><p>{c.phone} · {c.email || '—'}</p><p>{uiText(c.registration_source==='self'?'Self registration':c.registration_source==='merchant'?'Merchant onboarding':'Source not recorded')}</p></Link>)}</div>{!q.data.records.length&&<p>{uiText('No records.')}</p>}<PaginationBar pagination={q.data.pagination} onPage={setPage}/></>}</div>;
+}
+export function AdminCustomerDetails(){
+ const {id=''}=useParams();const [type,setType]=useState('orders'),[page,setPage]=useState(1);
+ const q=useQuery({queryKey:['admin-customer-detail',id],queryFn:({signal})=>apiFetch<{customer:Row;memberships:Row[];onboardingMerchant:Row|null}>(`/api/admin/customers/${id}/details`,{signal})});
+ const a=useQuery({queryKey:['admin-customer-activity',id,type,page],queryFn:({signal})=>apiFetch<{records:Row[];pagination:Pagination}>(`/api/admin/customers/${id}/activity?${queryString({type,page,pageSize:25})}`,{signal})});
+ if(q.isPending)return <LoadingState/>;if(q.isError)return <ErrorState error={q.error} retry={()=>void q.refetch()}/>;
+ const {customer:c,memberships,onboardingMerchant:m}=q.data;
+ return <div className="dashboard-page"><Link to="/customers">{uiText('Back to customers')}</Link><h1>{c.name}</h1><section className="panel"><p>{c.customer_code} · {c.phone} · {c.email || '—'}</p><p>{uiText('Registered')}: {formatDateTime(c.created_at)}</p><p>{uiText('Onboarding source')}: {uiText(c.registration_source==='self'?'Self registration':c.registration_source==='merchant'?'Merchant onboarding':'Source not recorded')}</p>{m&&<p>{uiText('Original onboarding merchant')}: <Link to={`/merchants/${m.id}`}>{m.name} · {m.merchant_code}</Link></p>}<p>{uiText('Source describes the recorded registration path. The individual who performed onboarding may not have been recorded.')}</p></section><section className="panel"><h2>{uiText('Linked merchants')}</h2>{memberships.map(row=><p key={row.merchant_id}><Link to={`/merchants/${row.merchant_id}`}>{row.merchants?.name || row.merchant_id}</Link> · {uiText('Points')}: {row.reward_points} · {uiText('Joined')}: {formatDateTime(row.joined_at)}</p>)}{!memberships.length&&<p>{uiText('No linked merchants.')}</p>}</section><nav className="form-actions">{[['orders','Purchases'],['redemptions','Redemptions'],['payments','Payment records']].map(([key,label])=><button className={`button ${type===key?'primary':'secondary'}`} key={key} onClick={()=>{setType(key);setPage(1)}}>{uiText(label)}</button>)}</nav><section className="panel">{a.isPending?<LoadingState/>:a.isError?<ErrorState error={a.error} retry={()=>void a.refetch()}/>:<><p>{a.data.pagination.total} {uiText('records')}</p>{a.data.records.map(row=><article className="panel" key={row.id}><Link to={`/merchants/${row.merchant_id}`}>{row.merchants?.name || row.merchant_id}</Link><p>{formatDateTime(row.created_at)}</p><dl>{Object.entries(row).filter(([key])=>!['id','merchant_id','merchants','created_at'].includes(key)).map(([key,value])=><div key={key}><dt>{uiText(key.replaceAll('_',' '))}</dt><dd>{value==null?'—':['amount','transaction_amount','discount_amount'].includes(key)?formatCurrency(Number(value)):String(value)}</dd></div>)}</dl></article>)}{!a.data.records.length&&<p>{uiText('No records.')}</p>}<PaginationBar pagination={a.data.pagination} onPage={setPage}/></>}</section></div>;
+}

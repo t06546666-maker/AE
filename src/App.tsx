@@ -24,6 +24,9 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Locations } from './pages/Locations';
 import { LocationProfile } from './pages/LocationProfile';
 import { MerchantProfile } from './pages/MerchantProfile';
+import { AdminMerchantDetails } from './pages/AdminMerchantDetails';
+import { AdminCustomers, AdminCustomerDetails } from './pages/AdminCustomers';
+import { useUsageTracking } from './useUsageTracking';
 import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
 import { Offers } from './pages/Offers';
@@ -85,6 +88,7 @@ function RoleRoute({ user, role, children }: { user: UserProfile; role: Role; ch
 export function App() {
   useTranslation(undefined, { bindI18n: 'languageChanged loaded' });
   const [user, setUser] = useState<UserProfile | null>(null);
+  useUsageTracking(user);
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
   const [restoreError, setRestoreError] = useState('');
   const [restoreAttempt, setRestoreAttempt] = useState(0);
@@ -308,7 +312,8 @@ export function App() {
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
-          <Route path="/customers" element={user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
+          <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
+          <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />
           <Route path="/rewards" element={<Rewards user={user} />} />
@@ -318,7 +323,7 @@ export function App() {
           <Route path="/reward-settings" element={<RewardSettingsPage user={user} />} />
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
-          <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><ReadOnlyProfiles kind="merchant" /></RoleRoute>} />
+          <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><AdminMerchantDetails /></RoleRoute>} />
           <Route path="/field-managers/:id" element={<RoleRoute user={user} role="admin"><ReadOnlyProfiles kind="manager" /></RoleRoute>} />
           <Route path="/locations" element={<RoleRoute user={user} role="admin"><Locations /></RoleRoute>} />
           <Route path="/locations/:id" element={<RoleRoute user={user} role="admin"><LocationProfile /></RoleRoute>} />

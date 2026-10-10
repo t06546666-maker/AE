@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def uploadProperties = new Properties()
+def uploadPropertiesFile = rootProject.file('upload-signing.properties')
+if (uploadPropertiesFile.exists()) {
+    uploadPropertiesFile.withInputStream { uploadProperties.load(it) }
+}
+
 android {
     namespace = "com.affiliateae.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +13,8 @@ android {
         applicationId "com.affiliateae.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 29
-        versionName "1.0.28"
+        versionCode 30
+        versionName "1.0.29"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +22,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        upload {
+            if (uploadPropertiesFile.exists()) {
+                storeFile file(uploadProperties['storeFile'])
+                storePassword uploadProperties['storePassword']
+                keyAlias uploadProperties['keyAlias']
+                keyPassword uploadProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (uploadPropertiesFile.exists()) signingConfig signingConfigs.upload
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.project == project && it.name.toLowerCase().contains('release') } && !uploadPropertiesFile.exists()) {
+        throw new GradleException('Release signing is not configured. Create local upload-signing.properties; never commit signing credentials.')
     }
 }
 

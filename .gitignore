@@ -8,3 +8,6 @@ dist/
 .vercel/
 firebase-service-account.json
 start-rewardhub.bat
+*.jks
+*.keystore
+android/upload-signing.properties

@@ -1,0 +1,16 @@
+{
+ "All customer accounts, including self-registered customers without a merchant.": "വ്യാപാരിയുമായി ബന്ധിപ്പിച്ചിട്ടില്ലാത്ത സ്വയം രജിസ്റ്റർ ചെയ്ത ഉപഭോക്താക്കൾ ഉൾപ്പെടെയുള്ള എല്ലാ അക്കൗണ്ടുകളും.",
+ "Search customers": "ഉപഭോക്താക്കളെ തിരയുക",
+ "Self registration": "സ്വയം രജിസ്റ്റർ ചെയ്തത്",
+ "Merchant onboarding": "വ്യാപാരി മുഖേന രജിസ്റ്റർ ചെയ്തത്",
+ "Source not recorded": "രജിസ്ട്രേഷൻ ഉറവിടം രേഖപ്പെടുത്തിയിട്ടില്ല",
+ "Back to customers": "ഉപഭോക്തൃ പട്ടികയിലേക്ക് മടങ്ങുക",
+ "Onboarding source": "രജിസ്ട്രേഷൻ ഉറവിടം",
+ "Original onboarding merchant": "ആദ്യം രജിസ്റ്റർ ചെയ്ത വ്യാപാരി",
+ "Source describes the recorded registration path. The individual who performed onboarding may not have been recorded.": "രേഖപ്പെടുത്തിയ രജിസ്ട്രേഷൻ മാർഗമാണ് ഇവിടെ കാണിക്കുന്നത്. രജിസ്ട്രേഷൻ നടത്തിയ വ്യക്തിയുടെ വിവരം രേഖപ്പെടുത്തിയിട്ടുണ്ടാകണമെന്നില്ല.",
+ "Linked merchants": "ബന്ധിപ്പിച്ച വ്യാപാരികൾ",
+ "No linked merchants.": "ബന്ധിപ്പിച്ച വ്യാപാരികളില്ല.",
+ "Complete field manager history": "ഫീൽഡ് മാനേജറുടെ പൂർണ്ണ പ്രവർത്തന ചരിത്രം",
+ "Browse all recorded history with pagination. Missing record categories show an error, not invented data.": "പേജുകൾ മാറ്റി എല്ലാ രേഖകളും കാണാം. ലഭ്യമല്ലാത്ത വിഭാഗങ്ങളിൽ പിശക് സന്ദേശം കാണിക്കും; സാങ്കൽപ്പിക വിവരങ്ങൾ കാണിക്കില്ല.",
+ "Open attachment": "അറ്റാച്ച്മെന്റ് തുറക്കുക"
+}

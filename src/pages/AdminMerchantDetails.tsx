@@ -1,0 +1,35 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link,useParams } from 'react-router-dom';
+import { apiFetch,queryString } from '../api';
+import { uiText } from '../uiText';
+import { ErrorState,LoadingState,PaginationBar } from '../components/Common';
+import { formatCurrency,formatDateTime,formatClockTime } from '../utils';
+import type { Pagination } from '../types';
+
+type Person={id:string;customer_code:string;name:string;phone:string;email?:string;created_at?:string};
+type Row=Record<string,any>&{customers?:Person};
+const sections=[['profile','Business profile'],['customers','Customers'],['orders','Purchase transactions'],['redemptions','Point redemptions'],['payments','Payment records'],['offers','Offers']] as const;
+const labels:Record<string,string>={merchant_code:'Merchant code',name:'Store name',email:'Email',phone:'Phone number',address:'Address',route_name:'Route',opening_time:'Opening time',closing_time:'Closing time',created_at:'Joined',point_balance:'Available points',reward_rate_bps:'Reward rate (basis points)',earn_points_per_100:'Points per ₹100',redeem_discount_per_100:'Redemption discount',redeem_discount_type:'Discount type',redeem_flat_amount:'Flat discount',subscription_expires_at:'Subscription expiry'};
+const columns:Record<string,string[]>={customers:['customers','reward_points','qr_scans','joined_at'],orders:['order_no','customers','amount','reward_points','reward_percentage','is_returning','source','location','created_at'],redemptions:['customers','transaction_amount','points_redeemed','discount_amount','discount_percentage','created_at'],payments:['customers','amount','status','created_at'],offers:['title','description','audience','status','expires_at','created_at']};
+function cell(key:string,value:any) {
+ if(value==null)return '—';
+ if(['amount','transaction_amount','discount_amount'].includes(key))return formatCurrency(value);
+ if(['created_at','joined_at','expires_at'].includes(key))return formatDateTime(value);
+ if(typeof value==='boolean')return uiText(value?'Yes':'No');
+ return String(value);
+}
+export function AdminMerchantDetails() {
+ const {id=''}=useParams();const [section,setSection]=useState('profile'),[page,setPage]=useState(1),[customer,setCustomer]=useState<Person|null>(null);
+ const profile=useQuery({queryKey:['admin-merchant-details',id],queryFn:({signal})=>apiFetch<{merchant:Row}>(`/api/admin/merchants/${encodeURIComponent(id)}/details`,{signal})});
+ const activity=useQuery({queryKey:['admin-merchant-activity',id,section,page,customer?.id],queryFn:({signal})=>apiFetch<{records:Row[];pagination:Pagination}>(`/api/admin/merchants/${encodeURIComponent(id)}/activity?${queryString({type:section,page,pageSize:25,customerId:customer?.id})}`,{signal}),enabled:section!=='profile'});
+ if(profile.isPending)return <LoadingState/>;
+ if(profile.isError)return <ErrorState error={profile.error} retry={()=>void profile.refetch()}/>;
+ const merchant=profile.data.merchant;
+ const photos=Array.from(new Set([merchant.image_url,...(merchant.images||[])].filter((value):value is string=>typeof value==='string'&&!!value)));
+ return <div className="dashboard-page" style={{paddingBottom:90}}><Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link><h1>{merchant.name}</h1><p>{merchant.merchant_code} · {uiText('Admin view - full unmasked customer details')}</p>
+ <nav className="mo-segmented" style={{flexWrap:'wrap'}} aria-label={uiText('Merchant details sections')}>{sections.map(([key,title])=><button key={key} aria-pressed={section===key} onClick={()=>{setSection(key);setPage(1);setCustomer(null)}}>{uiText(title)}</button>)}</nav>
+ {customer&&<section className="panel"><div className="panel-heading"><h2>{customer.name}</h2><button className="button secondary" onClick={()=>{setCustomer(null);setPage(1)}}>{uiText('Show all customers')}</button></div><p>{customer.customer_code} · {customer.phone} · {customer.email || '—'}</p><p>{uiText('Showing this customer’s recorded activity at this merchant only.')}</p><div className="form-actions">{['orders','redemptions','payments'].map(type=><button className="button secondary" key={type} onClick={()=>{setSection(type);setPage(1)}}>{uiText(sections.find(([key])=>key===type)![1])}</button>)}</div></section>}
+ {section==='profile'?<><section className="panel"><h2>{uiText('Business profile')}</h2><dl style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:20}}>{Object.entries(labels).filter(([key])=>key in merchant).map(([key,title])=><div key={key}><dt>{uiText(title)}</dt><dd style={{margin:0,fontWeight:600,overflowWrap:'anywhere'}}>{merchant[key]==null?'—':key.includes('_time')?formatClockTime(merchant[key]):key==='created_at'||key==='subscription_expires_at'?formatDateTime(merchant[key]):String(merchant[key])}</dd></div>)}<div><dt>{uiText('Category')}</dt><dd style={{margin:0}}>{merchant.merchant_categories?.name || '—'}</dd></div></dl>{merchant.latitude!=null&&merchant.longitude!=null&&<a className="button secondary" target="_blank" rel="noopener noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${merchant.latitude},${merchant.longitude}`}>{uiText('View shop on map')}</a>}</section>{photos.length>0&&<section className="panel"><h2>{uiText('Shop photos')}</h2><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>{photos.map(photo=><img key={photo} src={photo} alt={merchant.name} style={{width:'100%',height:180,objectFit:'cover',borderRadius:12}}/>)}</div></section>}</>:<section className="panel"><h2>{uiText(sections.find(([key])=>key===section)![1])}</h2>{activity.isPending?<LoadingState/>:activity.isError?<ErrorState error={activity.error} retry={()=>void activity.refetch()}/>:<><p>{activity.data.pagination.total} {uiText('records')}</p><div className="table-scroll"><table><thead><tr>{columns[section].map(key=><th key={key}>{uiText(key==='customers'?'Customer':key.replaceAll('_',' '))}</th>)}</tr></thead><tbody>{activity.data.records.map((row,index)=><tr key={row.id || row.customer_id || index}>{columns[section].map(key=><td key={key} style={{maxWidth:320,overflowWrap:'anywhere'}}>{key==='customers'&&row.customers?<button className="button secondary" style={{textAlign:'left',whiteSpace:'normal'}} onClick={()=>{setCustomer(row.customers!);setSection('orders');setPage(1)}}><span>{row.customers.name}<br/>{row.customers.customer_code}<br/>{row.customers.phone}<br/>{row.customers.email || ''}</span></button>:cell(key,row[key])}</td>)}</tr>)}</tbody></table></div>{!activity.data.records.length&&<p>{uiText('No records.')}</p>}<PaginationBar pagination={activity.data.pagination} onPage={setPage}/></>}</section>}
+ </div>;
+}
