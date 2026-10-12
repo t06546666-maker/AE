@@ -17,6 +17,8 @@ const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { billUpi } = require('./backend/bill-upi.cjs');
+const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
+const { validFieldLocation } = require('./backend/field-location.cjs');
 const languagePacks = { en: require('./backend/locales/en.json'), ml: require('./backend/locales/ml.json') };
 let initializeApp;
 let cert;
@@ -1550,6 +1552,35 @@ app.put('/api/field/route-plan', requireAuth, requireRole('field_manager'), asyn
   if (error) return res.status(503).json({ error: 'Could not save the route. Check route-planning database setup.' });
   res.json({ plan: data });
 });
+app.get('/api/field/location/status',requireAuth,requireRole('field_manager'),async(req,res)=>{
+ const result=await supabaseAdmin.from('field_attendance').select('id').eq('manager_id',req.auth.profile.id).eq('work_date',attendanceDate()).is('ended_at',null).maybeSingle();
+ if(result.error)return res.status(503).json({error:'Workday status unavailable.'});
+ res.json({active:Boolean(result.data)});
+});
+app.post('/api/field/location',requireAuth,requireRole('field_manager'),async(req,res)=>{
+ if(!validFieldLocation(req.body))return res.status(400).json({error:'A fresh valid GPS sample is required.'});
+ const day=await supabaseAdmin.from('field_attendance').select('id').eq('manager_id',req.auth.profile.id).eq('work_date',attendanceDate()).is('ended_at',null).maybeSingle();
+ if(day.error)return res.status(503).json({error:'Workday status unavailable.'});
+ if(!day.data)return res.status(409).json({error:'Start attendance for today before sharing location.'});
+ const result=await supabaseAdmin.from('field_manager_locations').upsert({manager_id:req.auth.profile.id,attendance_id:day.data.id,latitude:req.body.latitude,longitude:req.body.longitude,accuracy_m:req.body.accuracy_m,captured_at:req.body.captured_at,updated_at:new Date().toISOString(),sharing:true},{onConflict:'manager_id'});
+ if(result.error)return res.status(503).json({error:'Location sharing unavailable. Apply supabase-field-manager-locations.sql.'});
+ res.json({success:true});
+});
+app.post('/api/field/location/pause',requireAuth,requireRole('field_manager'),async(req,res)=>{
+ const result=await supabaseAdmin.from('field_manager_locations').update({sharing:false}).eq('manager_id',req.auth.profile.id);
+ if(result.error)return res.status(503).json({error:'Location sharing status unavailable.'});
+ res.json({success:true});
+});
+app.get('/api/admin/field-manager-locations',requireAuth,requireRole('admin'),async(req,res)=>{
+ const records=[];
+ for(let offset=0;;offset+=500){
+  const result=await supabaseAdmin.from('field_manager_locations').select('manager_id,latitude,longitude,accuracy_m,captured_at,updated_at,sharing,profiles!field_manager_locations_manager_id_fkey(full_name),field_attendance(work_date,ended_at)').order('manager_id').range(offset,offset+499);
+  if(result.error)return res.status(503).json({error:'Manager map unavailable. Apply supabase-field-manager-locations.sql.'});
+  records.push(...result.data.map(row=>({manager_id:row.manager_id,name:row.profiles?.full_name||'Field Manager',latitude:row.latitude,longitude:row.longitude,accuracy_m:row.accuracy_m,captured_at:row.captured_at,updated_at:row.updated_at,recent:row.sharing&&row.field_attendance?.work_date===attendanceDate()&&!row.field_attendance?.ended_at&&Date.now()-Date.parse(row.captured_at)<=120000})));
+  if(result.data.length<500)break;
+ }
+ res.json({records});
+});
 app.get('/api/field/attendance', requireAuth, requireRole('field_manager'), async (req, res) => {
   const manager = req.auth.profile.id;
   const [day, requests] = await Promise.all([
@@ -1805,10 +1836,10 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   const selection=selections[req.query.type||'visits'];
   if(!selection)return res.status(400).json({error:'Invalid record type'});
   const paging=paginationFromRequest(req,25,100);
-  const result=await supabaseAdmin.from(selection[0]).select(selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false}).range(paging.from,paging.to);
+  const result=await supabaseAdmin.from(selection[0]).select(selection[0]==='field_manager_visits'?'*,merchants(name,merchant_code)':selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false}).range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});
   function safe(value){if(Array.isArray(value))return value.map(safe);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!/password|token|secret|credential/i.test(key)).map(([key,item])=>[key,safe(item)]));return value;}
-  res.json({records:safe(result.data),pagination:paginationMeta(paging,result.count)});
+  res.json({records:safe(selection[0]==='field_manager_visits'?result.data.map(fieldVisitRecord):result.data),pagination:paginationMeta(paging,result.count)});
 });
 app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
   const { data: profile, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('id', req.params.id).eq('role', 'field_manager').maybeSingle();
@@ -1817,7 +1848,7 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   const account = await supabaseAdmin.auth.admin.getUserById(profile.id);
   const results = await Promise.all([
     supabaseAdmin.from('field_manager_sessions').select('id,login_at,logout_at').eq('manager_id', profile.id).order('login_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('field_manager_visits').select('id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_manager_visits').select('*,merchants(name,merchant_code)').eq('manager_id', profile.id).order('check_in_at', { ascending: false }).limit(200).then(result=>({...result,data:result.data?.map(fieldVisitRecord)||null})),
     supabaseAdmin.from('field_manager_merchant_updates').select('id,merchant_id,status,payload,created_at').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
   ]);

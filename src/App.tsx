@@ -27,6 +27,7 @@ import { MerchantProfile } from './pages/MerchantProfile';
 import { AdminMerchantDetails } from './pages/AdminMerchantDetails';
 import { AdminCustomers, AdminCustomerDetails } from './pages/AdminCustomers';
 import { LegalNavigation } from './components/LegalNavigation';
+import { FieldLocationSharing } from './components/FieldLocationSharing';
 import { useUsageTracking } from './useUsageTracking';
 import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
@@ -300,7 +301,7 @@ export function App() {
   }
 
   if (user.role === 'field_manager') {
-    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
+    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><FieldLocationSharing managerId={user.id}/><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
   }
 
   return (

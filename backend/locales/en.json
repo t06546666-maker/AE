@@ -1921,5 +1921,19 @@
   "ui.Profile snapshot counts cover up to 200 records. Use the history tabs below to browse all records.": "Profile snapshot counts cover up to 200 records. Use the history tabs below to browse all records.",
   "ui.Record details": "Record details",
   "ui.View recorded location": "View recorded location",
-  "ui.Submitted details": "Submitted details"
+  "ui.Submitted details": "Submitted details",
+  "ui.Workday location sharing": "Workday location sharing",
+  "ui.Admin can see your latest GPS position and accuracy. Updates run only while this app is visible and today’s attendance is active. No background tracking or route history.": "Admin can see your latest GPS position and accuracy. Updates run only while this app is visible and today’s attendance is active. No background tracking or route history.",
+  "ui.Pause location sharing": "Pause location sharing",
+  "ui.Enable location sharing": "Enable location sharing",
+  "ui.Location sharing paused": "Location sharing paused",
+  "ui.Foreground updates enabled": "Foreground updates enabled",
+  "ui.Waiting for an active workday": "Waiting for an active workday",
+  "ui.Workday status unavailable. Location updates are paused.": "Workday status unavailable. Location updates are paused.",
+  "ui.Field manager locations": "Field manager locations",
+  "ui.Latest shared positions, not guaranteed live. Blue means a recent workday update; grey means last seen. Attendance check-in locations are not substituted for current positions.": "Latest shared positions, not guaranteed live. Blue means a recent workday update; grey means last seen. Attendance check-in locations are not substituted for current positions.",
+  "ui.Recent update": "Recent update",
+  "ui.Last seen": "Last seen",
+  "ui.Field manager location map": "Field manager location map",
+  "ui.No field managers have shared a workday location yet.": "No field managers have shared a workday location yet."
 }

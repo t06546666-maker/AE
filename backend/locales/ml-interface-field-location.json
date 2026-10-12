@@ -1,0 +1,16 @@
+{
+ "Workday location sharing":"ജോലിസമയത്തെ ലൊക്കേഷൻ പങ്കിടൽ",
+ "Admin can see your latest GPS position and accuracy. Updates run only while this app is visible and today’s attendance is active. No background tracking or route history.":"അഡ്മിന് നിങ്ങളുടെ അവസാന GPS സ്ഥാനവും കൃത്യതയും കാണാം. ആപ്പ് തുറന്നിരിക്കുകയും ഇന്നത്തെ ഹാജർ സജീവമായിരിക്കുകയും ചെയ്യുമ്പോൾ മാത്രമാണ് സ്ഥാനം പുതുക്കുന്നത്. പശ്ചാത്തല ട്രാക്കിങ്ങോ യാത്രാചരിത്രമോ ഇല്ല.",
+ "Pause location sharing":"ലൊക്കേഷൻ പങ്കിടൽ നിർത്തുക",
+ "Enable location sharing":"ലൊക്കേഷൻ പങ്കിടൽ പ്രവർത്തിപ്പിക്കുക",
+ "Location sharing paused":"ലൊക്കേഷൻ പങ്കിടൽ നിർത്തിയിരിക്കുന്നു",
+ "Foreground updates enabled":"ആപ്പ് തുറന്നിരിക്കുമ്പോഴുള്ള അപ്‌ഡേറ്റുകൾ സജീവമാണ്",
+ "Waiting for an active workday":"സജീവമായ ജോലിദിവസത്തിനായി കാത്തിരിക്കുന്നു",
+ "Workday status unavailable. Location updates are paused.":"ജോലിദിവസത്തിന്റെ സ്ഥിതി ലഭ്യമല്ല. ലൊക്കേഷൻ അപ്‌ഡേറ്റുകൾ നിർത്തിയിരിക്കുന്നു.",
+ "Field manager locations":"ഫീൽഡ് മാനേജർമാരുടെ സ്ഥാനങ്ങൾ",
+ "Latest shared positions, not guaranteed live. Blue means a recent workday update; grey means last seen. Attendance check-in locations are not substituted for current positions.":"അവസാനം പങ്കിട്ട സ്ഥാനങ്ങളാണ് കാണിക്കുന്നത്; തത്സമയ സ്ഥാനമാണെന്ന് ഉറപ്പില്ല. നീല നിറം പുതിയ ജോലിസമയ അപ്‌ഡേറ്റിനെയും ചാരനിറം അവസാനം കണ്ട സ്ഥാനത്തെയും സൂചിപ്പിക്കുന്നു. ഹാജർ രേഖപ്പെടുത്തിയ സ്ഥാനം നിലവിലെ സ്ഥാനമായി കാണിക്കില്ല.",
+ "Recent update":"പുതിയ അപ്‌ഡേറ്റ്",
+ "Last seen":"അവസാനം കണ്ടത്",
+ "Field manager location map":"ഫീൽഡ് മാനേജർ ലൊക്കേഷൻ മാപ്പ്",
+ "No field managers have shared a workday location yet.":"ഫീൽഡ് മാനേജർമാർ ഇതുവരെ ജോലിസമയത്തെ ലൊക്കേഷൻ പങ്കിട്ടിട്ടില്ല."
+}
