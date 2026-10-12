@@ -1881,7 +1881,7 @@ async function recordUsage(req,res) {
       const [previous,previousDaily]=await Promise.all([transaction.get(profile),transaction.get(daily)]);
       const base={actorKey,role:actor.role,merchantId:actor.merchant_id || null};
       if(!previous.exists||Date.parse(now)-Date.parse(previous.data().lastSeen)>=60000||!previousDaily.data()?.platforms?.[platform]) {
-        transaction.set(profile,{...base,lastSeen:now,firstSeen:previous.data()?.firstSeen || now,platforms:{...previous.data()?.platforms,[platform]:true}},{merge:true});
+        transaction.set(profile,{...base,lastSeen:now,...(platform==='android'?{lastAndroidSeen:now}:{}),firstSeen:previous.data()?.firstSeen || now,platforms:{...previous.data()?.platforms,[platform]:true}},{merge:true});
       }
       if(!previousDaily.data()?.platforms?.[platform])transaction.set(daily,{...base,day,platforms:{[platform]:true}},{merge:true});
     });
@@ -1910,6 +1910,19 @@ async function adminExcel(res,rows,filename,notes){
 }
 app.get('/api/admin/report-areas',requireAuth,requireRole('admin'),async(req,res)=>{
  try{const merchants=await adminAreaMerchants('');res.json({areas:[...new Set(merchants.map(row=>row.route_name).filter(Boolean))].sort()});}catch{res.status(503).json({error:'Area list unavailable.'});}
+});
+app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,res)=>{
+ async function sum(table,column){let total=0;for(let offset=0;;offset+=500){const result=await supabaseAdmin.from(table).select(`id,${column}`).order('id').range(offset,offset+499);if(result.error)throw result.error;total+=result.data.reduce((n,row)=>n+Number(row[column]||0),0);if(result.data.length<500)return total;}}
+ const totals=await Promise.allSettled([
+  supabaseAdmin.from('customers').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
+  supabaseAdmin.from('merchants').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
+  Promise.all([sum('orders','reward_points'),sum('loyalty_bonuses','points')]).then(values=>values[0]+values[1]),
+  sum('point_redemptions','points_redeemed'),
+  checkoutBillDatabase().then(database=>database.collection('ae_android_installations').count().get()).then(result=>result.data().count),
+  checkoutBillDatabase().then(database=>database.collection('ae_usage_users').where('lastAndroidSeen','>=',new Date(Date.now()-5*60000).toISOString()).get()).then(result=>new Set(result.docs.map(doc=>doc.data().actorKey)).size),
+ ]);
+ const keys=['customers','merchants','pointsIssued','pointsRedeemed','appInstallations','activeAppUsers'];
+ res.json(Object.fromEntries(totals.map((result,i)=>[keys[i],result.status==='fulfilled'?result.value:null])));
 });
 app.get('/api/admin/report-summary',requireAuth,requireRole('admin'),async(req,res)=>{
  const from=Date.parse(req.query.from),to=Date.parse(req.query.to),area=cleanText(req.query.area,80);

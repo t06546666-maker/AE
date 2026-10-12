@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { Building2, ChevronRight, CircleDollarSign, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
+import { Building2, ChevronRight, Download, Activity, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
-import type { DashboardData, Merchant, Offer, UserProfile } from '../types';
+import type { DashboardData, Offer, UserProfile } from '../types';
 import { formatCurrency, formatPoints } from '../utils';
 import { uiText } from '../uiText';
 import { AdminUsage } from '../components/AdminUsage';
@@ -16,8 +16,8 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  const filters=useAdminReportFilters();
  const areas=useQuery({queryKey:['admin-report-areas'],queryFn:()=>apiFetch<{areas:string[]}>('/api/admin/report-areas')});
  const dashboard=useQuery({queryKey:['admin-dashboard',filters.range?.from,filters.range?.to,filters.area],queryFn:()=>apiFetch<DashboardData>(`/api/admin/report-summary?${new URLSearchParams({...filters.range!,area:filters.area})}`),enabled:filters.valid});
- const customers=useQuery({queryKey:['admin-dashboard-customer-count'],queryFn:()=>apiFetch<{pagination:{total:number}}>('/api/admin/customers?page=1&pageSize=1')});
- const merchants=useQuery({queryKey:['admin-dashboard-merchants'],queryFn:()=>apiFetch<{merchants:Merchant[];pagination?:{total?:number}}>('/api/merchants?page=1&pageSize=1')});
+ const totals=useQuery({queryKey:['admin-overview-totals'],queryFn:()=>apiFetch<Record<string,number|null>>('/api/admin/overview-totals'),refetchInterval:60000});
+ const totalValue=(key:string,points=false)=>totals.isPending?'…':totals.isError||totals.data?.[key]==null?'—':points?formatPoints(totals.data[key]!):totals.data[key]!.toLocaleString('en-IN');
  const offers=useQuery({queryKey:['admin-dashboard-offers'],queryFn:()=>apiFetch<{offers:Offer[];pagination?:{total?:number}}>('/api/offers?page=1&pageSize=50')});
  const lists=useQuery({queryKey:['admin-dashboard-lists'],queryFn:()=>apiFetch<{requests:Array<{status:string}>}>('/api/product-list-requests')});
  const pendingOffers=offers.data?.offers.filter(item=>item.status==='pending').length;
@@ -25,14 +25,17 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  const moreOffers=(offers.data?.pagination?.total||0)>(offers.data?.offers.length||0);
  const count=(loading:boolean,error:boolean,n:number|undefined)=>loading?'…':error||n==null?'—':n.toLocaleString('en-IN');
  return <div className="admin-dashboard admin-overview-v2 admin-dashboard-compact">
- <header className="admin-dashboard-heading"><div><h1>{uiText('Overview')}</h1><p>{uiText('Your network at a glance')}</p></div><AdminDashboardToolbar state={filters} areas={areas.data?.areas||[]} areaError={areas.isError}/></header>
+ <header className="admin-dashboard-heading"><div><h1>{uiText('Overview')}</h1><p>{uiText('Your network at a glance')}</p></div></header>
  <div className="admin-kpis">
- <Kpi icon={<Building2/>} label="Registered merchants" value={count(merchants.isPending,merchants.isError,merchants.data?.pagination?.total)} tone="blue" hint="All registered stores"/>
- <Kpi icon={<Users/>} label="Customers" value={count(customers.isPending,customers.isError,customers.data?.pagination.total)} tone="purple" hint="All customer accounts"/>
- <Kpi icon={<CircleDollarSign/>} label="Recorded sales" value={!filters.valid?'—':dashboard.isPending?'…':dashboard.isError?'—':formatCurrency(dashboard.data!.summary.totalRevenue)} tone="green" hint="Selected reporting period"/>
- <Kpi icon={<Gift/>} label="Points issued" value={!filters.valid?'—':dashboard.isPending?'…':dashboard.isError?'—':formatPoints(dashboard.data!.summary.rewardPointsIssued)} tone="orange" hint="Selected reporting period"/>
+ <Kpi icon={<Building2/>} label="Total merchants" value={totalValue('merchants')} tone="blue" hint="All registered stores"/>
+ <Kpi icon={<Users/>} label="Total customers" value={totalValue('customers')} tone="purple" hint="All customer accounts"/>
+ <Kpi icon={<Gift/>} label="Total points issued" value={totalValue('pointsIssued',true)} tone="orange" hint="All-time purchases and loyalty rewards"/>
+ <Kpi icon={<ReceiptText/>} label="Total points redeemed" value={totalValue('pointsRedeemed',true)} tone="green" hint="All-time recorded redemptions"/>
+ <Kpi icon={<Download/>} label="App installations" value={totalValue('appInstallations')} tone="blue" hint="Observed Android sign-ins, not Play Store downloads"/>
+ <Kpi icon={<Activity/>} label="Active app users" value={totalValue('activeAppUsers')} tone="purple" hint="Android accounts active in the last 5 minutes"/>
  </div>
- {(customers.isError||merchants.isError)&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}
+ {(totals.isError||Object.values(totals.data||{}).some(value=>value==null))&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}
+ <section className="admin-reporting-toolbar" aria-label={uiText('Activity & reports')}><h2>{uiText('Activity & reports')}</h2><AdminDashboardToolbar state={filters} areas={areas.data?.areas||[]} areaError={areas.isError}/></section>
  <div className="admin-dashboard-grid admin-overview-main"><AdminUsage range={filters.range||undefined} area={filters.area} valid={filters.valid}/><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText('Needs attention')}</h2><p>{uiText('Review requests and manage your network')}</p></div><ListChecks size={20}/></div>
  <Queue icon={<Gift/>} label="Offer approvals" count={offers.isPending?'…':offers.isError?'—':`${pendingOffers}${moreOffers?'+':''}`} href="/offers"/>
  <Queue icon={<ReceiptText/>} label="Product lists" count={count(lists.isPending,lists.isError,pendingLists)} href="/customer-product-lists"/>

@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const server=fs.readFileSync('server.js','utf8');
+const page=fs.readFileSync('src/pages/AdminDashboard.tsx','utf8');
+const route=server.split("app.get('/api/admin/overview-totals'")[1].split("app.get('/api/admin/report-summary'")[0];
+assert(route.includes("requireRole('admin')"));
+assert(!route.includes('req.query'));
+assert(route.includes("sum('loyalty_bonuses','points')"));
+assert(route.includes("sum('point_redemptions','points_redeemed')"));
+assert(route.includes("where('lastAndroidSeen'"));
+assert(route.includes('Promise.allSettled'));
+const cards=page.split('<div className="admin-kpis">')[1].split('</div>')[0];
+assert.equal((cards.match(/<Kpi /g)||[]).length,6);
+assert(!cards.includes('filters.')&&!cards.includes('dashboard.'));
+assert(page.includes("queryKey:['admin-overview-totals']"));
+assert(page.indexOf('admin-reporting-toolbar')>page.indexOf('Total points redeemed'));
+assert(!page.split('<header')[1].split('</header>')[0].includes('AdminDashboardToolbar'));
+console.log('PASS: six unfiltered admin totals, real point sources, Android-only recent activity, unavailable values remain unknown (source checks)');
