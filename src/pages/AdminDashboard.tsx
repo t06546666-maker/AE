@@ -1,20 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Building2, CalendarDays, ChevronRight, CircleDollarSign, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
+import { Building2, ChevronRight, CircleDollarSign, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
 import type { DashboardData, Merchant, Offer, UserProfile } from '../types';
-import { dateInput, formatCurrency, formatPoints } from '../utils';
+import { formatCurrency, formatPoints } from '../utils';
 import { uiText } from '../uiText';
 import { AdminUsage } from '../components/AdminUsage';
 import { ErrorState, LoadingState } from '../components/Common';
 import '../admin-dashboard.css';
-import { AdminReportFilters, useAdminReportFilters } from '../components/AdminReportFilters';
-import { AdminUsageDownloads } from '../components/AdminUsageDownloads';
+import { useAdminReportFilters } from '../components/AdminReportFilters';
+import { AdminDashboardToolbar } from '../components/AdminDashboardToolbar';
 
 export function AdminDashboard({ user }: { user: UserProfile }) {
- const today=dateInput(),filters=useAdminReportFilters();const [showFilters,setShowFilters]=useState(true);
+ const filters=useAdminReportFilters();
  const areas=useQuery({queryKey:['admin-report-areas'],queryFn:()=>apiFetch<{areas:string[]}>('/api/admin/report-areas')});
  const dashboard=useQuery({queryKey:['admin-dashboard',filters.range?.from,filters.range?.to,filters.area],queryFn:()=>apiFetch<DashboardData>(`/api/admin/report-summary?${new URLSearchParams({...filters.range!,area:filters.area})}`),enabled:filters.valid});
  const customers=useQuery({queryKey:['admin-dashboard-customer-count'],queryFn:()=>apiFetch<{pagination:{total:number}}>('/api/admin/customers?page=1&pageSize=1')});
@@ -25,11 +24,8 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  const pendingLists=lists.data?.requests.filter(item=>item.status==='pending').length;
  const moreOffers=(offers.data?.pagination?.total||0)>(offers.data?.offers.length||0);
  const count=(loading:boolean,error:boolean,n:number|undefined)=>loading?'…':error||n==null?'—':n.toLocaleString('en-IN');
- return <div className="admin-dashboard admin-overview-v2">
- <header className="admin-dashboard-heading"><div><p className="admin-eyebrow">{uiText('AE ADMIN')}</p><h1>{uiText('Overview')}</h1><p>{uiText('Your network at a glance')}</p></div><button className="admin-date-chip" aria-expanded={showFilters} onClick={()=>setShowFilters(!showFilters)}><CalendarDays size={18}/>{uiText('Select reporting dates')}</button></header>
- {showFilters&&<AdminReportFilters state={filters} areas={areas.data?.areas}/>}
- <AdminUsageDownloads range={filters.range||undefined} area={filters.area} valid={filters.valid}/>
- <p className="admin-data-note">{uiText('Date filters apply to recorded sales and activity. Registered account totals and review queues are all-time. Area means registered merchant route and linked customer accounts, not customer GPS.')}</p>
+ return <div className="admin-dashboard admin-overview-v2 admin-dashboard-compact">
+ <header className="admin-dashboard-heading"><div><h1>{uiText('Overview')}</h1><p>{uiText('Your network at a glance')}</p></div><AdminDashboardToolbar state={filters} areas={areas.data?.areas||[]} areaError={areas.isError}/></header>
  <div className="admin-kpis">
  <Kpi icon={<Building2/>} label="Registered merchants" value={count(merchants.isPending,merchants.isError,merchants.data?.pagination?.total)} tone="blue" hint="All registered stores"/>
  <Kpi icon={<Users/>} label="Customers" value={count(customers.isPending,customers.isError,customers.data?.pagination.total)} tone="purple" hint="All customer accounts"/>
