@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');
+const source=fs.readFileSync('src/pages/Feedback.tsx','utf8');
+for(const label of ['Merchant feedback','Customer app feedback','Store reviews'])assert(source.includes(label));
+assert(source.includes("cache:'no-store'"));
+assert(source.includes("user.role==='admin'"));
+assert(source.includes("admin?item.customerName:uiText('Anonymous')"));
+assert(source.indexOf('active.isError?<ErrorState')<source.indexOf('!cards?.length?'));
+assert(source.includes('active.refetch()'));
+assert(!source.includes('Green Mart'));
+console.log('PASS: feedback tabs, refresh bypass, anonymous merchant view, error-before-empty state and real-data-only cards (source checks)');
