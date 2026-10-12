@@ -1836,9 +1836,15 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   const selection=selections[req.query.type||'visits'];
   if(!selection)return res.status(400).json({error:'Invalid record type'});
   const paging=paginationFromRequest(req,25,100);
-  const result=await supabaseAdmin.from(selection[0]).select(selection[0]==='field_manager_visits'?'*,merchants(name,merchant_code)':selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false}).range(paging.from,paging.to);
+  let query=supabaseAdmin.from(selection[0]).select(selection[0]==='field_manager_visits'?'*,merchants(name,merchant_code)':selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false});
+  if(req.query.from||req.query.to){const from=Date.parse(req.query.from),to=Date.parse(req.query.to);if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a valid date range up to one year.'});if(selection[2]==='work_date')query=query.gte('work_date',new Date(from+330*60000).toISOString().slice(0,10)).lte('work_date',new Date(to-1+330*60000).toISOString().slice(0,10));else query=query.gte(selection[2],new Date(from).toISOString()).lt(selection[2],new Date(to).toISOString());}
+  const result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});
   function safe(value){if(Array.isArray(value))return value.map(safe);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!/password|token|secret|credential/i.test(key)).map(([key,item])=>[key,safe(item)]));return value;}
+  if(req.query.format==='xlsx'){
+    const rows=[...result.data];for(let offset=500;offset<(result.count||0);offset+=500){const more=await query.range(offset,offset+499);if(more.error)return res.status(503).json({error:'Export unavailable.'});rows.push(...more.data);}
+    return await adminExcel(res,safe(selection[0]==='field_manager_visits'?rows.map(fieldVisitRecord):rows),`AE-field-manager-${String(req.query.type||'visits')}`,['Saved form fields, notes, selected options, outcomes and timestamps only. Missing fields are blank.',`From ${req.query.from||'All time'} to ${req.query.to||'All time'} (end exclusive).`,'Visit dates refer to check-in time. Attendance dates refer to work date.']);
+  }
   res.json({records:safe(selection[0]==='field_manager_visits'?result.data.map(fieldVisitRecord):result.data),pagination:paginationMeta(paging,result.count)});
 });
 app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
@@ -1888,19 +1894,61 @@ async function recordUsage(req,res) {
 }
 app.post('/api/usage',requireAuth,recordUsage);
 app.post('/api/customer/usage',requireCustomerAuth,recordUsage);
+async function adminAreaMerchants(area){
+ const rows=[];
+ for(let offset=0;;offset+=500){let query=supabaseAdmin.from('merchants').select('id,name,merchant_code,route_name').order('id').range(offset,offset+499);if(area)query=query.eq('route_name',area);const result=await query;if(result.error)throw result.error;rows.push(...result.data);if(result.data.length<500)break;}
+ return rows;
+}
+async function adminExcel(res,rows,filename,notes){
+ const workbook=new ExcelJS.Workbook();const sheet=workbook.addWorksheet('Records');
+ const keys=[...new Set(rows.flatMap(row=>Object.keys(row)))];
+ sheet.columns=keys.map(key=>({header:key.replaceAll('_',' '),key,width:24}));
+ rows.forEach(row=>sheet.addRow(Object.fromEntries(Object.entries(row).map(([key,value])=>[key,value==null?'':typeof value==='object'?JSON.stringify(value):value]))));
+ sheet.views=[{state:'frozen',ySplit:1}];sheet.getRow(1).font={bold:true};
+ const info=workbook.addWorksheet('Report notes');notes.forEach(note=>info.addRow([note]));info.getColumn(1).width=110;
+ res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);res.send(Buffer.from(await workbook.xlsx.writeBuffer()));
+}
+app.get('/api/admin/report-areas',requireAuth,requireRole('admin'),async(req,res)=>{
+ try{const merchants=await adminAreaMerchants('');res.json({areas:[...new Set(merchants.map(row=>row.route_name).filter(Boolean))].sort()});}catch{res.status(503).json({error:'Area list unavailable.'});}
+});
+app.get('/api/admin/report-summary',requireAuth,requireRole('admin'),async(req,res)=>{
+ const from=Date.parse(req.query.from),to=Date.parse(req.query.to),area=cleanText(req.query.area,80);
+ if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a valid range up to one year.'});
+ try{
+  const merchants=await adminAreaMerchants(area),ids=merchants.map(row=>row.id);
+  const orders=[];
+  for(let i=0;i<ids.length;i+=100){for(let offset=0;;offset+=500){const result=await supabaseAdmin.from('orders').select('id,customer_id,merchant_id,amount,reward_points,created_at').in('merchant_id',ids.slice(i,i+100)).gte('created_at',new Date(from).toISOString()).lt('created_at',new Date(to).toISOString()).order('id').range(offset,offset+499);if(result.error)throw result.error;orders.push(...result.data);if(result.data.length<500)break;}}
+  res.json({summary:{totalOrders:orders.length,totalRevenue:orders.reduce((n,row)=>n+Number(row.amount||0),0),rewardPointsIssued:orders.reduce((n,row)=>n+Number(row.reward_points||0),0),totalCustomers:new Set(orders.map(row=>row.customer_id)).size},intervals:[],retention:{lifetimeCustomers:0,selectedVisits:orders.length,todayVisits:0,weekVisits:0,monthVisits:0},merchantCount:ids.length});
+ }catch{res.status(503).json({error:'Filtered report unavailable.'});}
+});
 app.get('/api/admin/usage',requireAuth,requireRole('admin'),async(req,res)=>{
   const from=Date.parse(req.query.from),to=Date.parse(req.query.to);
-  if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>32*86400000)return res.status(400).json({error:'Choose a date range of up to 31 days.'});
+  if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a date range of up to one year.'});
   try {
     const database=await checkoutBillDatabase();const {summarizeUsage}=require('./backend/usage-metrics.cjs');
     const startDay=new Date(from+330*60000).toISOString().slice(0,10),lastDay=new Date(to-1+330*60000).toISOString().slice(0,10);
     const [days,recent,installs]=await Promise.all([
       database.collection('ae_usage_daily').where('day','>=',startDay).where('day','<=',lastDay).get(),
       database.collection('ae_usage_users').where('lastSeen','>=',new Date(Date.now()-5*60000).toISOString()).get(),
-      database.collection('ae_android_installations').count().get(),
+      database.collection('ae_android_installations').where('firstSeen','>=',new Date(from).toISOString()).where('firstSeen','<',new Date(to).toISOString()).count().get(),
     ]);
     const trackedSince=await database.collection('ae_usage_users').orderBy('firstSeen').limit(1).get();
-    res.json({...summarizeUsage(days.docs.map(doc=>doc.data())),recentlyActive:summarizeUsage(recent.docs.map(doc=>doc.data())),trackedAndroidInstallations:installs.data().count,trackedSince:trackedSince.docs[0]?.data().firstSeen || null});
+    const area=cleanText(req.query.area,80);let merchantIds=null,customerIds=null;
+    if(area){merchantIds=new Set((await adminAreaMerchants(area)).map(row=>row.id));customerIds=new Set();const ids=[...merchantIds];for(let i=0;i<ids.length;i+=100){for(let offset=0;;offset+=500){const links=await supabaseAdmin.from('customer_merchants').select('customer_id').in('merchant_id',ids.slice(i,i+100)).order('customer_id').range(offset,offset+499);if(links.error)throw links.error;links.data.forEach(row=>customerIds.add(row.customer_id));if(links.data.length<500)break;}}}
+    const inArea=row=>!area||(row.role==='merchant'&&merchantIds.has(row.merchantId))||(row.role==='customer'&&customerIds.has(String(row.actorKey).split(':').slice(1).join(':')));
+    const filtered=days.docs.map(doc=>doc.data()).filter(inArea);
+    if(req.query.format==='xlsx'){
+      if(req.query.report==='installations'){
+        if(area)return res.status(400).json({error:'Installations cannot be attributed to an area.'});
+        const installed=await database.collection('ae_android_installations').where('firstSeen','>=',new Date(from).toISOString()).where('firstSeen','<',new Date(to).toISOString()).get();
+        return await adminExcel(res,installed.docs.map(doc=>({installation_id:doc.id,platform:'Android',first_observed_sign_in:doc.data().firstSeen})), 'AE-observed-android-installations',['Observed signed-in Android installations, not Play Store downloads or unique customers.',`From ${req.query.from} to ${req.query.to} (end exclusive).`,'No account identity is associated with these installation records.']);
+      }
+      const accounts=new Map();filtered.forEach(row=>{const existing=accounts.get(row.actorKey)||{...row,days:new Set(),web:false,android:false};existing.days.add(row.day);existing.web ||= Boolean(row.platforms?.web);existing.android ||= Boolean(row.platforms?.android);accounts.set(row.actorKey,existing);});
+      const rows=[...accounts.values()];const names=new Map();
+      for(const role of ['customer','profile']){const ids=[...new Set(rows.filter(row=>role==='customer'?row.role==='customer':row.role!=='customer').map(row=>String(row.actorKey).split(':').slice(1).join(':')))];for(let offset=0;offset<ids.length;offset+=200){const result=await supabaseAdmin.from(role==='customer'?'customers':'profiles').select(role==='customer'?'id,name,phone,email':'id,full_name').in('id',ids.slice(offset,offset+200));if(result.error)throw result.error;result.data.forEach(row=>names.set(row.id,row));}}
+      return await adminExcel(res,rows.map(row=>{const id=String(row.actorKey).split(':').slice(1).join(':');const account=names.get(id)||{};return {account_id:id,role:row.role,name:account.name||account.full_name||'',phone:account.phone||'',email:account.email||'',active_days:row.days.size,website:row.web,android:row.android,merchant_id:row.merchantId||''};}),'AE-active-accounts',[`From ${req.query.from} to ${req.query.to} (end exclusive).`,`Area: ${area||'All areas'}`,'Area is a registered merchant route; customer inclusion is based on linked shops, not GPS.','One row per active authenticated account; platforms may overlap.']);
+    }
+    res.json({...summarizeUsage(filtered),recentlyActive:summarizeUsage(recent.docs.map(doc=>doc.data()).filter(inArea)),trackedAndroidInstallations:area?null:installs.data().count,trackedSince:trackedSince.docs[0]?.data().firstSeen || null,areaBasis:area?'linked_merchant_route':null});
   }catch(error){res.status(503).json({error:'Usage metrics are temporarily unavailable.'});}
 });
 
