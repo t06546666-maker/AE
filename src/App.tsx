@@ -246,6 +246,10 @@ export function App() {
   }, [restoreAttempt]);
 
   if (location.pathname === '/delete-account') return <AccountDeletion />;
+  if (import.meta.env.DEV && location.pathname === '/consent-preview') {
+    const role = new URLSearchParams(location.search).get('role') === 'merchant' ? 'merchant' : 'customer';
+    return <LegalGate preview user={{ id: 'local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</LegalGate>;
+  }
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;

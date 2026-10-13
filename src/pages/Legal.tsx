@@ -33,6 +33,10 @@ const privacy = [
   ['Requests and complaints', 'Contact safar@affiliateinnovations.co.in or +91 9025547577 to request access, correction, deletion, withdrawal of optional permissions or to raise a privacy complaint. Requests will be assessed subject to applicable law, identity verification and any legitimate retention obligations. Do not email passwords or identity documents unless an approved secure process is provided. This draft does not claim that a dedicated privacy officer or automated rights workflow has been appointed.'],
   ['Children and review', 'Age requirements, guardian consent where applicable, retention schedules and provider arrangements must be reviewed before this policy is adopted. This draft does not establish that the service is suitable for independent use by children.'],
 ];
+export function LegalDetails({ type }: { type: string }) {
+  const content = type === 'privacy' ? privacy : [...common, ...(type === 'merchant' ? merchant : type === 'field' ? field : customer)];
+  return <article>{content.map(([title, body]) => <section key={title}><h2>{title}</h2><p>{body}</p></section>)}</article>;
+}
 export function Legal() {
   const [params, setParams] = useSearchParams();
   const selection = params.get('type');
