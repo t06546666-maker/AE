@@ -29,6 +29,7 @@ import { AdminCustomers, AdminCustomerDetails } from './pages/AdminCustomers';
 import { LegalNavigation } from './components/LegalNavigation';
 import { FieldLocationSharing } from './components/FieldLocationSharing';
 import { useUsageTracking } from './useUsageTracking';
+import { CustomerShopScan, MerchantShopCheckout, ShopRequestAlert } from './components/ShopCheckout';
 import { Merchants } from './pages/Merchants';
 import { MerchantCategories } from './pages/MerchantCategories';
 import { Offers } from './pages/Offers';
@@ -286,6 +287,7 @@ export function App() {
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
             <Route path="/customer/explore" element={<CustomerExplore />} />
             <Route path="/customer/scan" element={<CustomerScan user={user} />} />
+            <Route path="/customer/shop-scan" element={<CustomerShopScan />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="/customer/favorites" element={<CustomerFavorites />} />
@@ -306,12 +308,14 @@ export function App() {
 
   return (
     <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}>
+      {user.role === 'merchant' && <ShopRequestAlert />}
       <PageErrorBoundary key={location.pathname}>
         <Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />
+          <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />

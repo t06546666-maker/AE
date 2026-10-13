@@ -1,5 +1,5 @@
 -- process_purchase in supabase-rewards-engine-update.sql already calculates
--- least(100, floor(eligible purchase / 100) * points per 100).
+-- least(100, round(eligible purchase * points per 100 / 100, 2)).
 -- Apply this additional guard to reject over-cap registration awards from any
 -- older RPC or direct database writes. NOT VALID preserves historical orders.
 begin;

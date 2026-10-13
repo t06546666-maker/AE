@@ -32,7 +32,7 @@ function cameraErrorMessage(cause: unknown, t: TFunction) {
   return message || t('scanner.failed');
 }
 
-export default function QrScanner({ settings, autoStart = false, mode = 'earn', merchantId, onDone }: { settings: RewardSettings; autoStart?: boolean; mode?: 'earn' | 'redeem'; merchantId?: string; onDone?: () => void; }) {
+export default function QrScanner({ settings, autoStart = false, mode = 'earn', merchantId, onDone, shopRequest }: { settings: RewardSettings; autoStart?: boolean; mode?: 'earn' | 'redeem'; merchantId?: string; onDone?: () => void; shopRequest?: {id:string;customerCode:string;action:'earn'|'combined'}; }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [scanner, setScanner] = useState<ScannerInstance | null>(null);
@@ -47,6 +47,14 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  useEffect(() => {
+    if (!shopRequest) return;
+    let active = true;
+    apiFetch<{customer:Customer}>(`/api/customers/scan/${encodeURIComponent(shopRequest.customerCode)}`).then(data=>{
+      if(active){setCustomer(data.customer);setTransactionMode(shopRequest.action);}
+    }).catch(error=>{if(active)setMessage(error.message);});
+    return()=>{active=false;};
+  }, [shopRequest?.id]);
   useEffect(() => {
     if (discountType !== 'flat' || paymentTransactionId) return;
     const options = flatDiscountOptions(Number(amount));
@@ -175,7 +183,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     mutationFn: (verifiedPaymentId?: string) => apiFetch<{ purchase: { points_earned: number }; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ customerCode: customer?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentMode: 'pilot_app_only', location: notes.trim() || 'In-store' }),
+      body: JSON.stringify({ customerCode: shopRequest?.customerCode || customer?.id, shopRequestId: shopRequest?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentMode: 'pilot_app_only', location: notes.trim() || 'In-store' }),
     }),
     onSuccess(data) {
       showToast(t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }));
@@ -196,7 +204,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   }
 
   const eligibleAmount = Number(amount);
-  const points = eligibleAmount < 1 ? 0 : eligibleAmount < 10 ? 1 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
+  const points = eligibleAmount < 1 ? 0 : eligibleAmount < 10 ? 1 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.round(eligibleAmount * percentage) / 100);
 
   const redeem = useMutation({
     mutationFn: () => apiFetch<{ discountAmount: number; newBalance: number }>(`/api/merchants/${merchantId}/redeem`, {
@@ -232,7 +240,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
             {!scanner ? <div className="camera-off"><Camera size={30} /><span>{t('scanner.cameraOff')}</span></div> : null}
           </div>
           <div className="scanner-actions">
-            <button type="button" className="button primary" disabled={starting || Boolean(scanner)} onClick={startCamera}><ScanLine size={17} />{t(starting ? 'scanner.starting' : 'scanner.scan')}</button>
+            <button type="button" className="button primary" disabled={Boolean(shopRequest) || starting || Boolean(scanner)} onClick={startCamera}><ScanLine size={17} />{t(starting ? 'scanner.starting' : 'scanner.scan')}</button>
             {!scanner && !customer && locked.current ? <button type="button" className="icon-button" title={t('scanner.scanAgain')} onClick={() => { locked.current = false; setMessage(t('scanner.ready')); }}><RefreshCw /></button> : null}
           </div>
           <p className="scanner-message">{message}</p>
@@ -243,7 +251,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
               <div className="verified-title"><CheckCircle2 /><div><h3>{customer.name}</h3><p>{maskedPhone(customer.phone)} · {customer.id}</p></div></div>
               {customer.isNewToMerchant ? <span className="tag info">{t('scanner.newConnection')}</span> : null}
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)}{uiText(" points")}</strong></p>
-              <label className="scanner-mode-field">{uiText("Transaction type ")}<select value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
+              <label className="scanner-mode-field">{uiText("Transaction type ")}<select disabled={Boolean(shopRequest)} value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
                   <option value="earn">{uiText("Issue points")}</option>
                   <option value="redeem">{uiText("Redeem points")}</option>
                   <option value="combined">{uiText("Both: redeem + issue points")}</option>

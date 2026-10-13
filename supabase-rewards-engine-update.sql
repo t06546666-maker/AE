@@ -104,13 +104,13 @@ BEGIN
     v_eligible_amount := p_amount;
   END IF;
 
-  -- 2. Pro-rata points calculation: Floor((Amount / 100) * points_per_100)
+  -- 2. Proportional points rounded to two decimals, capped at 100.
   IF v_eligible_amount > 0 THEN
     v_points := CASE
       WHEN v_eligible_amount < 10 THEN 0
       WHEN v_eligible_amount < 50 THEN 2
       WHEN v_eligible_amount < 100 THEN 5
-      ELSE least(100, floor(v_eligible_amount / 100.0) * p_points_per_100)
+      ELSE least(100, round(v_eligible_amount * p_points_per_100 / 100.0, 2))
     END;
   ELSE
     v_points := 0;

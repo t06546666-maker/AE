@@ -136,7 +136,7 @@ export function AddCustomer({ user }: { user: UserProfile }) {
   if (settings.isError) return <ErrorState error={settings.error} retry={() => settings.refetch()} />;
   const options = settings.data?.earnOptions || [5, 10, 20, 30, 50];
   const eligibleAmount = Math.max(0, Math.min(Number(amount) || 0, 10000));
-  const points = eligibleAmount < 1 ? 0 : eligibleAmount < 10 ? 1 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.floor(eligibleAmount / 100) * percentage);
+  const points = eligibleAmount < 1 ? 0 : eligibleAmount < 10 ? 1 : eligibleAmount < 50 ? 2 : eligibleAmount < 100 ? 5 : Math.min(100, Math.round(eligibleAmount * percentage) / 100);
   const selectedMerchant = merchants.data?.merchants.find((merchant) => merchant.id === merchantId)?.name || '';
   const liveWhatsapp = whatsappStatus.data;
   const whatsappState = liveWhatsapp?.status

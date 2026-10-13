@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {validateAction,assertPending}=require('../backend/shop-checkout-requests.cjs');
+assert.equal(validateAction('earn'),true);assert.equal(validateAction('combined'),true);
+assert.equal(validateAction('redeem'),false);assert.equal(validateAction('admin'),false);
+const request={merchantId:'shop-a',status:'pending',expiresAt:2000};
+assert.doesNotThrow(()=>assertPending(request,'shop-a',1000));
+assert.throws(()=>assertPending(request,'shop-b',1000));
+assert.throws(()=>assertPending(request,'shop-a',2000));
+for(const status of ['processing','completed','needs_review'])assert.throws(()=>assertPending({...request,status},'shop-a',1000));
+console.log('PASS: checkout action, ownership, expiry and repeat-confirmation guards');

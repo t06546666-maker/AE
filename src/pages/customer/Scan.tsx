@@ -37,6 +37,7 @@ export function CustomerScan({ user }: { user: UserProfile }) {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10 pb-[100px]">
+        <Link className="button primary" style={{marginBottom:20}} to="/customer/shop-scan">{uiText('Scan shop QR')}</Link>
         
         {/* Viewfinder Area */}
         <div className="relative w-[280px] h-[280px] mb-8">

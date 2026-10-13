@@ -526,7 +526,7 @@ async function getMerchantRewardSettings(merchantId) {
 }
 
 // Fixed network reward rule: small purchases use fixed tiers, larger purchases
-// earn 10 points per completed INR 100, capped at 100 points.
+// earn proportional points per INR 100, rounded to two decimals and capped at 100.
 function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
   const value = Number(amount || 0);
   if (!Number.isFinite(value) || value < 1) return 0;
@@ -534,7 +534,7 @@ function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
   if (value < 50) return 2;
   if (value < 100) return 5;
   const rate = Math.max(0, Math.min(100, Number(pointsPer100) || 10));
-  return Math.min(100, Math.floor(value / 100) * rate);
+  return Math.min(100, Math.round(value * rate) / 100);
 }
 
 async function processPurchase(params, idempotencyKey) {
@@ -4622,6 +4622,8 @@ app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async 
     return res.json({ success: true });
   } catch { return res.status(404).json({ error: 'Could not close bill' }); }
 });
+
+require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), push: pushToMerchant, background: scheduleBackground });
 
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);
