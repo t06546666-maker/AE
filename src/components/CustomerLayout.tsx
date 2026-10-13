@@ -57,17 +57,17 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
         <aside className={`sidebar hidden md:flex ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-mobile-head"><strong>{t('layout.navigation')}</strong><button className="icon-button" title={t('common.close')} onClick={() => setSidebarOpen(false)}><X /></button></div>
           <nav>
-            <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'active' : ''}>
+            <NavLink to="/customer/home" className={({ isActive }) => isActive && !location.search.includes('productList=1') ? 'active' : ''}>
               <Home size={18} /><span>{uiText("Home")}</span>
             </NavLink>
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
               <Search size={18} /><span>{uiText("Explore")}</span>
             </NavLink>
-            <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
-              <ListPlus size={18} /><span>{uiText("Product List")}</span>
+            <NavLink to="/customer/shop-scan" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Scan size={18} /><span>{uiText("Scan QR")}</span>
             </NavLink>
-            <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Gift size={18} /><span>{uiText("Offers")}</span>
+            <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
+              <ListPlus size={18} /><span>{uiText("Products")}</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>{uiText("Profile")}</span>
@@ -85,7 +85,7 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
         </main>
       </div>
       <div className="mobile-bottom-nav md:hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100 bg-white">
-        <NavLink to="/customer/home" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+        <NavLink to="/customer/home" className={({ isActive }) => isActive && !location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <Home />
           <span>{uiText("Home")}</span>
         </NavLink>
@@ -93,10 +93,10 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
           <Search />
           <span>{uiText("Explore")}</span>
         </NavLink>
-        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><ListPlus /><span>{uiText("Product List")}</span></NavLink>
-        <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Gift />
-          <span>{uiText("Offers")}</span>
+        <NavLink to="/customer/shop-scan" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><Scan /><span>{uiText("Scan QR")}</span></NavLink>
+        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <ListPlus />
+          <span>{uiText("Products")}</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <User />
