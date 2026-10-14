@@ -52,6 +52,7 @@
   box-shadow: 0 8px 28px #0064ff0d;
 }
 .ae-scan-camera #ae-shop-reader video { display: block; width: 100% !important; }
+.ae-scan-camera #ae-shop-reader:has(video) { min-height: 0; background: #000; }
 .ae-scan-camera p { margin: 22px 0 0; font-size: 20px; font-weight: 600; }
 .ae-scan-camera p[role=status] { font-size: 14px; font-weight: 400; color: #64748b; }
 .ae-customer-scanner footer { font-size: 14px; line-height: 1.8; text-align: center; color: #627da9; margin-top: auto; }
