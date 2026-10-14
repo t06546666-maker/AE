@@ -111,8 +111,8 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </Link>
 
         <nav className="ae-home-shortcuts" aria-label={uiText("Customer quick actions")}>
-          <Link to="/customer/scan" className="qr"><QrCode/><span>{uiText("My QR Code")}</span></Link>
-          <Link to="/customer/shop-scan?mode=redeem" className="redeem"><Gift/><span>{uiText("Redeem Points")}</span></Link>
+          <Link to="/customer/shop-scan?mode=claim" className="qr"><QrCode/><span>{uiText("My QR Claim Points")}</span></Link>
+          <Link to="/customer/shop-scan?mode=redeem" className="redeem"><Gift/><span>{uiText("My QR Redeem Points")}</span></Link>
           <Link to="/customer/explore" className="shops"><ShoppingBag/><span>{uiText("Nearby Shops")}</span></Link>
           <Link to="/customer/offers" className="offers"><Tags/><span>{uiText("Offers")}</span></Link>
         </nav>
