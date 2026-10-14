@@ -3,7 +3,7 @@ import { formatDateTime } from '../../utils';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload, ShoppingBag, QrCode, Tags } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -66,6 +66,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
         <CustomerLocationBar compact />
+        <Link to="/customer/profile" aria-label="Profile"><User size={24}/></Link>
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
@@ -111,7 +112,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         <nav className="ae-home-shortcuts" aria-label={uiText("Customer quick actions")}>
           <Link to="/customer/scan" className="qr"><QrCode/><span>{uiText("My QR Code")}</span></Link>
-          <Link to="/customer/rewards" className="redeem"><Gift/><span>{uiText("Redeem Points")}</span></Link>
+          <Link to="/customer/shop-scan?mode=redeem" className="redeem"><Gift/><span>{uiText("Redeem Points")}</span></Link>
           <Link to="/customer/explore" className="shops"><ShoppingBag/><span>{uiText("Nearby Shops")}</span></Link>
           <Link to="/customer/offers" className="offers"><Tags/><span>{uiText("Offers")}</span></Link>
         </nav>

@@ -84,25 +84,6 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
           {children}
         </main>
       </div>
-      <div className="mobile-bottom-nav md:hidden max-w-[430px] mx-auto left-0 right-0 border-x border-gray-100 bg-white">
-        <NavLink to="/customer/home" className={({ isActive }) => isActive && !location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Home />
-          <span>{uiText("Home")}</span>
-        </NavLink>
-        <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Search />
-          <span>{uiText("Explore")}</span>
-        </NavLink>
-        <NavLink to="/customer/shop-scan" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}><Scan /><span>{uiText("Scan QR")}</span></NavLink>
-        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <ListPlus />
-          <span>{uiText("Products")}</span>
-        </NavLink>
-        <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <User />
-          <span>{uiText("Profile")}</span>
-        </NavLink>
-      </div>
     </div>
   );
 }

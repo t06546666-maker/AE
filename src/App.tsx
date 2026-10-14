@@ -48,7 +48,6 @@ import { CustomerLogin } from './pages/customer/CustomerLogin';
 import { CustomerSignup } from './pages/customer/CustomerSignup';
 import { CustomerChangePassword } from './pages/customer/CustomerChangePassword';
 import { CustomerForgotPassword } from './pages/customer/CustomerForgotPassword';
-import { CustomerScan } from './pages/customer/Scan';
 import { CustomerRewards } from './pages/customer/Rewards';
 import { CustomerProfile } from './pages/customer/Profile';
 import { CustomerTransactions } from './pages/customer/Transactions';
@@ -290,8 +289,8 @@ export function App() {
           <Routes>
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
             <Route path="/customer/explore" element={<CustomerExplore />} />
-            <Route path="/customer/scan" element={<CustomerScan user={user} />} />
-            <Route path="/customer/shop-scan" element={<CustomerShopScan />} />
+            <Route path="/customer/scan" element={<Navigate to="/customer/shop-scan" replace />} />
+            <Route path="/customer/shop-scan" element={<CustomerShopScan key={location.search} user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="/customer/favorites" element={<CustomerFavorites />} />
