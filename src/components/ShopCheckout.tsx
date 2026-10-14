@@ -6,24 +6,33 @@ import QRCode from 'qrcode';
 import { apiFetch } from '../api';
 import { uiText } from '../uiText';
 import type { RewardSettings, UserProfile } from '../types';
-import { ArrowLeft, QrCode, ScanLine } from 'lucide-react';
+import { ArrowLeft, QrCode, ScanLine, Download, Share2, ChevronRight, User } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import './merchant-shop-qr.css';
 import './customer-scanner.css';
 import QrScanner from './QrScanner';
 
 type Request = {id:string;customerCode:string;merchantName:string;action:'earn'|'combined';status:string;expiresAt:number};
 export function MerchantShopCheckout() {
-  const [params]=useSearchParams();const id=params.get('request');const [qr,setQr]=useState('');
+  const [params]=useSearchParams();const id=params.get('request');const scan=params.get('scan')==='1';const [qr,setQr]=useState('');const [assetError,setAssetError]=useState('');
+  const profile=useQuery({queryKey:['shop-qr-profile'],queryFn:()=>apiFetch<{data:{name:string}}>('/api/merchant-profile')});
   const requests=useQuery({queryKey:['shop-requests'],queryFn:()=>apiFetch<{requests:Request[]}>('/api/merchant/shop-requests'),refetchInterval:5000});
   const settings=useQuery({queryKey:['reward-settings'],queryFn:()=>apiFetch<RewardSettings>('/api/settings/reward')});
   const token=useQuery({queryKey:['shop-qr'],queryFn:()=>apiFetch<{payload:string}>('/api/merchant/shop-qr')});
-  useEffect(()=>{let active=true;if(token.data)void QRCode.toDataURL(token.data.payload,{width:600,margin:3}).then(value=>{if(active)setQr(value);});return()=>{active=false;};},[token.data]);
+  useEffect(()=>{let active=true;if(token.data)void QRCode.toDataURL(token.data.payload,{width:600,margin:3,errorCorrectionLevel:'H'}).then(value=>{if(active)setQr(value);}).catch(()=>{if(active)setAssetError('Unable to generate shop QR. Please retry.');});return()=>{active=false;};},[token.data]);
+  async function shareQr(){if(!qr)return;setAssetError('');try{if(Capacitor.isNativePlatform()){const file=await Filesystem.writeFile({path:'AE-shop-QR.png',data:qr.split(',')[1],directory:Directory.Cache});await Share.share({title:'AE Shop QR',files:[file.uri]});}else{const blob=await(await fetch(qr)).blob();const file=new File([blob],'AE-shop-QR.png',{type:'image/png'});if(navigator.canShare?.({files:[file]}))await navigator.share({title:'AE Shop QR',files:[file]});else setAssetError('Sharing is not supported in this browser. Use Download QR instead.');}}catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))setAssetError('Unable to share QR. Use Download QR instead.');}}
   const selected=requests.data?.requests.find(row=>row.id===id);
-  return <section className="panel"><h1>{uiText('Shop QR checkout')}</h1><p>{uiText('Customers scan this shop QR and request Earn or Redeem + Earn. Confirm the actual bill before awarding points.')}</p>
+  return <section className="ae-merchant-shop-qr"><header><Link to="/dashboard" aria-label="Back to dashboard"><ArrowLeft/></Link><h1>{uiText('Shop QR')}</h1><QrCode/></header><img className="ae-shop-brand" src="/logo.png" alt="AE"/>
     {(requests.error||token.error||settings.error)&&<p role="alert">{String((requests.error||token.error||settings.error)?.message)}</p>}
-    {!id&&qr&&<><img src={qr} alt="AE shop QR" style={{width:'min(100%,300px)'}}/><p><a className="button secondary" href={qr} download="AE-shop-QR.png">{uiText('Download shop QR')}</a></p></>}
+    {assetError&&<p role="alert">{assetError}</p>}
+    {!id&&!scan&&<><div className="ae-shop-qr-card"><h2>{profile.data?.data.name||'Your Store'}</h2><span className="ae-shop-badge">Merchant QR</span>{qr?<img className="ae-shop-code" src={qr} alt="AE shop QR"/>:<p role="status">{token.isError?'Shop QR unavailable':'Loading shop QR…'}</p>}<h3>Let customers scan your shop QR</h3><p>Confirm the bill before issuing or redeeming points.</p><div className="ae-shop-actions"><a href={qr||undefined} download="AE-shop-QR.png" aria-disabled={!qr} onClick={e=>{if(!qr)e.preventDefault();}}><Download size={18}/>Download QR</a><button disabled={!qr} onClick={()=>void shareQr()}><Share2 size={18}/>Share QR</button></div></div><Link className="ae-shop-scan" to="/shop-checkout?scan=1"><ScanLine/>Scan Customer QR</Link></>}
+    {scan&&<><Link to="/shop-checkout">Back to Shop QR</Link>{settings.data&&<QrScanner settings={settings.data} mode="earn"/>}</>}
     {id&&!selected&&<p role="status">{requests.isPending?uiText('Loading request…'):uiText('This request is no longer pending. Check your transaction history before retrying.')}</p>}
     {selected&&settings.data&&<QrScanner key={selected.id} settings={settings.data} shopRequest={selected} mode={selected.action==='combined'?'redeem':'earn'}/>}
-    {!id&&<><h2>{uiText('Pending customer requests')}</h2>{requests.data?.requests.map(row=><p key={row.id}><Link className="button secondary" to={'/shop-checkout?request='+row.id}>{uiText(row.action==='combined'?'Redeem + Earn':'Earn points')} · {row.customerCode.slice(0,3)}***</Link></p>)}{requests.data?.requests.length===0&&<p>{uiText('No pending requests')}</p>}</>}
+    {!id&&!scan&&<div className="ae-shop-requests"><h2>Pending requests <span>{requests.data?.requests.length??'—'}</span></h2>{requests.data?.requests.map(row=><Link key={row.id} to={'/shop-checkout?request='+row.id}><User size={22}/><span>Customer {row.customerCode.slice(0,3)}***</span><small className={row.action==='combined'?'redeem':''}>{row.action==='combined'?'Redeem + Earn':'Issue Points'}</small><ChevronRight size={18}/></Link>)}{requests.isPending&&<p>Loading requests…</p>}{requests.data?.requests.length===0&&<p>No pending requests</p>}</div>}
+    <footer>Points change only after your confirmation.</footer>
   </section>;
 }
 export function ShopRequestAlert() {
