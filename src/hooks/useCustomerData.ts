@@ -30,6 +30,7 @@ export type CustomerMerchant = {
   address?: string;
   latitude?: number | null;
   longitude?: number | null;
+  route_name?: string | null;
   created_at: string;
 };
 
@@ -74,11 +75,12 @@ export function useCustomerCategories() {
   });
 }
 
-export function useCustomerMerchants(page: number, search?: string, categoryId?: string, location?: { latitude: number; longitude: number } | null) {
+export function useCustomerMerchants(page: number, search?: string, categoryId?: string, location?: { latitude?: number; longitude?: number; routeGroup?: 'chittur' | 'thathamangalam' } | null, enabled = true) {
   return useQuery({
-    queryKey: ['customer', 'merchants', page, search, categoryId, location?.latitude, location?.longitude],
-    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId, latitude: location?.latitude, longitude: location?.longitude })}`, { signal }),
-    staleTime: 60000
+    queryKey: ['customer', 'merchants', page, search, categoryId, location?.latitude, location?.longitude, location?.routeGroup],
+    queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId, latitude: location?.latitude, longitude: location?.longitude, routeGroup: location?.routeGroup })}`, { signal }),
+    staleTime: 60000,
+    enabled,
   });
 }
 

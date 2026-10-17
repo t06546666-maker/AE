@@ -37,7 +37,7 @@ async function getCurrentLocation(): Promise<Coordinates> {
   ));
 }
 
-export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocation, onLocate }: { merchants: CustomerMerchant[]; selectedMerchantId?: string; shoppingLocation?: Coordinates | null; onLocate?: () => Promise<any> }) {
+export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocation, onLocate, allowLocate = true }: { merchants: CustomerMerchant[]; selectedMerchantId?: string; shoppingLocation?: Coordinates | null; onLocate?: () => Promise<any>; allowLocate?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [status, setStatus] = useState(mapsKey ? "Tap Locate AE to find merchants near you." : "Add VITE_GOOGLE_MAPS_API_KEY to enable the live map.");
@@ -72,12 +72,12 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocat
         mapRef.current.setZoom(13);
         new google.maps.Marker({ map: mapRef.current, position: { lat: shoppingLocation.latitude, lng: shoppingLocation.longitude }, title: 'Selected shopping location' });
         setStatus('Showing shops around your selected shopping location.');
-      } else if (!onLocate) {
+      } else if (!onLocate && allowLocate) {
         getCurrentLocation().then((location) => { if (!active || !mapRef.current) return; mapRef.current.setCenter({ lat: location.latitude, lng: location.longitude }); mapRef.current.setZoom(13); setStatus('Showing your current location.'); }).catch(() => undefined);
       }
     }).catch(() => active && setStatus('Google Maps could not load. Check your API key and allowed domains.'));
     return () => { active = false; };
-  }, [locatedMerchants, shoppingLocation?.latitude, shoppingLocation?.longitude]);
+  }, [locatedMerchants, shoppingLocation?.latitude, shoppingLocation?.longitude, allowLocate, onLocate]);
 
   useEffect(() => { const merchant = locatedMerchants.find((item) => item.id === selectedMerchantId); if (merchant && mapRef.current) { mapRef.current.panTo({ lat: merchant.latitude!, lng: merchant.longitude! }); mapRef.current.setZoom(16); } }, [selectedMerchantId, locatedMerchants]);
 
@@ -101,7 +101,7 @@ export function CustomerNearbyMap({ merchants, selectedMerchantId, shoppingLocat
     <div className="bg-gray-100 rounded-3xl h-56 relative overflow-hidden shadow-inner border border-gray-200">
       <div ref={containerRef} className="absolute inset-0" />
       {!mapsKey && <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-emerald-50 to-blue-50 text-center px-7"><div><MapPin className="mx-auto mb-2 text-[#087a4b]" /><strong className="block text-gray-800">{uiText("Nearby with Google Maps")}</strong><p className="mt-1 text-xs text-gray-500">{uiText("Add your Maps key to show real merchant pins.")}</p></div></div>}
-      <button type="button" onClick={() => void locate()} className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#087a4b] shadow-lg"><LocateFixed size={16} />{uiText(" Locate AE")}</button>
+      {allowLocate && <button type="button" onClick={() => void locate()} className="absolute right-3 bottom-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#087a4b] shadow-lg"><LocateFixed size={16} />{uiText(" Locate AE")}</button>}
     </div>
     <p className="mt-2 text-xs text-gray-500">{status}</p>
   </section>;

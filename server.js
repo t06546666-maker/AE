@@ -2437,10 +2437,17 @@ app.get('/api/customer/ads', requireCustomerAuth, (_req, res) => {
 
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
+  const customerRouteGroups = {
+    chittur: ['Chittur 1', 'Chittur 2', 'Chittur 3'],
+    thathamangalam: ['Thathamangalam 1', 'Thathamangalam 2', 'Thathamangalam 3'],
+  };
+  const routeGroup = typeof req.query.routeGroup === 'string' ? req.query.routeGroup : '';
+  if (routeGroup && !Object.hasOwn(customerRouteGroups, routeGroup)) return res.status(400).json({ success: false, error: 'Select a valid shopping area.' });
   const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
-  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, merchant_categories(name)', { count: 'exact' });
+  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, merchant_categories(name)', { count: 'exact' });
+  if (routeGroup) query = query.in('route_name', customerRouteGroups[routeGroup]);
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
   }
@@ -2480,6 +2487,7 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
       images: Array.isArray(merchant.images) ? merchant.images.filter(image => typeof image === 'string') : [],
       category: merchant.merchant_categories?.name || '',
       address: merchant.address || '',
+      route_name: merchant.route_name || null,
       latitude: merchant.latitude === null ? null : Number(merchant.latitude),
       longitude: merchant.longitude === null ? null : Number(merchant.longitude),
       created_at: merchant.created_at,

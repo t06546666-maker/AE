@@ -22,7 +22,7 @@ export function CustomerExplore() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
-  const currentLocation = useCustomerLocation();
+  const currentLocation = useCustomerLocation(false);
   const userLocation = currentLocation.data || null;
   const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -30,19 +30,17 @@ export function CustomerExplore() {
   const [reviews, setReviews] = useState<any[]>([]);
 
   const categoriesQuery = useCustomerCategories();
-  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory, userLocation);
+  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory, userLocation, Boolean(userLocation?.routeGroup));
   const merchants = data?.merchants ?? [];
   const distanceKm = (latitude?: number | null, longitude?: number | null) => {
-    if (!userLocation || latitude == null || longitude == null) return null;
+    if (userLocation?.latitude == null || userLocation.longitude == null || latitude == null || longitude == null) return null;
     const rad = Math.PI / 180;
     const dLat = (latitude - userLocation.latitude) * rad;
     const dLon = (longitude - userLocation.longitude) * rad;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.latitude * rad) * Math.cos(latitude * rad) * Math.sin(dLon / 2) ** 2;
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
-  const sortedMerchants = [...merchants].sort((a, b) => (distanceKm(a.latitude, a.longitude) ?? Number.POSITIVE_INFINITY) - (distanceKm(b.latitude, b.longitude) ?? Number.POSITIVE_INFINITY));
-  const locateUser = () => currentLocation.refetch();
-  useEffect(() => setPage(1), [userLocation?.latitude, userLocation?.longitude]);
+  useEffect(() => setPage(1), [userLocation?.routeGroup]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -144,20 +142,19 @@ export function CustomerExplore() {
         </div>
       </div>
 
-      <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} shoppingLocation={userLocation} onLocate={locateUser} />
-      <div className="mx-5 mb-3 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-        <div><p className="text-[13px] font-bold text-[#087a4b]">{uiText("Merchants near you")}</p><p className="text-[11px] text-gray-500">{uiText("Sorted by distance from your current location")}</p></div>
-        <button type="button" onClick={() => void locateUser()} className="rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#087a4b] shadow-sm">{uiText("Use current GPS")}</button>
-      </div>
+      <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} allowLocate={false} />
+      {userLocation?.routeGroup && <div className="mx-5 mb-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"><p className="text-[13px] font-bold text-[#087a4b]">{uiText(`Shops in ${userLocation.area}`)}</p><p className="text-[11px] text-gray-500">{uiText("Showing shops assigned to this area’s routes.")}</p></div>}
 
       {/* Merchant List */}
       <div className="glass-merchants ae-shop-grid">
-        {isLoading ? (
+        {!userLocation?.routeGroup ? (
+          <div className="py-12 text-center text-gray-400">{uiText("Choose Chittur or Thathamangalam to see shops in that area.")}</div>
+        ) : isLoading ? (
           <div className="py-12 text-center text-gray-400">{uiText("Loading merchants...")}</div>
         ) : merchants.length === 0 ? (
           <div className="py-12 text-center text-gray-400">{uiText("No merchants found")}{search ? ` for "${search}"` : ''}.</div>
         ) : (
-          sortedMerchants.map(merchant => <CustomerShopCard key={merchant.id} merchant={merchant} onOpen={() => void openMerchant(merchant)} favorite={favorites.includes(merchant.id)} onFavorite={() => toggleFavorite(merchant.id)} distance={distanceKm(merchant.latitude, merchant.longitude)} />)
+          merchants.map(merchant => <CustomerShopCard key={merchant.id} merchant={merchant} onOpen={() => void openMerchant(merchant)} favorite={favorites.includes(merchant.id)} onFavorite={() => toggleFavorite(merchant.id)} />)
         )}
       </div>
 

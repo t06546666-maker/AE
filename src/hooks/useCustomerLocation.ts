@@ -3,12 +3,14 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { loadGoogleMaps } from '../components/CustomerNearbyMap';
 
-export function useCustomerLocation() {
+type CustomerLocation = { latitude?: number; longitude?: number; area: string; routeGroup?: 'chittur' | 'thathamangalam' };
+
+export function useCustomerLocation(requestAutomatically = true) {
   const client = useQueryClient();
-  const selected = useQuery<{ latitude: number; longitude: number; area: string } | null>({ queryKey: ['customer', 'selected-location'], queryFn: async () => null, initialData: null, enabled: false, staleTime: Infinity, gcTime: Infinity });
-  const gps = useQuery({
+  const selected = useQuery<CustomerLocation | null>({ queryKey: ['customer', 'selected-location'], queryFn: async () => null, initialData: null, enabled: false, staleTime: Infinity, gcTime: Infinity });
+  const gps = useQuery<CustomerLocation>({
     queryKey: ['customer', 'current-location'],
-    enabled: !selected.data,
+    enabled: requestAutomatically && !selected.data,
     queryFn: async () => {
       let coords: { latitude: number; longitude: number };
       if (Capacitor.isNativePlatform()) {
@@ -38,10 +40,10 @@ export function useCustomerLocation() {
   });
   return {
     ...gps,
-    data: selected.data || gps.data,
+    data: (selected.data || gps.data) as CustomerLocation | null,
     error: selected.data ? null : gps.error,
     isFetching: selected.data ? false : gps.isFetching,
-    selectLocation: (location: { latitude: number; longitude: number; area: string }) => {
+    selectLocation: (location: CustomerLocation) => {
       client.setQueryData(['customer', 'selected-location'], location);
     },
     refetch: async () => {
