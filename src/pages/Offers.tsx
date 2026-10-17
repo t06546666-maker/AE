@@ -1,10 +1,10 @@
 import { uiText } from '../uiText';
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, Gift, ImagePlus, Pencil, Search, Send, X } from 'lucide-react';
+import { CalendarDays, Check, Download, Gift, ImagePlus, Pencil, Search, Send, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { apiFetch, queryString } from '../api';
+import { apiFetch, downloadExport, queryString } from '../api';
 import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Offer, OfferStatus, Pagination, UserProfile } from '../types';
 import { formatDate } from '../utils';
@@ -39,6 +39,7 @@ export function Offers({ user }: { user: UserProfile }) {
   const [image, setImage] = useState<File | null>(null);
   const [rejecting, setRejecting] = useState<Offer | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [downloadingOfferId, setDownloadingOfferId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
 
   useEffect(() => setPage(1), [deferredSearch, status]);
@@ -118,6 +119,19 @@ export function Offers({ user }: { user: UserProfile }) {
   const approve = useMutation({
     mutationFn: (offer: Offer) => apiFetch(`/api/offers/${encodeURIComponent(offer.id)}/approve`, { method: 'POST' }),
     onSuccess() { showToast(t('offers.approvedToast')); void queryClient.invalidateQueries({ queryKey: ['offers'] }); },
+    onError(error) { showToast(error.message, 'error'); },
+  });
+
+  const replaceOfferImage = useMutation({
+    mutationFn: ({ offer, file }: { offer: Offer; file: File }) => {
+      const body = new FormData();
+      body.set('image', file);
+      return apiFetch(`/api/offers/${encodeURIComponent(offer.id)}/image`, { method: 'POST', body });
+    },
+    onSuccess() {
+      showToast('Enhanced offer image uploaded. Review it, then approve the offer.');
+      void queryClient.invalidateQueries({ queryKey: ['offers'] });
+    },
     onError(error) { showToast(error.message, 'error'); },
   });
 
@@ -262,6 +276,20 @@ export function Offers({ user }: { user: UserProfile }) {
                       ) : null}
                       {user.role === 'admin' && offer.status === 'pending' && !expired ? (
                         <>
+                          <button className="button secondary" disabled={downloadingOfferId === offer.id} onClick={async () => {
+                            setDownloadingOfferId(offer.id);
+                            try { await downloadExport(`/api/offers/${encodeURIComponent(offer.id)}/image`); }
+                            catch (error) { showToast(error instanceof Error ? error.message : 'Could not download the submitted image.', 'error'); }
+                            finally { setDownloadingOfferId(null); }
+                          }}><Download size={16} />{downloadingOfferId === offer.id ? 'Downloading…' : 'Download submitted image'}</button>
+                          <label className="button secondary" style={{ cursor: 'pointer' }}>
+                            <Upload size={16} />{replaceOfferImage.isPending ? 'Uploading…' : 'Upload enhanced image'}
+                            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={replaceOfferImage.isPending} style={{ display: 'none' }} onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) replaceOfferImage.mutate({ offer, file });
+                              event.currentTarget.value = '';
+                            }} />
+                          </label>
                           <button className="button success-button" disabled={approve.isPending} onClick={() => approve.mutate(offer)}><Check size={16} />{t('offers.approve')}</button>
                           <button className="button danger-button" onClick={() => setRejecting(offer)}><X size={16} />{t('offers.reject')}</button>
                         </>

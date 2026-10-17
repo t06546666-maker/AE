@@ -3877,6 +3877,64 @@ app.put(
   },
 );
 
+// Admin review tools keep the merchant's pending offer connected to its image:
+// download the submitted original, then replace it with the reviewed/enhanced file.
+app.get('/api/offers/:id/image', requireAuth, requireRole('admin'), async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  const { data: offer, error: lookupError } = await supabaseAdmin.from('offers')
+    .select('id,image_path')
+    .eq('id', offerId)
+    .maybeSingle();
+  if (lookupError) return res.status(500).json({ success: false, error: lookupError.message });
+  if (!offer?.image_path) return res.status(404).json({ success: false, error: 'Offer image was not found' });
+
+  const { data: image, error } = await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).download(offer.image_path);
+  if (error || !image) return res.status(404).json({ success: false, error: 'Offer image could not be downloaded' });
+  const filename = `offer-${offer.id}.${offerImageExtension(offerContentType(offer.image_path))}`;
+  res.setHeader('Content-Type', offerContentType(offer.image_path));
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Cache-Control', 'private, no-store');
+  return res.send(Buffer.from(await image.arrayBuffer()));
+});
+
+app.post('/api/offers/:id/image', requireAuth, requireRole('admin'), offerImageMiddleware, async (req, res) => {
+  const offerId = cleanText(req.params.id, 100);
+  if (!validOfferImage(req.file)) {
+    return res.status(400).json({ success: false, error: 'Upload a JPEG, PNG, or WebP offer image' });
+  }
+  const { data: currentOffer, error: lookupError } = await supabaseAdmin.from('offers')
+    .select('id,merchant_id,image_path,status')
+    .eq('id', offerId)
+    .maybeSingle();
+  if (lookupError) return res.status(500).json({ success: false, error: lookupError.message });
+  if (!currentOffer) return res.status(404).json({ success: false, error: 'Offer was not found' });
+  if (currentOffer.status !== 'pending') {
+    return res.status(409).json({ success: false, error: 'Only pending offers can have their image replaced' });
+  }
+
+  let replacementPath;
+  try {
+    replacementPath = await uploadOfferImage(currentOffer.merchant_id, req.file);
+    const { data: updated, error } = await supabaseAdmin.from('offers').update({
+      image_path: replacementPath,
+      updated_at: new Date().toISOString(),
+    }).eq('id', offerId).eq('status', 'pending').select('id').maybeSingle();
+    if (error) throw error;
+    if (!updated) {
+      await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([replacementPath]);
+      return res.status(409).json({ success: false, error: 'Offer status changed; refresh and try again' });
+    }
+    if (currentOffer.image_path) {
+      const { error: removeError } = await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]);
+      if (removeError) console.warn('Could not remove replaced offer image:', removeError.message);
+    }
+    return res.json({ success: true, offerId });
+  } catch (error) {
+    if (replacementPath) await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([replacementPath]);
+    return res.status(400).json({ success: false, error: error.message || 'Enhanced image could not be saved' });
+  }
+});
+
 app.post('/api/offers/:id/approve', requireAuth, requireRole('admin'), async (req, res) => {
   const offerId = cleanText(req.params.id, 100);
   const { data: pendingOffer } = await supabaseAdmin.from('offers').select('merchant_id,title').eq('id', offerId).maybeSingle();
