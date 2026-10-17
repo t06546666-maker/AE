@@ -689,3 +689,5 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 .merchant-shell .main-content{width:100%;max-width:none;padding-bottom:110px}
 .merchant-shell .merchant-bottom-nav{display:flex;padding-bottom:max(20px,env(safe-area-inset-bottom));background:var(--surface,#fff)}
 @media(min-width:769px){.merchant-shell .merchant-bottom-nav{justify-content:center;gap:clamp(40px,8vw,120px)}.merchant-shell .merchant-bottom-nav .mobile-bottom-nav-item{font-size:12px;min-width:64px}}
+@media(max-width:767px){.customer-glass .main-content{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}.customer-glass .customer-bottom-nav{display:flex;padding-bottom:max(14px,env(safe-area-inset-bottom));}}
+@media(min-width:768px){.customer-glass .customer-bottom-nav{display:none}}

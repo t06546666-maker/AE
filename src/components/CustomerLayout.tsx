@@ -2,9 +2,8 @@ import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Gift, User, MapPin, Menu, X, LogOut, Moon, Languages, Search, Scan, ListPlus } from 'lucide-react';
+import { Home, Gift, User, Menu, X, LogOut, Moon, Languages, Search, ListPlus } from 'lucide-react';
 import { UserProfile } from '../types';
-import { CustomerWelcome } from './CustomerWelcome';
 import { CustomerBillPopup } from './CustomerBillPopup';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
@@ -25,7 +24,6 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
 
   return (
     <div className="app-shell theme-green customer-glass">
-      <CustomerWelcome user={user} />
       <CustomerBillPopup key={user.id} customerId={user.id} />
       <header className="topbar hidden md:flex">
         <div className="topbar-left">
@@ -63,11 +61,11 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'active' : ''}>
               <Search size={18} /><span>{uiText("Explore")}</span>
             </NavLink>
-            <NavLink to="/customer/shop-scan" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Scan size={18} /><span>{uiText("Scan QR")}</span>
-            </NavLink>
             <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
-              <ListPlus size={18} /><span>{uiText("Products")}</span>
+              <ListPlus size={18} /><span>{uiText("Products list")}</span>
+            </NavLink>
+            <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Gift size={18} /><span>{uiText("Offers")}</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>{uiText("Profile")}</span>
@@ -84,6 +82,23 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
           {children}
         </main>
       </div>
+      <nav className="mobile-bottom-nav customer-bottom-nav md:hidden" aria-label={uiText("Customer navigation")}>
+        <NavLink to="/customer/home" end className={({ isActive }) => isActive && !location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <Home size={21} /><span>{uiText("Home")}</span>
+        </NavLink>
+        <NavLink to="/customer/explore" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <Search size={21} /><span>{uiText("Explore")}</span>
+        </NavLink>
+        <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <ListPlus size={21} /><span>{uiText("Products list")}</span>
+        </NavLink>
+        <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <Gift size={21} /><span>{uiText("Offers")}</span>
+        </NavLink>
+        <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <User size={21} /><span>{uiText("Profile")}</span>
+        </NavLink>
+      </nav>
     </div>
   );
 }
