@@ -15,4 +15,5 @@ assert.equal(billUpi({...settings,upiId:'invalid'},bill).upiUrl,null);
 assert.equal(billUpi(settings,{...bill,payable:0}).upiUrl,null);
 assert.equal(billUpi(settings,{...bill,payable:-1}).upiUrl,null);
 assert.equal(billUpi(settings,{...bill,payable:Infinity}).upiUrl,null);
-console.log('Passed: correct UPI recipient and net bill amount, merchant-scoped enablement, invalid/zero amount rejection.');
+assert.deepEqual(billUpi(settings,{...bill,paymentMode:'cash',paymentStatus:'paid'}),{upiId:null,upiUrl:null});
+console.log('Passed: correct UPI recipient and net bill amount, merchant-scoped enablement, invalid/zero amount rejection, and no UPI option for cash-paid bills.');

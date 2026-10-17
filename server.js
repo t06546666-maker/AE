@@ -4646,7 +4646,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     });
   }
   const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);
-  if (paymentSettings.paymentEnabled && req.body.paymentMode !== 'pilot_app_only') {
+  if (paymentSettings.paymentEnabled && !['pilot_app_only', 'cash'].includes(req.body.paymentMode)) {
     if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
     const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,customer_id,status,amount,customers(customer_code)').eq('id', paymentTransactionId).maybeSingle();
     const paymentRewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
@@ -4700,7 +4700,21 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     .eq('id', req.auth.profile.merchant_id)
     .maybeSingle();
   const merchantName = merchantForNotification?.name || 'your merchant';
-  if (req.body.paymentMode === 'pilot_app_only') {
+  const cashAmount = Math.max(0, amount - Number(redemptionContext?.discountAmount || 0));
+  let cashPaymentRecorded = null;
+  if (req.body.paymentMode === 'cash') {
+    const { error: cashPaymentError } = await supabaseAdmin.from('payment_transactions').insert({
+      order_id: purchase.order_id || purchase.id,
+      merchant_id: req.auth.profile.merchant_id,
+      customer_id: purchase.customer_id,
+      amount: cashAmount,
+      status: 'paid',
+      metadata: { provider: 'cash', paymentMode: 'cash' },
+    });
+    cashPaymentRecorded = !cashPaymentError;
+    if (cashPaymentError) console.warn('Cash payment record could not be saved:', cashPaymentError.message);
+  }
+  if (['pilot_app_only', 'cash'].includes(req.body.paymentMode)) {
     const billId = String(purchase.order_id || purchase.id || '');
     if (/^[a-zA-Z0-9_-]{1,150}$/.test(billId)) {
       try {
@@ -4708,9 +4722,13 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
         const billRef = database.collection('ae_checkout_bills').doc(billId);
         await database.runTransaction(async tx => {
           if ((await tx.get(billRef)).exists) return;
-          tx.set(billRef, { customerId: purchase.customer_id, merchantId: req.auth.profile.merchant_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)), createdAt: Date.now(), dismissed: false });
+          tx.set(billRef, { customerId: purchase.customer_id, merchantId: req.auth.profile.merchant_id, merchantName, total: amount, discount: Number(redemptionContext?.discountAmount || 0), payable: cashAmount, paymentMode: req.body.paymentMode === 'cash' ? 'cash' : 'customer_payment', paymentStatus: req.body.paymentMode === 'cash' ? 'paid' : 'pending', createdAt: Date.now(), dismissed: false });
         });
-        await pushToCustomer(purchase.customer_id, 'Your checkout bill', `${merchantName}: total ₹${amount.toFixed(2)}, discount ₹${Number(redemptionContext?.discountAmount || 0).toFixed(2)}, payable ₹${Math.max(0, amount - Number(redemptionContext?.discountAmount || 0)).toFixed(2)}.`, { url: '/customer/home', type: 'checkout_bill', billId });
+        if (req.body.paymentMode === 'cash') {
+          await pushToCustomer(purchase.customer_id, 'Cash payment confirmed ✓', `${merchantName}: ₹${cashAmount.toFixed(2)} received in cash. Your bill is ready in AE.`, { url: '/customer/home', type: 'checkout_bill', billId, paymentMode: 'cash' });
+        } else {
+          await pushToCustomer(purchase.customer_id, 'Your checkout bill', `${merchantName}: total ₹${amount.toFixed(2)}, discount ₹${Number(redemptionContext?.discountAmount || 0).toFixed(2)}, payable ₹${cashAmount.toFixed(2)}.`, { url: '/customer/home', type: 'checkout_bill', billId });
+        }
       } catch (error) { console.warn('Checkout bill notification failed:', error.message); }
     }
   }
@@ -4719,7 +4737,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
   // Purchases use native push notifications only. WhatsApp is reserved for
   // onboarding (welcome and temporary-password messages).
-  res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, whatsapp: { skipped: true, reason: 'push_only' } });
+  res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, paymentMode: req.body.paymentMode || 'pilot_app_only', cashPaymentRecorded, whatsapp: { skipped: true, reason: 'push_only' } });
 });
 
 app.get('/api/orders', requireAuth, (req, res, next) => {
