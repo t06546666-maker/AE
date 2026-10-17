@@ -14,6 +14,7 @@
 .ae-bill-breakdown dt { color: var(--muted); }
 .ae-bill-breakdown dd { margin: 0; font-weight: 600; }
 .ae-bill .ae-bill-pay { width: 100%; min-height: 48px; border-radius: 14px; justify-content: center; gap: 10px; background: #0866ff; color: white; }
+.ae-bill-payment-options{display:grid;gap:10px;margin:4px 0 14px}.ae-bill-payment-options .ae-bill-pay{display:flex;align-items:center}.ae-bill-cash{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}.ae-bill-cash:disabled,.ae-bill-pay:disabled{opacity:.6;cursor:wait}
 .ae-bill-apps h3 { font-size: 14px; margin: 0 0 12px; }
 .ae-bill-apps > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .ae-bill-app { display: flex; align-items: center; gap: 7px; min-height: 58px; padding: 10px; border-radius: 14px; border: 1px solid var(--border); color: var(--text); background: var(--surface); font-size: 12px; cursor: pointer; }
@@ -25,6 +26,9 @@
 .ae-bill-later { display: block; min-height: 44px; margin: 0 auto; background: transparent; border: 0; color: var(--muted); font-size: 13px; cursor: pointer; }
 .ae-bill-recipient { font-size: 12px; color: var(--muted); margin: 0 0 16px; overflow-wrap: anywhere; }
 .ae-bill-recipient strong { color: var(--text); }
+.ae-bill-in-app-only { display:flex; flex-direction:column; gap:6px; margin:8px 0 14px; padding:14px; border:1px solid var(--border); border-radius:14px; background:color-mix(in srgb, var(--surface) 92%, #0866ff 8%); }
+.ae-bill-in-app-only strong { font-size:14px; }
+.ae-bill-in-app-only span { color:var(--muted); font-size:12px; line-height:1.5; }
 .ae-bill-cash-confirmed { display:flex; align-items:center; gap:12px; margin:8px 0 14px; padding:14px; border:1px solid #a7e7c0; border-radius:14px; background:#effbf3; color:#08783b; }
 .ae-bill-cash-confirmed > div { display:flex; flex-direction:column; gap:4px; }
 .ae-bill-cash-confirmed strong { font-size:14px; }

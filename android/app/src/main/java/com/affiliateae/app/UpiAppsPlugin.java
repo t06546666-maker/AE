@@ -37,7 +37,15 @@ public class UpiAppsPlugin extends Plugin {
                 if (!allowed) { call.reject("Unsupported app"); return; }
                 Intent payment = new Intent(Intent.ACTION_VIEW, uri);
                 if (!id.isEmpty()) payment.setPackage(id);
-                getActivity().startActivity(id.isEmpty() ? Intent.createChooser(payment, "Choose UPI app") : payment);
+                try {
+                    getActivity().startActivity(id.isEmpty() ? Intent.createChooser(payment, "Choose UPI app") : payment);
+                } catch (Exception targetedLaunchError) {
+                    if (id.isEmpty()) throw targetedLaunchError;
+                    // Some UPI apps do not expose the same package-specific intent on every version.
+                    // Retry with Android's resolver so the user can choose a compatible installed app.
+                    Intent fallback = new Intent(Intent.ACTION_VIEW, uri);
+                    getActivity().startActivity(Intent.createChooser(fallback, "Choose UPI app"));
+                }
                 call.resolve(); return;
             } catch (Exception e) { call.reject("This UPI app could not open the payment. Try another app."); return; }
         }
