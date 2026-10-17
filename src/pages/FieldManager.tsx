@@ -151,6 +151,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [onboardStep, setOnboardStep] = useState(0);
@@ -416,6 +417,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
           userId: cleanUserId || undefined,
           email: finalEmail,
           phone: `+91${cleanPhone}`,
+          upi_id: upiId.trim(),
           password,
           category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined),
           new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined,
@@ -443,6 +445,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       setUserId('');
       setEmail('');
       setPhone('');
+      setUpiId('');
       setPassword('');
       setCategoryId('');
       setCustomCategory('');
@@ -665,6 +668,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
               <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} />{uiText(" Generate User ID & Password")}</button>
               <label>{uiText("Merchant route")}<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">{uiText("Select route")}</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
           <label>{uiText("Opening Time")}<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>{uiText("Closing Time")}<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
+              <label>{uiText("UPI ID for customer payments (Optional)")}<input type="text" value={upiId} onChange={event => setUpiId(event.target.value.trim())} placeholder="merchant@upi" autoCapitalize="none" autoComplete="off" inputMode="email" /><small>{uiText("If provided, customers can pay this merchant through a UPI app. AE does not verify UPI payments automatically.")}</small></label>
               </>}
               {onboardStep === 1 && <>
               <label>{uiText(" Address Line * ")}<input
@@ -702,6 +706,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   ['Store Name', name, 0], ['User ID', userId, 0], ['Email', email, 0], ['Phone Number', `+91 ${phone}`, 0],
                   ['Category', categoryId === '__other__' ? customCategory : categories.find(c => c.id === categoryId)?.name, 0],
                   ['Merchant Route', merchantRoute || 'Not assigned', 0],
+                  ['UPI ID', upiId || 'Not provided', 0],
                   ['Shop Hours', openingTime && closingTime ? `${formatClockTime(openingTime)} – ${formatClockTime(closingTime)}` : uiText("Not provided"), 0],
                   ['Store Address', [address, locality, city, storeState, pincode].filter(Boolean).join(', '), 1],
                   ['Location', latitude && longitude ? `${latitude}, ${longitude}` : uiText("Not selected"), 1],

@@ -38,6 +38,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [password, setPassword] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [customCategory, setCustomCategory] = useState('');
@@ -101,7 +102,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
+      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, upi_id: upiId.trim(), password, category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -116,6 +117,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
       setShopImages([]); setOnboardStep(0);
       setEmail('');
       setPhone('');
+      setUpiId('');
       setPassword('');
       setAddress(''); setLatitude(''); setLongitude(''); setCategoryId(''); setCustomCategory('');
       void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
@@ -221,6 +223,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required />
             <small>{t('merchants.passwordHelp')}</small>
           </label>
+          <label>{uiText("UPI ID for customer payments (Optional)")}<input type="text" value={upiId} onChange={event => setUpiId(event.target.value.trim())} placeholder="merchant@upi" autoCapitalize="none" autoComplete="off" inputMode="email" /><small>{uiText("If provided, customers can pay this merchant through a UPI app. AE does not verify UPI payments automatically.")}</small></label>
           
           <label>{uiText(" Category (Optional) ")}<select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value !== '__other__') setCustomCategory(''); }}>
               <option value="">{uiText("No Category")}</option>
@@ -239,7 +242,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
           </div><button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}>{uiText("Select location on map")}</button></fieldset><fieldset disabled={onboardStep !== 2} hidden={onboardStep !== 2} style={{ border: 0 }}><div className="four-column-form"><label>{uiText("Upload Photo (required)")}<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>{uiText("JPG or PNG, maximum 5 MB.")}</small></label><LiveCamera facing="environment" disabled={uploadingPhoto || create.isPending} label="Take Photo" onCapture={file => void uploadShopPhoto(file)} />
         </div>
         {shopImages.map((url, index) => <div key={url}><img src={url} alt={`Shop photo ${index + 1}`} style={{ width: 120, height: 80, objectFit: 'cover' }} /><button type="button" className="button secondary" onClick={() => setShopImages(images => images.filter((_, position) => position !== index))}>{uiText("Remove photo")}</button></div>)}
-        </fieldset>{onboardStep === 3 && <div className="field-review"><h3>{uiText("Review merchant details")}</h3>{[['Shop name',name],['Email',email],['Phone',phone],['Category',categoryId === '__other__' ? customCategory : categoriesQuery.data?.categories.find(c => c.id === categoryId)?.name],['Address',address],['Route',routeLabel(merchantRoute)],['Opening time',formatClockTime(openingTime)],['Closing time',formatClockTime(closingTime)],['Location',`${latitude}, ${longitude}`]].map(([label,value]) => <p key={label}><strong>{uiText(label)}:</strong> {value || 'Not provided'}</p>)}{shopImages.map(url => <img key={url} src={url} alt={uiText("Shop photo review")} style={{ width: 120, borderRadius: 12 }} />)}</div>}{onboardStep === 0 && <button type="button" className="button secondary" onClick={generateCredentials}>{uiText("Generate login email & password")}</button>}{onboardStep > 0 && <button type="button" className="button secondary" onClick={() => setOnboardStep(onboardStep - 1)}>{uiText("Back")}</button>}
+        </fieldset>{onboardStep === 3 && <div className="field-review"><h3>{uiText("Review merchant details")}</h3>{[['Shop name',name],['Email',email],['Phone',phone],['UPI ID',upiId],['Category',categoryId === '__other__' ? customCategory : categoriesQuery.data?.categories.find(c => c.id === categoryId)?.name],['Address',address],['Route',routeLabel(merchantRoute)],['Opening time',formatClockTime(openingTime)],['Closing time',formatClockTime(closingTime)],['Location',`${latitude}, ${longitude}`]].map(([label,value]) => <p key={label}><strong>{uiText(label)}:</strong> {value || 'Not provided'}</p>)}{shopImages.map(url => <img key={url} src={url} alt={uiText("Shop photo review")} style={{ width: 120, borderRadius: 12 }} />)}</div>}{onboardStep === 0 && <button type="button" className="button secondary" onClick={generateCredentials}>{uiText("Generate login email & password")}</button>}{onboardStep > 0 && <button type="button" className="button secondary" onClick={() => setOnboardStep(onboardStep - 1)}>{uiText("Back")}</button>}
         <button className="button primary" disabled={create.isPending || uploadingPhoto}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : onboardStep < 3 ? uiText("Next") : t('merchants.add')}
         </button>

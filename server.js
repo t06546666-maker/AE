@@ -3014,6 +3014,21 @@ async function readMerchantPaymentSettings(id) {
     return { ...defaultMerchantPaymentSettings, ...(data?.value ? JSON.parse(data.value) : {}) };
   } catch (_) { return { ...defaultMerchantPaymentSettings }; }
 }
+async function writeMerchantPaymentSettings(id, value) {
+  try {
+    const database = await checkoutBillDatabase();
+    await database.collection('ae_merchant_payment_settings').doc(String(id)).set(value);
+    return;
+  } catch (firestoreError) {
+    // Supabase app_settings is the compatibility fallback for environments
+    // where the checkout Firestore store is unavailable.
+    const { error } = await supabaseAdmin.from('app_settings').upsert({
+      key: merchantPaymentKey(id),
+      value: JSON.stringify(value),
+    });
+    if (error) throw new Error(`Could not save merchant payment settings: ${error.message || firestoreError.message}`);
+  }
+}
 app.get('/api/merchants/:id/payment-settings', requireAuth, async (req, res) => {
   if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
   res.json({ success: true, data: await readMerchantPaymentSettings(req.params.id) });
@@ -3024,8 +3039,7 @@ app.patch('/api/merchants/:id/payment-settings', requireAuth, async (req, res) =
   if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
   const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'upi', mode: 'live' };
   try {
-    const database = await checkoutBillDatabase();
-    await database.collection('ae_merchant_payment_settings').doc(req.params.id).set(value);
+    await writeMerchantPaymentSettings(req.params.id, value);
   } catch (error) { return res.status(503).json({ success: false, error: 'Could not save merchant payment settings.' }); }
   res.json({ success: true, data: value });
 });
@@ -3214,6 +3228,8 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const name = cleanText(req.body.name, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
+  const upiId = cleanText(req.body.upi_id || req.body.upiId, 120).toLowerCase();
+  if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
   let category_id = cleanText(req.body.category_id, 100) || null;
   const route_name = cleanText(req.body.route_name, 80) || null;
   if (route_name && !['Chittur 1', 'Chittur 2', 'Chittur 3', 'Thathamangalam 1', 'Thathamangalam 2', 'Thathamangalam 3'].includes(route_name)) {
@@ -3313,6 +3329,23 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
     await supabaseAdmin.from('merchants').delete().eq('id', merchant.id);
     return res.status(400).json({ success: false, error: profileError.message });
+  }
+
+  let paymentSettingsSaved = true;
+  if (upiId) {
+    try {
+      await writeMerchantPaymentSettings(merchant.id, {
+        ...defaultMerchantPaymentSettings,
+        upiId,
+        displayName: merchant.name,
+        paymentEnabled: true,
+        provider: 'upi',
+        mode: 'live',
+      });
+    } catch (error) {
+      paymentSettingsSaved = false;
+      console.error('Merchant was onboarded, but its UPI settings could not be saved:', error.message);
+    }
   }
 
   if (req.auth.profile?.role === 'field_manager') {
