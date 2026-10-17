@@ -3,7 +3,7 @@ import { maskedPhone } from '../maskedPhone';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, CheckCircle2, RefreshCw, ScanLine } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, RefreshCw, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { apiFetch } from '../api';
@@ -37,6 +37,9 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const { t } = useTranslation();
   const [scanner, setScanner] = useState<ScannerInstance | null>(null);
   const [customer, setCustomer] = useState<(Customer & { isNewToMerchant?: boolean }) | null>(null);
+  const [shopRequestLoading, setShopRequestLoading] = useState(Boolean(shopRequest));
+  const [shopRequestError, setShopRequestError] = useState('');
+  const [shopRequestRetry, setShopRequestRetry] = useState(0);
   const [message, setMessage] = useState(() => t('scanner.secure'));
   const [starting, setStarting] = useState(false);
   const [amount, setAmount] = useState('');
@@ -51,11 +54,14 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   useEffect(() => {
     if (!shopRequest) return;
     let active = true;
+    setShopRequestLoading(true);
+    setShopRequestError('');
     apiFetch<{customer:Customer}>(`/api/customers/scan/${encodeURIComponent(shopRequest.customerCode)}`).then(data=>{
       if(active){setCustomer(data.customer);setTransactionMode(shopRequest.action);}
-    }).catch(error=>{if(active)setMessage(error.message);});
+    }).catch(error=>{if(active)setShopRequestError(error instanceof Error ? error.message : 'Could not load this customer checkout.');})
+      .finally(()=>{if(active)setShopRequestLoading(false);});
     return()=>{active=false;};
-  }, [shopRequest?.id]);
+  }, [shopRequest?.id, shopRequestRetry]);
   useEffect(() => {
     if (discountType !== 'flat' || paymentTransactionId) return;
     const options = flatDiscountOptions(Number(amount));
@@ -238,6 +244,16 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   });
 
   const postScan = customer ? <ScannedCheckout customer={customer} combined={transactionMode === 'combined'} setCombined={value=>setTransactionMode(value?'combined':'earn')} amount={amount} setAmount={setAmount} rate={percentage} setRate={setPercentage} rates={Array.from(new Set([percentage,...(settings.earnOptions || [5,10,20,30,50])])).filter(n=>n>=1 && n<=100)} discountType={discountType} setDiscountType={setDiscountType} discountValue={discountValue} setDiscountValue={setDiscountValue} points={points} notes={notes} setNotes={setNotes} paymentMode={paymentMode} setPaymentMode={setPaymentMode} busy={checkout.isPending} paymentLocked={false} onSubmit={()=>void payAndCheckout()} onBack={()=>{setCustomer(null);setPaymentTransactionId('');locked.current=false;setMessage(t('scanner.ready'));}}/> : null;
+
+  if (shopRequest && !customer) {
+    return <section className="panel scanner-panel">
+      <div className="panel-heading"><div><h2>{uiText('Checkout request')}</h2><p>{shopRequest.action === 'combined' ? uiText('Redeem + Earn') : uiText('Issue points')}</p></div><CheckCircle2 /></div>
+      <div className="checkout-panel" aria-live="polite">
+        {shopRequestLoading ? <p role="status">{uiText('Loading customer checkout…')}</p> : shopRequestError ? <><p role="alert">{shopRequestError}</p><button type="button" className="button primary" onClick={() => setShopRequestRetry(value => value + 1)}><RefreshCw size={17}/>{uiText('Try again')}</button></> : <p role="status">{uiText('Preparing checkout…')}</p>}
+        <button type="button" className="button secondary" onClick={() => navigate('/shop-checkout')}><ArrowLeft size={17}/>{uiText('Back to requests')}</button>
+      </div>
+    </section>;
+  }
 
   return postScan || (
     <section className="panel scanner-panel">
