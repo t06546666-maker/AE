@@ -1,7 +1,7 @@
 import { uiText } from '../uiText';
 import { SIX_HOUR_LABELS } from '../utils';
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { SubscriptionModal } from '../components/SubscriptionModal';
 import { MerchantFeedback } from '../components/MerchantFeedback';
 import type { DashboardData, Period, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, rangeForChartPeriod } from '../utils';
+import { useToast } from '../toast';
 
 const emptyDashboard: DashboardData = {
   summary: { totalOrders: 0, totalRevenue: 0, rewardPointsIssued: 0, totalCustomers: 0 },
@@ -37,6 +38,8 @@ function ReportDates({ period, from, to, setFrom, setTo }: { period: Period; fro
 
 export function More({ user, onLogout }: { user: UserProfile; onLogout: () => void }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const today = dateInput();
   const [chartPeriod, setChartPeriod] = useState<Period>('today');
   const [chartFrom, setChartFrom] = useState(today); const [chartTo, setChartTo] = useState(today);
@@ -56,10 +59,39 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
     queryFn: ({ signal }) => apiFetch<{ data: Merchant }>(`/api/merchants/${user.merchant_id}`, { signal }),
     enabled: user.role === 'merchant' && !!user.merchant_id,
   });
+  const paymentSettings = useQuery({
+    queryKey: ['merchant-payment-settings', user.merchant_id],
+    queryFn: ({ signal }) => apiFetch<{ success: boolean; data: { upiId: string; displayName: string; paymentEnabled: boolean } }>(`/api/merchants/${encodeURIComponent(user.merchant_id || '')}/payment-settings`, { signal }),
+    enabled: user.role === 'merchant' && Boolean(user.merchant_id),
+  });
+  const [paymentForm, setPaymentForm] = useState({ upiId: '', displayName: '', paymentEnabled: false });
+  useEffect(() => {
+    if (!paymentSettings.data?.data) return;
+    const { upiId, displayName, paymentEnabled } = paymentSettings.data.data;
+    setPaymentForm({ upiId: upiId || '', displayName: displayName || '', paymentEnabled: Boolean(paymentEnabled) });
+  }, [paymentSettings.data]);
+  const savePaymentSettings = useMutation({
+    mutationFn: () => apiFetch(`/api/merchants/${encodeURIComponent(user.merchant_id || '')}/payment-settings`, { method: 'PATCH', body: JSON.stringify(paymentForm) }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['merchant-payment-settings', user.merchant_id] }); showToast('UPI payment settings saved.'); },
+    onError: (error: Error) => showToast(error.message, 'error'),
+  });
 
   return (
     <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
       <PageHeader title={t('nav.more', 'More')} subtitle="" />
+
+      {user.role === 'merchant' && <section className="panel" style={{ marginTop: 20 }}>
+        <div className="panel-heading"><div><h2>{uiText("UPI payment settings")}</h2><p>{uiText("Add the UPI ID where you receive customer payments.")}</p></div></div>
+        {paymentSettings.isPending ? <p>{uiText("Loading payment settings…")}</p> : paymentSettings.isError ? <div role="alert"><p>{paymentSettings.error.message}</p><button className="button secondary" onClick={() => void paymentSettings.refetch()}>{uiText("Try again")}</button></div> : <>
+          <div className="form-grid">
+            <label>{uiText("UPI ID")}<input autoComplete="off" value={paymentForm.upiId} onChange={event => setPaymentForm({ ...paymentForm, upiId: event.target.value.trim() })} placeholder={uiText("yourname@bank")} /></label>
+            <label>{uiText("Display name")}<input autoComplete="organization" value={paymentForm.displayName} onChange={event => setPaymentForm({ ...paymentForm, displayName: event.target.value })} placeholder={uiText("Shop or account name")} /></label>
+          </div>
+          <label className="checkbox-row" style={{ marginTop: 14 }}><input type="checkbox" checked={paymentForm.paymentEnabled} onChange={event => setPaymentForm({ ...paymentForm, paymentEnabled: event.target.checked })} />{uiText("Enable UPI payment requests")}</label>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5 }}>{uiText("Customers pay you directly in their UPI app. Check your UPI app/bank before confirming a payment in AE. AE does not verify the transfer automatically. Never share your UPI PIN or OTP.")}</p>
+          <button className="button primary" disabled={savePaymentSettings.isPending || (paymentForm.paymentEnabled && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(paymentForm.upiId))} onClick={() => savePaymentSettings.mutate()}>{savePaymentSettings.isPending ? uiText("Saving…") : uiText("Save UPI settings")}</button>
+        </>}
+      </section>}
 
       {/* Account Settings & Exports */}
       <div className="mobile-section" style={{ marginTop: 24 }}>
