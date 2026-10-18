@@ -59,7 +59,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
 
 
   return (
-    <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
+    <div className="mobile-dashboard-wrapper merchant-more" style={{ paddingBottom: '80px' }}>
       <PageHeader title={t('nav.more', 'More')} subtitle="" />
 
       {/* Account Settings & Exports */}
@@ -69,7 +69,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
         </div>
         <div className="mobile-transactions" style={{ boxShadow: 'none', padding: 0 }}>
           {user.role === 'merchant' && <Link to="/merchant-profile" className="mobile-transaction-item" style={{ padding: '16px 0' }}><div className="mobile-transaction-avatar blue"><Settings size={20} /></div><div className="mobile-transaction-info"><h4>{uiText('Merchant Profile')}</h4><p>{uiText('Your business and account details')}</p></div><ChevronRight /></Link>}
-          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setExportFormat('xlsx')}>
+          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid var(--border)' }} onClick={() => setExportFormat('xlsx')}>
             <div className="mobile-transaction-avatar green" style={{ width: 40, height: 40 }}><FileSpreadsheet size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
               <h4>{uiText("Export to Excel")}</h4>
@@ -78,7 +78,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             <ChevronRight color="#94a3b8" />
           </button>
           
-          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setExportFormat('pdf')}>
+          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid var(--border)' }} onClick={() => setExportFormat('pdf')}>
             <div className="mobile-transaction-avatar pink" style={{ width: 40, height: 40 }}><FileText size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
               <h4>{uiText("Export to PDF")}</h4>
@@ -87,7 +87,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             <ChevronRight color="#94a3b8" />
           </button>
 
-          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid #f1f5f9' }} onClick={() => setSubscribeOpen(true)}>
+          <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid var(--border)' }} onClick={() => setSubscribeOpen(true)}>
             <div className="mobile-transaction-avatar blue" style={{ width: 40, height: 40 }}><ShieldCheck size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
               <h4>{uiText("Subscription")}</h4>
@@ -97,7 +97,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           </button>
 
           <Link to="/reward-settings" className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0' }}>
-            <div className="mobile-transaction-avatar" style={{ width: 40, height: 40, background: '#f1f5f9', color: '#64748b' }}><Settings size={20} /></div>
+            <div className="mobile-transaction-avatar" style={{ width: 40, height: 40, background: 'var(--surface-alt)', color: 'var(--muted)' }}><Settings size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>
               <h4>{uiText("Reward Settings")}</h4>
               <p>{uiText("Configure points and expiry")}</p>
@@ -114,7 +114,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
         <button type="button" className="mobile-help-btn" style={{ width: '100%', cursor: 'pointer' }} aria-expanded={supportOpen} aria-controls="merchant-help-support" onClick={() => setSupportOpen(open => !open)}>
           <div className="mobile-help-btn-left">
             <Headset size={20} color="#64748b" />
-            <span>{t('dashboard.helpSupport', 'Help & Support')}</span>
+            <span>{uiText('Help & Support')}</span>
           </div>
           <ChevronRight size={20} color="#94a3b8" />
         </button>
@@ -125,7 +125,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             <a className="button whatsapp" href="https://wa.me/917306010846?text=Hello%20Affiliate%20AE%20support%2C%20I%20need%20help%20with%20my%20merchant%20account." target="_blank" rel="noopener noreferrer"><MessageCircle size={19}/>{uiText("Chat on WhatsApp")}</a>
             <a className="button secondary" href="mailto:info@affiliateinnovations.co.in?subject=Merchant%20support"><Mail size={19}/>{uiText("Email Support")}</a>
           </div>
-          <p style={{ overflowWrap: 'anywhere', color: 'var(--text-muted)' }}>{uiText("info@affiliateinnovations.co.in")}</p>
+          <p style={{ overflowWrap: 'anywhere', color: 'var(--muted)' }}>{uiText("info@affiliateinnovations.co.in")}</p>
           <h3 style={{ marginTop: 24 }}>{uiText("Frequently Asked Questions")}</h3>
           {[
             ['How do I issue points to a customer?', 'Scan the customer’s My QR Code, select Issue Only, enter the purchase amount, check the points, and confirm the transaction.'],
@@ -134,7 +134,7 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             ['Where can I find purchase history?', 'Open Purchase History to review recorded transactions. Customer phone numbers are masked in the merchant view.'],
             ['What should I do if a transaction or QR scan fails?', 'Check your internet connection and review purchase history before retrying to avoid submitting the transaction twice. If you still need help, send support the time, order reference, and a screenshot. Never share passwords or OTPs.'],
             ['Is a subscription payment required now?', 'The pilot is free. Subscriptions are coming soon; no subscription payment is required during the free pilot.'],
-          ].map(([question, answer]) => <details key={question} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)' }}><summary style={{ cursor: 'pointer', fontWeight: 600 }}>{question}</summary><p style={{ marginTop: 10, lineHeight: 1.6, color: 'var(--text-muted)' }}>{answer}</p></details>)}
+          ].map(([question, answer]) => <details key={question} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)' }}><summary style={{ cursor: 'pointer', fontWeight: 600 }}>{uiText(question)}</summary><p style={{ marginTop: 10, lineHeight: 1.6, color: 'var(--muted)' }}>{uiText(answer)}</p></details>)}
         </section>}
       </div>
 
@@ -144,8 +144,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
           onClick={onLogout}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-            padding: '16px 20px', borderRadius: 14, border: '1.5px solid #fee2e2',
-            background: '#fff5f5', cursor: 'pointer', color: '#ef4444',
+            padding: '16px 20px', borderRadius: 14, border: '1.5px solid var(--border)',
+            background: 'var(--surface)', cursor: 'pointer', color: '#ef4444',
             fontSize: 15, fontWeight: 600,
           }}
         >

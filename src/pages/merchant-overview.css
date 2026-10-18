@@ -23,6 +23,17 @@
 .mo-tabs a[aria-current=page] { background: var(--mo-blue); color: #fff; box-shadow: 0 4px 10px #0866db20; }
 .mo-tabs .mo-create-link { margin-left: auto; color: var(--mo-blue); background: color-mix(in srgb, var(--mo-blue) 8%, var(--surface)); }
 .mo-content { animation: mo-enter .2s ease-out; }
+.mo-startup-content { min-height: 55vh; }
+.mo-startup-label { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.mo-skeleton-card, .mo-skeleton-panel { overflow: hidden; }
+.mo-skeleton-card > span, .mo-skeleton-card > strong, .mo-skeleton-card > small, .mo-skeleton-panel > span { display: block; border-radius: 10px; background: linear-gradient(100deg, color-mix(in srgb, var(--border) 40%, var(--surface)), color-mix(in srgb, var(--border) 75%, var(--surface)), color-mix(in srgb, var(--border) 40%, var(--surface))); background-size: 220% 100%; animation: mo-shimmer 1.5s ease-in-out infinite; }
+.mo-skeleton-card > span { width: 46%; height: 16px; }
+.mo-skeleton-card > strong { width: 70%; height: 30px; margin-top: 18px; }
+.mo-skeleton-card > small { width: 82%; height: 10px; margin-top: 12px; }
+.mo-skeleton-panel { min-height: 190px; display: grid; align-content: start; gap: 15px; }
+.mo-skeleton-panel > span { height: 18px; }.mo-skeleton-panel > span:first-child { width: 55%; height: 22px; margin-bottom: 14px; }.mo-skeleton-panel > span:nth-child(2) { width: 90%; }.mo-skeleton-panel > span:nth-child(3) { width: 72%; }
+@keyframes mo-shimmer { to { background-position-x: -220%; } }
+@media (prefers-reduced-motion: reduce) { .mo-skeleton-card > span, .mo-skeleton-card > strong, .mo-skeleton-card > small, .mo-skeleton-panel > span { animation: none; } }
 .mo-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .mo-stat, .mo-panel { min-width: 0; background: var(--surface); border: 1px solid color-mix(in srgb, var(--border) 68%, transparent); border-radius: 20px; box-shadow: 0 3px 16px #1b345205; }
 .mo-stat { padding: 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--tone) 7%, var(--surface)), var(--surface)); }
@@ -89,7 +100,7 @@
 .mo-heading { position: relative; z-index: 1; margin-inline: -24px; padding: 26px 48px 30px; color: #fff; border-radius: 0 0 34px 34px; background: radial-gradient(circle at 84% 18%, #6e5cff 0, transparent 32%), linear-gradient(120deg, #101934 0%, #243b84 48%, #4269f5 100%); box-shadow: 0 18px 40px #1b2d6b22; }
 .mo-heading-actions { align-self: flex-end; }.mo-month { border-color: #ffffff55; background: #ffffff18; color: #fff; backdrop-filter: blur(10px); }.mo-heading-actions .mo-header-action { min-height: 48px; border: 1px solid #ffffff38; }.mo-heading-actions .mo-header-action.add { background: #18a873; }.mo-heading-actions .mo-header-action.scan { background: #216fe9; }
 .mo-heading > div:first-child::before { display: none; }
-.mo-eyebrow { font-size: 0; letter-spacing: 0; }.mo-eyebrow::after { content: 'Where customers meet business and beyond'; font-size: 10px; letter-spacing: .16em; }
+.mo-eyebrow { font-size: 10px; letter-spacing: .12em; line-height: 1.5; }
 .mo-heading p { color: #dbe5ff; }
 .mo-eyebrow { color: #9fe8ff; }
 .mo-stat, .mo-panel { border-radius: 22px; box-shadow: 0 12px 34px #17265c12; }
@@ -108,3 +119,46 @@
 .mo-hero-controls{display:flex;flex-direction:column;align-items:flex-end;gap:12px;min-width:0}.mo-points-compact{display:flex;align-items:center;gap:11px;padding:10px 14px;border:1px solid #ffffff40;border-radius:13px;background:#ffffff16;color:#fff;max-width:100%;box-shadow:inset 0 1px 0 #ffffff15}.mo-points-compact>svg{flex-shrink:0;color:#ffdb66}.mo-points-compact span{display:block;font-size:11px;color:#e3edff}.mo-points-compact strong{display:block;font-size:21px;line-height:1.25;margin-top:2px}.mo-points-compact small{font-size:11px;font-weight:500}.mo-points-compact button{border:0;background:transparent;color:#fff;padding:4px 0;font-size:12px;text-decoration:underline;cursor:pointer}@media(max-width:820px){.mo-heading>.mo-hero-controls{flex:1 1 100%;width:100%;align-items:flex-end}.mo-hero-controls .mo-heading-actions{width:100%}.mo-points-compact{min-width:145px;padding:9px 12px}.mo-points-compact strong{font-size:20px}}
 .mo-my-qr { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-width:90px; padding:14px; border:1px solid var(--border,#dbe4ef); border-radius:16px; background:var(--surface,#fff); color:var(--text,#102746); text-decoration:none; font-weight:600; }
 .mo-my-qr:focus-visible { outline:2px solid #2166f3; outline-offset:3px; }
+@media(max-width:360px) {
+  .mo-heading { margin-inline: -10px; padding-inline: 10px; }
+  .merchant-overview::before { margin-inline: -10px; }
+}
+
+/* Malayalam labels grow vertically instead of pushing cards off screen. */
+.merchant-overview :is(.mo-heading > div, .mo-panel-heading > div, .mo-stat, .mo-donut-legend, .mo-tool-grid > a) { min-width: 0; }
+.mo-panel-heading { flex-wrap: wrap; }
+.mo-panel-heading > div:first-child { flex: 1 1 160px; }
+.mo-donut { flex-shrink: 0; }
+.mo-donut-legend { flex: 1; }
+.mo-donut-legend > span { grid-template-columns: 10px minmax(0,1fr); }
+.mo-donut-legend b { grid-column: 2; }
+.mo-activity-foot { flex-wrap: wrap; }
+html[lang="ml"] .merchant-overview :is(h1,h2,h3,strong,button,a,p,small,span) { letter-spacing: normal; line-height: 1.6; }
+html[lang="ml"] .mo-tabs { flex-wrap: wrap; }
+html[lang="ml"] .mo-tabs a { flex: 1 1 100px; white-space: normal; text-align: center; }
+html[lang="ml"] .mo-header-action span { white-space: normal; overflow: visible; text-overflow: clip; }
+html[lang="ml"] .mo-stat-label { align-items: flex-start; }
+html[lang="ml"] .mo-stat-label > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+html[lang="ml"] .mo-change { display: flex; flex-wrap: wrap; }
+html[lang="ml"] .mo-bars, html[lang="ml"] .mo-week-bars { min-height: 190px; height: auto; align-items: stretch; }
+html[lang="ml"] :is(.mo-bar-item,.mo-week-bar) { justify-content: flex-end; }
+html[lang="ml"] :is(.mo-bar-item,.mo-week-bar) small { min-height: 3.2em; text-align: center; }
+html[lang="ml"] .mo-segmented { flex-wrap: wrap; }
+html[lang="ml"] .mo-segmented button { flex: 1 1 85px; white-space: normal; }
+html[lang="ml"] .mo-heading h1 { font-size: clamp(21px,4vw,32px); }
+:root[data-theme="dark"] .merchant-shell { --primary-soft: #243353; --blue-soft: #1b304b; }
+@media(max-width:480px) {
+  html[lang="ml"] .merchant-overview .mo-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+  html[lang="ml"] .merchant-overview .mo-tabs a { min-width: 0; width: 100%; }
+  .mo-hero-controls > div:first-child { width: 100%; }
+  .mo-points-compact { flex: 1 1 0; min-width: 0; }
+  .mo-my-qr { flex: 0 0 76px; min-width: 0; padding-inline: 10px; }
+  html[lang="ml"] .mo-tabs a { flex-basis: calc(50% - 8px); }
+  .mo-donut-wrap { flex-wrap: wrap; }
+  .mo-donut-legend { flex-basis: 130px; }
+  html[lang="ml"] .mo-heading-actions { flex-wrap: wrap; }
+  html[lang="ml"] .mo-month { flex: 1 1 100%; max-width: 100%; }
+  html[lang="ml"] .mo-header-actions { flex-basis: 100%; }
+  html[lang="ml"] .mo-panel-heading select { max-width: 100%; }
+  html[lang="ml"] .mo-tool-grid { grid-template-columns: minmax(0,1fr); }
+}

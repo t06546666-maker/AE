@@ -29,7 +29,7 @@ export function MerchantPoints({ user }: { user: UserProfile }) {
     {query.isPending ? <LoadingState/> : query.isError ? <ErrorState error={query.error} retry={() => query.refetch()}/> : data && <>
       <section className="mo-points-balance"><Coins size={40}/><div><span>{uiText("Available AE Points")}</span><strong>{number(data.balance)}</strong><p>{uiText("Current balance available to issue to customers")}</p></div></section>
       <div className="mo-columns" style={{ margin: '20px 0', flexWrap: 'wrap' }}>
-        <section className="mo-panel"><h2>{uiText("Carried forwarded from Last Month")}</h2><h1 aria-label={data.carriedForward === null ? uiText('Not recorded') : undefined}>{data.carriedForward === null ? '—' : number(data.carriedForward)}</h1></section>
+        <section className="mo-panel"><h2>{uiText("Carried forward from last month")}</h2><h1 aria-label={data.carriedForward === null ? uiText('Not recorded') : undefined}>{data.carriedForward === null ? '—' : number(data.carriedForward)}</h1></section>
         <section className="mo-panel"><h2>{uiText("Points issued by You")}</h2><h1>{number(issued.reduce((s,b) => s+b.sales,0))}</h1></section>
         <section className="mo-panel"><h2>{uiText("Points redeemed by Customers")}</h2><h1>{number(redeemed.reduce((s,b) => s+b.sales,0))}</h1></section>
       </div>

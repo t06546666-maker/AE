@@ -1,4 +1,5 @@
 import { uiText } from '../../uiText';
+import { ThemeToggleButton } from '../../components/ThemeToggleButton';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ConfirmationResult, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
@@ -9,6 +10,7 @@ import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
 import '../../components/auth.css';
+import { useToast } from '../../toast';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
@@ -28,6 +30,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { showToast } = useToast();
   const nativeAuth = Capacitor.isNativePlatform();
   const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
   const verifiedUserRef = useRef<import('firebase/auth').User | null>(null);
@@ -134,11 +137,13 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
         if (currentUser) idToken = await currentUser.getIdToken(true);
       }
       if (!idToken) throw new Error('Phone verification did not return a secure token. Please request a new OTP.');
-      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile }>('/api/auth/customer/signup', {
+      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile; welcomeBonusAwarded?: boolean; welcomeBonusPoints?: number; welcomeBonusUnavailable?: boolean }>('/api/auth/customer/signup', {
         method: 'POST',
         body: JSON.stringify({ idToken, name: name.trim(), email: email.trim(), password }),
       });
       setAccessToken(data.accessToken, data.refreshToken);
+      if (data.welcomeBonusAwarded) showToast(uiText('Welcome! 200 AE points have been added.'));
+      else if (data.welcomeBonusUnavailable) showToast(uiText('Your welcome points could not be added yet. Please contact AE support.'), 'error');
       onLogin(data.user);
     } catch (cause: any) {
       setError(cause?.message || 'Invalid or expired verification code.');
@@ -147,9 +152,9 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     }
   }
 
-  return <main className="ae-auth-page"><section className="ae-auth-signup">
+  return <main className="ae-auth-page"><ThemeToggleButton/><section className="ae-auth-signup">
     <Link className="ae-auth-back" to="/customer/login" aria-label={uiText("Back to login")}><ArrowLeft/></Link>
-    <header><img src="/logo.png" alt={uiText("AE")}/><h1>{uiText("Create an Account")}</h1><p>{uiText("Where customers meet business and beyond")}</p></header>
+    <header><img src="/logo.png" alt={uiText("AE")}/><h1>{uiText("Create an Account")}</h1><p>{uiText("Where customers meet businesses and beyond")}</p></header>
     <ol className="ae-auth-steps"><li aria-current={step === 'details' ? 'step' : undefined}><span>1</span>{uiText("Account Details")}</li><li aria-current={step === 'otp' ? 'step' : undefined}><span>2</span>{uiText("Verify &amp; Join")}</li></ol>
     <h2>{step === 'details' ? uiText("Your Details") : uiText("Verify your phone")}</h2><p className="ae-auth-subtitle">{step === 'details' ? uiText("Let’s create your AE account") : `Enter the code sent to +91 ${phone}`}</p>
     {error && <div className="form-error" role="alert">{error}</div>}

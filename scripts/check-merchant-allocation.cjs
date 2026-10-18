@@ -3,10 +3,11 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync('server.js', 'utf8');
 const start = source.indexOf("app.get('/api/merchants/:id/point-balance'");
-const end = source.indexOf("app.get('/api/merchants/:id',", start);
+// Stop after the allocation route, not at a later unrelated merchant route.
+const end = source.indexOf('\nasync function recordedTargetSales(', start);
 const routes = {};
 let credits = 0;
-const context = { app: { get: (path, ...handlers) => routes[path] = handlers, post: (path, ...handlers) => routes[path] = handlers }, requireAuth() {}, requireRole: role => { assert.equal(role, 'admin'); return () => {}; }, supabaseAdmin: { rpc: async (name, args) => { assert.equal(name, 'allocate_merchant_points'); assert.equal(args.p_admin_id, 'admin-user'); credits++; return { data: 500 }; }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { point_balance: 123 } }) }) }) }) } };
+const context = { app: { get: (path, ...handlers) => routes[path] = handlers, post: (path, ...handlers) => routes[path] = handlers }, requireAuth() {}, requireRole: role => { assert.equal(role, 'admin'); return () => {}; }, supabaseAdmin: { rpc: async (name, args) => { if (name === 'grant_merchant_onboarding_bonus') return { data: 123 }; assert.equal(name, 'allocate_merchant_points'); assert.equal(args.p_admin_id, 'admin-user'); credits++; return { data: 500 }; }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { point_balance: 123 } }) }) }) }) } };
 vm.runInNewContext(source.slice(start, end), context);
 function response() { return { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } }; }
 (async () => {

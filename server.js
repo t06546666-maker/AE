@@ -177,6 +177,10 @@ const WA_URL      = `https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_ID}
 const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN;
 const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'welcome';
+const WA_CUSTOMER_APP_LINK = cleanText(
+  process.env.WA_CUSTOMER_APP_LINK || 'https://play.google.com/store/apps/details?id=com.affiliateae.app',
+  1000,
+);
 const WA_TEMPORARY_TEMPLATE = cleanText(process.env.WA_TEMPORARY_TEMPLATE || 'temporary', 512);
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
 const WA_REDEEM_TEMPLATE = process.env.WA_REDEEM_TEMPLATE || 'redeem_receipt';
@@ -184,8 +188,8 @@ const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
   process.env.WA_MERCHANT_CREDENTIALS_TEMPLATE || 'merchant_account_ready',
   512,
 );
-// Enable only after the exact welcome copy is approved in Meta and its bonus is confirmed.
-const WA_MERCHANT_WELCOME_TEMPLATE = cleanText(process.env.WA_MERCHANT_WELCOME_TEMPLATE || '', 512);
+// Match the active Meta merchant welcome template; onboarding verifies the bonus before sending it.
+const WA_MERCHANT_WELCOME_TEMPLATE = cleanText(process.env.WA_MERCHANT_WELCOME_TEMPLATE || 'ae_merchant_welcome_v1', 512);
 const WA_OFFER_TEMPLATE = cleanText(
   process.env.WA_OFFER_TEMPLATE || 'merchant_offer_v1',
   512,
@@ -443,18 +447,39 @@ async function getAdminRewardConfig() {
 async function pushToProfile(profileId, title, body, data = {}) {
   if (!profileId) return false;
   const { data: profile } = await supabaseAdmin.from('profiles').select('push_token,push_enabled').eq('id', profileId).maybeSingle();
+  await saveAppNotification(profileId, title, body, data);
   return profile?.push_enabled !== false && profile?.push_token
     ? sendPushNotification(profile.push_token, title, body, data) : false;
 }
 
+async function saveAppNotification(profileId, title, body, data = {}) {
+  if (!profileId) return;
+  const entityId = data.requestId || data.orderId || data.transactionId || data.paymentId || data.offerId || data.billId || null;
+  const { error } = await supabaseAdmin.from('app_notifications').insert({
+    profile_id: profileId,
+    title: String(title).slice(0, 160),
+    body: String(body).slice(0, 1000),
+    target_url: typeof data.url === 'string' && data.url.startsWith('/') && !data.url.startsWith('//') ? data.url.slice(0, 500) : null,
+    event_type: String(data.type || 'general').slice(0, 80),
+    entity_id: entityId ? String(entityId).slice(0, 160) : null,
+  });
+  if (error) console.warn('In-app notification could not be saved (apply app notification migration):', error.message);
+}
+
 async function pushToRole(role, title, body, data = {}) {
-  const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', role).eq('push_enabled', true).not('push_token', 'is', null);
-  await Promise.all((profiles || []).map((profile) => sendPushNotification(profile.push_token, title, body, data)));
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', role);
+  await Promise.all((profiles || []).map(async (profile) => {
+    await saveAppNotification(profile.id, title, body, data);
+    if (profile.push_enabled !== false && profile.push_token) await sendPushNotification(profile.push_token, title, body, data);
+  }));
 }
 
 async function pushToMerchant(merchantId, title, body, data = {}) {
-  const { data: profiles } = await supabaseAdmin.from('profiles').select('push_token').eq('role', 'merchant').eq('merchant_id', merchantId).eq('push_enabled', true).not('push_token', 'is', null);
-  await Promise.all((profiles || []).map((profile) => sendPushNotification(profile.push_token, title, body, data)));
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', 'merchant').eq('merchant_id', merchantId);
+  await Promise.all((profiles || []).map(async (profile) => {
+    await saveAppNotification(profile.id, title, body, data);
+    if (profile.push_enabled !== false && profile.push_token) await sendPushNotification(profile.push_token, title, body, data);
+  }));
 }
 
 async function pushToCustomer(customerId, title, body, data = {}) {
@@ -470,6 +495,20 @@ async function pushToCustomer(customerId, title, body, data = {}) {
     console.error('Customer Firestore notification lookup failed:', error.message);
     return false;
   }
+}
+
+async function claimCustomerWelcomeBonus(customerId, merchantId = null) {
+  const { data, error } = await supabaseAdmin.rpc('claim_customer_onboarding_bonus', {
+    p_customer_id: customerId,
+    p_merchant_id: merchantId,
+  });
+  if (error) return { awarded: false, points: 0, balance: null, error };
+  return {
+    awarded: Boolean(data?.awarded),
+    points: Number(data?.points || 0),
+    balance: Number(data?.balance || 0),
+    error: null,
+  };
 }
 
 // Private server-only registry. Authentication still uses the customer's AE
@@ -536,7 +575,22 @@ function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
   return Math.min(100, Math.round(value * rate) / 100);
 }
 
-async function processPurchase(params, idempotencyKey) {
+const atomicPointsEnabled = process.env.ATOMIC_POINTS_ENABLED === 'true';
+async function processPurchase(params, idempotencyKey, redemption = null) {
+  if (atomicPointsEnabled) {
+    const result = await supabaseAdmin.rpc('ae_points_transaction', {
+      p_merchant_id: params.p_merchant_id, p_customer_code: params.p_customer_code,
+      p_amount: params.p_amount, p_rate: params.p_points_per_100,
+      p_source: params.p_source, p_location: params.p_location,
+      p_request_key: cleanText(idempotencyKey, 120) || crypto.randomUUID(),
+      p_redeem: redemption ? 100 : 0,
+      p_discount_type: redemption?.discountType || 'percentage',
+      p_discount_value: redemption?.discountValue || 0, p_issue: true,
+    });
+    if (result.error) return result; // No non-atomic fallback once enabled.
+    scheduleBackground(() => checkSalesTarget(params.p_merchant_id).catch(error => console.warn('Sales target check failed:', error.message)));
+    return { data: [result.data.purchase], error: null, redemption: result.data.redemption };
+  }
   const withIdempotency = {
     ...params,
     p_idempotency_key: cleanText(idempotencyKey, 120) || crypto.randomUUID(),
@@ -1003,32 +1057,42 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     return { sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
   const templateName = WA_REGISTRATION_TEMPLATE;
-  const bodyParameters = templateName === 'welcome'
-    // The active Meta `welcome` template has three body placeholders.
-    // Keep these in the same order as the approved template: name, phone,
-    // then the customer code shown under the QR image.
-    ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.customer_phone.replace(/^\+91/, '') }, { type: 'text', text: purchase.customer_code }]
+  const usesCurrentWelcomeTemplate = templateName === 'welcome';
+  const bodyParameters = usesCurrentWelcomeTemplate
+    // The current Meta `welcome` template expects the customer's name and app link.
+    ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: WA_CUSTOMER_APP_LINK }]
     : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.merchant_name }, { type: 'text', text: purchase.customer_code }, { type: 'text', text: `${Number(purchase.reward_percentage)}%` }, { type: 'text', text: formatPoints(purchase.points_earned) }, { type: 'text', text: formatPoints(purchase.total_points) }];
   const bodyComponent = {
     type: 'body',
     parameters: bodyParameters,
   };
   try {
-    const mediaId = await uploadQrMedia({
-      id: purchase.customer_code,
-      name: purchase.customer_name,
-      phone: purchase.customer_phone,
-    });
-    const welcomeComponents = [{ type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] }, bodyComponent];
-    const welcomeResult = await sendWhatsAppTemplate({
-      customerId: purchase.customer_id,
-      orderId: purchase.order_id,
-      recipient: purchase.customer_phone,
-      templateName,
-      messageType: 'registration',
-      logId,
-      components: welcomeComponents,
-    });
+    let welcomeResult = { sent: false, error: 'Welcome bonus was not credited; promotional message skipped.' };
+    if (!purchase.skip_welcome_message) {
+      let welcomeComponents = [bodyComponent];
+      if (!usesCurrentWelcomeTemplate) {
+        const mediaId = await uploadQrMedia({
+          id: purchase.customer_code,
+          name: purchase.customer_name,
+          phone: purchase.customer_phone,
+        });
+        welcomeComponents = [{ type: 'header', parameters: [{ type: 'image', image: { id: mediaId } }] }, bodyComponent];
+      }
+      welcomeResult = await sendWhatsAppTemplate({
+        customerId: purchase.customer_id,
+        orderId: purchase.order_id,
+        recipient: purchase.customer_phone,
+        templateName,
+        messageType: 'registration',
+        logId,
+        components: welcomeComponents,
+      });
+    } else if (logId) {
+      await supabaseAdmin.from('whatsapp_messages').update({
+        status: 'failed', error_message: welcomeResult.error,
+        status_timestamp: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }).eq('id', logId);
+    }
     // Send the Utility password message independently. A Marketing welcome
     // template can be blocked by Meta policy and must not prevent credentials.
     let passwordResult = null;
@@ -1799,13 +1863,41 @@ app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,re
   const paging=paginationFromRequest(req,25,100);
   const source=String(req.query.source||'all');
   if(!['all','self','merchant','unknown'].includes(source))return res.status(400).json({error:'Invalid onboarding source'});
-  let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id',{count:'exact'}).order('created_at',{ascending:false});
+  let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id,reward_points',{count:'exact'}).order('created_at',{ascending:false});
   if(source==='unknown')query=query.is('registration_source',null);
   else if(source!=='all')query=query.eq('registration_source',source);
   if(paging.search) query=query.or(`name.ilike.%${paging.search}%,customer_code.ilike.%${paging.search}%,phone.ilike.%${paging.search}%`);
   const result=await query.range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});
   res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
+});
+app.post('/api/admin/customers/award-points', requireAuth, requireRole('admin'), async (req,res) => {
+  const customerIds = Array.isArray(req.body.customerIds) ? [...new Set(req.body.customerIds.map(value => cleanText(value, 64)))] : [];
+  const points = Number(req.body.points);
+  const requestId = cleanText(req.body.requestId, 64);
+  const reason = cleanText(req.body.reason, 300);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!customerIds.length || customerIds.length > 1000 || customerIds.some(id => !uuid.test(id))) return res.status(400).json({ error: 'Select between 1 and 1,000 valid customers.' });
+  if (!Number.isInteger(points) || points < 1 || points > 1000000) return res.status(400).json({ error: 'Enter between 1 and 1,000,000 whole points per customer.' });
+  if (!uuid.test(requestId)) return res.status(400).json({ error: 'A valid request ID is required. Please retry.' });
+  if (!reason) return res.status(400).json({ error: 'Enter a reason for this points grant.' });
+  const { data, error } = await supabaseAdmin.rpc('admin_grant_customer_points', {
+    p_customer_ids: customerIds,
+    p_points: points,
+    p_request_id: requestId,
+    p_created_by: req.auth.user.id,
+    p_reason: reason,
+  });
+  if (error) return res.status(error.code === 'PGRST202' ? 503 : 400).json({ error: error.code === 'PGRST202' ? 'Apply supabase-admin-customer-point-grants.sql in Supabase before granting points.' : error.message });
+  const awardedCustomerIds = Array.isArray(data?.awardedCustomerIds) ? data.awardedCustomerIds : [];
+  void (async () => {
+    for (let offset = 0; offset < awardedCustomerIds.length; offset += 25) {
+      await Promise.all(awardedCustomerIds.slice(offset, offset + 25).map(customerId =>
+        pushToCustomer(customerId, 'AE points added by Admin', `${points.toLocaleString('en-IN')} AE points have been added to your account.`, { url: '/customer/notifications', type: 'admin_points_grant', points, reason })
+      ));
+    }
+  })();
+  return res.json({ success: true, awardedCount: Number(data?.awardedCount || 0), pointsPerCustomer: points, awardedCustomerIds });
 });
 app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), async(req,res)=>{
   const result=await supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id').eq('id',req.params.id).maybeSingle();
@@ -2079,6 +2171,11 @@ app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
 
 // Background job to expire points dynamically
 async function cleanupExpiredPoints(customerId) {
+  if (atomicPointsEnabled) {
+    const { error } = await supabaseAdmin.rpc('ae_expire_customer_points', { p_customer_id: customerId });
+    if (error) console.error('Atomic points expiry failed:', error.message);
+    return;
+  }
   try {
     const { data: expiredLots } = await supabaseAdmin
       .from('reward_lots')
@@ -2148,6 +2245,17 @@ app.post('/api/auth/customer/login', async (req, res) => {
     return res.status(401).json({ success: false, error: 'Invalid phone or password' });
   }
 
+  // A customer who was created by a merchant receives the platform welcome
+  // points the first time they actually sign in to the AE app. The database
+  // claim is one-time and safe to retry after a missing migration is applied.
+  const welcomeBonus = await claimCustomerWelcomeBonus(customer.id, customer.merchant_id || null);
+  if (welcomeBonus.error) {
+    console.error('Customer first-login welcome bonus was not credited:', welcomeBonus.error.message);
+  } else {
+    customer.reward_points = welcomeBonus.balance;
+    if (welcomeBonus.awarded) void pushToCustomer(customer.id, 'Welcome to AE — 200 points added!', 'Your 200 AE welcome points are ready to use.', { url: '/customer/notifications', type: 'welcome_bonus', points: welcomeBonus.points });
+  }
+
   const token = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
   
   // Ensure the object has the role defined explicitly for the frontend
@@ -2157,6 +2265,9 @@ app.post('/api/auth/customer/login', async (req, res) => {
     success: true,
     ...customerSessionTokens(customer),
     user: customer,
+    welcomeBonusAwarded: welcomeBonus.awarded,
+    welcomeBonusPoints: welcomeBonus.awarded ? welcomeBonus.points : 0,
+    welcomeBonusUnavailable: Boolean(welcomeBonus.error),
   });
 });
 
@@ -2212,9 +2323,17 @@ app.post('/api/auth/customer/signup', async (req, res) => {
     }).select('*').single();
     if (created.error) throw created.error;
 
+    // Signup is the first app session for self-registration, so claim the
+    // one-time welcome reward now. Keep the account if the DB migration is
+    // missing; the first regular login will safely retry the claim.
+    const welcomeBonus = await claimCustomerWelcomeBonus(created.data.id, null);
+    if (welcomeBonus.error) console.error('Customer signup welcome bonus was not credited:', welcomeBonus.error.message);
+    else created.data.reward_points = welcomeBonus.balance;
+
     const customer = { ...created.data, role: 'customer' };
     const accessToken = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
-    return res.status(201).json({ success: true, ...customerSessionTokens(customer), user: customer });
+    if (welcomeBonus.awarded) void pushToCustomer(customer.id, 'Welcome to AE — 200 points added!', 'Your 200 AE welcome points are ready to use.', { url: '/customer/notifications', type: 'welcome_bonus', points: welcomeBonus.points });
+    return res.status(201).json({ success: true, ...customerSessionTokens(customer), user: customer, welcomeBonusAwarded: welcomeBonus.awarded, welcomeBonusPoints: welcomeBonus.awarded ? welcomeBonus.points : 0, welcomeBonusUnavailable: Boolean(welcomeBonus.error) });
   } catch (error) {
     console.error('Customer signup failed:', error);
     if (error.code === '23505') return res.status(409).json({ success: false, error: 'An account with these details already exists. Please log in.' });
@@ -2317,7 +2436,13 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
 
     const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false }).limit(5);
     if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
+    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,merchant_id,points,created_at,merchants(name)').eq('customer_id', req.customer.id).limit(1);
+    if (welcomeBonusResult.error && !['PGRST205','42P01'].includes(welcomeBonusResult.error.code)) throw welcomeBonusResult.error;
+    const adminGrantResult = await supabaseAdmin.from('admin_customer_point_grants').select('id,points,reason,created_at').eq('customer_id', req.customer.id).order('created_at', { ascending: false }).limit(5);
+    if (adminGrantResult.error && !['PGRST205','42P01'].includes(adminGrantResult.error.code)) throw adminGrantResult.error;
     const activity = [
+      ...(adminGrantResult.data || []).map(g => ({ id: `admin-grant-${g.id}`, created_at: g.created_at, type: 'bonus', merchant_name: 'AE', amount: 0, points: g.points, reason: g.reason })),
+      ...(welcomeBonusResult.data || []).map(b => ({ id: `welcome-${b.customer_id}`, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name || 'AE', amount: 0, points: b.points })),
       ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount, points: r.points_redeemed }))
@@ -2351,18 +2476,47 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
 
     const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false });
     if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
+    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,merchant_id,points,created_at,merchants(name)').eq('customer_id', req.customer.id).limit(1);
+    if (welcomeBonusResult.error && !['PGRST205','42P01'].includes(welcomeBonusResult.error.code)) throw welcomeBonusResult.error;
+    const adminGrantResult = await supabaseAdmin.from('admin_customer_point_grants').select('id,points,reason,created_at').eq('customer_id', req.customer.id).order('created_at', { ascending: false });
+    if (adminGrantResult.error && !['PGRST205','42P01'].includes(adminGrantResult.error.code)) throw adminGrantResult.error;
     let transactions = [
+      ...(adminGrantResult.data || []).map(g => ({ id: `admin-grant-${g.id}`, created_at: g.created_at, type: 'bonus', merchant_name: 'AE', amount: 0, points: g.points, reason: g.reason })),
+      ...(welcomeBonusResult.data || []).map(b => ({ id: `welcome-${b.customer_id}`, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name || 'AE', amount: 0, points: b.points })),
       ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount ?? null, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount ?? null, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const summary = {
+      total_earned: transactions.filter(t => t.type !== 'redeem').reduce((sum, t) => sum + Number(t.points || 0), 0),
+      total_redeemed: transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + Number(t.points || 0), 0),
+      purchase_count: transactions.filter(t => t.type === 'earn').length,
+      redemption_count: transactions.filter(t => t.type === 'redeem').length,
+      monthly_activity: []
+    };
+    const currentMonth = new Date();
+    const monthlyActivity = new Map();
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const monthDate = new Date(Date.UTC(currentMonth.getUTCFullYear(), currentMonth.getUTCMonth() - offset, 1));
+      const month = monthDate.toISOString().slice(0, 7);
+      monthlyActivity.set(month, { month, earned: 0, redeemed: 0 });
+    }
+    for (const transaction of transactions) {
+      const month = String(transaction.created_at || '').slice(0, 7);
+      const bucket = monthlyActivity.get(month);
+      if (!bucket) continue;
+      if (transaction.type === 'redeem') bucket.redeemed += Number(transaction.points || 0);
+      else bucket.earned += Number(transaction.points || 0);
+    }
+    summary.monthly_activity = [...monthlyActivity.values()];
 
     const total = transactions.length;
     if (paging.enabled) {
       transactions = transactions.slice(paging.from, paging.to + 1);
     }
     
-    res.json({ success: true, transactions, pagination: paginationMeta(paging, total) });
+    res.json({ success: true, transactions, pagination: paginationMeta(paging, total), summary });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -2437,6 +2591,7 @@ app.get('/api/customer/ads', requireCustomerAuth, (_req, res) => {
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   const customerRouteGroups = {
+    all: null,
     chittur: ['Chittur 1', 'Chittur 2', 'Chittur 3'],
     thathamangalam: ['Thathamangalam 1', 'Thathamangalam 2', 'Thathamangalam 3'],
   };
@@ -2446,7 +2601,7 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
   let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, merchant_categories(name)', { count: 'exact' });
-  if (routeGroup) query = query.in('route_name', customerRouteGroups[routeGroup]);
+  if (routeGroup && routeGroup !== 'all') query = query.in('route_name', customerRouteGroups[routeGroup]);
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
   }
@@ -2570,7 +2725,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
-  await pushToRole('admin', 'New product list request', 'A customer sent a product list for admin review.', { url: '/customer-product-lists', requestId: data.id });
+  await pushToRole('admin', 'New product list request', 'A customer sent a product list for admin review.', { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
   await pushToCustomer(req.customer.id, 'Product list submitted', 'Your product list was received and is awaiting review.', { url: '/customer/home?productList=1', requestId: data.id });
   res.status(201).json({ success: true, request: data });
 });
@@ -2600,23 +2755,28 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
   const status = cleanText(req.body.status, 20).toLowerCase();
   if (!['approved', 'rejected', 'pending'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid review status' });
   const rejectionReason = cleanText(req.body.rejection_reason, 500) || null;
-  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,merchant_id').eq('id', cleanText(req.params.id, 100)).maybeSingle();
+  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,merchant_id,status').eq('id', cleanText(req.params.id, 100)).maybeSingle();
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status, rejection_reason: status === 'rejected' ? rejectionReason : null, reviewed_at: status === 'pending' ? null : new Date().toISOString() }).eq('id', cleanText(req.params.id, 100)).select('id,status,rejection_reason').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
-  if (existing && status !== 'pending') await pushToMerchant(existing.merchant_id, `Product list ${status}`, `A customer product list was ${status} by admin.`, { url: '/customer-orders', requestId: data.id });
-  if (existing && status !== 'pending') await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/home?productList=1', requestId: data.id });
+  if (existing && status !== 'pending' && existing.status !== status) {
+    if (status === 'approved') await pushToMerchant(existing.merchant_id, 'New product list to review', 'Admin approved a customer product list. Review it in Customer orders.', { url: `/customer-orders?view=product-lists&requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
+    await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/home?productList=1', requestId: data.id, type: 'product_list' });
+  }
   res.json({ success: true, request: data });
 });
 
 app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('merchant'), async (req, res) => {
   const status = cleanText(req.body.status, 20).toLowerCase();
   if (!['pending', 'accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid status' });
+  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,status').eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle();
   const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status }).eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).select('id,status').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: 'Unable to update product list status' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
-  const { data: request } = await supabaseAdmin.from('customer_product_list_requests').select('customer_id').eq('id', data.id).maybeSingle();
-  if (request) await pushToCustomer(request.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/home?productList=1', requestId: data.id });
+  if (existing && existing.status !== status && status !== 'pending') {
+    await pushToCustomer(existing.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/home?productList=1', requestId: data.id, type: 'product_list' });
+    await pushToRole('admin', `Merchant ${status} product list`, `A merchant has ${status} a customer product list.`, { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
+  }
   res.json({ success: true, request: data });
 });
 
@@ -2765,6 +2925,13 @@ app.post('/api/auth/login', async (req, res) => {
   if (profileError || !profile) {
     return res.status(403).json({ success: false, error: 'Account profile is not configured' });
   }
+  // Retry the idempotent one-time onboarding grant for existing merchants.
+  // This repairs accounts whose welcome award failed during creation; the
+  // database function guarantees a successful prior award is never repeated.
+  if (profile.role === 'merchant' && profile.merchant_id) {
+    const { error: bonusError } = await supabaseAdmin.rpc('grant_merchant_onboarding_bonus', { p_merchant_id: profile.merchant_id });
+    if (bonusError) console.error('Merchant login welcome-bonus check failed:', bonusError.message);
+  }
   if (profile.role === 'field_manager') {
     await supabaseAdmin.from('field_manager_sessions').insert({ manager_id: profile.id, login_ip: req.ip, user_agent: req.get('user-agent') || null });
   }
@@ -2830,10 +2997,21 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
 
 app.get('/api/merchants/:id/point-balance', requireAuth, async (req, res) => {
   if (req.auth.profile.role !== 'admin' && (req.auth.profile.role !== 'merchant' || req.auth.profile.merchant_id !== req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  const { data: grantedBalance, error: bonusError } = await supabaseAdmin.rpc('grant_merchant_onboarding_bonus', { p_merchant_id: req.params.id });
+  if (bonusError) return res.status(503).json({ error: 'Merchant welcome points could not be verified. Confirm that supabase-onboarding-welcome-bonuses.sql is applied to the Supabase project used by this backend.' });
   const { data, error } = await supabaseAdmin.from('merchants').select('point_balance').eq('id', req.params.id).maybeSingle();
   if (error) return res.status(503).json({ error: 'Merchant points are unavailable. Apply the merchant point allocation migration.' });
   if (!data) return res.status(404).json({ error: 'Merchant not found' });
-  return res.json({ balance: Number(data.point_balance || 0) });
+  return res.json({ balance: Number(data.point_balance ?? grantedBalance ?? 0) });
+});
+
+app.post('/api/merchants/:id/welcome-bonus', requireAuth, requireRole('admin'), async (req, res) => {
+  const merchantId = cleanText(req.params.id, 100);
+  const { data: priorBonus, error: lookupError } = await supabaseAdmin.from('merchant_onboarding_bonuses').select('merchant_id').eq('merchant_id', merchantId).maybeSingle();
+  if (lookupError) return res.status(503).json({ success: false, error: 'Merchant welcome-bonus migration is not available. Apply supabase-onboarding-welcome-bonuses.sql, then retry.' });
+  const { data: balance, error } = await supabaseAdmin.rpc('grant_merchant_onboarding_bonus', { p_merchant_id: merchantId });
+  if (error) return res.status(503).json({ success: false, error: 'Merchant welcome-bonus could not be credited. Apply supabase-onboarding-welcome-bonuses.sql, then retry.' });
+  return res.json({ success: true, pointsAwarded: priorBonus ? 0 : 2000, balance: Number(balance || 0) });
 });
 
 app.get('/api/merchants/:id/point-insights', requireAuth, async (req, res) => {
@@ -3270,7 +3448,11 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     }
   }
 
-  const whatsapp = await sendMerchantWelcomeWhatsApp(merchant);
+  // Do not send a template promising points unless the one-time credit is recorded.
+  const bonus = await supabaseAdmin.rpc('grant_merchant_onboarding_bonus', { p_merchant_id: merchant.id });
+  const whatsapp = bonus.error
+    ? await sendMerchantAccountReadyWhatsApp(merchant)
+    : await sendMerchantWelcomeWhatsApp(merchant);
   res.status(201).json({
     success: true,
     merchant: {
@@ -3283,6 +3465,8 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
       mustChangePassword: true,
     },
     temporaryPassword: password,
+    welcomeBonusPoints: bonus.error ? 0 : 2000,
+    welcomeBonusError: bonus.error ? 'Welcome points could not be credited. Apply supabase-onboarding-welcome-bonuses.sql and retry the bonus from Admin.' : null,
     whatsapp: {
       sent: whatsapp.sent,
       status: whatsapp.sent ? 'sent' : 'failed',
@@ -3551,27 +3735,47 @@ app.patch('/api/customer-orders/:id/status', requireAuth, async (req, res) => {
 
 app.get('/api/notifications', requireAuth, async (req, res) => {
   const limit = Math.min(20, Math.max(1, Number(req.query.limit) || 8));
-  let query = supabaseAdmin.from('merchant_notifications')
-    .select('id,merchant_id,customer_order_id,title,body,read_at,created_at,customer_orders(request_no,status)')
+  const profileId = req.auth.profile.id;
+  const { data: appItems, error: appError } = await supabaseAdmin.from('app_notifications')
+    .select('id,title,body,target_url,event_type,entity_id,read_at,created_at')
+    .eq('profile_id', profileId)
     .order('created_at', { ascending: false }).limit(limit);
-  if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  const notifications = (data || []).map((item) => ({
+  if (appError) console.warn('App notification inbox unavailable (apply app notification migration):', appError.message);
+  const { count: appUnreadCount, error: appUnreadError } = await supabaseAdmin.from('app_notifications')
+    .select('id', { count: 'exact', head: true }).eq('profile_id', profileId).is('read_at', null);
+  if (appUnreadError) console.warn('Unread app notification count unavailable:', appUnreadError.message);
+  let data = [];
+  if (req.auth.profile.role === 'merchant') {
+    const { data: legacyData, error } = await supabaseAdmin.from('merchant_notifications')
+      .select('id,merchant_id,customer_order_id,title,body,read_at,created_at,customer_orders(request_no,status)')
+      .eq('merchant_id', req.auth.profile.merchant_id)
+      .order('created_at', { ascending: false }).limit(limit);
+    if (error) console.warn('Legacy merchant notification lookup failed:', error.message);
+    data = legacyData || [];
+  }
+  const legacy = (data || []).map((item) => ({
     id: item.id, merchantId: item.merchant_id, customerOrderId: item.customer_order_id,
     title: item.title, body: item.body, readAt: item.read_at, createdAt: item.created_at,
     requestNo: item.customer_orders?.request_no || '', status: item.customer_orders?.status || '',
+    url: `/customer-orders?orderId=${encodeURIComponent(item.customer_order_id)}`,
   }));
+  const legacyUnreadCount = legacy.filter((item) => !item.readAt).length;
+  let salesTargetUnreadCount = 0;
+  const notifications = [...(appItems || []).map((item) => ({
+    id: item.id, title: item.title, body: item.body, readAt: item.read_at, createdAt: item.created_at,
+    requestNo: '', status: '', url: item.target_url || (item.event_type === 'product_list' ? '/customer-product-lists' : '/orders'),
+    eventType: item.event_type, entityId: item.entity_id,
+  })), ...legacy];
   if(req.auth.profile.role === 'merchant') {
     try {
       const database=await checkoutBillDatabase();
       const targets=await database.collection('ae_sales_targets').where('merchantId','==',req.auth.profile.merchant_id).get();
-      targets.docs.forEach(doc=>{const target=doc.data();if(target.notified)notifications.push({id:`sales-target:${doc.id}`,merchantId:target.merchantId,customerOrderId:null,title:'Sales target achieved!',body:`Your recorded AE sales reached your ${target.label || target.month} target.`,readAt:target.readAt || null,createdAt:target.achievedAt,requestNo:'',status:'',url:`/dashboard?month=${target.month}`});});
-      notifications.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
-      notifications.splice(limit);
+      targets.docs.forEach(doc=>{const target=doc.data();if(target.notified){if(!target.readAt)salesTargetUnreadCount+=1;notifications.push({id:`sales-target:${doc.id}`,merchantId:target.merchantId,customerOrderId:null,title:'Sales target achieved!',body:`Your recorded AE sales reached your ${target.label || target.month} target.`,readAt:target.readAt || null,createdAt:target.achievedAt,requestNo:'',status:'',url:`/dashboard?month=${target.month}`});}});
     }catch(error){console.warn('Sales target notifications unavailable:',error.message);}
   }
-  res.json({ success: true, notifications, unreadCount: notifications.filter((item) => !item.readAt).length });
+  notifications.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+  notifications.splice(limit);
+  res.json({ success: true, notifications, unreadCount: Number(appUnreadCount || 0) + legacyUnreadCount + salesTargetUnreadCount });
 });
 
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
@@ -3581,6 +3785,11 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
     if(!docId.startsWith(`${req.auth.profile.merchant_id}_`) || !/^[a-zA-Z0-9_-]+$/.test(docId))return res.status(403).json({error:'Forbidden'});
     try {const database=await checkoutBillDatabase();await database.collection('ae_sales_targets').doc(docId).update({readAt:new Date().toISOString()});return res.json({success:true});}catch(error){return res.status(500).json({error:error.message});}
   }
+  const { data: appItem, error: appError } = await supabaseAdmin.from('app_notifications').update({ read_at: new Date().toISOString() })
+    .eq('id', cleanText(req.params.id, 100)).eq('profile_id', req.auth.profile.id).select('id').maybeSingle();
+  if (appError) console.warn('App notification could not be marked read:', appError.message);
+  if (appItem) return res.json({ success: true });
+  if (req.auth.profile.role !== 'merchant') return res.status(404).json({ success: false, error: 'Notification not found' });
   let query = supabaseAdmin.from('merchant_notifications').update({ read_at: new Date().toISOString() })
     .eq('id', cleanText(req.params.id, 100));
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id);
@@ -4516,13 +4725,14 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   if (customer.temporaryPassword) {
     purchase.temporary_password = customer.temporaryPassword;
   }
-  const whatsapp = await queueWhatsApp(purchase, 'registration');
+  const notificationKind = createdCustomer ? 'registration' : 'reward';
+  const whatsapp = await queueWhatsApp(purchase, notificationKind);
   const emailResult = purchase.customer_email && resend && process.env.RESEND_FROM_EMAIL
     ? { queued: true, sent: false }
     : { queued: false, sent: false, error: 'Email not configured or not provided' };
   scheduleBackground(() => runPurchaseNotifications(
     purchase,
-    'registration',
+    notificationKind,
     whatsapp,
     emailResult.queued,
   ));
@@ -4540,6 +4750,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
       merchantId,
       merchant: purchase.merchant_name,
       rewardPoints: purchase.total_points,
+      welcomeBonusPendingAppLogin: createdCustomer,
     },
     order: purchase,
     notifications: { whatsapp, email: emailResult },
@@ -4647,14 +4858,14 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     const { data: customer, error: customerError } = await supabaseAdmin.from('customers').select('id, reward_points').eq(customerIsUuid ? 'id' : 'customer_code', customerCode).maybeSingle();
     if (customerError) return res.status(500).json({ success: false, error: 'Unable to read customer balance. Please try again.' });
     const { data: membership } = customer ? await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle() : { data: null };
-    if (!customer || !membership || Number(membership.reward_points || 0) < pointsToRedeem) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
+    if (!customer || (!atomicPointsEnabled && (!membership || Number(membership.reward_points || 0) < pointsToRedeem))) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
     const rewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
     const discount = redemptionDiscount(amount, discountType, req.body.discountValue ?? (rewardSettings.redeem_discount_per_100 || 5));
     if (!discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater.' });
     redemptionContext = { customer, membership, discountPercentage: discount.percentage, discountAmount: discount.amount, discountType: discount.type, discountValue: discount.value };
   }
   
-  const { data, error } = await processPurchase({
+  const { data, error, redemption: atomicRedemption } = await processPurchase({
     p_customer_code: customerCode,
     p_merchant_id: req.auth.profile.merchant_id,
     p_amount: amount,
@@ -4664,13 +4875,14 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     p_points_per_100: requestedRate,
     p_source: 'qr',
     p_location: cleanText(req.body.location, 160) || 'In-store',
-  }, req.get('Idempotency-Key'));
+  }, req.get('Idempotency-Key'), redemptionContext);
   if (error || !data?.[0]) {
     return res.status(400).json({ success: false, error: error?.message || 'Checkout failed' });
   }
   const purchase = data[0];
-  let redemption = null;
-  if (redemptionContext) {
+  const orderId = purchase.order_id || purchase.id;
+  let redemption = atomicRedemption || null;
+  if (redemptionContext && !atomicPointsEnabled) {
     const { data: redemptionRow, error: redemptionError } = await supabaseAdmin.from('point_redemptions').insert({ customer_id: redemptionContext.customer.id, merchant_id: req.auth.profile.merchant_id, transaction_amount: amount, points_redeemed: pointsToRedeem, discount_percentage: redemptionContext.discountPercentage, discount_amount: redemptionContext.discountAmount }).select().single();
     if (redemptionError) return res.status(500).json({ success: false, error: redemptionError.message });
     redemption = redemptionRow;
@@ -4715,9 +4927,13 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       } catch (error) { console.warn('Checkout bill notification failed:', error.message); }
     }
   }
-  if (redemption) await pushToCustomer(purchase.customer_id, 'Points redeemed', `${merchantName} redeemed ${pointsToRedeem} points. Discount: ₹${Number(redemptionContext.discountAmount).toFixed(2)}.`, { url: '/customer/transactions', transactionId: redemption.id, merchantName });
-  await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId: purchase.id, merchantName });
-  await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: '/customer-orders', orderId: purchase.id });
+  if (req.body.paymentMode === 'cash') {
+    await pushToMerchant(req.auth.profile.merchant_id, 'Cash received ✓', `₹${cashAmount.toFixed(2)} cash received. Checkout is complete.`, { url: `/orders?orderId=${encodeURIComponent(orderId)}`, orderId, type: 'cash_payment' });
+  }
+  if (redemption) await pushToCustomer(purchase.customer_id, 'Points redeemed', `${merchantName} redeemed ${pointsToRedeem} points. Discount: ₹${Number(redemptionContext.discountAmount).toFixed(2)}.`, { url: '/customer/transactions', transactionId: redemption.id, merchantName, type: 'points_redeemed' });
+  await pushToCustomer(purchase.customer_id, 'Points received', `${merchantName} added ${purchase.points_earned || 0} points to your account.`, { url: '/customer/transactions', orderId, merchantName, type: 'points_earned' });
+  if (req.body.paymentMode !== 'cash') await pushToMerchant(req.auth.profile.merchant_id, 'Purchase recorded', `A customer purchase of ₹${amount} was recorded.`, { url: `/orders?orderId=${encodeURIComponent(orderId)}`, orderId, type: 'purchase' });
+  await pushToRole('admin', 'Customer purchase recorded', `${merchantName} recorded a purchase of ₹${amount}.`, { url: `/orders?orderId=${encodeURIComponent(orderId)}`, orderId, type: 'purchase' });
   // Purchases use native push notifications only. WhatsApp is reserved for
   // onboarding (welcome and temporary-password messages).
   res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, paymentMode: req.body.paymentMode || 'pilot_app_only', cashPaymentRecorded, whatsapp: { skipped: true, reason: 'push_only' } });
@@ -5931,7 +6147,9 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     if (expected !== signature) return res.status(400).json({ success: false, error: 'Invalid payment signature' });
     const { data, error } = await supabaseAdmin.from('payment_transactions').update({ razorpay_payment_id: paymentId, status: 'paid', updated_at: new Date().toISOString() }).eq('razorpay_order_id', orderId).neq('status', 'paid').select().maybeSingle();
     if (error || !data) return res.status(404).json({ success: false, error: 'Payment order not found or already processed' });
-    if (data.customer_id) await pushToCustomer(data.customer_id, 'Payment successful', `Your payment of ₹${Number(data.amount).toFixed(2)} was verified.`, { url: '/customer/transactions', paymentId: data.id });
+    if (data.customer_id) await pushToCustomer(data.customer_id, 'Payment successful', `Your payment of ₹${Number(data.amount).toFixed(2)} was verified.`, { url: '/customer/transactions', paymentId: data.id, type: 'payment' });
+    await pushToMerchant(data.merchant_id, 'Payment successful', `A customer payment of ₹${Number(data.amount).toFixed(2)} was verified.`, { url: '/dashboard?view=reports', paymentId: data.id, type: 'payment' });
+    await pushToRole('admin', 'Customer payment successful', `A customer payment of ₹${Number(data.amount).toFixed(2)} was verified.`, { url: '/dashboard?view=reports', paymentId: data.id, type: 'payment' });
     res.json({ success: true, payment: data });
   } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not verify payment' }); }
 });
@@ -6006,7 +6224,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
     
     const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points, merchants(name)').eq('customer_id', customer.id).eq('merchant_id', merchantId).single();
-    if (!cm || cm.reward_points < pointsToRedeem) {
+    if (!atomicPointsEnabled && (!cm || cm.reward_points < pointsToRedeem)) {
       return res.status(400).json({ success: false, error: 'Insufficient points balance at this store' });
     }
     
@@ -6016,8 +6234,22 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     const discountPercentage = discount.percentage;
     const discountAmount = discount.amount;
     
+    let redemption;
+    let newBalance;
+    if (atomicPointsEnabled) {
+      const result = await supabaseAdmin.rpc('ae_points_transaction', {
+        p_merchant_id: merchantId, p_customer_code: customer.id,
+        p_amount: transactionAmount, p_rate: 10, p_source: 'qr', p_location: 'In-store',
+        p_request_key: cleanText(req.get('Idempotency-Key'),120) || crypto.randomUUID(),
+        p_redeem: pointsToRedeem, p_discount_type: discount.type,
+        p_discount_value: discount.value, p_issue: false,
+      });
+      if (result.error) throw new Error(result.error.message);
+      redemption = result.data.redemption;
+      newBalance = result.data.newBalance;
+    } else {
     // 4. Perform deduction transaction in Supabase
-    const { data: redemption, error: redError } = await supabaseAdmin.from('point_redemptions').insert({
+    const { data: row, error: redError } = await supabaseAdmin.from('point_redemptions').insert({
       customer_id: customer.id,
       merchant_id: merchantId,
       transaction_amount: transactionAmount,
@@ -6027,7 +6259,8 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     }).select().single();
     
     if (redError) throw redError;
-    
+    redemption = row;
+
     // Deduct points from global customer balance
     const { error: deductCustError } = await supabaseAdmin.from('customers')
       .update({ reward_points: Math.max(0, customer.reward_points - pointsToRedeem) })
@@ -6049,14 +6282,16 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       throw new Error(`Failed to deduct merchant points: ${deductMerchError.message}`);
     }
     
-    const newBalance = cm.reward_points - pointsToRedeem;
+    newBalance = cm.reward_points - pointsToRedeem;
+
+    }
     
     const fakePurchase = {
       customer_id: customer.id,
       customer_name: customer.name || 'Customer',
       customer_phone: customer.phone,
       merchant_id: merchantId,
-      merchant_name: cm.merchants?.name || 'Store',
+      merchant_name: cm?.merchants?.name || 'Store',
       order_id: null,
       order_no: `RD-${String(Date.now()).slice(-6)}`,
       amount: transactionAmount,

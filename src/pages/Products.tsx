@@ -59,7 +59,7 @@ export function Products({ user }: { user: UserProfile }) {
 
   return <>
     <PageHeader title={uiText("Product catalogue")} subtitle={user.role === 'merchant' ? 'Products customers can choose in the AE WhatsApp chat.' : 'Merchant WhatsApp product catalogues.'} actions={
-      user.role === 'merchant' ? <button className="button primary" onClick={() => { reset(); setFormOpen(true); }}><PackagePlus size={16} />Add product</button> : undefined
+      user.role === 'merchant' ? <button className="button primary" onClick={() => { reset(); setFormOpen(true); }}><PackagePlus size={16} />{uiText('Add product')}</button> : undefined
     } />
     {formOpen ? <section className="panel product-form-panel">
       <div className="form-heading"><div><h2>{editing ? uiText("Edit product") : uiText("Add product")}</h2><p>{uiText("Active products are available immediately in WhatsApp.")}</p></div><button className="icon-button" title={uiText("Close")} onClick={reset}><X /></button></div>

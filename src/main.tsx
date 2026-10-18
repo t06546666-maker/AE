@@ -10,6 +10,12 @@ import './customer-glass.css';
 import './customer-home-polish.css';
 import './malayalam-layout.css';
 
+try {
+  const initialTheme = localStorage.getItem('ae_theme') === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = initialTheme;
+  document.documentElement.style.colorScheme = initialTheme;
+} catch { /* The app still starts with its light theme when storage is unavailable. */ }
+
 window.setTimeout(() => {
   sessionStorage.removeItem('ae_script_refresh');
   sessionStorage.removeItem('ae_asset_refresh');

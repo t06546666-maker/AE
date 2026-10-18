@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { lazy, Suspense, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
 import { ErrorState, LoadingState } from './Common';
-import { LegalDetails } from '../pages/Legal';
 import '../pages/legal.css';
+
+const LegalDetails = lazy(() => import('../pages/Legal').then(module => ({ default: module.LegalDetails })));
 
 type Status = { enabled: boolean; accepted: boolean; termsVersion: string; privacyVersion: string };
 export function LegalGate({ user, onLogout, children, preview = false }: { user: UserProfile; onLogout: () => void; children: ReactNode; preview?: boolean }) {
@@ -35,8 +36,8 @@ export function LegalGate({ user, onLogout, children, preview = false }: { user:
     {preview && <aside>Local preview only — no account data is used or saved. <a href="/consent-preview?role=merchant">Merchant view</a> · <a href="/consent-preview?role=customer">Customer view</a></aside>}
     <header><img src="/logo.png" alt="AE" /><h1>{roleName} privacy & consent</h1><p>Before entering AE, review these details. This applies to self-registration and accounts created by our team.</p></header>
     <section><h2>How your data is used</h2><p>{user.role === 'merchant' ? 'AE uses your business and contact details to manage your account, publish listings and offers, and record purchases and points. Authorised staff can access records needed to support the service. Use customer information only for authorised transactions, not unrelated marketing.' : user.role === 'customer' ? 'AE uses your profile and contact details to manage your account, identify you in QR transactions, and record purchases and reward points. Participating merchants receive the customer details needed for your transactions. Authorised staff can access records needed to support the service.' : 'AE uses your work account, attendance and visit records for work management. Location sharing requires separate device permission.'}</p><p>These checkboxes do not grant camera, location, notification or optional marketing permissions. Device permissions are requested separately when needed.</p><p>For privacy questions, correction or deletion requests, contact <a href="mailto:safar@affiliateinnovations.co.in">safar@affiliateinnovations.co.in</a>.</p></section>
-    <details><summary>Read {roleName} Terms & Conditions · {query.data.termsVersion}</summary><LegalDetails type={type} /></details>
-    <details><summary>Read Privacy Policy · {query.data.privacyVersion}</summary><LegalDetails type="privacy" /></details>
+    <details><summary>Read {roleName} Terms & Conditions · {query.data.termsVersion}</summary><Suspense fallback={<p>Loading document…</p>}><LegalDetails type={type} /></Suspense></details>
+    <details><summary>Read Privacy Policy · {query.data.privacyVersion}</summary><Suspense fallback={<p>Loading document…</p>}><LegalDetails type="privacy" /></Suspense></details>
     <div className="ae-consent-checks">
       <label><input type="checkbox" checked={terms} onChange={e => setTerms(e.target.checked)} /> I agree to the Terms & Conditions for my account.</label>
       <label><input type="checkbox" checked={privacy} onChange={e => setPrivacy(e.target.checked)} /> I have read and acknowledge the Privacy Policy.</label>

@@ -12,7 +12,7 @@ let handler;
 const query = { from: 0, to: 999, allowedRoutes: null, select() { return this; }, eq() { return this; }, in(_field, routes) { this.allowedRoutes = routes; return this; }, or() { return this; }, order() { return this; }, range(from, to) { this.from = from; this.to = to; return this; }, then(resolve) { const matches = this.allowedRoutes ? rows.filter(row => this.allowedRoutes.includes(row.route_name)) : rows; return Promise.resolve({ data: matches.slice(this.from, this.to + 1), count: matches.length, error: null }).then(resolve); } };
 new Function('app', 'requireCustomerAuth', 'paginationFromRequest', 'supabaseAdmin', 'paginationMeta', route)(
   { get: (_path, _auth, callback) => { handler = callback; } }, () => {},
-  () => ({ enabled: true, from: 0, to: 1, search: '' }), { from: () => query }, (_paging, total) => ({ total }),
+  () => ({ enabled: true, from: 0, to: 1, search: '' }), { from: () => { query.allowedRoutes = null; query.from = 0; query.to = 999; return query; } }, (_paging, total) => ({ total }),
 );
 async function request(params) {
   let body;
@@ -27,6 +27,7 @@ async function request(params) {
   assert.deepEqual((await request({ latitude: '999', longitude: '76' })).merchants.map(m => m.id), ['far', 'near']);
   assert.deepEqual((await request({ routeGroup: 'chittur' })).merchants.map(m => m.id), ['far', 'near']);
   assert.deepEqual((await request({ routeGroup: 'thathamangalam' })).merchants.map(m => m.id), ['unknown']);
+  assert.deepEqual((await request({ routeGroup: 'all' })).merchants.map(m => m.id), ['far', 'near']);
   assert.equal((await request({ routeGroup: 'other' })).error, 'Select a valid shopping area.');
   console.log('Passed: route-group filtering and GPS nearest-first sorting with missing/invalid GPS fallback.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

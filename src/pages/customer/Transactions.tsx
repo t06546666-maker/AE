@@ -15,9 +15,12 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
   const { data: dashboard } = useCustomerDashboard();
   const transactions = data?.transactions ?? [];
   const availablePoints = dashboard?.reward_points ?? 0;
-
-  const allEarned = transactions.filter(t => t.type !== 'redeem').reduce((sum, t) => sum + t.points, 0);
-  const allRedeemed = transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + t.points, 0);
+  const summary = data?.summary;
+  const allEarned = summary?.total_earned ?? 0;
+  const allRedeemed = summary?.total_redeemed ?? 0;
+  const monthlyActivity = summary?.monthly_activity ?? [];
+  const chartMax = Math.max(1, ...monthlyActivity.flatMap(month => [month.earned, month.redeemed]));
+  const monthLabel = (month: string) => new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(`${month}-01T12:00:00`));
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -60,8 +63,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
           </div>
         </div>
 
-        <div className="glass-stats"><div><Star size={16}/><strong>{allEarned.toLocaleString('en-IN')}</strong><span>{uiText("Earned on this page")}</span></div><div><Gift size={16}/><strong>{allRedeemed.toLocaleString('en-IN')}</strong><span>{uiText("Redeemed on this page")}</span></div><div><Wallet size={16}/><strong>{availablePoints.toLocaleString('en-IN')}</strong><span>{uiText("Available")}</span></div><div><IndianRupee size={16}/><strong>₹{transactions.filter(t => t.type === 'earn').reduce((sum,t) => sum + Number(t.amount || 0),0).toLocaleString('en-IN')}</strong><span>{uiText("Purchases on this page")}</span></div></div>
-        <section className="glass-points-chart"><h2>{uiText("Points &amp; Purchases")}</h2><p>{uiText("● Points earned ")}<span style={{color:'#1476ed'}}>{uiText("● Purchase amount (₹)")}</span></p><div className="glass-chart-bars">{transactions.filter(t => t.type === 'earn').slice().reverse().map(t => <div key={t.id} title={`${t.merchant_name}: ${t.points} points · ₹${t.amount ?? 'Unavailable'}`}><i style={{height:`${Math.max(2,t.points / Math.max(1,...transactions.map(x=>x.points))*100)}%`}}/><b style={{height:`${Math.max(2,Number(t.amount || 0) / Math.max(1,...transactions.map(x=>Number(x.amount || 0)))*100)}%`}}/></div>)}</div><p className="mt-3">{uiText("Recorded purchases on this page")}</p></section>
+        <div className="glass-stats"><div><Star size={16}/><strong>{allEarned.toLocaleString('en-IN')}</strong><span>{uiText("Total Earned")}</span></div><div><Gift size={16}/><strong>{allRedeemed.toLocaleString('en-IN')}</strong><span>{uiText("Total Redeemed")}</span></div><div><Wallet size={16}/><strong>{availablePoints.toLocaleString('en-IN')}</strong><span>{uiText("Available Balance")}</span></div><div><IndianRupee size={16}/><strong>{(summary?.purchase_count ?? 0).toLocaleString('en-IN')}</strong><span>{uiText("Purchases")}</span></div></div>
         {/* Stats Row */}
         <div className="hidden flex justify-between px-2">
           <div className="text-center">
@@ -160,7 +162,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                     <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-[#087a4b] font-bold text-[13px]">+</div>
                     <div>
                       <p className="font-bold text-[14px] text-gray-900">{uiText("Total Earned")}</p>
-                      <p className="text-[12px] text-gray-500">{uiText("From purchases")}</p>
+                      <p className="text-[12px] text-gray-500">{uiText("Purchases and bonuses")}</p>
                     </div>
                   </div>
                   <p className="font-bold text-[18px] text-[#087a4b]">+{allEarned}</p>
@@ -187,15 +189,31 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                 </div>
               </div>
             </div>
+            <section className="glass-points-chart" aria-labelledby="customer-points-summary-title">
+              <h2 id="customer-points-summary-title">{uiText("Monthly points activity")}</h2>
+              <p>{uiText("Last 6 months")}</p>
+              <div className="flex gap-4 text-[11px]" aria-label={uiText("Chart legend")}>
+                <span><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 3, background: '#069854', marginRight: 5 }} />{uiText("Points earned")}</span>
+                <span><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 3, background: '#1476ed', marginRight: 5 }} />{uiText("Points redeemed")}</span>
+              </div>
+              <div className="glass-chart-bars" role="list" aria-label={uiText("Monthly points activity chart")}>
+                {monthlyActivity.map(month => <div key={month.month} role="listitem" aria-label={`${monthLabel(month.month)}: ${uiText("Points earned")} ${month.earned}, ${uiText("Points redeemed")} ${month.redeemed}`}>
+                  <i style={{ height: `${month.earned ? Math.max(3, month.earned / chartMax * 100) : 0}%`, minHeight: month.earned ? 3 : 0 }} />
+                  <b style={{ height: `${month.redeemed ? Math.max(3, month.redeemed / chartMax * 100) : 0}%`, minHeight: month.redeemed ? 3 : 0 }} />
+                  <small>{monthLabel(month.month)}</small>
+                </div>)}
+              </div>
+              {allEarned === 0 && allRedeemed === 0 && <p className="mt-4">{uiText("Your points activity will appear here.")}</p>}
+            </section>
             <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
               <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">{uiText("Activity Stats")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-[14px] p-4 text-center">
-                  <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'earn').length}</p>
+                  <p className="text-[22px] font-bold text-gray-900">{summary?.purchase_count ?? 0}</p>
                   <p className="text-[12px] font-medium text-gray-500 mt-1">{uiText("Purchases")}</p>
                 </div>
                 <div className="bg-gray-50 rounded-[14px] p-4 text-center">
-                  <p className="text-[22px] font-bold text-gray-900">{transactions.filter(t => t.type === 'redeem').length}</p>
+                  <p className="text-[22px] font-bold text-gray-900">{summary?.redemption_count ?? 0}</p>
                   <p className="text-[12px] font-medium text-gray-500 mt-1">{uiText("Redemptions")}</p>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { apiFetch, setAccessToken } from '../../api';
 import { UserProfile } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Eye, EyeOff, Languages, LockKeyhole, Phone } from 'lucide-react';
+import { useToast } from '../../toast';
 
 export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => void }) {
   const [phone, setPhone] = useState('');
@@ -14,6 +15,7 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { i18n } = useTranslation();
+  const { showToast } = useToast();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +23,13 @@ export function CustomerLogin({ onLogin }: { onLogin: (user: UserProfile) => voi
     setLoading(true);
     try {
       const fullPhone = '+91' + phone.replace(/\D/g, '');
-      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile }>('/api/auth/customer/login', {
+      const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile; welcomeBonusAwarded?: boolean; welcomeBonusPoints?: number; welcomeBonusUnavailable?: boolean }>('/api/auth/customer/login', {
         method: 'POST',
         body: JSON.stringify({ phone: fullPhone, password }),
       });
       setAccessToken(data.accessToken, data.refreshToken);
+      if (data.welcomeBonusAwarded) showToast(uiText('Welcome! 200 AE points have been added.'));
+      else if (data.welcomeBonusUnavailable) showToast(uiText('Your welcome points could not be added yet. Please contact AE support.'), 'error');
       onLogin(data.user);
     } catch (err: any) {
       setError(err.message || 'Invalid phone or password.');

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 export function ForgotPassword() {
   const { t } = useTranslation();
@@ -32,6 +33,7 @@ export function ForgotPassword() {
 
   return (
     <div className="login-screen">
+      <ThemeToggleButton />
       <div className="login-brand-panel">
         <div className="login-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
         <h1>{uiText("Password Reset")}</h1>

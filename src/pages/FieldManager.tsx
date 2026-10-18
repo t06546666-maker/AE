@@ -92,6 +92,8 @@ interface CreateMerchantApiResponse {
   };
   temporaryPassword: string;
   whatsapp: { sent: boolean; status: string; error: string | null };
+  welcomeBonusPoints?: number;
+  welcomeBonusError?: string | null;
 }
 
 interface ShopImageItem {
@@ -454,7 +456,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       setLatitude('');
       setLongitude('');
       setShopImages([]);
-      showToast(t('merchants.created'));
+      const setupWarnings = [data.welcomeBonusError].filter(Boolean).join(' ');
+      showToast(setupWarnings || t('merchants.created'), setupWarnings ? 'error' : undefined);
       void queryClient.invalidateQueries({ queryKey: ['field-merchants'] });
       void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
     },

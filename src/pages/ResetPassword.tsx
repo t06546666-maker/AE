@@ -3,6 +3,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../supabase';
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 export function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -47,6 +48,7 @@ export function ResetPassword() {
 
   return (
     <div className="login-screen">
+      <ThemeToggleButton />
       <div className="login-brand-panel">
         <div className="login-brand"><img src="/logo.png" alt={uiText("AE")} style={{ width: 240, height: 'auto', background: '#fff', borderRadius: 16, padding: 12 }} /></div>
         <h1>{uiText("Create New Password")}</h1>

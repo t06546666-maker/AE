@@ -8,6 +8,7 @@ export type ActivityItem = {
   merchant_name?: string;
   amount?: number;
   points: number;
+  reason?: string;
 };
 
 export type CustomerDashboard = {
@@ -50,6 +51,14 @@ export type PaginationMeta = {
   totalPages: number;
 };
 
+export type CustomerTransactionSummary = {
+  total_earned: number;
+  total_redeemed: number;
+  purchase_count: number;
+  redemption_count: number;
+  monthly_activity: Array<{ month: string; earned: number; redeemed: number }>;
+};
+
 export function useCustomerDashboard() {
   return useQuery({
     queryKey: ['customer', 'dashboard'],
@@ -62,7 +71,7 @@ export function useCustomerDashboard() {
 export function useCustomerTransactions(page: number) {
   return useQuery({
     queryKey: ['customer', 'transactions', page],
-    queryFn: ({ signal }) => apiFetch<{ transactions: ActivityItem[], pagination: PaginationMeta }>(`/api/customer/transactions?${queryString({ page, pageSize: 20 })}`, { signal }),
+    queryFn: ({ signal }) => apiFetch<{ transactions: ActivityItem[], pagination: PaginationMeta, summary: CustomerTransactionSummary }>(`/api/customer/transactions?${queryString({ page, pageSize: 20 })}`, { signal }),
     staleTime: 60000
   });
 }
@@ -75,7 +84,7 @@ export function useCustomerCategories() {
   });
 }
 
-export function useCustomerMerchants(page: number, search?: string, categoryId?: string, location?: { latitude?: number; longitude?: number; routeGroup?: 'chittur' | 'thathamangalam' } | null, enabled = true) {
+export function useCustomerMerchants(page: number, search?: string, categoryId?: string, location?: { latitude?: number; longitude?: number; routeGroup?: 'all' | 'chittur' | 'thathamangalam' } | null, enabled = true) {
   return useQuery({
     queryKey: ['customer', 'merchants', page, search, categoryId, location?.latitude, location?.longitude, location?.routeGroup],
     queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId, latitude: location?.latitude, longitude: location?.longitude, routeGroup: location?.routeGroup })}`, { signal }),
@@ -84,11 +93,12 @@ export function useCustomerMerchants(page: number, search?: string, categoryId?:
   });
 }
 
-export function useCustomerOffers() {
+export function useCustomerOffers(enabled = true) {
   return useQuery({
     queryKey: ['customer', 'offers'],
     queryFn: ({ signal }) => apiFetch<{ offers: CustomerOffer[] }>('/api/customer/offers', { signal }),
-    staleTime: 60000
+    staleTime: 60000,
+    enabled,
   });
 }
 

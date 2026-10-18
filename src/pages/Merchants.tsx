@@ -27,6 +27,8 @@ interface CreateMerchantResponse {
   merchant: Merchant;
   temporaryPassword: string;
   whatsapp: CredentialResult['whatsapp'];
+  welcomeBonusPoints?: number;
+  welcomeBonusError?: string | null;
 }
 
 export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
@@ -116,11 +118,11 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
       setShopImages([]); setOnboardStep(0);
       setEmail('');
       setPhone('');
-      setUpiId('');
       setPassword('');
       setAddress(''); setLatitude(''); setLongitude(''); setCategoryId(''); setCustomCategory('');
       void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
-      showToast(t('merchants.created'));
+      const setupWarnings = [data.welcomeBonusError].filter(Boolean).join(' ');
+      showToast(setupWarnings || t('merchants.created'), setupWarnings ? 'error' : undefined);
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
     },
     onError(error) { showToast(error.message, 'error'); },

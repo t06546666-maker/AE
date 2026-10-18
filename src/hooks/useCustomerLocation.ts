@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { loadGoogleMaps } from '../components/CustomerNearbyMap';
 
-type CustomerLocation = { latitude?: number; longitude?: number; area: string; routeGroup?: 'chittur' | 'thathamangalam' };
+type CustomerLocation = { latitude?: number; longitude?: number; area: string; routeGroup?: 'all' | 'chittur' | 'thathamangalam' };
 
 export function useCustomerLocation(requestAutomatically = true) {
   const client = useQueryClient();

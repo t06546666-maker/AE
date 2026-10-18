@@ -148,7 +148,7 @@ export function CustomerExplore() {
       {/* Merchant List */}
       <div className="glass-merchants ae-shop-grid">
         {!userLocation?.routeGroup ? (
-          <div className="py-12 text-center text-gray-400">{uiText("Choose Chittur or Thathamangalam to see shops in that area.")}</div>
+          <div className="py-12 text-center text-gray-400">{uiText("Choose Chittur, Thathamangalam, or All to see shops.")}</div>
         ) : isLoading ? (
           <div className="py-12 text-center text-gray-400">{uiText("Loading merchants...")}</div>
         ) : merchants.length === 0 ? (

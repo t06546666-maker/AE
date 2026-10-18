@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Merchant responsive QA</title><style>body{margin:0;padding:12px;background:#8893a4;font:14px system-ui}header{display:flex;gap:12px;align-items:center;margin-bottom:12px}iframe{display:block;border:0;height:812px;background:white}select{padding:8px}</style></head><body>
+<header>LOCAL SAMPLE DATA · <label>Width <select id="width"><option>320</option><option selected>375</option><option>768</option></select></label><label>Screen <select id="screen"><option value="/dashboard?month=2026-09">Overview</option><option value="/dashboard?view=insights&month=2026-09">Insights</option><option value="/dashboard?view=reports&month=2026-09">Reports</option><option value="/customers?month=2026-09">Customers</option><option value="/more">More</option><option value="/merchant-profile">Profile</option><option value="/shop-checkout">QR</option></select></label></header>
+<iframe id="preview" title="Merchant app preview" width="375" src="/tests/merchant-preview.html?lang=ml"></iframe>
+<pre id="result" style="position:fixed;left:800px;top:70px;max-width:400px;white-space:pre-wrap">Checking layout…</pre>
+<script>window.addEventListener('message',event=>{if(event.origin===location.origin && event.data?.type==='merchant-qa')document.querySelector('#result').textContent=JSON.stringify(event.data,null,2)});</script>
+<script type="module">if (!import.meta.env.DEV) throw new Error('Development only');const frame=document.querySelector('#preview');document.querySelector('#width').onchange=event=>frame.width=event.target.value;document.querySelector('#screen').onchange=event=>frame.src='/tests/merchant-preview.html?lang=ml&screen='+encodeURIComponent(event.target.value);</script>
+</body></html>

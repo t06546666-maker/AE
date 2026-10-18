@@ -31,7 +31,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
         const row={merchantId,merchantName:merchant.data.name,customerId:req.customer.id,customerCode:req.customer.customer_code||req.customer.id,action,status:'pending',createdAt:Date.now(),expiresAt:Date.now()+TTL};
         tx.set(ref,row);tx.set(lock,{requestId:ref.id});return {id:ref.id,...row,fresh:true};
       });
-      if(result.fresh)background(()=>push(merchantId,'Customer checkout request',action==='combined'?'A customer requested Redeem + Earn.':'A customer requested points.',{url:'/shop-checkout?request='+result.id,type:'shop_checkout'}).catch(()=>{}));
+      if(result.fresh)background(()=>push(merchantId,'New points checkout request',action==='combined'?'A customer requested to redeem points and earn points on a purchase. Review and confirm the checkout in AE.':'A customer requested points for a purchase. Review and confirm the checkout in AE.',{url:'/shop-checkout?request='+result.id,type:'shop_checkout'}).catch(()=>{}));
       res.status(result.fresh?201:200).json({request:result});
     }catch(error){if(error.message.startsWith('A checkout'))return res.status(409).json({error:error.message});return unavailable(res);}
   });

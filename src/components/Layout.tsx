@@ -1,6 +1,6 @@
 import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -12,6 +12,8 @@ import type { UserProfile } from '../types';
 import '../field-shell.css';
 import '../field-footer.css';
 import { FieldSignOutContext } from './FieldSignOutContext';
+import { useAppTheme } from '../useAppTheme';
+import '../merchant-shell-fixes.css';
 
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
@@ -48,9 +50,10 @@ const fieldNav = [
 export function Layout({ user, onLogout, children }: { user: UserProfile; onLogout: () => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('ae_theme') || 'light');
+  const { theme, toggleTheme } = useAppTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [fieldSearch, setFieldSearch] = useState('');
   const { t, i18n } = useTranslation();
   const status = useQuery({
@@ -62,15 +65,11 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
   const notifications = useQuery({
     queryKey: ['notifications'],
     queryFn: ({ signal }) => apiFetch<{ notifications: Array<{ id: string; title: string; body: string; readAt: string | null; requestNo: string; url?:string }>; unreadCount: number }>('/api/notifications?limit=6', { signal }),
-    enabled: user.role === 'merchant',
+    enabled: user.role === 'merchant' || user.role === 'admin',
     refetchInterval: 15_000,
   });
 
   useEffect(() => setSidebarOpen(false), [location.pathname, location.search]);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('ae_theme', theme);
-  }, [theme]);
   useEffect(() => {
     localStorage.setItem('ae_language', i18n.language);
     document.documentElement.lang = i18n.language;
@@ -80,13 +79,13 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     if (!notificationsOpen) return null;
     return (
       <div className="notification-popover">
-        <strong>{uiText("Customer orders")}</strong>
+        <strong>{uiText("Notifications")}</strong>
         {notifications.data?.notifications.length ? notifications.data.notifications.map((notice) => (
-          <Link key={notice.id} to={notice.url || '/customer-orders'} onClick={() => setNotificationsOpen(false)} className={notice.readAt ? '' : 'unread'}>
+          <Link key={notice.id} to={notice.url || (user.role === 'admin' ? '/orders' : '/customer-orders')} onClick={() => { setNotificationsOpen(false); if (!notice.readAt) void apiFetch(`/api/notifications/${encodeURIComponent(notice.id)}/read`, { method: 'POST' }).then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] })).catch(() => {}); }} className={notice.readAt ? '' : 'unread'}>
             <b>{notice.requestNo || notice.title}</b><span>{notice.body}</span>
           </Link>
-        )) : <p>{uiText("No new customer orders.")}</p>}
-        <Link to="/customer-orders" onClick={() => setNotificationsOpen(false)}>{uiText("View all customer orders")}</Link>
+        )) : <p>{uiText("No new notifications.")}</p>}
+        <Link to={user.role === 'admin' ? '/orders' : '/customer-orders'} onClick={() => setNotificationsOpen(false)}>{user.role === 'admin' ? uiText("View orders") : uiText("View all customer orders")}</Link>
       </div>
     );
   };
@@ -124,11 +123,11 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
               <option value="ml">മ</option>
             </select>
           </label>
-          <button className="icon-button" title={theme === 'dark' ? t('layout.lightMode') : t('layout.nightMode')} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            {theme === 'dark' ? <Sun /> : <Moon />}
+          <button className="button secondary theme-toggle" aria-label={theme === 'dark' ? t('layout.lightModeShort') : t('layout.darkMode')} aria-pressed={theme === 'dark'} title={theme === 'dark' ? t('layout.lightModeShort') : t('layout.darkMode')} onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
           </button>
-          {user.role === 'merchant' ? <div className="notification-menu">
-            <button className="icon-button notification-button" title={uiText("Customer order notifications")} onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
+          {user.role === 'merchant' || user.role === 'admin' ? <div className="notification-menu">
+            <button className="icon-button notification-button" title={uiText("Notifications")} onClick={() => setNotificationsOpen((value) => !value)}><Bell />{notifications.data?.unreadCount ? <b>{notifications.data.unreadCount}</b> : null}</button>
             {renderNotificationPopover()}
           </div> : null}
           <span className={`role-pill ${user.role}`}>{user.role === 'admin' ? t('layout.admin') : user.role === 'field_manager' ? uiText("Field Manager") : t('layout.merchant')}</span>
@@ -157,30 +156,30 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           </div>
         </aside>}
         <main className="main-content">
-          <div className="mobile-topbar desktop-view-hidden" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'white' }}>
+          <div className="mobile-topbar desktop-view-hidden">
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               {(user.role === 'admin' || user.role === 'field_manager') && <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setSidebarOpen(true)}>
                 <Menu size={28} color="#1a1a1a" strokeWidth={2} />
               </button>}
               <img src="/logo.png" alt={uiText("Affiliate AE")} style={{ height: '34px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
             </div>
-            {user.role === 'merchant' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="mobile-topbar-actions">
                 <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ml' : 'en')} title={uiText("Change Language")}>
-                  <Languages size={24} color="#1a1a1a" strokeWidth={2} />
+                  <Languages size={22} strokeWidth={2} />
                 </button>
-                <button className="icon-button" style={{ border: 'none', background: 'transparent', padding: 0 }} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title={uiText("Toggle Dark Mode")}>
-                  <Moon size={24} color="#1a1a1a" strokeWidth={2} />
+                <button className="button secondary theme-toggle mobile-theme-toggle" aria-label={theme === 'dark' ? t('layout.lightModeShort') : t('layout.darkMode')} aria-pressed={theme === 'dark'} onClick={toggleTheme} title={theme === 'dark' ? t('layout.lightModeShort') : t('layout.darkMode')}>
+                  {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
                 </button>
+                {user.role === 'merchant' || user.role === 'admin' ? <>
                 <div className="notification-menu">
                   <button className="icon-button notification-button" style={{ border: 'none', background: 'transparent', position: 'relative', padding: 0 }} onClick={() => setNotificationsOpen(v => !v)}>
-                    <Bell size={24} color="#1a1a1a" strokeWidth={2} />
+                    <Bell size={24} color="currentColor" strokeWidth={2} />
                     {notifications.data?.unreadCount ? <span style={{ position: 'absolute', top: -4, right: -4, minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 700, borderRadius: '8px', padding: '0 4px' }}>{notifications.data.unreadCount}</span> : null}
                   </button>
                   {renderNotificationPopover()}
                 </div>
-              </div>
-            ) : <div />}
+                </> : null}
+            </div>
           </div>
           <FieldSignOutContext.Provider value={user.role === 'field_manager' ? signOut : null}>{children}</FieldSignOutContext.Provider>
         </main>

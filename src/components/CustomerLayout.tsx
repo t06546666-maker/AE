@@ -2,21 +2,26 @@ import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Gift, User, Menu, X, LogOut, Moon, Languages, Search, ListPlus } from 'lucide-react';
+import { Home, Gift, User, Menu, X, LogOut, Languages, Search, ListPlus } from 'lucide-react';
 import { UserProfile } from '../types';
 import { CustomerBillPopup } from './CustomerBillPopup';
 
 export function CustomerLayout({ user, onLogout, children }: { user: UserProfile; onLogout?: () => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('ae_theme') || 'light');
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
   useEffect(() => setSidebarOpen(false), [location.pathname]);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('ae_theme', theme);
-  }, [theme]);
+    const root = document.documentElement;
+    const previousTheme = root.dataset.theme || (localStorage.getItem('ae_theme') === 'dark' ? 'dark' : 'light');
+    root.dataset.theme = 'light';
+    root.style.colorScheme = 'light';
+    return () => {
+      root.dataset.theme = previousTheme;
+      root.style.colorScheme = previousTheme;
+    };
+  }, []);
   useEffect(() => {
     localStorage.setItem('ae_language', i18n.language);
     document.documentElement.lang = i18n.language;
@@ -42,9 +47,6 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
               <option value="ml">മ</option>
             </select>
           </label>
-          <button className="icon-button" title={theme === 'dark' ? t('layout.lightMode') : t('layout.nightMode')} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            {theme === 'dark' ? <Moon /> : <Moon />}
-          </button>
           <span className="role-pill merchant">{t('layout.customer') || 'Customer'}</span>
           <span className="topbar-user">{user.full_name || user.phone || 'Customer'}</span>
           <button className="button secondary signout" onClick={onLogout}><LogOut size={15} />{t('layout.signOut')}</button>

@@ -29,8 +29,14 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const [productListMessage, setProductListMessage] = useState('');
   const [expandedProductList, setExpandedProductList] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState('');
-  const { data: merchantData } = useCustomerMerchants(1);
-  const { data: offersData, isLoading: offersLoading } = useCustomerOffers();
+  const [loadSecondaryContent, setLoadSecondaryContent] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadSecondaryContent(true), 1800);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const { data: merchantData } = useCustomerMerchants(1, undefined, undefined, undefined, productListOpen);
+  const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent);
+  const offersLoading = !loadSecondaryContent || offersQueryLoading;
   const offers = (offersData?.offers || []).slice(0, 6);
   const merchants = merchantData?.merchants || [];
   const location = useLocation();
@@ -69,26 +75,28 @@ export function CustomerHome({ user }: { user: UserProfile }) {
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
         </Link>
-        <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
-          <Languages size={16} />
-          <select
-            className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
-            value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
-            onChange={(event) => void i18n.changeLanguage(event.target.value)}
-            aria-label={t('language.malayalam')}
-          >
-            <option value="en">{uiText("EN")}</option>
-            <option value="ml">മ</option>
-          </select>
-        </label></div>
       </header>
 
-      <div className="px-4 pt-2 space-y-6">
+      <div className="px-4 pt-1 space-y-6">
         {/* Greeting */}
-        <div className="customer-modern-greeting">
-          <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">{uiText(" Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
-          </h2>
-          <p className="text-[13px] text-gray-500 font-medium tracking-wide">{uiText(dailyGreeting)}</p>
+        <div className="customer-modern-greeting flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">{uiText(" Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
+            </h2>
+            <p className="text-[13px] text-gray-500 font-medium tracking-wide">{uiText(dailyGreeting)}</p>
+          </div>
+          <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
+            <Languages size={16} />
+            <select
+              className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
+              value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
+              onChange={(event) => void i18n.changeLanguage(event.target.value)}
+              aria-label={t('language.malayalam')}
+            >
+              <option value="en">{uiText("EN")}</option>
+              <option value="ml">മ</option>
+            </select>
+          </label></div>
         </div>
 
         {/* Points Card */}
@@ -172,14 +180,14 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               { title: 'First visit', threshold: 1, description: 'Make your first purchase at an AE merchant.' },
               { title: 'Repeat visit', threshold: 2, description: 'Complete two recorded purchases.' },
               { title: 'Loyal customer', threshold: 3, description: 'Complete three recorded purchases.' },
-            ].map((stage, index) => <li key={stage.title} className="flex items-center gap-3 rounded-xl bg-white/70 p-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold ${data.purchase_count! >= stage.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{index + 1}</span><div className="flex-1"><strong className="text-sm text-gray-900">{stage.title}</strong><p className="text-xs text-gray-600">{stage.description}</p></div><span className="text-xs font-semibold text-gray-700">{data.purchase_count! >= stage.threshold ? uiText("Reached") : uiText("Not yet")}</span></li>)}</ol>
+            ].map((stage, index) => <li key={stage.title} className="flex items-center gap-3 rounded-xl bg-white/70 p-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold ${data.purchase_count! >= stage.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{index + 1}</span><div className="flex-1"><strong className="text-sm text-gray-900">{uiText(stage.title)}</strong><p className="text-xs text-gray-600">{uiText(stage.description)}</p></div><span className="text-xs font-semibold text-gray-700">{data.purchase_count! >= stage.threshold ? uiText("Reached") : uiText("Not yet")}</span></li>)}</ol>
           </>}
         </section>
 
       </div>
       {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">{uiText("Product Lists")}</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
-        <div className="mb-5 rounded-2xl bg-gray-50 p-3"><h3 className="mb-2 text-sm font-bold text-gray-900">{uiText("Sent to merchants")}</h3>{productHistory?.requests?.length ? <div className="space-y-2">{productHistory.requests.map(request => { const expanded = expandedProductList === request.id; const statusClass = ['accepted', 'approved'].includes(request.status) ? "bg-green-100 text-green-700" : request.status === 'rejected' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"; return <button type="button" key={request.id} onClick={() => setExpandedProductList(expanded ? null : request.id)} className="w-full rounded-xl bg-white p-3 text-left text-xs shadow-sm"><div className="flex items-center justify-between gap-2"><span className="font-bold text-gray-900">{request.merchants?.name || 'Merchant'}</span><span className={`rounded-full px-2 py-1 font-semibold capitalize ${statusClass}`}>{request.status}</span></div><p className={`mt-1 text-gray-600 ${expanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{request.product_list || 'Photo product list uploaded'}</p>{expanded && request.image_url ? <img src={request.image_url} alt={uiText("Submitted product list")} onClick={(event) => { event.stopPropagation(); setPreviewImage(request.image_url || ''); }} className="mt-2 max-h-56 w-full cursor-zoom-in rounded-lg object-contain" /> : null}<p className="mt-1 font-medium text-gray-400">{new Date(request.created_at).toLocaleDateString()} · {expanded ? uiText("Collapse") : uiText("Tap to view full list")}</p></button>; })}</div> : <p className="text-xs text-gray-500">{uiText("No product lists sent yet.")}</p>}</div>
+        <div className="mb-5 rounded-2xl bg-gray-50 p-3"><h3 className="mb-2 text-sm font-bold text-gray-900">{uiText("Sent to merchants")}</h3>{productHistory?.requests?.length ? <div className="space-y-2">{productHistory.requests.map(request => { const expanded = expandedProductList === request.id; const statusClass = ['accepted', 'approved'].includes(request.status) ? "bg-green-100 text-green-700" : request.status === 'rejected' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"; return <button type="button" key={request.id} onClick={() => setExpandedProductList(expanded ? null : request.id)} className="w-full rounded-xl bg-white p-3 text-left text-xs shadow-sm"><div className="flex items-center justify-between gap-2"><span className="font-bold text-gray-900">{request.merchants?.name || uiText('Merchant')}</span><span className={`rounded-full px-2 py-1 font-semibold capitalize ${statusClass}`}>{uiText(request.status)}</span></div><p className={`mt-1 text-gray-600 ${expanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{request.product_list || uiText('Photo product list uploaded')}</p>{expanded && request.image_url ? <img src={request.image_url} alt={uiText("Submitted product list")} onClick={(event) => { event.stopPropagation(); setPreviewImage(request.image_url || ''); }} className="mt-2 max-h-56 w-full cursor-zoom-in rounded-lg object-contain" /> : null}<p className="mt-1 font-medium text-gray-400">{new Date(request.created_at).toLocaleDateString()} · {expanded ? uiText("Collapse") : uiText("Tap to view full list")}</p></button>; })}</div> : <p className="text-xs text-gray-500">{uiText("No product lists sent yet.")}</p>}</div>
         <h3 className="mb-2 text-sm font-bold text-gray-900">{uiText("Send a new product list")}</h3>
         <p className="mb-3 text-xs text-gray-500">{uiText("Choose a merchant and send a text list or photo directly to them.")}</p>
         <select value={merchantId} onChange={event => setMerchantId(event.target.value)} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">{uiText("Select merchant")}</option>{merchants.map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>

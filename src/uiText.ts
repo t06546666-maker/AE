@@ -5,6 +5,12 @@ export function uiText(value: string | number | undefined, values: Record<string
   const source=String(value ?? '');
   const normalized=source.replace(/&(amp|lt|gt|quot|apos|#39|#x27);/g, (_match, entity: string) => ({ amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",'#39':"'",'#x27':"'" }[entity] || _match)).replace(/\s+/g,' ').trim();
   const key=`ui.${normalized}`;
+  // Variable chart labels must use stable translation keys, not English-only
+  // keys containing a different number for every week/reporting period.
+  const week = /^Week (\d+)$/.exec(normalized);
+  if (week) return uiText('Week {{count}}', { count: week[1] });
+  const comparison = /^vs first (\d+) days of last month$/.exec(normalized);
+  if (comparison) return uiText('vs first {{count}} days of last month', { count: comparison[1] });
   if(i18n.resolvedLanguage==='ml' && /^Good (afternoon|evening)!/.test(normalized)) {
     const base=normalized.replace(/^Good (afternoon|evening)/,'Good morning');
     if(i18n.exists(`ui.${base}`,{lng:'ml'})) {

@@ -1,0 +1,49 @@
+/* Merchant chrome uses the same theme tokens as the content, including More. */
+.merchant-shell .theme-toggle {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.merchant-shell .theme-toggle svg { width: 19px; height: 19px; flex-shrink: 0; }
+.merchant-shell .theme-toggle:hover { background: var(--surface-alt); }
+.merchant-shell .theme-toggle:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.merchant-shell .mobile-topbar-actions { align-items: center; flex-wrap: nowrap; }
+.merchant-shell .mobile-topbar-actions > button { flex-shrink: 0; }
+.merchant-more { background: var(--bg); color: var(--text); }
+.merchant-shell .merchant-more { background: var(--bg); color: var(--text); }
+.merchant-shell .merchant-more :is(h3,h4,strong,summary) { color: var(--text); }
+.merchant-shell .mobile-topbar-actions > button { color: var(--text); }
+.merchant-shell .mobile-topbar-actions > button > svg { stroke: currentColor; }
+.merchant-more :is(.mobile-transactions,.mobile-help-btn,.mobile-transaction-item) { background: var(--surface); color: var(--text); border-color: var(--border); }
+.merchant-more .mobile-transactions { padding-inline: 16px !important; }
+.merchant-more :is(.mobile-transaction-info,.mobile-help-btn-left,.mobile-help-btn-left > div) { min-width: 0; }
+.merchant-more :is(h3,h4,strong,summary) { color: var(--text); }
+.merchant-more :is(.mobile-transaction-info p,.mobile-help-support p) { color: var(--muted); }
+.merchant-more .mobile-transaction-info { overflow-wrap: anywhere; }
+.merchant-more :is(.mobile-transaction-avatar, .mobile-transaction-item > svg, .mobile-help-btn > svg) { flex-shrink: 0; }
+.merchant-profile { color: var(--text); min-width: 0; }
+.merchant-profile .panel { background: var(--surface); border-color: var(--border); }
+.merchant-profile :is(h1,h2,dt,dd) { color: var(--text); }
+.merchant-profile :is(p,dt) { color: var(--muted); }
+.merchant-profile .panel > div > div { min-width: 0; overflow-wrap: anywhere; }
+.merchant-shell .ae-merchant-shop-qr { color: var(--text); background: var(--surface-alt); }
+.merchant-shell :is(.ae-shop-qr-card,.ae-shop-requests > a,.ae-shop-actions button) { background: var(--surface); border-color: var(--border); }
+.merchant-shell :is(.ae-shop-qr-card p,.ae-merchant-shop-qr footer) { color: var(--muted); }
+.merchant-shell .ae-shop-code { background: #fff; border-radius: 8px; }
+html[lang="ml"] :is(.merchant-more,.merchant-profile) :is(h1,h2,h3,h4,p,button,a,dt,dd) { letter-spacing: normal; line-height: 1.65; white-space: normal; }
+@media(max-width:480px) {
+  .merchant-shell .mobile-theme-toggle { flex-basis: 36px; width: 36px; height: 36px; min-width: 36px; min-height: 36px; max-height: 36px; }
+  .merchant-more .mobile-section, .merchant-more .mobile-help-support { margin-inline: 12px; }
+  .merchant-profile .panel { padding: 16px; }
+}

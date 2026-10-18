@@ -496,13 +496,8 @@
   {
     "text": "AE loyalty points. Thank you for your loyalty!",
     "files": [
+      "src\\components\\LoyalCustomers.tsx",
       "src\\pages\\customer\\Notifications.tsx"
-    ]
-  },
-  {
-    "text": "AE loyalty points. Thank you for your loyalty!”",
-    "files": [
-      "src\\components\\LoyalCustomers.tsx"
     ]
   },
   {
@@ -8197,7 +8192,7 @@
     ]
   },
   {
-    "text": "Where customers meet business and beyond",
+    "text": "Where customers meet businesses and beyond",
     "files": [
       "src\\pages\\customer\\CustomerSignup.tsx"
     ]

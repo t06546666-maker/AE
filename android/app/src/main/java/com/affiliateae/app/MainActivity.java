@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(UpiAppsPlugin.class);
+        registerPlugin(FieldLocationServicePlugin.class);
         super.onCreate(savedInstanceState);
         if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
         final Task<String> installationId = FirebaseInstallations.getInstance().getId();

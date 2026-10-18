@@ -28,6 +28,10 @@ export function getAccessToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
 
+export function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY) || '';
+}
+
 export function setAccessToken(token: string, refreshToken?: string) {
   localStorage.setItem(TOKEN_KEY, token);
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
@@ -37,6 +41,7 @@ export function setAccessToken(token: string, refreshToken?: string) {
 export function clearAccessToken() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  window.dispatchEvent(new Event('ae:session-cleared'));
 }
 
 async function renewSession() {

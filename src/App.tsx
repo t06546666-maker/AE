@@ -1,64 +1,70 @@
-import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { ApiError, apiFetch, clearAccessToken, getAccessToken } from './api';
 import { Layout } from './components/Layout';
-import { AddCustomer } from './pages/AddCustomer';
-import { Administrators } from './pages/Administrators';
-import { ChangePassword } from './pages/ChangePassword';
-import { Legal } from './pages/Legal';
-import { AccountDeletion } from './pages/AccountDeletion';
+import { CustomerLayout } from './components/CustomerLayout';
 import { useTranslation } from 'react-i18next';
 import { LegalGate } from './components/LegalGate';
-import { ReadOnlyProfiles } from './pages/ReadOnlyProfiles';
-import { Customers } from './pages/Customers';
-import { Dashboard } from './pages/Dashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { MerchantOverview } from './pages/MerchantOverview';
-import { MerchantPoints } from './pages/MerchantPoints';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { Login } from './pages/Login';
-import { ResetPassword } from './pages/ResetPassword';
-import { Locations } from './pages/Locations';
-import { LocationProfile } from './pages/LocationProfile';
-import { MerchantProfile } from './pages/MerchantProfile';
-import { AdminMerchantDetails } from './pages/AdminMerchantDetails';
-import { AdminCustomers, AdminCustomerDetails } from './pages/AdminCustomers';
-import { LegalNavigation } from './components/LegalNavigation';
-import { FieldLocationSharing } from './components/FieldLocationSharing';
 import { useUsageTracking } from './useUsageTracking';
-import { CustomerShopScan, MerchantShopCheckout, ShopRequestAlert } from './components/ShopCheckout';
-import { Merchants } from './pages/Merchants';
-import { MerchantCategories } from './pages/MerchantCategories';
-import { Offers } from './pages/Offers';
-import { Orders } from './pages/Orders';
-import { Products } from './pages/Products';
-import { CustomerOrders } from './pages/CustomerOrders';
-import { ProductLists } from './pages/ProductLists';
-import { RewardSettingsPage } from './pages/RewardSettings';
-import { More } from './pages/More';
-import { Feedback } from './pages/Feedback';
-import { Rewards } from './pages/Rewards';
-import { CustomerLayout } from './components/CustomerLayout';
-import { CustomerHome } from './pages/customer/Home';
-import { CustomerExplore } from './pages/customer/Explore';
-import { CustomerLogin } from './pages/customer/CustomerLogin';
-import { CustomerSignup } from './pages/customer/CustomerSignup';
-import { CustomerChangePassword } from './pages/customer/CustomerChangePassword';
-import { CustomerForgotPassword } from './pages/customer/CustomerForgotPassword';
-import { CustomerRewards } from './pages/customer/Rewards';
-import { CustomerProfile } from './pages/customer/Profile';
-import { CustomerTransactions } from './pages/customer/Transactions';
-import { CustomerOffers } from './pages/customer/Offers';
-import { CustomerNotifications } from './pages/customer/Notifications';
-import { CustomerReferral } from './pages/customer/Referral';
-import { CustomerFavorites } from './pages/customer/Favorites';
-import { FieldManager } from './pages/FieldManager';
-import { FieldManagers } from './pages/FieldManagers';
-import { FieldMerchantVisit } from './pages/FieldMerchantVisit';
 import type { Role, UserProfile } from './types';
+
+// Keep the startup bundle small. Route pages load only when needed, then the
+// common next screens can be warmed after the first screen has appeared.
+const AddCustomer = lazy(() => import('./pages/AddCustomer').then(m => ({ default: m.AddCustomer })));
+const Administrators = lazy(() => import('./pages/Administrators').then(m => ({ default: m.Administrators })));
+const ChangePassword = lazy(() => import('./pages/ChangePassword').then(m => ({ default: m.ChangePassword })));
+const Legal = lazy(() => import('./pages/Legal').then(m => ({ default: m.Legal })));
+const AccountDeletion = lazy(() => import('./pages/AccountDeletion').then(m => ({ default: m.AccountDeletion })));
+const ReadOnlyProfiles = lazy(() => import('./pages/ReadOnlyProfiles').then(m => ({ default: m.ReadOnlyProfiles })));
+const Customers = lazy(() => import('./pages/Customers').then(m => ({ default: m.Customers })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const MerchantOverview = lazy(() => import('./pages/MerchantOverview').then(m => ({ default: m.MerchantOverview })));
+const MerchantPoints = lazy(() => import('./pages/MerchantPoints').then(m => ({ default: m.MerchantPoints })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const Locations = lazy(() => import('./pages/Locations').then(m => ({ default: m.Locations })));
+const LocationProfile = lazy(() => import('./pages/LocationProfile').then(m => ({ default: m.LocationProfile })));
+const MerchantProfile = lazy(() => import('./pages/MerchantProfile').then(m => ({ default: m.MerchantProfile })));
+const AdminMerchantDetails = lazy(() => import('./pages/AdminMerchantDetails').then(m => ({ default: m.AdminMerchantDetails })));
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers').then(m => ({ default: m.AdminCustomers })));
+const AdminCustomerDetails = lazy(() => import('./pages/AdminCustomers').then(m => ({ default: m.AdminCustomerDetails })));
+const LegalNavigation = lazy(() => import('./components/LegalNavigation').then(m => ({ default: m.LegalNavigation })));
+const FieldLocationSharing = lazy(() => import('./components/FieldLocationSharing').then(m => ({ default: m.FieldLocationSharing })));
+const CustomerShopScan = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.CustomerShopScan })));
+const MerchantShopCheckout = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.MerchantShopCheckout })));
+const ShopRequestAlert = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.ShopRequestAlert })));
+const Merchants = lazy(() => import('./pages/Merchants').then(m => ({ default: m.Merchants })));
+const MerchantCategories = lazy(() => import('./pages/MerchantCategories').then(m => ({ default: m.MerchantCategories })));
+const Offers = lazy(() => import('./pages/Offers').then(m => ({ default: m.Offers })));
+const Orders = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
+const Products = lazy(() => import('./pages/Products').then(m => ({ default: m.Products })));
+const CustomerOrders = lazy(() => import('./pages/CustomerOrders').then(m => ({ default: m.CustomerOrders })));
+const ProductLists = lazy(() => import('./pages/ProductLists').then(m => ({ default: m.ProductLists })));
+const RewardSettingsPage = lazy(() => import('./pages/RewardSettings').then(m => ({ default: m.RewardSettingsPage })));
+const More = lazy(() => import('./pages/More').then(m => ({ default: m.More })));
+const Feedback = lazy(() => import('./pages/Feedback').then(m => ({ default: m.Feedback })));
+const Rewards = lazy(() => import('./pages/Rewards').then(m => ({ default: m.Rewards })));
+const CustomerHome = lazy(() => import('./pages/customer/Home').then(m => ({ default: m.CustomerHome })));
+const CustomerExplore = lazy(() => import('./pages/customer/Explore').then(m => ({ default: m.CustomerExplore })));
+const CustomerLogin = lazy(() => import('./pages/customer/CustomerLogin').then(m => ({ default: m.CustomerLogin })));
+const CustomerSignup = lazy(() => import('./pages/customer/CustomerSignup').then(m => ({ default: m.CustomerSignup })));
+const CustomerChangePassword = lazy(() => import('./pages/customer/CustomerChangePassword').then(m => ({ default: m.CustomerChangePassword })));
+const CustomerForgotPassword = lazy(() => import('./pages/customer/CustomerForgotPassword').then(m => ({ default: m.CustomerForgotPassword })));
+const CustomerRewards = lazy(() => import('./pages/customer/Rewards').then(m => ({ default: m.CustomerRewards })));
+const CustomerProfile = lazy(() => import('./pages/customer/Profile').then(m => ({ default: m.CustomerProfile })));
+const CustomerTransactions = lazy(() => import('./pages/customer/Transactions').then(m => ({ default: m.CustomerTransactions })));
+const CustomerOffers = lazy(() => import('./pages/customer/Offers').then(m => ({ default: m.CustomerOffers })));
+const CustomerNotifications = lazy(() => import('./pages/customer/Notifications').then(m => ({ default: m.CustomerNotifications })));
+const CustomerReferral = lazy(() => import('./pages/customer/Referral').then(m => ({ default: m.CustomerReferral })));
+const CustomerFavorites = lazy(() => import('./pages/customer/Favorites').then(m => ({ default: m.CustomerFavorites })));
+const FieldManager = lazy(() => import('./pages/FieldManager').then(m => ({ default: m.FieldManager })));
+const FieldManagers = lazy(() => import('./pages/FieldManagers').then(m => ({ default: m.FieldManagers })));
+const FieldMerchantVisit = lazy(() => import('./pages/FieldMerchantVisit').then(m => ({ default: m.FieldMerchantVisit })));
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -87,6 +93,14 @@ function RoleRoute({ user, role, children }: { user: UserProfile; role: Role; ch
   return user.role === role ? children : <Navigate to="/dashboard" replace />;
 }
 
+function StartupFallback({ message = 'Opening AE…' }: { message?: string }) {
+  return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div><span>{message}</span></div>;
+}
+
+function RouteFallback() {
+  return <div className="state-panel" role="status"><span>Loading this screen…</span></div>;
+}
+
 export function App() {
   useTranslation(undefined, { bindI18n: 'languageChanged loaded' });
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -97,6 +111,22 @@ export function App() {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) return;
+    const warmScreens = () => {
+      const loads = user.role === 'customer'
+        ? [import('./pages/customer/Explore'), import('./pages/customer/Offers'), import('./pages/customer/Transactions'), import('./pages/customer/Notifications')]
+        : user.role === 'merchant'
+          ? [import('./pages/Orders'), import('./pages/AddCustomer'), import('./pages/Products'), import('./pages/Offers')]
+          : user.role === 'admin'
+            ? [import('./pages/Merchants'), import('./pages/Orders'), import('./pages/Products'), import('./pages/AdminCustomers')]
+            : [import('./pages/FieldMerchantVisit')];
+      void Promise.all(loads).catch(() => { /* The route will retry on demand if preloading fails. */ });
+    };
+    const timer = window.setTimeout(warmScreens, 8000);
+    return () => window.clearTimeout(timer);
+  }, [user?.id, user?.role]);
 
   function logout() {
     clearAccessToken(); setUser(null); queryClient.clear();
@@ -132,12 +162,15 @@ export function App() {
   useEffect(() => {
     let disposed = false;
     const listeners: Array<{ remove: () => Promise<void> }> = [];
+    let setupTimer: number | undefined;
     let registrationTimer: ReturnType<typeof setTimeout> | undefined;
     let registrationRetryTimer: ReturnType<typeof setInterval> | undefined;
     let registrationAttempts = 0;
     const reportPush = (message: string) => window.dispatchEvent(new CustomEvent('ae:push-status', { detail: message }));
     if (user && CapacitorApp && Capacitor.isNativePlatform()) {
-      Promise.all([
+      // Let the authenticated screen paint before loading native notification
+      // and location code or showing any permission prompts.
+      setupTimer = window.setTimeout(() => { void Promise.all([
         import('@capacitor/push-notifications'),
         import('@capacitor/geolocation'),
       ]).then(async ([{ PushNotifications }, { Geolocation }]) => {
@@ -181,6 +214,20 @@ export function App() {
           reportPush(`Phone notification registration failed: ${error.error}`);
         }));
 
+        // Install delivery and tap handlers before register() so a fast token
+        // registration or a notification that opens a cold app is not missed.
+        listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
+          void queryClient.invalidateQueries({ queryKey: ['customer'] });
+          void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          reportPush('A notification was received on this phone.');
+        }));
+
+        listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+          if (typeof notification.notification.data?.url === 'string' && notification.notification.data.url.startsWith('/') && !notification.notification.data.url.startsWith('//')) {
+            navigate(notification.notification.data.url);
+          }
+        }));
+
         const finalPushStatus = await PushNotifications.checkPermissions();
         if (disposed) { for (const listener of listeners) void listener.remove(); return; }
         if (finalPushStatus.receive === 'granted') {
@@ -195,20 +242,9 @@ export function App() {
             void PushNotifications.register();
           }, 15000);
         } else reportPush('Allow notifications in Android settings to receive alerts.');
-
-        listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
-          void queryClient.invalidateQueries({ queryKey: ['customer'] });
-          reportPush('A notification was received on this phone.');
-        }));
-
-        listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          if (typeof notification.notification.data?.url === 'string' && notification.notification.data.url.startsWith('/') && !notification.notification.data.url.startsWith('//')) {
-            navigate(notification.notification.data.url);
-          }
-        }));
-      }).catch((error) => reportPush(`Notification setup failed: ${error.message}`));
+      }).catch((error) => reportPush(`Notification setup failed: ${error.message}`)); }, 8000);
     }
-    return () => { disposed = true; clearTimeout(registrationTimer); if (registrationRetryTimer) clearInterval(registrationRetryTimer); for (const listener of listeners) void listener.remove(); };
+    return () => { disposed = true; clearTimeout(setupTimer); clearTimeout(registrationTimer); if (registrationRetryTimer) clearInterval(registrationRetryTimer); for (const listener of listeners) void listener.remove(); };
   }, [user?.id, user?.role, navigate, queryClient]);
 
   useEffect(() => {
@@ -244,17 +280,17 @@ export function App() {
     return () => { active = false; };
   }, [restoreAttempt]);
 
-  if (location.pathname === '/delete-account') return <AccountDeletion />;
+  if (location.pathname === '/delete-account') return <Suspense fallback={<StartupFallback />}><AccountDeletion /></Suspense>;
   if (import.meta.env.DEV && location.pathname === '/consent-preview') {
     const role = new URLSearchParams(location.search).get('role') === 'merchant' ? 'merchant' : 'customer';
     return <LegalGate preview user={{ id: 'local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</LegalGate>;
   }
-  if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation>;
+  if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Suspense fallback={<StartupFallback />}><LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation></Suspense>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
   if (!user) {
     return (
-      <Routes>
+      <Suspense fallback={<StartupFallback />}><Routes>
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/customer/forgot-password" element={<CustomerForgotPassword />} />
@@ -263,19 +299,19 @@ export function App() {
         <Route path="/login" element={<Login onLogin={setUser} />} />
         <Route path="/field" element={<Login field onLogin={setUser} />} />
         <Route path="*" element={<Navigate to="/customer/login" replace />} />
-      </Routes>
+      </Routes></Suspense>
     );
   }
   if (user.must_change_password) {
     return user.role === 'customer' 
-      ? <CustomerChangePassword onChanged={() => {
+      ? <Suspense fallback={<StartupFallback message="Opening your account…" />}><CustomerChangePassword onChanged={() => {
           setUser({ ...user, must_change_password: false });
           void queryClient.invalidateQueries();
-        }} />
-      : <ChangePassword onChanged={() => {
+        }} /></Suspense>
+      : <Suspense fallback={<StartupFallback message="Opening your account…" />}><ChangePassword onChanged={() => {
           setUser({ ...user, must_change_password: false });
           void queryClient.invalidateQueries();
-        }} />;
+        }} /></Suspense>;
   }
 
   if (location.pathname === '/field' && user.role !== 'field_manager') {
@@ -286,7 +322,7 @@ export function App() {
     return (
       <LegalGate user={user} onLogout={logout}><CustomerLayout user={user} onLogout={logout}>
         <PageErrorBoundary key={location.pathname}>
-          <Routes>
+          <Suspense fallback={<RouteFallback />}><Routes>
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
             <Route path="/customer/explore" element={<CustomerExplore />} />
             <Route path="/customer/scan" element={<Navigate to="/customer/shop-scan" replace />} />
@@ -299,21 +335,21 @@ export function App() {
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
             <Route path="/customer/referral" element={<CustomerReferral user={user} />} />
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
-          </Routes>
+          </Routes></Suspense>
         </PageErrorBoundary>
       </CustomerLayout></LegalGate>
     );
   }
 
   if (user.role === 'field_manager') {
-    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><FieldLocationSharing managerId={user.id}/><PageErrorBoundary key={location.pathname}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></PageErrorBoundary></Layout></LegalGate>;
+    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><Suspense fallback={null}><FieldLocationSharing managerId={user.id}/></Suspense><PageErrorBoundary key={location.pathname}><Suspense fallback={<RouteFallback />}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></Suspense></PageErrorBoundary></Layout></LegalGate>;
   }
 
   return (
     <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}>
-      {user.role === 'merchant' && <ShopRequestAlert />}
+      {user.role === 'merchant' && <Suspense fallback={null}><ShopRequestAlert /></Suspense>}
       <PageErrorBoundary key={location.pathname}>
-        <Routes>
+        <Suspense fallback={<RouteFallback />}><Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
@@ -340,7 +376,7 @@ export function App() {
           <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
           <Route path="/field-managers" element={<RoleRoute user={user} role="admin"><FieldManagers /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        </Routes></Suspense>
       </PageErrorBoundary>
     </Layout></LegalGate>
   );

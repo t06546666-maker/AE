@@ -16,8 +16,9 @@ export function useUsageTracking(user:UserProfile|null) {
    if(document.hidden||busy)return;busy=true;
    try {await apiFetch(user.role==='customer'?'/api/customer/usage':'/api/usage',{method:'POST',body:JSON.stringify({platform,installationId})});}catch { /* Analytics must not interrupt app use. */ }finally{busy=false;}
   };
-  void report();const timer=window.setInterval(()=>void report(),120000);
+  const initialTimer=window.setTimeout(()=>void report(),12000);
+  const timer=window.setInterval(()=>void report(),120000);
   const visible=()=>{if(!document.hidden)void report()};document.addEventListener('visibilitychange',visible);
-  return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',visible)};
+  return()=>{window.clearTimeout(initialTimer);window.clearInterval(timer);document.removeEventListener('visibilitychange',visible)};
  },[user?.id,user?.role]);
 }

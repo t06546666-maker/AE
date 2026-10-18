@@ -4,9 +4,9 @@ The server sends this template only after merchant, authentication account and p
 
 ## Activation
 
-1. The welcome bonus is 2,000 AE points, not cash. This messaging integration does not allocate points. Ensure the 2,000-point credit is recorded before enabling the bonus message; current balances default to zero and Admin allocations are separate.
+1. Apply `supabase-onboarding-welcome-bonuses.sql` after `supabase-merchant-point-allocation.sql`. This gives each newly onboarded merchant a one-time, platform-funded 2,000 AE point credit and records it in `merchant_onboarding_bonuses`. It does not retroactively credit existing merchants.
 2. Create and obtain approval for a Meta WhatsApp template named `ae_merchant_welcome_v1`, with the body below and two positional text variables. Promotional content may be classified as Marketing by Meta. Use the language matching `WA_TEMPLATE_LANGUAGE`.
-3. Set `WA_MERCHANT_WELCOME_TEMPLATE=ae_merchant_welcome_v1` on the backend and redeploy only after bonus fulfillment is confirmed. Until configured, existing account-ready messaging is retained.
+3. The backend uses `ae_merchant_welcome_v1` by default. If the bonus migration is missing or the credit fails, it sends the existing account-ready message instead, so the welcome template does not promise an uncredited bonus.
 4. Test using a merchant phone number you control. Check `whatsapp_messages` delivery status; API acceptance alone does not prove handset delivery.
 
 ## Body (single copy, without pasted escape characters)

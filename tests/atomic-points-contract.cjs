@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const sql = fs.readFileSync(path.join(root, 'supabase-atomic-points.sql'), 'utf8');
+const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+assert.match(sql, /point_balance=point_balance-charge/);
+assert.doesNotMatch(sql, /point_balance\s*=\s*point_balance\s*\+/);
+assert.match(sql, /reward_points=coalesce\(reward_points,0\)\+earned-p_redeem/g);
+assert.match(sql, /pg_advisory_xact_lock/);
+assert.match(sql, /previous\.parameters<>arguments/);
+assert.match(sql, /Insufficient customer points at this store/);
+assert.match(sql, /available_amount_paise=available_amount_paise-consumed/);
+assert.match(sql, /ae_expire_customer_points/);
+assert.match(server, /redemptionContext && !atomicPointsEnabled/);
+assert.match(server, /No non-atomic fallback once enabled/);
+console.log('PASS: atomic-points source contract (SQL execution/concurrency still needs staging tests)');

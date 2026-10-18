@@ -1,14 +1,24 @@
 /* Malayalam copy needs natural wrapping and more vertical room.
    Scope adjustments to interface containers; never reposition shop images. */
 html[lang="ml"] body { font-family: "Nirmala UI", "Noto Sans Malayalam", system-ui, sans-serif; }
+/* Malayalam glyphs have taller metrics than Latin text. Keep the overall
+   interface a little more compact while preserving readable body copy. */
+html[lang="ml"] body { font-size:13px; line-height:1.55; }
+html[lang="ml"] :is(h1,h2,h3,h4) { line-height:1.4; letter-spacing:normal; }
+html[lang="ml"] h1 { font-size:clamp(19px, 4.8vw, 23px); }
+html[lang="ml"] h2 { font-size:clamp(15px, 4vw, 17px); }
+html[lang="ml"] h3 { font-size:14px; }
+html[lang="ml"] :is(button,.button,input,select,textarea) { font-size:12px; }
+html[lang="ml"] :is(label,small,.tag,.fv-badge,.field-directory-count) { font-size:11px; }
 html[lang="ml"] :is(main,section,article,header,nav,form,fieldset,div,label,button,a,input,select,textarea,dl,dt,dd) { min-width:0; box-sizing:border-box; }
-html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,a,dt,dd,strong,small) { overflow-wrap:anywhere; word-break:normal; }
-html[lang="ml"] :is(input,select,textarea) { max-width:100%; }
+html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,a,dt,dd,strong,small,span,li,td,th,summary) { overflow-wrap:anywhere; word-break:normal; text-overflow:clip; }
+html[lang="ml"] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { max-width:100%; min-height:44px; height:auto; line-height:1.45; }
+html[lang="ml"] textarea { min-height:96px; }
 html[lang="ml"] :is(.panel,.modal,.mo-panel,.mobile-transactions,.field-merchant-card,.field-location-card) { max-width:100%; }
-html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,select,a,dt,dd) { letter-spacing: normal; line-height: 1.6; }
+html[lang="ml"] :is(h1,h2,h3,h4,p,label,button,select,a,dt,dd) { letter-spacing: normal; line-height: 1.5; }
 html[lang="ml"] :is(.panel-heading,.page-header,.mo-panel-heading,.mobile-transaction-item) { flex-wrap: wrap; }
 html[lang="ml"] :is(.page-header>div,.mo-panel-heading>div,.mobile-transaction-info,.fv-merchant>div) { min-width:0; }
-html[lang="ml"] :is(.button,.mo-header-action,.mo-tabs a,.mo-segmented button,.fv-tabs button) { white-space:normal; height:auto; overflow-wrap:break-word; }
+html[lang="ml"] :is(.button,.mo-header-action,.mo-tabs a,.mo-segmented button,.fv-tabs button,.segmented button,.quick-actions a,.ae-field-footer>a) { white-space:normal; height:auto; min-height:40px; line-height:1.45; overflow-wrap:anywhere; }
 html[lang="ml"] :is(.mo-header-action span,.mo-customer-name strong,.mobile-transaction-info h4) { white-space:normal; text-overflow:clip; overflow-wrap:break-word; }
 html[lang="ml"] :is(.button,.mobile-transaction-item,.fv-merchant,.ae-home-shortcuts a) > svg { flex-shrink:0; }
 html[lang="ml"] :is(.ae-home-shortcuts,.mo-stats,.mo-tool-grid) > * { min-width:0; }
@@ -20,6 +30,18 @@ html[lang="ml"] .fv-merchant { align-items:center; }
 html[lang="ml"] :is(.mo-segmented,.fv-tabs) { align-items:stretch; }
 html[lang="ml"] :is(.panel-heading,.mo-panel-heading) select { max-width:100%; }
 html[lang="ml"] :is(.fv-badge,.tag,.field-card-title) { white-space:normal; }
+html[lang="ml"] :is(.panel-heading,.page-header,.page-actions,.form-actions,.modal-actions,.topbar,.topbar-actions,.mo-heading-actions,.mo-header-actions,.mo-contact,.notification-popover a) { min-width:0; flex-wrap:wrap; }
+html[lang="ml"] :is(.panel,.modal,.card,.table-panel,.mobile-summary-card,.mo-stat,.mo-profile-stats>div,.quick-actions a) { min-width:0; }
+html[lang="ml"] :is(.panel-heading h2,.page-header h1,.mo-panel-heading h2,.mo-heading h1,.field-page-title h1) { max-width:100%; overflow-wrap:anywhere; }
+html[lang="ml"] :is(.table-scroll td,.table-scroll th,.table-panel td,.table-panel th) { white-space:normal; overflow-wrap:anywhere; line-height:1.5; }
+html[lang="ml"] :is(.tag,.badge,.role-pill,.status-pill) { max-width:100%; line-height:1.4; }
+html[lang="ml"] :is(.four-column-form input,.four-column-form select,.four-column-form textarea) { max-height:none; }
+html[lang="ml"] :is(.field-home-hero,.field-home-actions>a,.mo-points-balance,.mo-retention) { min-width:0; }
+html[lang="ml"] .field-home-hero>div { max-width:72%; }
+html[lang="ml"] .field-home-hero h1 { font-size:clamp(19px,5vw,25px); letter-spacing:normal; }
+html[lang="ml"] .field-home-actions strong { font-size:13px; line-height:1.55; }
+html[lang="ml"] .field-home-actions small { font-size:11px; line-height:1.5; }
+html[lang="ml"] .mo-heading-actions :is(button,a) { min-width:0; }
 html[lang="ml"] .field-page-title { flex-wrap:wrap; gap:12px; }
 html[lang="ml"] .field-merchant-card>img { width:64px; height:64px; object-fit:cover; flex:0 0 64px; }
 html[lang="ml"] .field-merchant-card>div { flex:1; min-width:0; }
@@ -28,7 +50,15 @@ html[lang="ml"] .mobile-bottom-nav-item { flex:1 1 0; min-width:0; padding-inlin
 html[lang="ml"] .mobile-bottom-nav-item span { white-space:normal; font-size:10px; line-height:1.5; text-align:center; }
 html[lang="ml"] :is(.mobile-transaction-item,.fv-merchant,.fv-visit) { gap:8px; }
 html[lang="ml"] .fv-merchant button { flex:0 1 95px; white-space:normal; }
+html[lang="ml"] .ae-field-footer>a { padding-inline:2px; text-align:center; }
+html[lang="ml"] .ae-field-footer>a span { font-size:9px; line-height:1.35; }
 @media(max-width:480px) {
+ html[lang="ml"] body { font-size:12px; }
+ html[lang="ml"] :is(button,.button,input,select,textarea) { font-size:11px; }
+ html[lang="ml"] :is(label,small,.tag,.fv-badge,.field-directory-count) { font-size:10px; }
+ html[lang="ml"] h1 { font-size:19px; }
+ html[lang="ml"] h2 { font-size:15px; }
+ html[lang="ml"] :is(.panel,.modal,.mo-panel) { padding:14px; }
  html[lang="ml"] .ae-home-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); }
  html[lang="ml"] .mo-panel-heading { align-items:flex-start; gap:12px; }
  html[lang="ml"] .mo-panel-heading>div { max-width:100%; }
@@ -40,4 +70,11 @@ html[lang="ml"] .fv-merchant button { flex:0 1 95px; white-space:normal; }
  html[lang="ml"] .fv-activity dl { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
  html[lang="ml"] :is(.two-column-form,.form-grid) { grid-template-columns:minmax(0,1fr); }
  html[lang="ml"] :is(.page-actions,.modal-actions,.form-actions) { flex-wrap:wrap; gap:8px; }
+ html[lang="ml"] :is(.mo-tabs,.mo-segmented,.fv-tabs,.segmented) { flex-wrap:wrap; }
+ html[lang="ml"] :is(.mo-tabs a,.mo-segmented button,.fv-tabs button,.segmented button) { flex:1 1 30%; padding:7px 4px; font-size:10px; }
+ html[lang="ml"] .field-home-hero { min-height:190px; padding:22px 14px; }
+ html[lang="ml"] .field-home-hero>div { max-width:76%; }
+ html[lang="ml"] .field-home-art { width:40%; }
+ html[lang="ml"] .field-home-actions>a { min-height:132px; padding:13px; }
+ html[lang="ml"] .ae-field-footer>a { min-height:48px; }
 }
