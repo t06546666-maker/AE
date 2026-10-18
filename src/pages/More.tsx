@@ -3,13 +3,12 @@ import { SIX_HOUR_LABELS } from '../utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, CreditCard, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ExportModal, PageHeader, PeriodControl } from '../components/Common';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { MerchantFeedback } from '../components/MerchantFeedback';
-import { MerchantPaymentSettings } from './MerchantPaymentSettings';
 import type { DashboardData, Period, UserProfile, Merchant } from '../types';
 import { dateInput, formatCurrency, rangeForChartPeriod } from '../utils';
 
@@ -45,7 +44,6 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [paymentSettingsOpen, setPaymentSettingsOpen] = useState(false);
 
   const chart = useChartDashboard(chartPeriod, chartFrom, chartTo);
   const chartData = chart.data || emptyDashboard;
@@ -59,7 +57,6 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
     enabled: user.role === 'merchant' && !!user.merchant_id,
   });
 
-  if (paymentSettingsOpen) return <MerchantPaymentSettings user={user} onBack={() => setPaymentSettingsOpen(false)} />;
 
   return (
     <div className="mobile-dashboard-wrapper" style={{ paddingBottom: '80px' }}>
@@ -107,7 +104,6 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
             </div>
             <ChevronRight color="#94a3b8" />
           </Link>
-          {user.role === 'merchant' && <button type="button" onClick={() => setPaymentSettingsOpen(true)} className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0' }}><div className="mobile-transaction-avatar blue" style={{ width: 40, height: 40 }}><CreditCard size={20} /></div><div className="mobile-transaction-info" style={{ textAlign: 'left' }}><h4>{uiText('UPI Settings')}</h4><p>{uiText('Manage your UPI ID and payment link')}</p></div><ChevronRight color="#94a3b8" /></button>}
         </div>
       </div>
 

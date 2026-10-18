@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerMerchants, useCustomerOffers } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
-import { CustomerPaymentRequests } from '../../components/CustomerPaymentRequests';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import './home-reference.css';
@@ -61,7 +60,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
   return (
     <div className="customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
-      <CustomerPaymentRequests />
       {/* Header */}
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />

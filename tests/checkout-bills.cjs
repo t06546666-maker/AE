@@ -5,7 +5,7 @@ const route = source.match(/app.get\('\/api\/customer\/checkout-bills',[\s\S]*?\
 let handler;
 let filters = [];
 const query = { where(field, op, value) { filters.push([field, op, value]); return this; }, async get() { return { docs: [{ id: 'recent', data: () => ({ customerId: 'owned', createdAt: Date.now(), total: 100, discount: 5, payable: 95 }) }, { id: 'old', data: () => ({ customerId: 'owned', createdAt: Date.now() - 2 * 86400000 }) }] }; } };
-new Function('app','requireCustomerAuth','checkoutBillDatabase','billUpi',route)({ get: (_path,_auth,fn) => { handler=fn; } },()=>{},async()=>({ collection:()=>query }),require('../backend/bill-upi.cjs').billUpi);
+new Function('app','requireCustomerAuth','checkoutBillDatabase',route)({ get: (_path,_auth,fn) => { handler=fn; } },()=>{},async()=>({ collection:()=>query }));
 (async()=>{
  let body;
  await handler({ customer:{id:'owned'} },{ setHeader(){},json(value){body=value;},status(){return this;} });
@@ -13,6 +13,8 @@ new Function('app','requireCustomerAuth','checkoutBillDatabase','billUpi',route)
  assert.equal(body.bills.length,1);
  assert.equal(body.bills[0].payable,95);
  assert.equal(body.bills[0].id,'recent');
+ assert.equal(body.bills[0].upiUrl,undefined);
+ assert.ok(!route.includes('billUpi'));
  const helper = source.match(/async function checkoutBillDatabase\(\) \{[\s\S]*?\n\}/)[0];
  assert.ok(helper.includes("await import('firebase-admin/firestore')"));
  assert.ok(helper.includes('await firebaseInitializationPromise'));
@@ -20,5 +22,5 @@ new Function('app','requireCustomerAuth','checkoutBillDatabase','billUpi',route)
  const java=fs.readFileSync('android/app/src/main/java/com/affiliateae/app/UpiAppsPlugin.java','utf8');
  assert.ok(java.includes('getLaunchIntentForPackage'));
  assert.ok(java.includes('"upi".equals(uri.getScheme())'));
-console.log('Passed: customer-scoped bill lookup, stale-bill exclusion, payable amount and restricted Android UPI launcher.');
+console.log('Passed: customer-scoped bill lookup, stale-bill exclusion, payable amount, and no UPI payment link in bill response.');
 })().catch(error=>{console.error(error);process.exit(1);});

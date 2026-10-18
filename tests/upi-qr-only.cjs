@@ -1,0 +1,30 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const adminOnboarding = fs.readFileSync('src/pages/Merchants.tsx', 'utf8');
+const fieldOnboarding = fs.readFileSync('src/pages/FieldManager.tsx', 'utf8');
+const merchantMore = fs.readFileSync('src/pages/More.tsx', 'utf8');
+const billPopup = fs.readFileSync('src/components/CustomerBillPopup.tsx', 'utf8');
+const server = fs.readFileSync('server.js', 'utf8');
+const checkoutStart = server.indexOf("app.post('/api/checkouts'");
+const checkoutEnd = server.indexOf('\napp.', checkoutStart + 1);
+const checkoutRoute = server.slice(checkoutStart, checkoutEnd);
+
+assert.ok(!adminOnboarding.includes('upi_id:'));
+assert.ok(!adminOnboarding.includes('UPI ID for customer payments'));
+assert.ok(!fieldOnboarding.includes('upi_id:'));
+assert.ok(!fieldOnboarding.includes('UPI ID for customer payments'));
+assert.ok(!merchantMore.includes('UPI Settings'));
+assert.ok(!server.includes('merchant_payment_settings_'));
+assert.ok(!server.includes('/api/payments/create-upi-intent'));
+assert.ok(!server.includes('/api/merchants/:id/payment-settings'));
+assert.ok(!server.includes('upi://pay?'));
+const createOrderRoute = server.slice(server.indexOf("app.post('/api/payments/create-order'"), server.indexOf("app.post('/api/payments/verify'"));
+assert.ok(createOrderRoute.includes('res.status(410)'));
+assert.ok(!createOrderRoute.includes('razorpay.orders.create'));
+assert.ok(billPopup.includes("upi.open({ id: app.id })"));
+assert.ok(!billPopup.includes('upiUrl'));
+assert.ok(billPopup.includes('does not start or confirm a payment'));
+assert.ok(checkoutStart >= 0 && checkoutEnd > checkoutStart);
+assert.ok(!checkoutRoute.includes('paymentTransactionId'));
+console.log('PASS: no merchant UPI collection/settings in onboarding, and customer bill only opens an installed UPI app for shop QR scanning.');

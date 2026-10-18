@@ -16,7 +16,6 @@ const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
-const { billUpi } = require('./backend/bill-upi.cjs');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { validFieldLocation } = require('./backend/field-location.cjs');
 const languagePacks = { en: require('./backend/locales/en.json'), ml: require('./backend/locales/ml.json') };
@@ -2999,90 +2998,6 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
   res.json({ success: true, data: value });
 });
 
-// Merchant payment settings are kept as a merchant-scoped record in app_settings
-// so they work on existing Supabase installations without a destructive migration.
-const defaultMerchantPaymentSettings = { upiId: '', displayName: '', paymentEnabled: false, provider: 'upi', mode: 'live' };
-function merchantPaymentKey(id) { return `merchant_payment_settings_${cleanText(id, 100)}`; }
-async function readMerchantPaymentSettings(id) {
-  try {
-    const database = await checkoutBillDatabase();
-    const settings = await database.collection('ae_merchant_payment_settings').doc(String(id)).get();
-    if (settings.exists) return { ...defaultMerchantPaymentSettings, ...settings.data() };
-  } catch (error) { console.warn('Merchant payment settings lookup failed:', error.message); }
-  const { data } = await supabaseAdmin.from('app_settings').select('value').eq('key', merchantPaymentKey(id)).maybeSingle();
-  try {
-    return { ...defaultMerchantPaymentSettings, ...(data?.value ? JSON.parse(data.value) : {}) };
-  } catch (_) { return { ...defaultMerchantPaymentSettings }; }
-}
-async function writeMerchantPaymentSettings(id, value) {
-  try {
-    const database = await checkoutBillDatabase();
-    await database.collection('ae_merchant_payment_settings').doc(String(id)).set(value);
-    return;
-  } catch (firestoreError) {
-    // Supabase app_settings is the compatibility fallback for environments
-    // where the checkout Firestore store is unavailable.
-    const { error } = await supabaseAdmin.from('app_settings').upsert({
-      key: merchantPaymentKey(id),
-      value: JSON.stringify(value),
-    });
-    if (error) throw new Error(`Could not save merchant payment settings: ${error.message || firestoreError.message}`);
-  }
-}
-app.get('/api/merchants/:id/payment-settings', requireAuth, async (req, res) => {
-  if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
-  res.json({ success: true, data: await readMerchantPaymentSettings(req.params.id) });
-});
-app.patch('/api/merchants/:id/payment-settings', requireAuth, async (req, res) => {
-  if (req.auth.profile.role !== 'admin' && req.auth.profile.merchant_id !== req.params.id) return res.status(403).json({ success: false, error: 'Forbidden' });
-  const upiId = cleanText(req.body.upiId, 120).toLowerCase();
-  if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
-  const value = { ...defaultMerchantPaymentSettings, ...(await readMerchantPaymentSettings(req.params.id)), upiId, displayName: cleanText(req.body.displayName, 120), paymentEnabled: Boolean(req.body.paymentEnabled), provider: 'upi', mode: 'live' };
-  try {
-    await writeMerchantPaymentSettings(req.params.id, value);
-  } catch (error) { return res.status(503).json({ success: false, error: 'Could not save merchant payment settings.' }); }
-  res.json({ success: true, data: value });
-});
-
-// Direct UPI intent flow. No gateway is involved; payment remains pending until
-// the merchant confirms the customer completed the transfer in their UPI app.
-app.post('/api/payments/create-upi-intent', requireAuth, requireRole('merchant'), async (req, res) => {
-  const merchantId = req.auth.profile.merchant_id;
-  const amount = Number(req.body.amount);
-  const settings = await readMerchantPaymentSettings(merchantId);
-  if (!settings.paymentEnabled || !settings.upiId) return res.status(400).json({ success: false, error: 'Merchant UPI payments are not enabled' });
-  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'A valid payment amount is required' });
-  const customerCode = cleanText(req.body.customer_id, 100);
-  const { data: recipient, error: recipientError } = await supabaseAdmin.from('customers').select('id').eq('customer_code', customerCode).maybeSingle();
-  if (recipientError || !recipient) return res.status(400).json({ success: false, error: 'The payment customer could not be found.' });
-  const reference = `AE${Date.now().toString(36).toUpperCase()}`;
-  const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: recipient.id, amount, status: 'pending', metadata: { provider: 'upi', reference } }).select().single();
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  const params = new URLSearchParams({ pa: settings.upiId, pn: settings.displayName || 'AE Merchant', am: amount.toFixed(2), cu: 'INR', tn: `AE payment ${reference}` });
-  await pushToCustomer(recipient.id, 'Payment requested', `${settings.displayName || 'AE Merchant'} requested ₹${amount.toFixed(2)}. Open AE to pay.`, { url: '/customer/home', paymentId: data.id });
-  res.status(201).json({ success: true, payment: data, upiUrl: `upi://pay?${params.toString()}`, reference });
-});
-
-app.get('/api/customer/payment-requests', requireCustomerAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,amount,metadata,created_at,merchants(name)').eq('customer_id', req.customer.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(20);
-  if (error) return res.status(500).json({ success: false, error: 'Could not load payment requests.' });
-  const payments = await Promise.all((data || []).map(async payment => {
-    const settings = await readMerchantPaymentSettings(payment.merchant_id);
-    const params = new URLSearchParams({ pa: settings.upiId, pn: settings.displayName || payment.merchants?.name || 'AE Merchant', am: Number(payment.amount).toFixed(2), cu: 'INR', tn: `AE payment ${payment.metadata?.reference || payment.id}` });
-    return { id: payment.id, amount: payment.amount, merchantName: payment.merchants?.name || settings.displayName || 'AE Merchant', upiUrl: settings.paymentEnabled && settings.upiId ? `upi://pay?${params}` : null };
-  }));
-  res.json({ success: true, payments });
-});
-
-app.post('/api/payments/confirm-upi', requireAuth, requireRole('merchant'), async (req, res) => {
-  const paymentId = cleanText(req.body.paymentId, 100);
-  const { data, error } = await supabaseAdmin.from('payment_transactions').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', paymentId).eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'pending').select('id,status,customer_id,amount').maybeSingle();
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  if (!data) return res.status(404).json({ success: false, error: 'Pending UPI payment was not found' });
-  await pushToCustomer(data.customer_id, 'Payment confirmed', `Your merchant confirmed receipt of ₹${Number(data.amount).toFixed(2)}.`, { url: '/customer/transactions', paymentId: data.id });
-  res.json({ success: true, payment: data });
-});
-
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')
@@ -3228,8 +3143,6 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   const name = cleanText(req.body.name, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const phone = normalizePhone(req.body.phone);
-  const upiId = cleanText(req.body.upi_id || req.body.upiId, 120).toLowerCase();
-  if (upiId && !/^[a-z0-9._-]{2,}@[a-z0-9.-]{2,}$/i.test(upiId)) return res.status(400).json({ success: false, error: 'Enter a valid UPI ID, for example merchant@upi.' });
   let category_id = cleanText(req.body.category_id, 100) || null;
   const route_name = cleanText(req.body.route_name, 80) || null;
   if (route_name && !['Chittur 1', 'Chittur 2', 'Chittur 3', 'Thathamangalam 1', 'Thathamangalam 2', 'Thathamangalam 3'].includes(route_name)) {
@@ -3329,23 +3242,6 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
     await supabaseAdmin.from('merchants').delete().eq('id', merchant.id);
     return res.status(400).json({ success: false, error: profileError.message });
-  }
-
-  let paymentSettingsSaved = true;
-  if (upiId) {
-    try {
-      await writeMerchantPaymentSettings(merchant.id, {
-        ...defaultMerchantPaymentSettings,
-        upiId,
-        displayName: merchant.name,
-        paymentEnabled: true,
-        provider: 'upi',
-        mode: 'live',
-      });
-    } catch (error) {
-      paymentSettingsSaved = false;
-      console.error('Merchant was onboarded, but its UPI settings could not be saved:', error.message);
-    }
   }
 
   if (req.auth.profile?.role === 'field_manager') {
@@ -4703,9 +4599,8 @@ app.get('/api/customer/checkout-bills', requireCustomerAuth, async (req, res) =>
     const database = await checkoutBillDatabase();
     const snapshot = await database.collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
     const pending = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
-    const bills = await Promise.all(pending.map(async bill => ({ ...bill, ...billUpi(bill.merchantId ? await readMerchantPaymentSettings(bill.merchantId) : null, bill) })));
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ bills });
+    return res.json({ bills: pending });
   } catch (error) { console.warn('Checkout bill lookup failed:', error.message); return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
 });
 app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async (req, res) => {
@@ -4733,7 +4628,6 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   }
   const pointsToRedeem = Number(req.body.pointsToRedeem || 0);
   const discountType = req.body.discountType === 'flat' ? 'flat' : 'percentage';
-  const paymentTransactionId = cleanText(req.body.paymentTransactionId, 100);
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
@@ -4743,16 +4637,6 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
       success: false,
       error: pointsToRedeem > 0 ? 'Purchase must be at least ₹100 when redeeming points.' : 'Purchase must be at least ₹1.',
     });
-  }
-  const paymentSettings = await readMerchantPaymentSettings(req.auth.profile.merchant_id);
-  if (paymentSettings.paymentEnabled && !['pilot_app_only', 'cash'].includes(req.body.paymentMode)) {
-    if (!paymentTransactionId) return res.status(402).json({ success: false, error: 'Verified payment is required before completing this checkout.' });
-    const { data: verifiedPayment } = await supabaseAdmin.from('payment_transactions').select('id,merchant_id,customer_id,status,amount,customers(customer_code)').eq('id', paymentTransactionId).maybeSingle();
-    const paymentRewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
-    const discount = pointsToRedeem === 100 ? redemptionDiscount(amount, discountType, req.body.discountValue ?? (paymentRewardSettings.redeem_discount_per_100 || 5)) : null;
-    if (pointsToRedeem === 100 && !discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater.' });
-    const payableAmount = Math.round((amount - (discount?.amount || 0)) * 100);
-    if (!verifiedPayment || verifiedPayment.merchant_id !== req.auth.profile.merchant_id || verifiedPayment.customers?.customer_code !== customerCode || verifiedPayment.status !== 'paid' || Math.round(Number(verifiedPayment.amount) * 100) !== payableAmount) return res.status(402).json({ success: false, error: 'Payment does not match this customer and checkout amount.' });
   }
   if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
     return res.status(400).json({ success: false, error: 'Redeem points must be exactly 100, or 0 when no redemption is selected.' });
@@ -6036,19 +5920,7 @@ app.post('/api/payments/create-subscription', requireAuth, async (req, res) => {
 });
 
 app.post('/api/payments/create-order', requireAuth, async (req, res) => {
-  try {
-    const merchantId = cleanText(req.body.merchant_id || req.auth.profile.merchant_id, 100);
-    if (req.auth.profile.role === 'merchant' && merchantId !== req.auth.profile.merchant_id) return res.status(403).json({ success: false, error: 'Forbidden' });
-    const amount = Number(req.body.amount);
-    if (!merchantId || !Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, error: 'A valid payment amount is required' });
-    const settings = await readMerchantPaymentSettings(merchantId);
-    if (!settings.paymentEnabled || !settings.upiId) return res.status(400).json({ success: false, error: 'Merchant UPI payments are not enabled' });
-    if (!razorpay) return res.status(503).json({ success: false, error: 'Razorpay is not configured' });
-    const razorpayOrder = await razorpay.orders.create({ amount: Math.round(amount * 100), currency: 'INR', receipt: cleanText(req.body.receipt || `ae_${Date.now()}`, 40), notes: { merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) } });
-    const { data, error } = await supabaseAdmin.from('payment_transactions').insert({ merchant_id: merchantId, customer_id: cleanText(req.body.customer_id, 100) || null, order_id: cleanText(req.body.order_id, 100) || null, razorpay_order_id: razorpayOrder.id, amount, metadata: req.body.metadata || {} }).select().single();
-    if (error) return res.status(400).json({ success: false, error: error.message });
-    res.status(201).json({ success: true, payment: data, razorpay: { orderId: razorpayOrder.id, keyId: process.env.RAZORPAY_KEY_ID, amount: razorpayOrder.amount, currency: razorpayOrder.currency, upiId: settings.upiId, displayName: settings.displayName } });
-  } catch (err) { res.status(500).json({ success: false, error: err.message || 'Could not create payment order' }); }
+  res.status(410).json({ success: false, error: 'AE does not initiate customer payments. Use the UPI app to scan the shop’s own QR code.' });
 });
 
 app.post('/api/payments/verify', requireAuth, async (req, res) => {
