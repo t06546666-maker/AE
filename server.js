@@ -316,9 +316,12 @@ async function requireAuth(req, res, next) {
   }
 
   req.auth = { user, profile, token };
+  if (['staff','account_head'].includes(profile.role) && !/^\/api\/(expenses|accounts|auth|notifications|push)(\/|$)/.test(req.path) && req.path !== '/api/profile/preferences') {
+    return res.status(403).json({error:'Use your assigned staff portal.'});
+  }
   const passwordRoute = req.path === '/api/auth/change-password'
     || req.path === '/api/auth/me';
-  if (profile.role === 'merchant' && profile.must_change_password && !passwordRoute) {
+  if (['merchant','staff','account_head','field_manager'].includes(profile.role) && profile.must_change_password && !passwordRoute) {
     return res.status(403).json({
       success: false,
       code: 'PASSWORD_CHANGE_REQUIRED',
@@ -6199,6 +6202,7 @@ if (webRoot === reactBuildPath) {
   });
 }
 
+require('./backend/expenses.cjs').registerExpenses(app, {db:supabaseAdmin,auth:supabaseAuth,requireAuth,requireRole,notifyProfile:pushToProfile,notifyRole:pushToRole});
 module.exports = app;
 
 const PORT = process.env.PORT || 3000;

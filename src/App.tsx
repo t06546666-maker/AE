@@ -26,6 +26,8 @@ const MerchantOverview = lazy(() => import('./pages/MerchantOverview').then(m =>
 const MerchantPoints = lazy(() => import('./pages/MerchantPoints').then(m => ({ default: m.MerchantPoints })));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Expenses = lazy(() => import('./pages/Expenses').then(m => ({ default: m.Expenses })));
+const ExpenseStaff = lazy(() => import('./pages/ExpenseStaff').then(m => ({ default: m.ExpenseStaff })));
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const Locations = lazy(() => import('./pages/Locations').then(m => ({ default: m.Locations })));
 const LocationProfile = lazy(() => import('./pages/LocationProfile').then(m => ({ default: m.LocationProfile })));
@@ -176,7 +178,7 @@ export function App() {
         // Ask for the permissions needed by the native app at first use.
         // Android controls the actual system prompts; GPS cannot be enabled silently.
         // Location permission must never block push registration.
-        void Geolocation.checkPermissions().then(status => {
+        if (!['staff','account_head'].includes(user.role)) void Geolocation.checkPermissions().then(status => {
           if (status.location !== 'granted') return Geolocation.requestPermissions();
         }).catch(error => console.warn('Location permission unavailable', error));
 
@@ -288,6 +290,7 @@ export function App() {
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
   if (!user) {
+    if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={null} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
     return (
       <Suspense fallback={<StartupFallback />}><Routes>
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -313,6 +316,8 @@ export function App() {
         }} /></Suspense>;
   }
 
+  if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={user} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
+  if (user.role === 'staff' || user.role === 'account_head') return <Navigate to={user.role==='account_head'?'/accounts':'/expenses'} replace/>;
   if (location.pathname === '/field' && user.role !== 'field_manager') {
     return <div className="state-panel"><h1>Field Manager portal</h1><p>You are signed in as {user.role}. Sign out here to use a field manager account, or open /field in a separate browser profile.</p><button className="button primary" onClick={logout}>Sign out to Field Manager Login</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>Back to my dashboard</button></div>;
   }
@@ -350,6 +355,7 @@ export function App() {
       <PageErrorBoundary key={location.pathname}>
         <Suspense fallback={<RouteFallback />}><Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
+          <Route path="/expense-staff" element={<RoleRoute user={user} role="admin"><ExpenseStaff/></RoleRoute>}/>
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />

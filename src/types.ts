@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'merchant' | 'customer' | 'field_manager';
+export type Role = 'admin' | 'merchant' | 'customer' | 'field_manager' | 'staff' | 'account_head';
 export type Period = 'today' | 'week' | 'month' | 'custom';
 
 export interface UserProfile {
@@ -27,7 +27,7 @@ export interface User {
   id: string;
   email?: string;
   phone?: string;
-  role: 'admin' | 'merchant' | 'customer' | 'field_manager';
+  role: Role;
   fullName?: string;
   merchantId?: string;
   name?: string;

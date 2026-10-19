@@ -16,6 +16,7 @@ import { useAppTheme } from '../useAppTheme';
 import '../merchant-shell-fixes.css';
 
 const adminNav = [
+  ['/expense-staff', 'Staffs', UserCog],
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
   ['/customers', 'nav.customers', Users],
@@ -38,6 +39,7 @@ const merchantNav = [
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 const fieldNav = [
+  ['/expenses', 'Work expenses', ReceiptText],
   ['/field?section=attendance', 'Attendance', Home],
   ['/field?section=home', 'Home', Home],
   ['/field?section=onboarding', 'Onboard Merchant', ShoppingBag],
