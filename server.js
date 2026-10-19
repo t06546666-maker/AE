@@ -18,6 +18,13 @@ const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { validFieldLocation } = require('./backend/field-location.cjs');
+const { createProfileNotificationInbox } = require('./backend/profile-notification-inbox.cjs');
+const profileNotificationInbox = createProfileNotificationInbox(async () => {
+  await firebaseInitializationPromise;
+  if (!firebaseInitialized) throw new Error('Firebase Admin is not configured');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  return getFirestore();
+});
 const languagePacks = { en: require('./backend/locales/en.json'), ml: require('./backend/locales/ml.json') };
 let initializeApp;
 let cert;
@@ -454,16 +461,12 @@ async function pushToProfile(profileId, title, body, data = {}) {
 
 async function saveAppNotification(profileId, title, body, data = {}) {
   if (!profileId) return;
-  const entityId = data.requestId || data.orderId || data.transactionId || data.paymentId || data.offerId || data.billId || null;
-  const { error } = await supabaseAdmin.from('app_notifications').insert({
-    profile_id: profileId,
-    title: String(title).slice(0, 160),
-    body: String(body).slice(0, 1000),
-    target_url: typeof data.url === 'string' && data.url.startsWith('/') && !data.url.startsWith('//') ? data.url.slice(0, 500) : null,
-    event_type: String(data.type || 'general').slice(0, 80),
-    entity_id: entityId ? String(entityId).slice(0, 160) : null,
-  });
-  if (error) console.warn('In-app notification could not be saved (apply app notification migration):', error.message);
+  try {
+    await profileNotificationInbox.save(profileId, title, body, data);
+  } catch (error) {
+    // A persistence failure must not prevent delivery of the independent push.
+    console.warn('Firebase in-app notification could not be saved:', error.message);
+  }
 }
 
 async function pushToRole(role, title, body, data = {}) {
@@ -3736,14 +3739,15 @@ app.patch('/api/customer-orders/:id/status', requireAuth, async (req, res) => {
 app.get('/api/notifications', requireAuth, async (req, res) => {
   const limit = Math.min(20, Math.max(1, Number(req.query.limit) || 8));
   const profileId = req.auth.profile.id;
-  const { data: appItems, error: appError } = await supabaseAdmin.from('app_notifications')
-    .select('id,title,body,target_url,event_type,entity_id,read_at,created_at')
-    .eq('profile_id', profileId)
-    .order('created_at', { ascending: false }).limit(limit);
-  if (appError) console.warn('App notification inbox unavailable (apply app notification migration):', appError.message);
-  const { count: appUnreadCount, error: appUnreadError } = await supabaseAdmin.from('app_notifications')
-    .select('id', { count: 'exact', head: true }).eq('profile_id', profileId).is('read_at', null);
-  if (appUnreadError) console.warn('Unread app notification count unavailable:', appUnreadError.message);
+  let appItems, appUnreadCount;
+  try {
+    const inbox = await profileNotificationInbox.list(profileId, limit);
+    appItems = inbox.items;
+    appUnreadCount = inbox.unreadCount;
+  } catch (error) {
+    console.warn('Firebase notification inbox unavailable:', error.message);
+    return res.status(503).json({ success: false, error: 'Notifications are temporarily unavailable. Please try again.' });
+  }
   let data = [];
   if (req.auth.profile.role === 'merchant') {
     const { data: legacyData, error } = await supabaseAdmin.from('merchant_notifications')
@@ -3785,10 +3789,15 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
     if(!docId.startsWith(`${req.auth.profile.merchant_id}_`) || !/^[a-zA-Z0-9_-]+$/.test(docId))return res.status(403).json({error:'Forbidden'});
     try {const database=await checkoutBillDatabase();await database.collection('ae_sales_targets').doc(docId).update({readAt:new Date().toISOString()});return res.json({success:true});}catch(error){return res.status(500).json({error:error.message});}
   }
-  const { data: appItem, error: appError } = await supabaseAdmin.from('app_notifications').update({ read_at: new Date().toISOString() })
-    .eq('id', cleanText(req.params.id, 100)).eq('profile_id', req.auth.profile.id).select('id').maybeSingle();
-  if (appError) console.warn('App notification could not be marked read:', appError.message);
-  if (appItem) return res.json({ success: true });
+  if (req.params.id.startsWith('firebase:')) {
+    try {
+      const found = await profileNotificationInbox.markRead(req.auth.profile.id, req.params.id);
+      return found ? res.json({ success: true }) : res.status(404).json({ success: false, error: 'Notification not found' });
+    } catch (error) {
+      console.warn('Firebase notification could not be marked read:', error.message);
+      return res.status(503).json({ success: false, error: 'Notifications are temporarily unavailable. Please try again.' });
+    }
+  }
   if (req.auth.profile.role !== 'merchant') return res.status(404).json({ success: false, error: 'Notification not found' });
   let query = supabaseAdmin.from('merchant_notifications').update({ read_at: new Date().toISOString() })
     .eq('id', cleanText(req.params.id, 100));
