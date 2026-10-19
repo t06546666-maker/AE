@@ -34,7 +34,6 @@ const AdminMerchantDetails = lazy(() => import('./pages/AdminMerchantDetails').t
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers').then(m => ({ default: m.AdminCustomers })));
 const AdminCustomerDetails = lazy(() => import('./pages/AdminCustomers').then(m => ({ default: m.AdminCustomerDetails })));
 const LegalNavigation = lazy(() => import('./components/LegalNavigation').then(m => ({ default: m.LegalNavigation })));
-const FieldLocationSharing = lazy(() => import('./components/FieldLocationSharing').then(m => ({ default: m.FieldLocationSharing })));
 const CustomerShopScan = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.CustomerShopScan })));
 const MerchantShopCheckout = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.MerchantShopCheckout })));
 const ShopRequestAlert = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.ShopRequestAlert })));
@@ -342,7 +341,7 @@ export function App() {
   }
 
   if (user.role === 'field_manager') {
-    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><Suspense fallback={null}><FieldLocationSharing managerId={user.id}/></Suspense><PageErrorBoundary key={location.pathname}><Suspense fallback={<RouteFallback />}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></Suspense></PageErrorBoundary></Layout></LegalGate>;
+    return <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}><PageErrorBoundary key={location.pathname}><Suspense fallback={<RouteFallback />}><Routes><Route path="/field" element={<FieldManager user={user} onLogout={logout} />} /><Route path="/field/merchants/:id" element={<FieldMerchantVisit />} /><Route path="*" element={<Navigate to="/field" replace />} /></Routes></Suspense></PageErrorBoundary></Layout></LegalGate>;
   }
 
   return (

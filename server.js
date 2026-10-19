@@ -17,7 +17,7 @@ const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
-const { validFieldLocation } = require('./backend/field-location.cjs');
+const { checkinDay, checkinPins } = require('./backend/field-checkin-map.cjs');
 const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
 const { createProfileNotificationInbox } = require('./backend/profile-notification-inbox.cjs');
 const profileNotificationInbox = createProfileNotificationInbox(async () => {
@@ -1620,18 +1620,10 @@ app.put('/api/field/route-plan', requireAuth, requireRole('field_manager'), asyn
   res.json({ plan: data });
 });
 app.get('/api/field/location/status',requireAuth,requireRole('field_manager'),async(req,res)=>{
- const result=await supabaseAdmin.from('field_attendance').select('id').eq('manager_id',req.auth.profile.id).eq('work_date',attendanceDate()).is('ended_at',null).maybeSingle();
- if(result.error)return res.status(503).json({error:'Workday status unavailable.'});
- res.json({active:Boolean(result.data)});
+ res.json({active:false,trackingEnabled:false});
 });
 app.post('/api/field/location',requireAuth,requireRole('field_manager'),async(req,res)=>{
- if(!validFieldLocation(req.body))return res.status(400).json({error:'A fresh valid GPS sample is required.'});
- const day=await supabaseAdmin.from('field_attendance').select('id').eq('manager_id',req.auth.profile.id).eq('work_date',attendanceDate()).is('ended_at',null).maybeSingle();
- if(day.error)return res.status(503).json({error:'Workday status unavailable.'});
- if(!day.data)return res.status(409).json({error:'Start attendance for today before sharing location.'});
- const result=await supabaseAdmin.from('field_manager_locations').upsert({manager_id:req.auth.profile.id,attendance_id:day.data.id,latitude:req.body.latitude,longitude:req.body.longitude,accuracy_m:req.body.accuracy_m,captured_at:req.body.captured_at,updated_at:new Date().toISOString(),sharing:true},{onConflict:'manager_id'});
- if(result.error)return res.status(503).json({error:'Location sharing unavailable. Apply supabase-field-manager-locations.sql.'});
- res.json({success:true});
+ res.status(410).json({error:'Continuous location sharing has been removed. Update AE to use attendance and visit check-ins.'});
 });
 app.post('/api/field/location/pause',requireAuth,requireRole('field_manager'),async(req,res)=>{
  const result=await supabaseAdmin.from('field_manager_locations').update({sharing:false}).eq('manager_id',req.auth.profile.id);
@@ -1639,14 +1631,7 @@ app.post('/api/field/location/pause',requireAuth,requireRole('field_manager'),as
  res.json({success:true});
 });
 app.get('/api/admin/field-manager-locations',requireAuth,requireRole('admin'),async(req,res)=>{
- const records=[];
- for(let offset=0;;offset+=500){
-  const result=await supabaseAdmin.from('field_manager_locations').select('manager_id,latitude,longitude,accuracy_m,captured_at,updated_at,sharing,profiles!field_manager_locations_manager_id_fkey(full_name),field_attendance(work_date,ended_at)').order('manager_id').range(offset,offset+499);
-  if(result.error)return res.status(503).json({error:'Manager map unavailable. Apply supabase-field-manager-locations.sql.'});
-  records.push(...result.data.map(row=>({manager_id:row.manager_id,name:row.profiles?.full_name||'Field Manager',latitude:row.latitude,longitude:row.longitude,accuracy_m:row.accuracy_m,captured_at:row.captured_at,updated_at:row.updated_at,recent:row.sharing&&row.field_attendance?.work_date===attendanceDate()&&!row.field_attendance?.ended_at&&Date.now()-Date.parse(row.captured_at)<=120000})));
-  if(result.data.length<500)break;
- }
- res.json({records});
+ res.status(410).json({error:'Continuous location sharing has been removed. Open a Field Manager profile to view recorded attendance and visit check-ins.'});
 });
 app.get('/api/field/attendance', requireAuth, requireRole('field_manager'), async (req, res) => {
   const manager = req.auth.profile.id;
@@ -1941,6 +1926,30 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
     return await adminExcel(res,safe(selection[0]==='field_manager_visits'?rows.map(fieldVisitRecord):rows),`AE-field-manager-${String(req.query.type||'visits')}`,['Saved form fields, notes, selected options, outcomes and timestamps only. Missing fields are blank.',`From ${req.query.from||'All time'} to ${req.query.to||'All time'} (end exclusive).`,'Visit dates refer to check-in time. Attendance dates refer to work date.']);
   }
   res.json({records:safe(selection[0]==='field_manager_visits'?result.data.map(fieldVisitRecord):result.data),pagination:paginationMeta(paging,result.count)});
+});
+app.get('/api/admin/field-managers/:id/check-in-map', requireAuth, requireRole('admin'), async (req, res) => {
+  const range = checkinDay(req.query.day);
+  if (!range) return res.status(400).json({error:'Choose a valid date.'});
+  const profile = await supabaseAdmin.from('profiles').select('id').eq('id',req.params.id).eq('role','field_manager').maybeSingle();
+  if (profile.error) return res.status(503).json({error:'Field manager unavailable.'});
+  if (!profile.data) return res.status(404).json({error:'Field manager not found'});
+  try {
+    async function readAll(table, select, time) {
+      const rows=[];
+      for (let offset=0;;offset+=500) {
+        const result=await supabaseAdmin.from(table).select(select).eq('manager_id',req.params.id).gte(time,range.from).lt(time,range.to).order(time,{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
+        if(result.error) throw new Error('Check-in records unavailable.');
+        rows.push(...result.data);
+        if(result.data.length<500) return rows;
+      }
+    }
+    const [attendance,visits]=await Promise.all([
+      readAll('field_attendance','id,started_at,latitude,longitude,accuracy_m','started_at'),
+      readAll('field_manager_visits','id,check_in_at,check_in_latitude,check_in_longitude,accuracy_m,merchants(name)','check_in_at'),
+    ]);
+    res.setHeader('Cache-Control','no-store');
+    res.json({day:req.query.day,timeZone:'Asia/Kolkata',...checkinPins(attendance,visits)});
+  } catch { res.status(503).json({error:'Check-in map unavailable. Please retry.'}); }
 });
 app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
   const { data: profile, error } = await supabaseAdmin.from('profiles').select('id,full_name,role,created_at').eq('id', req.params.id).eq('role', 'field_manager').maybeSingle();

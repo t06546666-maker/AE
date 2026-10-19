@@ -7,7 +7,6 @@ import { apiFetch } from '../api';
 import { LoadingState, ErrorState, PageHeader, EmptyState } from '../components/Common';
 import { useState, type FormEvent } from 'react';
 import '../admin-directory.css';
-import { AdminFieldMap } from '../components/AdminFieldMap';
 
 function AddFieldManager() {
   const qc = useQueryClient();
@@ -34,7 +33,7 @@ function AddFieldManager() {
 
 export function FieldManagers() {
   const [adding,setAdding]=useState(false);
-  return <div className="admin-directory-page"><PageHeader title={uiText('Field Managers')} subtitle={uiText('Field operations, attendance and merchant onboarding')} actions={<button className="button primary" aria-expanded={adding} onClick={()=>setAdding(!adding)}><Plus size={16}/>{uiText(adding?'Close form':'Add Field Manager')}</button>}/>{adding&&<AddFieldManager/>}<AdminFieldMap/><FieldManagerReport/></div>;
+  return <div className="admin-directory-page"><PageHeader title={uiText('Field Managers')} subtitle={uiText('Field operations, attendance and merchant onboarding')} actions={<button className="button primary" aria-expanded={adding} onClick={()=>setAdding(!adding)}><Plus size={16}/>{uiText(adding?'Close form':'Add Field Manager')}</button>}/>{adding&&<AddFieldManager/>}<FieldManagerReport/></div>;
 }
 
 function FieldManagerReport() {
