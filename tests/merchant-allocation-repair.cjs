@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const sql = fs.readFileSync(require('node:path').join(__dirname, '..', 'supabase-repair-merchant-allocation.sql'), 'utf8');
+assert.match(sql, /create table if not exists public\.merchant_point_allocations/);
+assert.match(sql, /to_regprocedure\('public\.allocate_merchant_points\(uuid,uuid,integer,uuid\)'\) is null/);
+assert.match(sql, /set search_path = ''/);
+assert.match(sql, /role = 'admin'/);
+assert.match(sql, /p_request_id is null/);
+assert.match(sql, /pg_advisory_xact_lock/);
+assert.match(sql, /where id = p_merchant_id for update/);
+assert.match(sql, /Allocation request mismatch/);
+assert.match(sql, /return balance;[\s\S]*insert into public\.merchant_point_allocations/);
+assert.match(sql, /from public, anon, authenticated/);
+assert.match(sql, /to service_role/);
+assert.match(sql, /notify pgrst, 'reload schema'/);
+assert.doesNotMatch(sql, /create(?: or replace)? trigger|drop trigger|create or replace function|alter column|set point_balance\s*=\s*0|delete from|truncate/i);
+console.log('PASS: additive allocation repair guards, replay locking, ownership, role isolation and preservation of existing balances/triggers (SQL runtime not yet tested).');
