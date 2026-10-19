@@ -15,7 +15,7 @@ interface NativeFieldLocationService {
 
 const NativeFieldLocation = registerPlugin<NativeFieldLocationService>('FieldLocationService');
 const PREF_KEY = 'ae-field-location-sharing-enabled';
-const DISCLOSURE = 'AE collects your location to let authorised Admins view your latest workday position, even when the app is closed or not in use. Sharing runs only during an active workday, is shown by an ongoing Android notification, and stops when you end your day or tap Stop sharing. AE updates your latest position; it does not create a route history.';
+const DISCLOSURE = 'AE collects your location to help coordinate field visits during your workday. While attendance is active and sharing is enabled, your latest location is shared with your authorised administrator, even when the app is closed or not in use. An ongoing Android notification shows when sharing is active. You can stop sharing at any time from this screen or the notification, and sharing stops when your workday ends. AE updates your latest position; it does not create a route history.';
 
 export function FieldLocationSharing({ managerId }: { managerId: string }) {
   const [enabled, setEnabled] = useState(false);
@@ -116,11 +116,11 @@ export function FieldLocationSharing({ managerId }: { managerId: string }) {
   }
 
   return <>
-    <section style={{ margin: '10px 16px', padding: '10px 12px', border: '1px solid #dce6f2', borderRadius: 12, background: '#f5f9ff' }} aria-label={uiText('Workday location sharing')}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <strong>{uiText(enabled ? 'Workday location sharing is on' : 'Workday location sharing')}</strong>
-          <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.45 }}>{uiText(enabled ? 'An ongoing Android notification shows while sharing is active. It stops when your workday ends.' : 'Share your latest workday position with authorised Admins while attendance is active.')}</p>
+    <section style={{ margin: '10px 16px', padding: '10px 12px', border: '1px solid #dce6f2', borderRadius: 12, background: '#f5f9ff' }} aria-label={uiText('Workday location')}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px', minWidth: 0, overflowWrap: 'anywhere' }}>
+          <strong>{uiText(enabled ? 'Workday location is on' : 'Workday location')}</strong>
+          <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.45 }}>{uiText('Helps coordinate field visits during your workday. While attendance is active and sharing is enabled, your latest location is shared with your administrator, even when the app is in the background. You can stop sharing at any time.')}</p>
         </div>
         {enabled
           ? <button type="button" className="button secondary" onClick={() => void stopSharing()}>{uiText('Stop sharing')}</button>
@@ -131,7 +131,7 @@ export function FieldLocationSharing({ managerId }: { managerId: string }) {
     </section>
     {showNotice && <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(8, 20, 38, .48)' }}>
       <section role="dialog" aria-modal="true" aria-labelledby="field-location-notice-title" style={{ width: 'min(100%, 440px)', padding: 20, borderRadius: 16, background: 'white', color: '#10233f', boxShadow: '0 16px 48px rgba(0,0,0,.25)' }}>
-        <h2 id="field-location-notice-title" style={{ marginTop: 0 }}>{uiText('Workday location sharing')}</h2>
+        <h2 id="field-location-notice-title" style={{ marginTop: 0 }}>{uiText('Workday location')}</h2>
         <p style={{ fontSize: 14, lineHeight: 1.6 }}>{uiText(DISCLOSURE)}</p>
         <p style={{ fontSize: 13, lineHeight: 1.5 }}>{uiText('Android will show its location and notification permission prompts next. You can stop sharing at any time from this screen or the ongoing notification.')}</p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
