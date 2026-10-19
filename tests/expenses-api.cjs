@@ -12,7 +12,7 @@ async function main(){
  const receipt={id:crypto.randomUUID(),claim_id:claim.id,path:'private/path',name:'fuel.pdf'};tables.expense_receipts.push(receipt);
  let rpcArgs,signed=0,notifications=[];
  const db={from(table){let filters=[],values,operation='select',single=false,lo=0,hi=999,selection='';
-  const q={select(value){selection=value;return q},eq(key,value){filters.push(row=>row[key]===value);return q},gte(key,value){filters.push(row=>row[key]>=value);return q},lte(key,value){filters.push(row=>row[key]<=value);return q},order(){return q},range(a,b){lo=a;hi=b;return q},maybeSingle(){single=true;return q},single(){single=true;return q},upsert(value){operation='upsert';values=value;return q},insert(value){operation='insert';values=value;return q},update(value){operation='update';values=value;return q},delete(){operation='delete';return q},then(resolve,reject){try{
+  const q={select(value){selection=value;return q},eq(key,value){filters.push(row=>row[key]===value);return q},in(key,values){filters.push(row=>values.includes(row[key]));return q},gte(key,value){filters.push(row=>row[key]>=value);return q},lte(key,value){filters.push(row=>row[key]<=value);return q},order(){return q},range(a,b){lo=a;hi=b;return q},maybeSingle(){single=true;return q},single(){single=true;return q},upsert(value){operation='upsert';values=value;return q},insert(value){operation='insert';values=value;return q},update(value){operation='update';values=value;return q},delete(){operation='delete';return q},then(resolve,reject){try{
    if(operation==='insert')tables[table].push(values);
    if(operation==='upsert'&&!tables[table].some(r=>r.profile_id===values.profile_id))tables[table].push({...values,active:true});
    let rows=tables[table].filter(row=>filters.every(filter=>filter(row)));
@@ -30,6 +30,17 @@ async function main(){
  const server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));const base='http://127.0.0.1:'+server.address().port;
  async function call(path,user,body,method=body?'POST':'GET'){const response=await fetch(base+path,{method,headers:{...(user?{'x-user':user}:{}),...(!(body instanceof FormData)?{'content-type':'application/json'}:{})},body:body?(body instanceof FormData?body:JSON.stringify(body)):undefined});return {status:response.status,body:await response.json()}}
  try{
+  for(const path of ['/api/accounts/summary?month=2026-01','/api/accounts/report'])assert.equal((await call(path,'admin')).status,403);
+  assert.equal((await call('/api/accounts/summary?month=bad','head')).status,400);
+  assert.equal((await call('/api/accounts/report?from=2026-02-01&to=2026-01-01','head')).status,400);
+  assert.equal((await call('/api/accounts/report?bucket=pending','head')).body.total,0);
+  tables.expense_claims.push({...claim,id:crypto.randomUUID(),status:'approved',amount_paise:50000},{...claim,id:crypto.randomUUID(),status:'paid',amount_paise:20000,payment_date:'2026-02-01',payment_method:'Cash',payment_note:'Received'});
+  assert.equal((await call('/api/accounts/report?bucket=pending','head')).body.total,1);
+  assert.equal((await call('/api/accounts/report?bucket=history&from=2026-02-01&to=2026-02-01','head')).body.total,1);
+  assert.equal((await call('/api/accounts/report?bucket=history&to=2026-01-31','head')).body.total,0);
+  assert.deepEqual((await call('/api/accounts/summary?month=2026-01','head')).body.totals,{requested:'70000',approved:'70000',paid:'20000',outstanding:'50000'});
+  const excel=await fetch(base+'/api/accounts/report?bucket=history&format=xlsx',{headers:{'x-user':'head'}});assert.equal(excel.status,200);assert.equal(Buffer.from(await excel.arrayBuffer()).subarray(0,2).toString(),'PK');
+  tables.expense_claims.splice(1);
   assert.equal((await call('/api/expenses/claims')).status,401);
   for(const user of ['employee','admin','merchant','field'])assert.equal((await call('/api/accounts/claims',user)).status,403);
   assert.equal((await call('/api/expenses/claims','admin')).status,403);

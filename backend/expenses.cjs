@@ -1,5 +1,6 @@
 const multer=require('multer');
 const crypto=require('node:crypto');
+const {summarize,filters:reportFilters}=require('./expense-reports.cjs');
 const departments=['Developer','Field Manager','HR','Marketing','Other'];
 const categories=['Petrol/Fuel','Travel','IT Support','Marketing','Office Supplies','Other'];
 const statuses=['draft','submitted','corrections','approved','rejected','paid'];
@@ -56,10 +57,8 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
    const page=Math.max(1,Math.min(100000,parseInt(req.query.page)||1));
    let query=db.from('expense_claims').select('*,profiles!expense_claims_owner_id_fkey(full_name)',{count:'exact'});
    if(!isHead)query=query.eq('owner_id',req.auth.profile.id);
-   if(req.query.status){if(!statuses.includes(req.query.status))fail('Invalid status.');query=query.eq('status',req.query.status);}
-   if(isHead&&req.query.department){if(!departments.includes(req.query.department))fail('Invalid department.');query=query.eq('department',req.query.department);}
-   if(isHead&&req.query.employee){if(!uuid(req.query.employee))fail('Invalid employee.');query=query.eq('owner_id',req.query.employee);}
-   for(const [key,op]of [['from','gte'],['to','lte']])if(req.query[key]){if(!date(req.query[key]))fail('Invalid date filter.');query=query[op]('expense_date',req.query[key]);}
+   if(isHead)query=reportFilters(query,req.query,fail);
+   else {if(req.query.status){if(!statuses.includes(req.query.status))fail('Invalid status.');query=query.eq('status',req.query.status);}for(const [key,op]of [['from','gte'],['to','lte']])if(req.query[key]){if(!date(req.query[key]))fail('Invalid date filter.');query=query[op]('expense_date',req.query[key]);}}
    const response=await query.order('created_at',{ascending:false}).order('id').range((page-1)*25,page*25-1);result(response);
    // Totals are for all accessible claims, not just the current list page.
    let totals=db.from('expense_claims').select('status,amount_paise');if(!isHead)totals=totals.eq('owner_id',req.auth.profile.id);
@@ -67,7 +66,7 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
    for(const value of Object.values(summary))value.amount_paise=value.amount_paise.toString();
    res.setHeader('Cache-Control','no-store');res.json({claims:response.data,total:response.count,page,summary});
   }));
-  app.get(prefix+'/claims/:id',...middleware,wrap(async(req,res)=>{const claim=await owned(req,req.params.id,isHead);const receipts=result(await db.from('expense_receipts').select('id,name,mime,created_at').eq('claim_id',claim.id));const audit=result(await db.from('expense_audit').select('id,action,created_at,snapshot').eq('claim_id',claim.id).order('created_at'));res.setHeader('Cache-Control','no-store');res.json({claim,receipts,audit});}));
+  app.get(prefix+'/claims/:id',...middleware,wrap(async(req,res)=>{const claim=await owned(req,req.params.id,isHead);const receipts=result(await db.from('expense_receipts').select('id,name,mime,created_at').eq('claim_id',claim.id));const audit=result(await db.from('expense_audit').select('id,action,created_at,snapshot,actor_id,profiles!expense_audit_actor_id_fkey(full_name)').eq('claim_id',claim.id).order('created_at'));res.setHeader('Cache-Control','no-store');res.json({claim,receipts,audit});}));
   app.get(prefix+'/claims/:id/receipts/:receipt',...middleware,wrap(async(req,res)=>{
    await owned(req,req.params.id,isHead);if(!uuid(req.params.receipt))fail('Invalid receipt.');
    const row=result(await db.from('expense_receipts').select('path').eq('id',req.params.receipt).eq('claim_id',req.params.id).maybeSingle());if(!row)fail('Receipt not found.',404);
@@ -89,6 +88,20 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
   catch(error){await db.storage.from('expense-receipts').remove([path]);throw error;}
  }));
  app.get('/api/accounts/employees',...head,wrap(async(req,res)=>{const rows=result(await db.from('expense_members').select('profile_id,department,profiles!expense_members_profile_id_fkey(full_name,role)').order('profile_id'));res.json({employees:rows.filter(row=>['staff','field_manager'].includes(row.profiles?.role))});}));
+ async function reportRows(input,summary=false){
+  const rows=[];for(let offset=0;;offset+=500){const query=reportFilters(db.from('expense_claims').select('*,profiles!expense_claims_owner_id_fkey(full_name)'),input,fail,{summary});const batch=result(await query.order('created_at',{ascending:false}).order('id').range(offset,offset+499));rows.push(...batch);if(rows.length>5000)fail('Too many records. Narrow the date or department filters.',400);if(batch.length<500)return rows;}
+ }
+ app.get('/api/accounts/summary',...head,wrap(async(req,res)=>{const rows=await reportRows(req.query,true);res.setHeader('Cache-Control','no-store');res.json({month:req.query.month,totals:summarize(rows)});}));
+ app.get('/api/accounts/report',...head,wrap(async(req,res)=>{
+  if(req.query.format&&!['json','xlsx'].includes(req.query.format))fail('Invalid report format.');
+  const rows=await reportRows(req.query);res.setHeader('Cache-Control','no-store');
+  if(req.query.format!=='xlsx')return res.json({claims:rows,total:rows.length});
+  const ExcelJS=require('exceljs');const book=new ExcelJS.Workbook();const sheet=book.addWorksheet('Expense records');
+  sheet.addRow(['Claim ID','Employee','Department','Expense','Expense date','Expense details','Amount INR','Status','Payment method','Payment date','Reference','Cash note']);
+  for(const row of rows)sheet.addRow([row.id,row.profiles?.full_name||'',row.department,row.category,row.expense_date,row.reason,(BigInt(row.amount_paise)/100n).toString()+'.'+(BigInt(row.amount_paise)%100n).toString().padStart(2,'0'),row.status,row.payment_method||'',row.payment_date||'',row.payment_reference||'',row.payment_note||'']);
+  sheet.getRow(1).font={bold:true};sheet.columns.forEach(column=>column.width=24);
+  res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition','attachment; filename="AE-expenses.xlsx"');res.send(Buffer.from(await book.xlsx.writeBuffer()));
+ }));
  app.post('/api/accounts/claims/:id/review',...head,wrap(async(req,res)=>{if(!['approve','reject','corrections'].includes(req.body.action))fail('Invalid review action.');res.json(await act(req,req.params.id,req.body.action,{note:text(req.body.note)}));}));
  app.post('/api/accounts/claims/:id/payment',...head,wrap(async(req,res)=>{if(!date(req.body.payment_date)||req.body.payment_date>today()||!['Cash','UPI','Bank Transfer'].includes(req.body.payment_method))fail('Valid payment method and date required.');res.json(await act(req,req.params.id,'pay',{payment_date:req.body.payment_date,payment_method:req.body.payment_method,payment_reference:text(req.body.payment_reference,200),payment_note:text(req.body.payment_note)}));}));
  const admin=[requireAuth,requireRole('admin')];

@@ -2287,5 +2287,21 @@
   "ui.Claim progress": "Claim progress",
   "ui.Staffs": "Staffs",
   "ui.Staff members": "Staff members",
-  "ui.Add staff": "Add staff"
+  "ui.Add staff": "Add staff",
+  "ui.Requests": "Requests",
+  "ui.Expense requests": "Expense requests",
+  "ui.Payment history": "Payment history",
+  "ui.Requested": "Requested",
+  "ui.Outstanding": "Outstanding",
+  "ui.Based on expense date and current status. Department and employee filters apply. Approved includes paid; outstanding means approved but unpaid.": "Based on expense date and current status. Department and employee filters apply. Approved includes paid; outstanding means approved but unpaid.",
+  "ui.Download Excel": "Download Excel",
+  "ui.Print / Save PDF": "Print / Save PDF",
+  "ui.Clear filters": "Clear filters",
+  "ui.Payment date from": "Payment date from",
+  "ui.Payment date to": "Payment date to",
+  "ui.Review claim": "Review claim",
+  "ui.Review staff expenses and record payments.": "Review staff expenses and record payments.",
+  "ui.No receipt attached. Receipt is optional.": "No receipt attached. Receipt is optional.",
+  "ui.Expense records": "Expense records",
+  "ui.External payment records only. No transfers are executed or verified.": "External payment records only. No transfers are executed or verified."
 }

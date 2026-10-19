@@ -15,6 +15,8 @@ for(const prefix of ['/api/expenses','/api/accounts']){
  app.get(prefix+'/claims/:id',(_req,res)=>res.json({claim:claims[0],receipts:[],audit:[{id:'a',action:'submit',created_at:'2026-10-19T05:00:00Z',snapshot:{claim:claims[0]}}]}));
 }
 app.get('/api/accounts/employees',(_req,res)=>res.json({employees:[{profile_id:users.developer.id,profiles:{full_name:'Demo Employee'}}]}));
+app.get('/api/accounts/summary',(req,res)=>res.json({month:req.query.month,totals:{requested:'0',approved:'0',paid:'0',outstanding:'0'}}));
+app.get('/api/accounts/report',(_req,res)=>res.json({claims:[],total:0}));
 app.use('/api',(_req,res)=>res.status(404).json({error:'Preview fixture: action not enabled'}));
 const root=path.resolve(__dirname,'../dist');app.use(express.static(root));app.get(/.*/,(_req,res)=>res.type('html').send(fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<body>','<body><div style="background:#fff1b8;color:#142b4b;padding:8px;text-align:center">LOCAL PREVIEW — TEST DATA ONLY</div>')));
 app.listen(3000,'127.0.0.1',()=>console.log('Expense visual preview: http://127.0.0.1:3000/expenses (fixture data only)'));

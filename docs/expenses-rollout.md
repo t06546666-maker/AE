@@ -23,6 +23,10 @@ The source implementation is not a production migration or publication.
 
 ## Operational behavior
 
+Accounts has Requests (submitted, corrections, rejected), Pending payments (approved), and Payment history (paid). History date filters use payment dates; other lists use expense dates. Monthly summaries use expense month and current status, optionally filtered by employee/department. Approved includes paid; outstanding is approved but unpaid, not a historical bank balance.
+
+Filtered Excel downloads include payment method/date/reference/note. Print / Save PDF opens the browser print workflow with text-safe localized report content. Exports and summary scans are bounded to 5,000 matching rows; larger reports ask users to narrow filters rather than silently truncate. Report and summary APIs remain Account Head-only.
+
 Payment recording stores an externally completed payment; it never transfers or verifies money. Money uses integer paise. Claim transitions use transactions, version checks and request idempotency. Receipts are validated and downloaded using 60-second signed links after server authorization. Audit snapshots preserve each transition.
 
 Firebase notifications are attempted after a successful transaction using the existing notification service. Notification delivery failures do not reverse saved financial records; the dashboard remains the source of truth. No WhatsApp messages are sent.

@@ -16,11 +16,11 @@ import { useAppTheme } from '../useAppTheme';
 import '../merchant-shell-fixes.css';
 
 const adminNav = [
-  ['/expense-staff', 'Staffs', UserCog],
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
   ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],
+  ['/expense-staff', 'Staffs', UserCog],
   ['/orders', 'Reports', BarChartIcon],
   ['/add-customer', 'nav.addCustomer', Plus],
   ['/add-merchant', 'Add merchant', Plus],
