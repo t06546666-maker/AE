@@ -151,10 +151,10 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 <div key={item.id} className="py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-[42px] h-[42px] ${getAvatarColor(idx)} text-white rounded-full flex items-center justify-center font-bold text-[10px] leading-tight text-center`}>
-                      {getInitials(item.merchant_name)}
+                      {item.bonus_kind === 'welcome' ? <Gift size={20} /> : getInitials(item.merchant_name)}
                     </div>
                     <div>
-                      <p className="font-bold text-[14px] text-gray-900 leading-tight">{item.merchant_name || 'Store'}</p>
+                      <p className="font-bold text-[14px] text-gray-900 leading-tight">{item.bonus_kind === 'welcome' ? uiText('Welcome bonus') : item.merchant_name || uiText('Store')}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">
                         {formatDateTime(item.created_at)}
                       </p>

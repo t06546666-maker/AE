@@ -18,6 +18,7 @@ const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { validFieldLocation } = require('./backend/field-location.cjs');
+const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
 const { createProfileNotificationInbox } = require('./backend/profile-notification-inbox.cjs');
 const profileNotificationInbox = createProfileNotificationInbox(async () => {
   await firebaseInitializationPromise;
@@ -2439,13 +2440,13 @@ app.get('/api/customer/dashboard', requireCustomerAuth, async (req, res) => {
 
     const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false }).limit(5);
     if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
-    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,merchant_id,points,created_at,merchants(name)').eq('customer_id', req.customer.id).limit(1);
+    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,points,created_at').eq('customer_id', req.customer.id).limit(1);
     if (welcomeBonusResult.error && !['PGRST205','42P01'].includes(welcomeBonusResult.error.code)) throw welcomeBonusResult.error;
     const adminGrantResult = await supabaseAdmin.from('admin_customer_point_grants').select('id,points,reason,created_at').eq('customer_id', req.customer.id).order('created_at', { ascending: false }).limit(5);
     if (adminGrantResult.error && !['PGRST205','42P01'].includes(adminGrantResult.error.code)) throw adminGrantResult.error;
     const activity = [
       ...(adminGrantResult.data || []).map(g => ({ id: `admin-grant-${g.id}`, created_at: g.created_at, type: 'bonus', merchant_name: 'AE', amount: 0, points: g.points, reason: g.reason })),
-      ...(welcomeBonusResult.data || []).map(b => ({ id: `welcome-${b.customer_id}`, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name || 'AE', amount: 0, points: b.points })),
+      ...(welcomeBonusResult.data || []).map(customerWelcomeBonusActivity),
       ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount, points: r.points_redeemed }))
@@ -2479,19 +2480,20 @@ app.get('/api/customer/transactions', requireCustomerAuth, async (req, res) => {
 
     const bonusResult = await supabaseAdmin.from('loyalty_bonuses').select('id,created_at,points,merchants(name)').eq('customer_id', req.customer.id).order('created_at', { ascending: false });
     if (bonusResult.error && !['PGRST205','42P01'].includes(bonusResult.error.code)) throw bonusResult.error;
-    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,merchant_id,points,created_at,merchants(name)').eq('customer_id', req.customer.id).limit(1);
+    const welcomeBonusResult = await supabaseAdmin.from('customer_onboarding_bonuses').select('customer_id,points,created_at').eq('customer_id', req.customer.id).limit(1);
     if (welcomeBonusResult.error && !['PGRST205','42P01'].includes(welcomeBonusResult.error.code)) throw welcomeBonusResult.error;
     const adminGrantResult = await supabaseAdmin.from('admin_customer_point_grants').select('id,points,reason,created_at').eq('customer_id', req.customer.id).order('created_at', { ascending: false });
     if (adminGrantResult.error && !['PGRST205','42P01'].includes(adminGrantResult.error.code)) throw adminGrantResult.error;
     let transactions = [
       ...(adminGrantResult.data || []).map(g => ({ id: `admin-grant-${g.id}`, created_at: g.created_at, type: 'bonus', merchant_name: 'AE', amount: 0, points: g.points, reason: g.reason })),
-      ...(welcomeBonusResult.data || []).map(b => ({ id: `welcome-${b.customer_id}`, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name || 'AE', amount: 0, points: b.points })),
+      ...(welcomeBonusResult.data || []).map(customerWelcomeBonusActivity),
       ...(bonusResult.data || []).map(b => ({ id: b.id, created_at: b.created_at, type: 'bonus', merchant_name: b.merchants?.name, amount: 0, points: b.points })),
       ...(orders || []).map(o => ({ id: o.id, created_at: o.created_at, type: 'earn', merchant_name: o.merchants?.name, amount: o.amount ?? null, points: o.points_earned })),
       ...(redemptions || []).map(r => ({ id: r.id, created_at: r.created_at, type: 'redeem', merchant_name: r.merchants?.name, amount: r.transaction_amount ?? null, points: r.points_redeemed }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const summary = {
+      welcome_bonus_points: transactions.filter(t => t.bonus_kind === 'welcome').reduce((sum, t) => sum + Number(t.points || 0), 0),
       total_earned: transactions.filter(t => t.type !== 'redeem').reduce((sum, t) => sum + Number(t.points || 0), 0),
       total_redeemed: transactions.filter(t => t.type === 'redeem').reduce((sum, t) => sum + Number(t.points || 0), 0),
       purchase_count: transactions.filter(t => t.type === 'earn').length,
@@ -3024,8 +3026,10 @@ app.get('/api/merchants/:id/point-insights', requireAuth, async (req, res) => {
   if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 32 * 86400000) return res.status(400).json({ error: 'Select a valid date range of up to 32 days.' });
   const { data, error } = await supabaseAdmin.rpc('merchant_point_insights', { p_merchant_id: req.params.id, p_from: new Date(from).toISOString(), p_to: new Date(to).toISOString() });
   if (error) return res.status(503).json({ error: 'Point insights are unavailable. Apply supabase-merchant-point-insights.sql first.' });
+  const welcome = await supabaseAdmin.from('merchant_onboarding_bonuses').select('points,created_at').eq('merchant_id', req.params.id).maybeSingle();
+  if (welcome.error) console.warn('Merchant welcome-bonus summary unavailable:', welcome.error.message);
   res.setHeader('Cache-Control', 'no-store');
-  return res.json(data);
+  return res.json({ ...data, welcomeBonus: welcome.data ? { points: Number(welcome.data.points), createdAt: welcome.data.created_at, source: 'system' } : null });
 });
 
 app.post('/api/merchants/:id/point-allocation', requireAuth, requireRole('admin'), async (req, res) => {

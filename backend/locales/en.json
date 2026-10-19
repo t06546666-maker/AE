@@ -2170,5 +2170,7 @@
   "ui.Enter the 6-digit SMS code.": "Enter the 6-digit SMS code.",
   "ui.Enter a valid 10-digit Indian mobile number.": "Enter a valid 10-digit Indian mobile number.",
   "ui.That SMS code is incorrect. Check the newest message and try again.": "That SMS code is incorrect. Check the newest message and try again.",
-  "ui.That SMS code has expired. Go back and request a new one.": "That SMS code has expired. Go back and request a new one."
+  "ui.That SMS code has expired. Go back and request a new one.": "That SMS code has expired. Go back and request a new one.",
+  "ui.Welcome bonus": "Welcome bonus",
+  "ui.System bonus": "System bonus"
 }

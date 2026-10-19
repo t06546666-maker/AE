@@ -9,6 +9,8 @@ export type ActivityItem = {
   amount?: number;
   points: number;
   reason?: string;
+  bonus_kind?: 'welcome';
+  source?: 'system';
 };
 
 export type CustomerDashboard = {
@@ -52,6 +54,7 @@ export type PaginationMeta = {
 };
 
 export type CustomerTransactionSummary = {
+  welcome_bonus_points?: number;
   total_earned: number;
   total_redeemed: number;
   purchase_count: number;

@@ -2186,5 +2186,7 @@
   "ui.Enter the 6-digit SMS code.": "ആറക്ക എസ്എംഎസ് കോഡ് നൽകുക.",
   "ui.Enter a valid 10-digit Indian mobile number.": "സാധുവായ പത്തക്ക ഇന്ത്യൻ മൊബൈൽ നമ്പർ നൽകുക.",
   "ui.That SMS code is incorrect. Check the newest message and try again.": "എസ്എംഎസ് കോഡ് തെറ്റാണ്. ഏറ്റവും പുതിയ സന്ദേശത്തിലെ കോഡ് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
-  "ui.That SMS code has expired. Go back and request a new one.": "എസ്എംഎസ് കോഡിന്റെ കാലാവധി കഴിഞ്ഞു. മടങ്ങിപ്പോയി പുതിയ കോഡ് ആവശ്യപ്പെടുക."
+  "ui.That SMS code has expired. Go back and request a new one.": "എസ്എംഎസ് കോഡിന്റെ കാലാവധി കഴിഞ്ഞു. മടങ്ങിപ്പോയി പുതിയ കോഡ് ആവശ്യപ്പെടുക.",
+  "ui.Welcome bonus": "സ്വാഗത ബോണസ്",
+  "ui.System bonus": "സിസ്റ്റം ബോണസ്"
 }

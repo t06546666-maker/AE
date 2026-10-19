@@ -114,10 +114,10 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   <div key={t.id} className="glass-transaction-row p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 ${getAvatarColor(idx)} rounded-full flex items-center justify-center font-bold text-sm tracking-tighter`}>
-                        {getInitials(t.merchant_name)}
+                        {t.bonus_kind === 'welcome' ? <Gift size={22} /> : getInitials(t.merchant_name)}
                       </div>
                       <div>
-                        <p className="font-bold text-[16px] text-gray-900 leading-tight">{t.merchant_name || 'Store'}</p>
+                        <p className="font-bold text-[16px] text-gray-900 leading-tight">{t.bonus_kind === 'welcome' ? uiText('Welcome bonus') : t.merchant_name || uiText('Store')}</p>
                         <p className="text-[12px] text-gray-400 mt-1">
                           {formatDateTime(t.created_at)}
                         </p>
@@ -127,9 +127,9 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                       <p className={`font-bold text-[16px] ${t.type !== 'redeem' ? 'text-[#087a4b]' : 'text-[#c43745]'}`}>
                         {t.type !== 'redeem' ? '+' : '-'}{t.points}<small>{uiText("Points")}</small>
                       </p>
-                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.type === 'bonus' ? uiText("Loyalty bonus") : t.type === 'earn' ? uiText("Purchase") : uiText("Redemption")}</p>
+                      <p className="text-[11px] text-gray-300 mt-1 font-medium">{t.bonus_kind === 'welcome' ? uiText('System bonus') : t.type === 'bonus' ? uiText("Loyalty bonus") : t.type === 'earn' ? uiText("Purchase") : uiText("Redemption")}</p>
                     </div>
-                    <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? uiText("Purchase") : uiText("Transaction")}</small></div>
+                    {t.bonus_kind !== 'welcome' && <div className="glass-money">{t.amount == null ? '—' : `₹${Number(t.amount).toLocaleString('en-IN')}`}<small>{t.type === 'earn' ? uiText("Purchase") : uiText("Transaction")}</small></div>}
                   </div>
                 ))
               )}
@@ -157,6 +157,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
             <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
               <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">{uiText("Points Breakdown")}</p>
               <div className="space-y-4">
+                {!!summary?.welcome_bonus_points && <div className="flex justify-between items-center"><div className="flex items-center gap-3"><Gift size={22}/><div><p className="font-bold text-[14px]">{uiText('Welcome bonus')}</p><p className="text-[12px] text-gray-500">{uiText('System bonus')}</p></div></div><p className="font-bold text-[18px] text-[#087a4b]">+{summary.welcome_bonus_points}</p></div>}
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-[#087a4b] font-bold text-[13px]">+</div>
