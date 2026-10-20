@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
-  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search,
+  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search, QrCode,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
@@ -18,6 +18,7 @@ import '../merchant-shell-fixes.css';
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
+  ['/qr-common', 'QR Common', QrCode],
   ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],
   ['/expense-staff', 'Staffs', UserCog],
@@ -145,7 +146,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           <nav>
             {nav.map(([to, label, Icon]) => (
               <NavLink key={to} to={to} className={({ isActive }) => (user.role === 'field_manager' ? location.pathname === '/field' && new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'home') : isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/'))) ? 'active' : ''}>
-                <Icon size={18} /><span>{t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
+                <Icon size={18} /><span>{label === 'QR Common' ? uiText(label) : t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
               </NavLink>
             ))}
           </nav>

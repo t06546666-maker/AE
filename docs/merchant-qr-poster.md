@@ -13,6 +13,10 @@ Four heading cards appear in one row (horizontally scrollable on mobile): Origin
 
 Download walkthrough: Admin → Merchants → select the actual store → QR Poster → choose heading/style → verify the displayed store name → Print / Save PDF → select Save as PDF, A5, 100%, zero margins, backgrounds enabled, headers/footers disabled. The alternate Download printable poster action saves a self-contained HTML file named with the store name and merchant code; open it in a browser to print. Do not distribute DEMO-ONLY fixture posters.
 
-This release is one merchant per poster. Bulk printing, QR-PDF import/matching and saved brand-template settings are not implemented. Text edits are local to the current page; merchant names come from the saved merchant profile.
+Admin → QR Common (`/qr-common`) lists merchants with QR thumbnails and a name/QR-only viewer. Search and selection work across pages; Select all matching loads every matching page. Selection order is insertion order, shown in the assignment review; removing a shop compacts the rotation. With Rotate headings enabled, assignments repeat Original → Happiness → Savings → Growth. Disabling rotation applies one fixed heading to every selected shop.
 
-Verification: `node tests/merchant-qr-poster.cjs`, `node tests/shop-checkout-requests.cjs`, `npm run build`.
+Print / Save selected as PDF prepares the entire batch with at most four concurrent QR requests, rechecks merchant identities, and writes one A5 page per merchant to one print document. An error prevents partial printing. The browser's Save as PDF destination produces the combined PDF; this is not a server-generated PDF download. Print settings and physical scan testing remain necessary. No SQL migration is needed.
+
+QR-PDF import/matching and saved brand-template settings are not implemented. Selections, style choices and text edits are local to the current page; merchant names come from the saved merchant profile.
+
+Verification: `node tests/merchant-qr-poster.cjs`, `node tests/qr-common.cjs`, `node tests/shop-checkout-requests.cjs`, `npm run build`.

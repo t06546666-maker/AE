@@ -7,14 +7,9 @@ import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
 import posterCss from './merchant-qr-poster.css?inline';
 import './merchant-qr-poster.css';
+import { headingPresets } from '../merchantPoster';
 
 const defaults=['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ നേട്ടങ്ങൾ'];
-const headingPresets=[
-  {id:'original',en:'Original',ml:'പ്രധാന തലക്കെട്ട്',lines:defaults},
-  {id:'happiness',en:'Happiness',ml:'സന്തോഷങ്ങൾ',lines:['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ സന്തോഷങ്ങൾ']},
-  {id:'savings',en:'Savings',ml:'സമ്പാദ്യം',lines:['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ സമ്പാദ്യം']},
-  {id:'growth',en:'Growth',ml:'വളർച്ച',lines:['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ വളർച്ച']},
-];
 const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
 
 export function MerchantQrPoster() {

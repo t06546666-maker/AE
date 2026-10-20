@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
+const source=fs.readFileSync(require.resolve('../src/merchantPoster.ts'),'utf8');
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const exportsObject={};vm.runInNewContext(compiled,{exports:exportsObject,require:id=>{assert.match(id,/merchant-qr-poster\.css\?inline$/);return ''}});
+const {headingPresets,assignedHeading,batchPosterDocument}=exportsObject;
+assert.equal(headingPresets.length,4);assert.equal(headingPresets[0].lines[1],'നമ്മുടെ സ്ഥാപനങ്ങൾ');
+assert.deepEqual(Array.from({length:6},(_,i)=>assignedHeading(i,true,0).id),['original','happiness','savings','growth','original','happiness']);
+assert.equal(assignedHeading(5,false,2).id,'savings');
+const html=batchPosterDocument('data:image/png;base64,AA',Array.from({length:6},(_,i)=>({name:`Shop ${i+1}<script>`,qr:`data:image/svg+xml,test${i}`,lines:assignedHeading(i,true,0).lines})),{size:27,weight:900,design:'bold',scan:'സ്കാൻ ചെയ്യൂ'});
+assert.equal((html.match(/<article /g)||[]).length,6);assert.ok(html.includes('break-after:page'));assert.ok(!html.includes('<script>'));assert.ok(html.includes('Shop 6&lt;script&gt;'));for(let i=0;i<6;i++)assert.ok(html.includes(`data:image/svg+xml,test${i}`));
+console.log('PASS: six-merchant rotation, fixed headings, isolated shop QR/name, escaped text and A5 page breaks');

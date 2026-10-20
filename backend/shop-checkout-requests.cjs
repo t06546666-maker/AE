@@ -12,6 +12,17 @@ async function shopQrPayload(database, merchantId) {
 }
 function registerShopRequests(app, {database, supabase, customerAuth, auth, merchantRole, adminRole, push, background}) {
   const unavailable = res => res.status(503).json({error:'Shop checkout requests are unavailable. Please try again.'});
+  if(adminRole)app.get('/api/admin/qr-merchants',auth,adminRole,async(req,res)=>{
+    res.set('Cache-Control','no-store');
+    const page=Math.floor(Math.max(1,Math.min(100000,Number(req.query.page)||1))),size=20,search=String(req.query.search||'').trim().slice(0,100);
+    try {
+      let query=supabase.from('merchants').select('id,name,merchant_code',{count:'exact'}).order('name').order('id');
+      if(search)query=query.ilike('name',`%${search.replace(/[%_\\]/g,'\\$&')}%`);
+      const {data,error,count}=await query.range((page-1)*size,page*size-1);
+      if(error)return unavailable(res);
+      res.json({merchants:data||[],total:count||0,page,pageSize:size});
+    }catch{return unavailable(res);}
+  });
   if(adminRole)app.get('/api/admin/merchants/:id/qr-poster',auth,adminRole,async(req,res)=>{
     res.set('Cache-Control','no-store');
     if(!/^[a-f0-9-]{36}$/i.test(req.params.id))return res.status(400).json({error:'Invalid merchant ID'});

@@ -15,7 +15,9 @@ app.get('/api/status',(_req,res)=>res.json({supabase:false,resend:false,whatsapp
 app.get('/api/languages/:locale',(req,res)=>res.json({schemaVersion:1,locale:req.params.locale,translations:require('../backend/locales/'+(req.params.locale==='ml'?'ml':'en')+'.json')}));
 app.get('/api/notifications',(_req,res)=>res.json({notifications:[],unreadCount:0}));
 // Poster fixture deliberately uses a non-production QR token. Never distribute it.
-app.get('/api/admin/merchants/:id/qr-poster',(req,res)=>res.json({merchant:{id:req.params.id,name:'മാതൃക സ്റ്റോർ',merchant_code:'DEMO-ONLY'},payload:JSON.stringify({kind:'ae_shop',merchantId:req.params.id,token:'0'.repeat(48)})}));
+const posterShops=Array.from({length:6},(_,i)=>({id:`11111111-1111-4111-8111-${String(i+1).padStart(12,'0')}`,name:`മാതൃക സ്റ്റോർ ${i+1}`,merchant_code:`DEMO-${i+1}`}));
+app.get('/api/admin/qr-merchants',(req,res)=>{const matches=posterShops.filter(s=>s.name.toLowerCase().includes(String(req.query.search||'').toLowerCase()));res.json({merchants:Number(req.query.page||1)===1?matches:[],total:matches.length,page:Number(req.query.page||1),pageSize:20});});
+app.get('/api/admin/merchants/:id/qr-poster',(req,res)=>res.json({merchant:posterShops.find(s=>s.id===req.params.id)||{id:req.params.id,name:'മാതൃക സ്റ്റോർ',merchant_code:'DEMO-ONLY'},payload:JSON.stringify({kind:'ae_shop',merchantId:req.params.id,token:'0'.repeat(48)})}));
 for(const prefix of ['/api/expenses','/api/accounts']){
  app.get(prefix+'/me',(_req,res)=>res.json({department:'Developer'}));
  app.get(prefix+'/claims',(_req,res)=>res.json({claims:[],total:0,summary:{}}));
