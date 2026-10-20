@@ -8,7 +8,7 @@ import { ErrorState, LoadingState } from '../components/Common';
 import posterCss from './merchant-qr-poster.css?inline';
 import './merchant-qr-poster.css';
 
-const defaults=['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനം','നമ്മുടെ നേട്ടങ്ങൾ'];
+const defaults=['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ നേട്ടങ്ങൾ'];
 const headingPresets=[
   {id:'original',en:'Original',ml:'പ്രധാന തലക്കെട്ട്',lines:defaults},
   {id:'happiness',en:'Happiness',ml:'സന്തോഷങ്ങൾ',lines:['നമ്മുടെ നാട്','നമ്മുടെ സ്ഥാപനങ്ങൾ','നമ്മുടെ സന്തോഷങ്ങൾ']},
