@@ -14,6 +14,8 @@ app.get('/api/profile/legal',(_req,res)=>res.json({enabled:false,accepted:false}
 app.get('/api/status',(_req,res)=>res.json({supabase:false,resend:false,whatsapp:false}));
 app.get('/api/languages/:locale',(req,res)=>res.json({schemaVersion:1,locale:req.params.locale,translations:require('../backend/locales/'+(req.params.locale==='ml'?'ml':'en')+'.json')}));
 app.get('/api/notifications',(_req,res)=>res.json({notifications:[],unreadCount:0}));
+// Poster fixture deliberately uses a non-production QR token. Never distribute it.
+app.get('/api/admin/merchants/:id/qr-poster',(req,res)=>res.json({merchant:{id:req.params.id,name:'മാതൃക സ്റ്റോർ',merchant_code:'DEMO-ONLY'},payload:JSON.stringify({kind:'ae_shop',merchantId:req.params.id,token:'0'.repeat(48)})}));
 for(const prefix of ['/api/expenses','/api/accounts']){
  app.get(prefix+'/me',(_req,res)=>res.json({department:'Developer'}));
  app.get(prefix+'/claims',(_req,res)=>res.json({claims:[],total:0,summary:{}}));
@@ -24,4 +26,5 @@ app.get('/api/accounts/summary',(req,res)=>res.json({month:req.query.month,total
 app.get('/api/accounts/report',(_req,res)=>res.json({claims:[],total:0}));
 app.use('/api',(_req,res)=>res.status(404).json({error:'Preview fixture: action not enabled'}));
 const root=path.resolve(__dirname,'../dist');app.use(express.static(root));app.get(/.*/,(_req,res)=>res.type('html').send(fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<body>','<body><div style="background:#fff1b8;color:#142b4b;padding:8px;text-align:center">LOCAL PREVIEW — TEST DATA ONLY</div>')));
-app.listen(3000,'127.0.0.1',()=>console.log('Expense visual preview: http://127.0.0.1:3000/expenses (fixture data only)'));
+const port=Number(process.env.PREVIEW_PORT||3000);
+app.listen(port,'127.0.0.1',()=>console.log(`Expense visual preview: http://127.0.0.1:${port}/expenses (fixture data only)`));

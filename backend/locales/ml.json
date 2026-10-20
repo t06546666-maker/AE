@@ -2349,5 +2349,6 @@
   "ui.Staff expense management": "ജീവനക്കാരുടെ ചെലവ് നിയന്ത്രണം",
   "ui.AE Staff Portal": "AE ജീവനക്കാരുടെ പോർട്ടൽ",
   "ui.Sign in with your assigned staff credentials to manage your expenses.": "ചെലവുകൾ നിയന്ത്രിക്കാൻ നിങ്ങൾക്ക് നൽകിയ ജീവനക്കാരുടെ അക്കൗണ്ട് ഉപയോഗിച്ച് പ്രവേശിക്കുക.",
-  "ui.Your assigned department access only": "നിങ്ങൾക്ക് അനുവദിച്ച വിഭാഗത്തിലേക്ക് മാത്രം പ്രവേശനം"
+  "ui.Your assigned department access only": "നിങ്ങൾക്ക് അനുവദിച്ച വിഭാഗത്തിലേക്ക് മാത്രം പ്രവേശനം",
+  "ui.QR Poster": "QR പോസ്റ്റർ"
 }

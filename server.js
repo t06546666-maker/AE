@@ -4847,7 +4847,7 @@ app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async 
   } catch { return res.status(404).json({ error: 'Could not close bill' }); }
 });
 
-require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), push: pushToMerchant, background: scheduleBackground });
+require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), adminRole: requireRole('admin'), push: pushToMerchant, background: scheduleBackground });
 
 app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
   const customerCode = cleanText(req.body.customerCode, 100);

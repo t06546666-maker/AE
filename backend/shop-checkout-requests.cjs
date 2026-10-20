@@ -5,14 +5,28 @@ function assertPending(row, merchantId, now = Date.now()) {
   if (!row || row.merchantId !== merchantId) throw new Error('Request not found');
   if (row.status !== 'pending' || row.expiresAt <= now) throw new Error('Request already handled or expired');
 }
-function registerShopRequests(app, {database, supabase, customerAuth, auth, merchantRole, push, background}) {
+async function shopQrPayload(database, merchantId) {
+  const db=await database(), ref=db.collection('ae_shop_qr').doc(merchantId);
+  const token=await db.runTransaction(async tx=>{const doc=await tx.get(ref);if(doc.exists)return doc.data().token;const token=crypto.randomBytes(24).toString('hex');tx.set(ref,{token});return token;});
+  return JSON.stringify({kind:'ae_shop',merchantId,token});
+}
+function registerShopRequests(app, {database, supabase, customerAuth, auth, merchantRole, adminRole, push, background}) {
   const unavailable = res => res.status(503).json({error:'Shop checkout requests are unavailable. Please try again.'});
+  if(adminRole)app.get('/api/admin/merchants/:id/qr-poster',auth,adminRole,async(req,res)=>{
+    res.set('Cache-Control','no-store');
+    if(!/^[a-f0-9-]{36}$/i.test(req.params.id))return res.status(400).json({error:'Invalid merchant ID'});
+    try {
+      const {data,error}=await supabase.from('merchants').select('id,name,merchant_code').eq('id',req.params.id).maybeSingle();
+      if(error)return unavailable(res);
+      if(!data)return res.status(404).json({error:'Merchant not found'});
+      res.json({merchant:data,payload:await shopQrPayload(database,data.id)});
+    }catch{return unavailable(res);}
+  });
   app.get('/api/merchant/shop-qr',auth,merchantRole,async(req,res)=>{
     try {
       const merchantId=req.auth.profile.merchant_id;
-      const db=await database(), ref=db.collection('ae_shop_qr').doc(merchantId);
-      const token=await db.runTransaction(async tx=>{const doc=await tx.get(ref);if(doc.exists)return doc.data().token;const token=crypto.randomBytes(24).toString('hex');tx.set(ref,{token});return token;});
-      res.json({payload:JSON.stringify({kind:'ae_shop',merchantId,token})});
+      res.set('Cache-Control','no-store');
+      res.json({payload:await shopQrPayload(database,merchantId)});
     }catch{return unavailable(res);}
   });
   app.post('/api/customer/shop-requests',customerAuth,async(req,res)=>{
@@ -58,4 +72,4 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     }catch(error){res.status(409).json({error:error.message});}
   });
 }
-module.exports={registerShopRequests,validateAction,assertPending};
+module.exports={registerShopRequests,validateAction,assertPending,shopQrPayload};
