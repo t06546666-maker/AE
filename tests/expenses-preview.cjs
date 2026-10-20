@@ -5,6 +5,7 @@ const users={developer:{id:'11111111-1111-4111-8111-111111111111',full_name:'Dem
 const claims=[{id:'33333333-3333-4333-8333-333333333333',owner_id:users.developer.id,department:'Developer',category:'IT Support',amount_paise:125050,expense_date:'2026-10-19',reason:'Software support for company devices',missing_receipt_reason:'Receipt requested from vendor',status:'submitted',version:2,profiles:{full_name:'Demo Employee'}}];
 users.admin={id:'44444444-4444-4444-8444-444444444444',full_name:'Demo Admin',email:'admin@example.test',role:'admin',merchant_id:null};
 app.get('/api/admin/expense-staff',(_req,res)=>res.json({employees:[{profile_id:users.accounts.id,department:'Other',active:true,profiles:users.accounts},{profile_id:users.developer.id,department:'Developer',active:true,profiles:users.developer}]}));
+app.get('/api/admin/expense-staff/:id',(req,res)=>res.json({email:Object.values(users).find(user=>user.id===req.params.id)?.email||''}));
 const token=user=>Buffer.from('{}').toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:user.id,exp:4102444800})).toString('base64url')+'.preview';
 const user=req=>{try{const id=JSON.parse(Buffer.from(req.headers.authorization.split('.')[1],'base64url').toString()).sub;return Object.values(users).find(u=>u.id===id)}catch{return null}};
 app.post('/api/expenses/login',(req,res)=>{const selected=req.body.email==='admin@example.test'?users.admin:req.body.portal==='accounts'?users.accounts:users.developer;res.json({user:selected,accessToken:token(selected),refreshToken:'preview-only'})});

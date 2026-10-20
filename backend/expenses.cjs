@@ -1,7 +1,7 @@
 const multer=require('multer');
 const crypto=require('node:crypto');
 const {summarize,filters:reportFilters}=require('./expense-reports.cjs');
-const departments=['Developer','Field Manager','HR','Marketing','Other'];
+const departments=['Accounts','Developer','Field Manager','HR','Marketing','Other'];
 const categories=['Petrol/Fuel','Travel','IT Support','Marketing','Office Supplies','Other'];
 const statuses=['draft','submitted','corrections','approved','rejected','paid'];
 const uuid=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -106,6 +106,13 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
  app.post('/api/accounts/claims/:id/payment',...head,wrap(async(req,res)=>{if(!date(req.body.payment_date)||req.body.payment_date>today()||!['Cash','UPI','Bank Transfer'].includes(req.body.payment_method))fail('Valid payment method and date required.');res.json(await act(req,req.params.id,'pay',{payment_date:req.body.payment_date,payment_method:req.body.payment_method,payment_reference:text(req.body.payment_reference,200),payment_note:text(req.body.payment_note)}));}));
  const admin=[requireAuth,requireRole('admin')];
  app.get('/api/admin/expense-staff',...admin,wrap(async(_req,res)=>{const rows=result(await db.from('expense_members').select('profile_id,department,active,profiles!expense_members_profile_id_fkey(full_name,role)').order('profile_id'));res.json({employees:rows});}));
+ app.get('/api/admin/expense-staff/:id',...admin,wrap(async(req,res)=>{
+  if(!uuid(req.params.id))fail('Invalid employee.');
+  const profile=result(await db.from('profiles').select('id,role').eq('id',req.params.id).maybeSingle());
+  if(!profile||!['staff','field_manager','account_head'].includes(profile.role))fail('Employee not found.',404);
+  const response=await db.auth.admin.getUserById(profile.id);if(response.error)throw response.error;
+  res.setHeader('Cache-Control','no-store');res.json({email:response.data.user?.email||''});
+ }));
  app.post('/api/admin/expense-staff',...admin,wrap(async(req,res)=>{
   const {role,department}=req.body;const email=text(req.body.email,254).toLowerCase(),name=text(req.body.full_name,120),password=req.body.password;
   if(!['staff','account_head'].includes(role)||!departments.includes(department)||!name||!email.includes('@')||typeof password!=='string'||password.length<10||!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^a-z0-9]/i.test(password))fail('Enter a name, email, department and strong temporary password (10+ characters, uppercase, lowercase, digit and symbol).');

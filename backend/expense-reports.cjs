@@ -5,7 +5,7 @@ function summarize(rows){
  return Object.fromEntries(Object.entries(totals).map(([key,value])=>[key,value.toString()]));
 }
 function filters(query,input,fail,{summary=false}={}){
- if(input.department){if(!['Developer','Field Manager','HR','Marketing','Other'].includes(input.department))fail('Invalid department.');query=query.eq('department',input.department);}
+ if(input.department){if(!['Accounts','Developer','Field Manager','HR','Marketing','Other'].includes(input.department))fail('Invalid department.');query=query.eq('department',input.department);}
  if(input.employee){if(!/^[0-9a-f-]{36}$/i.test(input.employee))fail('Invalid employee.');query=query.eq('owner_id',input.employee);}
  if(summary){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(input.month||''))fail('Choose a valid month.');const [year,month]=input.month.split('-').map(Number);const end=new Date(Date.UTC(year,month,0)).toISOString().slice(0,10);return query.gte('expense_date',input.month+'-01').lte('expense_date',end);}
  if(input.bucket&&!['requests','pending','history'].includes(input.bucket))fail('Invalid accounts section.');

@@ -2321,5 +2321,6 @@
   "ui.Try another name or access filter.": "Try another name or access filter.",
   "ui.Use Add staff to create an account.": "Use Add staff to create an account.",
   "ui.Field Managers are managed in their own section.": "Field Managers are managed in their own section.",
-  "ui.Staff account management only. Expense reviews remain with Account Heads.": "Staff account management only. Expense reviews remain with Account Heads."
+  "ui.Staff account management only. Expense reviews remain with Account Heads.": "Staff account management only. Expense reviews remain with Account Heads.",
+  "ui.Unable to load staff email.": "Unable to load staff email."
 }

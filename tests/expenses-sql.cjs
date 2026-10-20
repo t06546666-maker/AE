@@ -11,7 +11,11 @@ async function main(){
  const employee=crypto.randomUUID(),other=crypto.randomUUID(),head=crypto.randomUUID(),admin=crypto.randomUUID(),field=crypto.randomUUID();
  for(const [id,role]of [[employee,'staff'],[other,'staff'],[head,'account_head'],[admin,'admin'],[field,'field_manager']])await db.query('insert into profiles(id,role) values($1,$2)',[id,role]);
  const migration=fs.readFileSync('supabase-expenses.sql','utf8');await db.exec(migration);await db.exec(migration);
+ const departmentMigration=fs.readFileSync('supabase-expense-accounts-department.sql','utf8');await db.exec(departmentMigration);await db.exec(departmentMigration);
  for(const id of [employee,other,head])await db.query('insert into expense_members(profile_id,department) values($1,$2)',[id,'Developer']);
+ await db.query("update expense_members set department='Accounts' where profile_id=$1",[employee]);
+ assert.equal((await db.query('select role from profiles where id=$1',[employee])).rows[0].role,'staff');
+ await db.query("update expense_members set department='Developer' where profile_id=$1",[employee]);
  const input={category:'Petrol/Fuel',amount_paise:12345,expense_date:'2026-01-01',reason:'Fuel for field visit',missing_receipt_reason:'No paper receipt issued'};
  async function action(actor,id,kind,payload,version,request=crypto.randomUUID()) {const r=await db.query('select expense_action($1,$2,$3,$4::jsonb,$5,$6) as result',[actor,id,kind,JSON.stringify(payload),request,version]);return r.rows[0].result;}
  const id=crypto.randomUUID(),key=crypto.randomUUID();let r=await action(employee,id,'create',input,null,key);assert.equal(r.claim.amount_paise,12345);

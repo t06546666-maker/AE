@@ -5,7 +5,7 @@ alter table public.profiles add constraint profiles_role_check check(role in ('a
 alter table public.profiles drop constraint if exists merchant_role_assignment;
 alter table public.profiles add constraint merchant_role_assignment check((role='merchant' and merchant_id is not null) or (role in ('admin','customer','field_manager','staff','account_head') and merchant_id is null));
 create table if not exists public.expense_members (
- profile_id uuid primary key references public.profiles(id), department text not null check(department in ('Developer','Field Manager','HR','Marketing','Other')), active boolean not null default true
+ profile_id uuid primary key references public.profiles(id), department text not null check(department in ('Accounts','Developer','Field Manager','HR','Marketing','Other')), active boolean not null default true
 );
 -- Existing field managers keep their credentials and receive their own membership.
 insert into public.expense_members(profile_id,department) select id,'Field Manager' from public.profiles where role='field_manager' on conflict do nothing;

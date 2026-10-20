@@ -24,12 +24,17 @@ async function main(){
   storage:{from(){return {createSignedUrl(){signed++;return Promise.resolve({data:{signedUrl:'https://example.test/private-receipt?expires=60'},error:null})},upload(){return Promise.resolve({error:null})},remove(){return Promise.resolve({error:null})}}}},
  };
  const auth={auth:{signInWithPassword({email,password}){const key=email.split('@')[0];const profile=tables.profiles.find(p=>p.id===ids[key]);return Promise.resolve(password==='valid'&&profile?{data:{user:{id:profile.id,email},session:{access_token:'test-access',refresh_token:'test-refresh'}}}:{error:{message:'invalid'}})}}};
+ db.auth={admin:{getUserById:async(id)=>({data:{user:{email:tables.profiles.find(profile=>profile.id===id)?.full_name+'@example.test'}},error:null})}};
  const app=express();app.use(express.json());
  const requireAuth=(req,res,next)=>{const profile=tables.profiles.find(p=>p.id===ids[req.get('x-user')]);if(!profile)return res.status(401).json({error:'Authentication required'});req.auth={profile,user:{id:profile.id}};next()};
  registerExpenses(app,{db,auth,requireAuth,requireRole:role=>(req,res,next)=>req.auth.profile.role===role?next():res.status(403).json({error:'Forbidden'}),notifyProfile:async(...args)=>notifications.push(args),notifyRole:async()=>{}});
  const server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));const base='http://127.0.0.1:'+server.address().port;
  async function call(path,user,body,method=body?'POST':'GET'){const response=await fetch(base+path,{method,headers:{...(user?{'x-user':user}:{}),...(!(body instanceof FormData)?{'content-type':'application/json'}:{})},body:body?(body instanceof FormData?body:JSON.stringify(body)):undefined});return {status:response.status,body:await response.json()}}
  try{
+  assert.equal((await call('/api/admin/expense-staff/'+ids.employee,'employee')).status,403);
+  assert.equal((await call('/api/admin/expense-staff/'+ids.employee,'head')).status,403);
+  assert.equal((await call('/api/admin/expense-staff/'+ids.employee,'admin')).body.email,'employee@example.test');
+  assert.equal((await call('/api/admin/expense-staff/'+ids.merchant,'admin')).status,404);
   for(const path of ['/api/accounts/summary?month=2026-01','/api/accounts/report'])assert.equal((await call(path,'admin')).status,403);
   assert.equal((await call('/api/accounts/summary?month=bad','head')).status,400);
   assert.equal((await call('/api/accounts/report?from=2026-02-01&to=2026-01-01','head')).status,400);

@@ -2335,5 +2335,6 @@
   "ui.Try another name or access filter.": "മറ്റൊരു പേരോ പ്രവേശന ഫിൽട്ടറോ ഉപയോഗിക്കുക.",
   "ui.Use Add staff to create an account.": "അക്കൗണ്ട് സൃഷ്ടിക്കാൻ ജീവനക്കാരനെ ചേർക്കുക തിരഞ്ഞെടുക്കുക.",
   "ui.Field Managers are managed in their own section.": "ഫീൽഡ് മാനേജർമാരെ അവരുടെ പ്രത്യേക വിഭാഗത്തിൽ നിയന്ത്രിക്കാം.",
-  "ui.Staff account management only. Expense reviews remain with Account Heads.": "ജീവനക്കാരുടെ അക്കൗണ്ട് നിയന്ത്രണം മാത്രം. ചെലവ് പരിശോധന അക്കൗണ്ട് ഹെഡുകൾക്കാണ്."
+  "ui.Staff account management only. Expense reviews remain with Account Heads.": "ജീവനക്കാരുടെ അക്കൗണ്ട് നിയന്ത്രണം മാത്രം. ചെലവ് പരിശോധന അക്കൗണ്ട് ഹെഡുകൾക്കാണ്.",
+  "ui.Unable to load staff email.": "ജീവനക്കാരന്റെ ഇമെയിൽ ലഭ്യമാക്കാനായില്ല."
 }

@@ -4,6 +4,8 @@ The source implementation is not a production migration or publication.
 
 ## Deployment order
 
+For databases with the original expense schema already installed, apply `supabase-expense-accounts-department.sql` before deploying the Accounts department option. It only extends department validation; it does not reassign existing users or grant Account Head permissions.
+
 1. Review and back up the production schema. Apply `supabase-expenses.sql` with approved database-owner access. It is additive for expenses; existing rewards and attendance records are not changed.
 2. Verify the private `expense-receipts` bucket and server-only table/function grants. The restrictive storage policy denies direct client access to this bucket, including where existing permissive policies exist.
 3. Deploy backend and frontend together only after the schema is installed. Existing Supabase server credentials and Firebase notification credentials are reused; never put service keys in frontend variables.

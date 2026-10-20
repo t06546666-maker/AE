@@ -11,7 +11,7 @@ import './expenses.css';
 import './expenses-approved.css';
 import './accounts.css';
 
-const departments=['Developer','Field Manager','HR','Marketing','Other'];
+const departments=['Accounts','Developer','Field Manager','HR','Marketing','Other'];
 const categories=['Petrol/Fuel','Travel','IT Support','Marketing','Office Supplies','Other'];
 const statuses=['draft','submitted','corrections','approved','rejected','paid'];
 const statusLabel:Record<string,string>={draft:'Draft',submitted:'In review',corrections:'Corrections requested',approved:'Approved',rejected:'Rejected',paid:'Paid'};
