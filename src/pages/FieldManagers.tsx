@@ -24,8 +24,8 @@ function AddFieldManager() {
     <form onSubmit={submit}><div className="three-column-form">
       <label>{uiText("Full name")}<input required maxLength={120} value={fullName} onChange={e => setFullName(e.target.value)} /></label>
       <label>{uiText("Email")}<input required type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label>{uiText("Password")}<input required type="password" autoComplete="new-password" minLength={10} value={password} onChange={e => setPassword(e.target.value)} /></label>
-    </div><p>{uiText("At least 10 characters, including uppercase, lowercase, a number and a symbol.")}</p>
+      <label>{uiText("Password")}<input required type="password" autoComplete="new-password" minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} value={password} onChange={e => setPassword(e.target.value)} /></label>
+    </div><p>{uiText("Use at least 8 characters with an uppercase letter.")}</p>
     {create.error && <p role="alert" className="form-error">{create.error.message}</p>}
     {created && <p role="status">{uiText("Account created for ")}{created}{uiText(". Sign in at /field using the password you set.")}</p>}
     <button className="button primary" disabled={create.isPending}>{create.isPending ? uiText("Creating account…") : uiText("Add Field Manager")}</button></form></section>;

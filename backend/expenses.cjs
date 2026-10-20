@@ -1,5 +1,6 @@
 const multer=require('multer');
 const crypto=require('node:crypto');
+const {validNewPassword,PASSWORD_HELP}=require('./password-policy.cjs');
 const {summarize,filters:reportFilters}=require('./expense-reports.cjs');
 const departments=['Accounts','Developer','Field Manager','HR','Marketing','Other'];
 const categories=['Petrol/Fuel','Travel','IT Support','Marketing','Office Supplies','Other'];
@@ -115,7 +116,7 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
  }));
  app.post('/api/admin/expense-staff',...admin,wrap(async(req,res)=>{
   const {role,department}=req.body;const email=text(req.body.email,254).toLowerCase(),name=text(req.body.full_name,120),password=req.body.password;
-  if(!['staff','account_head'].includes(role)||!departments.includes(department)||!name||!email.includes('@')||typeof password!=='string'||password.length<10||!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^a-z0-9]/i.test(password))fail('Enter a name, email, department and strong temporary password (10+ characters, uppercase, lowercase, digit and symbol).');
+  if(!['staff','account_head'].includes(role)||!departments.includes(department)||!name||!email.includes('@')||!validNewPassword(password))fail('Enter a name, email and department. '+PASSWORD_HELP);
   const created=await db.auth.admin.createUser({email,password,email_confirm:true});if(created.error)fail('Could not create employee account.',400);
   try{result(await db.from('profiles').insert({id:created.data.user.id,full_name:name,role,merchant_id:null,must_change_password:true}));result(await db.from('expense_members').insert({profile_id:created.data.user.id,department}));}
   catch(error){await db.from('expense_members').delete().eq('profile_id',created.data.user.id);await db.from('profiles').delete().eq('id',created.data.user.id);await db.auth.admin.deleteUser(created.data.user.id);throw error;}
@@ -129,7 +130,7 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
  }));
  app.post('/api/admin/expense-staff/:id/password',...admin,wrap(async(req,res)=>{
   const password=req.body.password;
-  if(!uuid(req.params.id)||typeof password!=='string'||password.length<10||!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^a-z0-9]/i.test(password))fail('Use a strong temporary password (10+ characters, uppercase, lowercase, digit and symbol).');
+  if(!uuid(req.params.id)||!validNewPassword(password))fail(PASSWORD_HELP);
   const profile=result(await db.from('profiles').select('role').eq('id',req.params.id).maybeSingle());
   if(!profile||!['staff','field_manager','account_head'].includes(profile.role))fail('Employee not found.',404);
   // Set the password gate first: a failed auth update must not leave an ungated temporary credential.

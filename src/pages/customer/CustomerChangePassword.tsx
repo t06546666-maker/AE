@@ -56,7 +56,7 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
             autoComplete="new-password"
-            minLength={8}
+            minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
             required
           />
         </label>
@@ -67,11 +67,11 @@ export function CustomerChangePassword({ onChanged }: { onChanged: () => void })
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             autoComplete="new-password"
-            minLength={8}
+            minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
             required
           />
         </label>
-        <small className="password-help">{uiText("Password must be at least 8 characters long.")}</small>
+        <small className="password-help">{uiText("Use at least 8 characters with an uppercase letter.")}</small>
         {error ? <div className="form-error">{error}</div> : null}
         <button className="button primary login-button" disabled={busy}>
           {busy ? t('password.changing') : t('password.change')}

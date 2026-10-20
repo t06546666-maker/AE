@@ -69,7 +69,7 @@ export function ChangePassword({ onChanged }: { onChanged: () => void }) {
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
             autoComplete="new-password"
-            minLength={10}
+            minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
             required
           />
         </label>
@@ -80,7 +80,7 @@ export function ChangePassword({ onChanged }: { onChanged: () => void }) {
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             autoComplete="new-password"
-            minLength={10}
+            minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
             required
           />
         </label>

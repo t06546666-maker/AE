@@ -627,7 +627,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  minLength={10}
+                  minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
                   required
                 />
                 <button type="button" aria-label={showPassword ? uiText("Hide password") : uiText("Show password")} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}><Eye size={18} /></button>

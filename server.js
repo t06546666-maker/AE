@@ -276,13 +276,7 @@ function isEmail(value) {
 }
 
 function isStrongPassword(value) {
-  return typeof value === 'string'
-    && value.length >= 10
-    && value.length <= 72
-    && /[a-z]/.test(value)
-    && /[A-Z]/.test(value)
-    && /\d/.test(value)
-    && /[^A-Za-z0-9]/.test(value);
+  return require('./backend/password-policy.cjs').validNewPassword(value);
 }
 
 function generateTemporaryPassword() {
@@ -2162,7 +2156,7 @@ app.post('/api/auth/customer/forgot-password/reset', async (req, res) => {
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const cleanPhone = phone.replace(/\D/g, '');
   
-  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  if (!isStrongPassword(password)) return res.status(400).json({ success: false, error: 'Use at least 8 characters with an uppercase letter.' });
   
   const record = customerOtps.get(cleanPhone);
   if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
@@ -2305,7 +2299,7 @@ app.post('/api/auth/customer/signup', async (req, res) => {
   }
   if (!name || name.length < 2) return res.status(400).json({ success: false, error: 'Please enter your full name' });
   if (email && !isEmail(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
-  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  if (!isStrongPassword(password)) return res.status(400).json({ success: false, error: 'Use at least 8 characters with an uppercase letter.' });
 
   let decodedToken;
   try {
@@ -2365,8 +2359,8 @@ app.post('/api/auth/customer/reset-password-otp', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Token and new password are required' });
   }
   
-  if (newPassword.length < 8) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  if (!isStrongPassword(newPassword)) {
+    return res.status(400).json({ success: false, error: 'Use at least 8 characters with an uppercase letter.' });
   }
   
   try {
@@ -2412,7 +2406,7 @@ app.post('/api/auth/customer/reset-password-otp', async (req, res) => {
 
 app.post('/api/auth/customer/change-password', requireCustomerAuth, async (req, res) => {
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+  if (!isStrongPassword(password)) return res.status(400).json({ success: false, error: 'Use at least 8 characters with an uppercase letter.' });
   
   const passwordHash = hashPassword(password);
   const { error } = await supabaseAdmin.from('customers').update({ 
@@ -2973,7 +2967,7 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
   if (!currentPassword || !isStrongPassword(newPassword)) {
     return res.status(400).json({
       success: false,
-      error: 'Enter the temporary password and a new password with at least 10 characters, uppercase, lowercase, number, and symbol',
+      error: 'Enter your current password and a new password of at least 8 characters with an uppercase letter.',
     });
   }
   if (currentPassword === newPassword) {
@@ -4280,10 +4274,10 @@ app.post('/api/admins', requireAuth, requireRole('admin'), async (req, res) => {
   const fullName = cleanText(req.body.fullName, 120);
   const email = cleanText(req.body.email, 254).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
-  if (!fullName || !email || !isEmail(email) || password.length < 8) {
+  if (!fullName || !email || !isEmail(email) || !isStrongPassword(password)) {
     return res.status(400).json({
       success: false,
-      error: 'Name, valid email, and a password of at least 8 characters are required',
+      error: 'Name, valid email, and a password of at least 8 characters with an uppercase letter are required',
     });
   }
 

@@ -228,10 +228,10 @@ export function CustomerForgotPassword() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={uiText("Min. 8 characters")}
+                  placeholder={uiText("8+ characters, one uppercase")}
                   style={{ width: '100%' }}
                   required
-                  minLength={8}
+                  minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')}
                 />
               </label>
               <button

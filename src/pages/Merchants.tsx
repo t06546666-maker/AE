@@ -221,7 +221,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
           <label>{t('merchants.phone')}<div className="phone-field"><span>+91</span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" pattern="[6-9][0-9]{9}" required /></div></label>
           <label>
             {t('merchants.tempPassword')}
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required />
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} required />
             <small>{t('merchants.passwordHelp')}</small>
           </label>
           

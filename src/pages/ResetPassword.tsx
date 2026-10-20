@@ -60,14 +60,14 @@ export function ResetPassword() {
           <h2>{uiText("Reset Password")}</h2>
           
           <label>{uiText(" New Password ")}<div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required style={{ width: '100%', paddingRight: '40px' }} />
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} required style={{ width: '100%', paddingRight: '40px' }} />
               <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }} title={showPassword ? uiText("Hide password") : uiText("Show password")}>
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </label>
           <label>{uiText(" Confirm Password ")}<div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required style={{ width: '100%', paddingRight: '40px' }} />
+              <input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} required style={{ width: '100%', paddingRight: '40px' }} />
               <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#6b7280', display: 'flex' }} title={showPassword ? uiText("Hide password") : uiText("Show password")}>
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>

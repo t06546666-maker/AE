@@ -82,7 +82,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     if (name.trim().length < 2) return setError('Please enter your full name.');
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) return setError('Enter a valid 10-digit Indian mobile number.');
     if (email && !/^\S+@\S+\.\S+$/.test(email)) return setError('Please enter a valid email address.');
-    if (password.length < 8) return setError('Password must be at least 8 characters.');
+    if (password.length < 8 || password.length > 72 || !/[A-Z]/.test(password)) return setError(uiText('Use at least 8 characters with an uppercase letter.'));
     if (password !== confirmPassword) return setError('Passwords do not match.');
     setLoading(true);
     try {
@@ -162,8 +162,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
       <label className="ae-auth-field"><UserRound/><input aria-label={uiText("Full name")} placeholder={uiText("Full Name")} autoComplete="name" value={name} onChange={e => setName(e.target.value)} required/></label>
       <label className="ae-auth-field"><Mail/><input aria-label={uiText("Email (optional)")} placeholder={uiText("Email (optional)")} type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}/></label>
       <label className="ae-auth-field"><Phone/><input aria-label={uiText("Mobile number")} placeholder={uiText("+91 · Mobile Number")} type="tel" autoComplete="tel-national" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} required/></label>
-      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Create password")} placeholder={uiText("Create Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} required/><button type="button" aria-label={showPassword ? uiText("Hide password") : uiText("Show password")} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
-      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Confirm password")} placeholder={uiText("Confirm Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Create password")} placeholder={uiText("Create Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} value={password} onChange={e => setPassword(e.target.value)} required/><button type="button" aria-label={showPassword ? uiText("Hide password") : uiText("Show password")} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <Eye/> : <EyeOff/>}</button></label>
+      <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Confirm password")} placeholder={uiText("Confirm Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
       <button className="ae-auth-primary" disabled={loading}>{loading ? uiText("Sending code…") : uiText("Continue")}<ArrowRight/></button>
     </form> : <form onSubmit={verifyOtp}>
       <label className="ae-auth-field"><Phone/><input aria-label={uiText("6-digit OTP")} placeholder={uiText("6-digit OTP")} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>
