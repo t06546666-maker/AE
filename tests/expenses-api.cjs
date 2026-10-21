@@ -3,6 +3,11 @@ const {registerExpenses,money,claimInput,receiptType}=require('../backend/expens
 assert.equal(money('123.45'),12345);assert.equal(money('0.01'),1);
 for(const invalid of ['1.001','-1','1e3','0','Infinity',1])assert.throws(()=>money(invalid));
 assert.throws(()=>claimInput({category:'Salary',amount:'1.00',expense_date:'2026-01-01',reason:'x'}));
+const requestDay=new Date(Date.now()+330*60000).toISOString().slice(0,10);
+const requestData={claim_type:'money_request',requested_on:requestDay,needed_by:requestDay,category:'Travel',amount:'100.25',reason:'Travel next week'};
+assert.equal(claimInput(requestData).amount_paise,10025);assert.equal(claimInput(requestData).needed_by,requestDay);
+for(const needed_by of ['', '2000-01-01','2026-02-30'])assert.throws(()=>claimInput({...requestData,needed_by}));
+assert.throws(()=>claimInput({...requestData,claim_type:'salary'}));
 assert.equal(receiptType(Buffer.from('%PDF-1.7\n')),'application/pdf');assert.equal(receiptType(Buffer.from('<html>')) ,null);
 async function main(){
  const ids=Object.fromEntries(['employee','other','head','admin','merchant','field'].map(key=>[key,crypto.randomUUID()]));
