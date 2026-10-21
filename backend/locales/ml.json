@@ -1,4 +1,8 @@
 {
+  "ui.Supporting documents":"അനുബന്ധ രേഖകൾ",
+  "ui.Add images or receipts (optional)":"ചിത്രങ്ങളോ രസീതുകളോ ചേർക്കുക (ഐച്ഛികം)",
+  "ui.Choose up to three supporting files.":"മൂന്ന് അനുബന്ധ ഫയലുകൾ വരെ തിരഞ്ഞെടുക്കുക.",
+  "ui.Add payment proof and product images. Up to three JPG, PNG or PDF files, 5 MB each. Optional.":"പണമടച്ചതിന്റെ തെളിവും ഉൽപ്പന്ന ചിത്രങ്ങളും ചേർക്കാം. മൂന്ന് JPG, PNG അല്ലെങ്കിൽ PDF ഫയലുകൾ വരെ; ഓരോന്നും 5 MB വരെ. ഐച്ഛികം.",
   "ui.Expense claim":"ചെലവ് ക്ലെയിം",
   "ui.Request money":"പണം അഭ്യർത്ഥിക്കുക",
   "ui.Money request":"പണത്തിനുള്ള അപേക്ഷ",
