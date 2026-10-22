@@ -22,15 +22,15 @@ export function CustomerExplore() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
-  const currentLocation = useCustomerLocation(false);
-  const userLocation = currentLocation.data || null;
+  const currentLocation = useCustomerLocation(true, true);
+  const userLocation = currentLocation.data?.routeGroup ? currentLocation.data : { ...currentLocation.data, area: 'All', routeGroup: 'all' as const };
   const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviews, setReviews] = useState<any[]>([]);
 
   const categoriesQuery = useCustomerCategories();
-  const { data, isLoading } = useCustomerMerchants(page, search, selectedCategory, userLocation, Boolean(userLocation?.routeGroup));
+  const { data, isLoading, isError, refetch } = useCustomerMerchants(page, search, selectedCategory, userLocation);
   const merchants = data?.merchants ?? [];
   const distanceKm = (latitude?: number | null, longitude?: number | null) => {
     if (userLocation?.latitude == null || userLocation.longitude == null || latitude == null || longitude == null) return null;
@@ -40,7 +40,7 @@ export function CustomerExplore() {
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.latitude * rad) * Math.cos(latitude * rad) * Math.sin(dLon / 2) ** 2;
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
-  useEffect(() => setPage(1), [userLocation?.routeGroup]);
+  useEffect(() => setPage(1), [userLocation?.routeGroup, userLocation?.latitude, userLocation?.longitude]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -77,6 +77,7 @@ export function CustomerExplore() {
     if (cat !== 'All') {
       setSelectedCategory(cat); setSearch(inputValue);
     } else {
+      setSelectedCategory('all');
       setSearch(inputValue);
     }
     setPage(1);
@@ -99,7 +100,7 @@ export function CustomerExplore() {
         </button>
       </header>
 
-      <CustomerLocationBar />
+      <CustomerLocationBar defaultAll />
       {/* Search Bar */}
       {searchOpen && (
         <form onSubmit={handleSearchSubmit} className="px-5 pt-3 pb-1 bg-white border-b border-gray-100">
@@ -143,12 +144,12 @@ export function CustomerExplore() {
       </div>
 
       <CustomerNearbyMap merchants={merchants} selectedMerchantId={selectedMerchantId} allowLocate={false} />
-      {userLocation?.routeGroup && <div className="mx-5 mb-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"><p className="text-[13px] font-bold text-[#087a4b]">{uiText(`Shops in ${userLocation.area}`)}</p><p className="text-[11px] text-gray-500">{uiText("Showing shops assigned to this area’s routes.")}</p></div>}
+      {userLocation?.routeGroup && userLocation.routeGroup !== 'all' && <div className="mx-5 mb-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"><p className="text-[13px] font-bold text-[#087a4b]">{uiText(`Shops in ${userLocation.area}`)}</p><p className="text-[11px] text-gray-500">{uiText("Showing shops assigned to this area’s routes.")}</p></div>}
 
       {/* Merchant List */}
       <div className="glass-merchants ae-shop-grid">
-        {!userLocation?.routeGroup ? (
-          <div className="py-12 text-center text-gray-400">{uiText("Choose Chittur, Thathamangalam, or All to see shops.")}</div>
+        {isError ? (
+          <div role="alert" className="py-12 text-center"><p>{uiText('Unable to load shops.')}</p><button onClick={() => void refetch()}>{uiText('Retry')}</button></div>
         ) : isLoading ? (
           <div className="py-12 text-center text-gray-400">{uiText("Loading merchants...")}</div>
         ) : merchants.length === 0 ? (

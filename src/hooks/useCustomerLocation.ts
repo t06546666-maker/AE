@@ -5,19 +5,26 @@ import { loadGoogleMaps } from '../components/CustomerNearbyMap';
 
 type CustomerLocation = { latitude?: number; longitude?: number; area: string; routeGroup?: 'all' | 'chittur' | 'thathamangalam' };
 
-export function useCustomerLocation(requestAutomatically = true) {
+export function useCustomerLocation(requestAutomatically = true, grantedOnly = false) {
   const client = useQueryClient();
   const selected = useQuery<CustomerLocation | null>({ queryKey: ['customer', 'selected-location'], queryFn: async () => null, initialData: null, enabled: false, staleTime: Infinity, gcTime: Infinity });
-  const gps = useQuery<CustomerLocation>({
+  const gps = useQuery<CustomerLocation | null>({
     queryKey: ['customer', 'current-location'],
-    enabled: requestAutomatically && !selected.data,
+    enabled: requestAutomatically && (!selected.data || grantedOnly),
     queryFn: async () => {
       let coords: { latitude: number; longitude: number };
       if (Capacitor.isNativePlatform()) {
-        const permission = await Geolocation.requestPermissions();
+        const permission = grantedOnly ? await Geolocation.checkPermissions() : await Geolocation.requestPermissions();
+        if (grantedOnly && permission.location !== 'granted' && permission.coarseLocation !== 'granted') return null;
         if (permission.location !== 'granted' && permission.coarseLocation !== 'granted') throw new Error('Allow location access to find shops near you.');
         coords = (await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 })).coords;
       } else {
+        // Explore never delays the directory or prompts just to order shops.
+        if (grantedOnly) {
+          if (!navigator.permissions) return null;
+          try { if ((await navigator.permissions.query({ name: 'geolocation' })).state !== 'granted') return null; }
+          catch { return null; }
+        }
         if (!navigator.geolocation) throw new Error('Location is unavailable on this device.');
         coords = await new Promise<GeolocationCoordinates>((resolve, reject) => navigator.geolocation.getCurrentPosition(position => resolve(position.coords), () => reject(new Error('Allow location access and turn on GPS, then try again.')), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }));
       }
@@ -40,7 +47,7 @@ export function useCustomerLocation(requestAutomatically = true) {
   });
   return {
     ...gps,
-    data: (selected.data || gps.data) as CustomerLocation | null,
+    data: (selected.data ? (grantedOnly ? { ...gps.data, ...selected.data } : selected.data) : gps.data) as CustomerLocation | null,
     error: selected.data ? null : gps.error,
     isFetching: selected.data ? false : gps.isFetching,
     selectLocation: (location: CustomerLocation) => {
