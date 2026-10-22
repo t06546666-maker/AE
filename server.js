@@ -1706,23 +1706,22 @@ app.post('/api/field/upload-image', requireAuth, fieldManagerRole, shopImageUplo
   }
 });
 
-// Legal drafts are deliberately not mandatory until approved and enabled.
-const legalEnabled = process.env.LEGAL_ACCEPTANCE_ENABLED === 'true';
-const legalTermsVersion = '2026-10-13-v2';
-const legalPrivacyVersion = '2026-10-13-v2';
+const { legalRequired, legalVersions } = require('./backend/legal-policy.cjs');
 async function legalStatus(req, res) {
-  if (!legalEnabled) return res.json({ enabled: false, accepted: false, termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
   const actor = req.customer || req.auth.profile;
   const role = req.customer ? 'customer' : actor.role;
+  const { termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion } = legalVersions(role);
+  if (!legalRequired(role)) return res.json({ enabled: false, accepted: false, termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
   if (role === 'admin') return res.json({ enabled: true, accepted: true, termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
   const { data, error } = await supabaseAdmin.from('legal_acceptances').select('accepted_at').eq('actor_id', actor.id).eq('actor_role', role).eq('terms_version', legalTermsVersion).eq('privacy_version', legalPrivacyVersion).maybeSingle();
   if (error) return res.status(503).json({ error: 'Legal acceptance storage is unavailable. Contact support.' });
   res.json({ enabled: true, accepted: Boolean(data), termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion });
 }
 async function acceptLegal(req, res) {
-  if (!legalEnabled) return res.status(409).json({ error: 'Draft documents are not enabled for acceptance.' });
   const actor = req.customer || req.auth.profile;
   const role = req.customer ? 'customer' : actor.role;
+  const { termsVersion: legalTermsVersion, privacyVersion: legalPrivacyVersion } = legalVersions(role);
+  if (!legalRequired(role)) return res.status(409).json({ error: 'Draft documents are not enabled for acceptance.' });
   if (!['customer', 'merchant', 'field_manager'].includes(role)) return res.status(403).json({ error: 'This role does not require acceptance.' });
   if (req.body.termsAccepted !== true || req.body.privacyAcknowledged !== true || req.body.serviceConsent !== true || req.body.termsVersion !== legalTermsVersion || req.body.privacyVersion !== legalPrivacyVersion) return res.status(400).json({ error: 'Review and accept the current documents and service consent.' });
   const { error } = await supabaseAdmin.from('legal_acceptances').upsert({ actor_id: actor.id, actor_role: role, terms_version: legalTermsVersion, privacy_version: legalPrivacyVersion }, { onConflict: 'actor_id,actor_role,terms_version,privacy_version', ignoreDuplicates: true });

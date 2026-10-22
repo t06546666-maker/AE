@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const {legalRequired,legalVersions,termsVersion,privacyVersion}=require('../backend/legal-policy.cjs');
+const source=fs.readFileSync('server.js','utf8');
+const legalCode=source.slice(source.indexOf('async function legalStatus('),source.indexOf("app.get('/api/customer/legal'"));
+const response=()=>({statusCode:200,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}});
+const records=new Map();let failStorage=false;
+const scope={legalRequired,legalVersions,supabaseAdmin:{from(table){assert.equal(table,'legal_acceptances');const filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},async maybeSingle(){return {data:records.get(JSON.stringify(filters)),error:failStorage?new Error('unavailable'):null}},async upsert(row){assert.equal(row.actor_id,'authenticated-customer');if(failStorage)return {error:new Error('unavailable')};records.set(JSON.stringify({actor_id:row.actor_id,actor_role:row.actor_role,terms_version:row.terms_version,privacy_version:row.privacy_version}),{accepted_at:'now'});return {error:null}}}}}};
+vm.createContext(scope);vm.runInContext(legalCode,scope);
+(async()=>{
+ assert.equal(legalRequired('customer',{}),true);assert.equal(legalRequired('customer',{LEGAL_ACCEPTANCE_ENABLED:'false'}),true);assert.equal(legalRequired('merchant',{}),false);assert.equal(legalRequired('merchant',{LEGAL_ACCEPTANCE_ENABLED:'true'}),true);
+ const customer={customer:{id:'authenticated-customer'},body:{}};
+ records.set(JSON.stringify({actor_id:'authenticated-customer',actor_role:'customer',terms_version:'2026-10-13-v2',privacy_version:'2026-10-13-v2'}),{accepted_at:'previous-release'});
+ let r=response();await scope.legalStatus(customer,r);assert.equal(r.body.enabled,true);assert.equal(r.body.accepted,false);
+ records.clear();
+ assert.equal(legalVersions('merchant').termsVersion,'2026-10-13-v2');
+ r=response();await scope.acceptLegal(customer,r);assert.equal(r.statusCode,400);assert.equal(records.size,0);
+ customer.body={termsAccepted:true,privacyAcknowledged:true,serviceConsent:true,termsVersion:'old',privacyVersion};r=response();await scope.acceptLegal(customer,r);assert.equal(r.statusCode,400);
+ customer.body={termsAccepted:true,privacyAcknowledged:true,serviceConsent:true,termsVersion,privacyVersion,actor_id:'browser-supplied-other-user'};
+ r=response();await scope.acceptLegal(customer,r);assert.equal(r.statusCode,200);assert.equal(records.size,1);
+ r=response();await scope.acceptLegal(customer,r);assert.equal(records.size,1,'Repeated acceptance is idempotent');
+ r=response();await scope.legalStatus(customer,r);assert.equal(r.body.accepted,true);
+ r=response();await scope.legalStatus({customer:{id:'another-customer'}},r);assert.equal(r.body.accepted,false,'Acceptance is account-specific');
+ failStorage=true;r=response();await scope.legalStatus(customer,r);assert.equal(r.statusCode,503,'Storage failure must not bypass gate');r=response();await scope.acceptLegal(customer,r);assert.equal(r.statusCode,503);
+ console.log('PASS: customer consent policy, role isolation, stale/missing consent, account ownership, idempotence and storage failure');
+})().catch(e=>{console.error(e);process.exitCode=1});
