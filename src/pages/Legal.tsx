@@ -1,6 +1,8 @@
 import { uiText } from '../uiText';
 import { Link, useSearchParams } from 'react-router-dom';
 import './legal.css';
+import { useTranslation } from 'react-i18next';
+import { customerLegalMalayalam, privacyMalayalam } from './legalMalayalam';
 
 const common = [
   ['About AE and the pilot', 'AE is operated by Affiliate Innovations, Chittur, Palakkad, Kerala, India – 678101. Customer and merchant participation is free during the current pilot. No subscription refund policy applies to this free pilot. Any future fees and applicable policies will be communicated before they take effect; these terms do not authorise undisclosed charges.'],
@@ -34,7 +36,9 @@ const privacy = [
   ['Children and review', 'Age requirements, guardian consent where applicable, retention schedules and provider arrangements must be reviewed before this policy is adopted. This draft does not establish that the service is suitable for independent use by children.'],
 ];
 export function LegalDetails({ type }: { type: string }) {
-  const content = type === 'privacy' ? privacy : [...common, ...(type === 'merchant' ? merchant : type === 'field' ? field : customer)];
+  const { i18n } = useTranslation();
+  const ml = i18n.resolvedLanguage?.startsWith('ml');
+  const content = ml && type === 'privacy' ? privacyMalayalam : ml && type === 'customer' ? customerLegalMalayalam : type === 'privacy' ? privacy : [...common, ...(type === 'merchant' ? merchant : type === 'field' ? field : customer)];
   return <article>{content.map(([title, body]) => <section key={title}><h2>{title}</h2><p>{body}</p></section>)}</article>;
 }
 export function Legal() {

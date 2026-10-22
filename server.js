@@ -1552,16 +1552,9 @@ async function sendWelcomeEmail(purchase) {
 }
 
 // --- AE Settlement Engine Modules ---
-// Mask customer names before merchant JSON responses leave the server.
-// Admin responses, customer self-service and persisted/notification data stay intact.
-app.use(['/api/customers','/api/orders','/api/customer-orders','/api/merchant/loyal-customers','/api/checkouts','/api/redemptions'], requireAuth, (req,res,next) => {
-  if (req.auth.profile.role === 'merchant') {
-    const { maskCustomerResponse } = require('./backend/customer-name-mask.cjs');
-    const original = res.json.bind(res);
-    res.json = body => original(maskCustomerResponse(body));
-  }
-  next();
-});
+// Merchants may see names in their authorised customer/transaction responses.
+// Authentication, ownership checks and phone-number masking remain unchanged.
+app.use(['/api/customers','/api/orders','/api/customer-orders','/api/merchant/loyal-customers','/api/checkouts','/api/redemptions'], requireAuth);
 app.use('/api/networks', requireAuth, networksRouter);
 app.use('/api/customers', requireAuth, (req, res, next) => {
   if (!['admin', 'merchant'].includes(req.auth.profile.role)) return res.status(403).json({ error: 'Customer data is restricted to Admin and Merchant roles' });

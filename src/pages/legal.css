@@ -3,3 +3,6 @@
 .ae-consent { max-width:760px; }.ae-consent details { border:1px solid #dae5f1; border-radius:14px; padding:18px; margin:16px 0; }.ae-consent summary { cursor:pointer; font-weight:600; line-height:1.6; }.ae-consent-checks label { display:flex; align-items:flex-start; gap:12px; line-height:1.7; margin:20px 0; }.ae-consent-checks input { flex:none; width:20px; height:20px; margin-top:3px; accent-color:#0064ff; }.ae-consent-actions { display:flex; flex-wrap:wrap; gap:12px; }.ae-consent-actions button:first-child { background:#0064ff; color:white; }.ae-consent-actions button:disabled { opacity:.5; cursor:not-allowed; }
 .ae-legal-return a { display:flex; align-items:center; gap:8px; width:fit-content; max-width:100%; min-height:44px; color:#1d4176; font:600 15px system-ui,sans-serif; text-decoration:none; }
 @media print { .ae-legal-return { display:none; } }
+.ae-consent-checks label { display:grid; grid-template-columns:20px minmax(0,1fr); align-items:start; column-gap:12px; color:inherit; font-size:14px; font-weight:500; line-height:1.7; cursor:pointer; }
+.ae-consent-checks label > input[type="checkbox"] { appearance:auto; box-sizing:border-box; width:20px; min-width:20px; max-width:20px; height:20px; min-height:20px; max-height:20px; padding:0; margin:2px 0 0; align-self:start; }
+.ae-consent-checks label > span { min-width:0; overflow-wrap:anywhere; }

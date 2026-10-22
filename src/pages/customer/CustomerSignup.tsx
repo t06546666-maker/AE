@@ -11,6 +11,7 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
 import '../../components/auth.css';
 import { useToast } from '../../toast';
+import { createNativePhoneReset, phoneResetError } from '../../nativePhoneReset';
 
 declare global {
   interface Window { recaptchaVerifier: RecaptchaVerifier | null | undefined; }
@@ -32,28 +33,22 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const [error, setError] = useState('');
   const { showToast } = useToast();
   const nativeAuth = Capacitor.isNativePlatform();
-  const nativeListenerRef = useRef<{ remove: () => Promise<void> } | null>(null);
+  const nativeControllerRef = useRef<ReturnType<typeof createNativePhoneReset> | null>(null);
+  const sendingRef = useRef(false);
+  const submittingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const sentPhoneRef = useRef('');
+  const [nativeVerified, setNativeVerified] = useState(false);
   const verifiedUserRef = useRef<import('firebase/auth').User | null>(null);
   const nativeVerifiedRef = useRef(false);
 
   useEffect(() => {
-    if (!nativeAuth) return;
-    let active = true;
-    FirebaseAuthentication.addListener('phoneCodeSent', ({ verificationId: id }) => {
-      if (!active) return;
-      setVerificationId(id);
-      setStep('otp');
-      setCooldown(30);
-      setLoading(false);
-    }).then((handle) => {
-      if (active) nativeListenerRef.current = handle;
-      else void handle.remove();
-    }).catch(() => {});
+    mountedRef.current = true;
     return () => {
-      active = false;
-      const handle = nativeListenerRef.current;
-      nativeListenerRef.current = null;
-      if (handle) void handle.remove();
+      mountedRef.current = false;
+      void nativeControllerRef.current?.then(controller => controller.dispose()).catch(() => {});
+      window.recaptchaVerifier?.clear();
+      window.recaptchaVerifier = undefined;
     };
   }, [nativeAuth]);
 
@@ -75,6 +70,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   }
 
   async function sendOtp() {
+    if (sendingRef.current || submittingRef.current) return;
     verifiedUserRef.current = null;
     nativeVerifiedRef.current = false;
     setError('');
@@ -84,11 +80,27 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
     if (email && !/^\S+@\S+\.\S+$/.test(email)) return setError('Please enter a valid email address.');
     if (password.length < 8 || password.length > 72 || !/[A-Z]/.test(password)) return setError(uiText('Use at least 8 characters with an uppercase letter.'));
     if (password !== confirmPassword) return setError('Passwords do not match.');
+    sendingRef.current = true;
     setLoading(true);
+    setNativeVerified(false);
+    setVerificationId('');
+    setConfirmationResult(null);
+    setOtp('');
+    sentPhoneRef.current = `+91${cleanPhone}`;
     try {
       if (nativeAuth) {
-        setVerificationId('');
-        await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: `+91${cleanPhone}` });
+        await nativeControllerRef.current?.then(controller => controller.dispose());
+        nativeControllerRef.current = createNativePhoneReset(FirebaseAuthentication, () => {
+          nativeVerifiedRef.current = true;
+          if (mountedRef.current) { setNativeVerified(true); setStep('otp'); }
+        });
+        const controller = await nativeControllerRef.current;
+        if (!mountedRef.current) { await controller.dispose(); return; }
+        const result = await controller.start(sentPhoneRef.current);
+        if (!mountedRef.current) return;
+        if (result.kind === 'sms') setVerificationId(result.verificationId);
+        setStep('otp');
+        setCooldown(30);
       } else {
         const result = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, setupRecaptcha());
         setConfirmationResult(result);
@@ -103,18 +115,28 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
           ? "Too many attempts. Please wait a few minutes and try again."
           : code === 'auth/code-expired'
             ? "This OTP has expired. Tap Resend OTP and enter the newest code."
-          : cause?.message || 'Unable to send the verification code.';
-      setError(message);
+          : nativeAuth ? phoneResetError(cause) : cause?.message || 'Unable to send the verification code.';
+      if (mountedRef.current) setError(message);
       window.recaptchaVerifier?.clear();
       window.recaptchaVerifier = undefined;
     } finally {
-      setLoading(false);
+      sendingRef.current = false;
+      if (mountedRef.current) setLoading(false);
     }
   }
 
   async function verifyOtp(event: React.FormEvent) {
     event.preventDefault();
-    if (!confirmationResult && !(nativeAuth && verificationId)) return;
+    if (submittingRef.current || sendingRef.current) return;
+    if (!confirmationResult && !(nativeAuth && (verificationId || nativeVerifiedRef.current))) {
+      setError('Phone verification is not ready. Please request a new OTP.');
+      return;
+    }
+    if (!nativeVerifiedRef.current && !/^\d{6}$/.test(otp.trim())) {
+      setError('Enter the 6-digit SMS code.');
+      return;
+    }
+    submittingRef.current = true;
     setError('');
     setLoading(true);
     try {
@@ -124,17 +146,15 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
           await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
           nativeVerifiedRef.current = true;
         }
-        idToken = (await FirebaseAuthentication.getIdToken()).token;
+        const current = await FirebaseAuthentication.getCurrentUser();
+        if (current.user?.phoneNumber !== sentPhoneRef.current) throw new Error('Phone verification did not match the requested number. Please request a new OTP.');
+        idToken = (await FirebaseAuthentication.getIdToken({ forceRefresh: true })).token;
       } else {
         if (!verifiedUserRef.current) {
           const result = await confirmationResult!.confirm(otp.trim());
           verifiedUserRef.current = result.user;
         }
         idToken = await verifiedUserRef.current.getIdToken(true);
-      }
-      if (!idToken) {
-        const currentUser = auth.currentUser;
-        if (currentUser) idToken = await currentUser.getIdToken(true);
       }
       if (!idToken) throw new Error('Phone verification did not return a secure token. Please request a new OTP.');
       const data = await apiFetch<{ accessToken: string; refreshToken?: string; user: UserProfile; welcomeBonusAwarded?: boolean; welcomeBonusPoints?: number; welcomeBonusUnavailable?: boolean }>('/api/auth/customer/signup', {
@@ -145,10 +165,13 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
       if (data.welcomeBonusAwarded) showToast(uiText('Welcome! 200 AE points have been added.'));
       else if (data.welcomeBonusUnavailable) showToast(uiText('Your welcome points could not be added yet. Please contact AE support.'), 'error');
       onLogin(data.user);
+      if (nativeAuth) void FirebaseAuthentication.signOut().catch(() => {});
+      else void auth.signOut().catch(() => {});
     } catch (cause: any) {
       setError(cause?.message || 'Invalid or expired verification code.');
     } finally {
-      setLoading(false);
+      submittingRef.current = false;
+      if (mountedRef.current) setLoading(false);
     }
   }
 
@@ -166,8 +189,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
       <label className="ae-auth-field"><LockKeyhole/><input aria-label={uiText("Confirm password")} placeholder={uiText("Confirm Password")} type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} maxLength={72} pattern=".*[A-Z].*" title={uiText('Use at least 8 characters with an uppercase letter.')} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required/></label>
       <button className="ae-auth-primary" disabled={loading}>{loading ? uiText("Sending code…") : uiText("Continue")}<ArrowRight/></button>
     </form> : <form onSubmit={verifyOtp}>
-      <label className="ae-auth-field"><Phone/><input aria-label={uiText("6-digit OTP")} placeholder={uiText("6-digit OTP")} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>
-      <button className="ae-auth-primary" disabled={loading || otp.length !== 6}>{loading ? uiText("Creating account…") : uiText("Verify & Create Account")}<ArrowRight/></button>
+      {nativeVerified ? <p role="status">{uiText('Phone verified. Continue to create your account.')}</p> : <label className="ae-auth-field"><Phone/><input aria-label={uiText("6-digit OTP")} placeholder={uiText("6-digit OTP")} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required/></label>}
+      <button className="ae-auth-primary" disabled={loading || (!nativeVerified && otp.length !== 6)}>{loading ? uiText("Creating account…") : uiText("Verify & Create Account")}<ArrowRight/></button>
       <button type="button" className="ae-auth-secondary" disabled={loading || cooldown > 0} onClick={() => void sendOtp()}>{cooldown ? `Resend OTP in ${cooldown}s` : uiText("Resend OTP")}</button>
     </form>}
     <div id="signup-recaptcha-container"/>
