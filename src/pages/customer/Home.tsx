@@ -3,7 +3,7 @@ import { formatDateTime } from '../../utils';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, Upload, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -12,6 +12,7 @@ import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import './home-reference.css';
+import {ProductListPanel} from '../../components/ProductListPanel';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const dailyGreeting = useDailyGreeting('customer');
@@ -27,8 +28,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const [productList, setProductList] = useState('');
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productListMessage, setProductListMessage] = useState('');
-  const [expandedProductList, setExpandedProductList] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState('');
   const [loadSecondaryContent, setLoadSecondaryContent] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setLoadSecondaryContent(true), 1800);
@@ -42,7 +41,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const location = useLocation();
   useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
   const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] }); } });
-  const { data: productHistory } = useQuery({ queryKey: ['customer-product-lists'], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen });
+  const { data: productHistory, isPending: historyLoading, isError: historyError, refetch: retryHistory } = useQuery({ queryKey: ['customer-product-lists', user.id], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen });
 
   useEffect(() => {
     let active = true;
@@ -185,19 +184,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </section>
 
       </div>
-      {productListOpen ? <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget) setProductListOpen(false); }}><div className="max-h-[90vh] w-full max-w-[430px] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
-        <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">{uiText("Product Lists")}</h2><button type="button" onClick={() => setProductListOpen(false)}><X /></button></div>
-        <div className="mb-5 rounded-2xl bg-gray-50 p-3"><h3 className="mb-2 text-sm font-bold text-gray-900">{uiText("Sent to merchants")}</h3>{productHistory?.requests?.length ? <div className="space-y-2">{productHistory.requests.map(request => { const expanded = expandedProductList === request.id; const statusClass = ['accepted', 'approved'].includes(request.status) ? "bg-green-100 text-green-700" : request.status === 'rejected' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"; return <button type="button" key={request.id} onClick={() => setExpandedProductList(expanded ? null : request.id)} className="w-full rounded-xl bg-white p-3 text-left text-xs shadow-sm"><div className="flex items-center justify-between gap-2"><span className="font-bold text-gray-900">{request.merchants?.name || uiText('Merchant')}</span><span className={`rounded-full px-2 py-1 font-semibold capitalize ${statusClass}`}>{uiText(request.status)}</span></div><p className={`mt-1 text-gray-600 ${expanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{request.product_list || uiText('Photo product list uploaded')}</p>{expanded && request.image_url ? <img src={request.image_url} alt={uiText("Submitted product list")} onClick={(event) => { event.stopPropagation(); setPreviewImage(request.image_url || ''); }} className="mt-2 max-h-56 w-full cursor-zoom-in rounded-lg object-contain" /> : null}<p className="mt-1 font-medium text-gray-400">{new Date(request.created_at).toLocaleDateString()} · {expanded ? uiText("Collapse") : uiText("Tap to view full list")}</p></button>; })}</div> : <p className="text-xs text-gray-500">{uiText("No product lists sent yet.")}</p>}</div>
-        <h3 className="mb-2 text-sm font-bold text-gray-900">{uiText("Send a new product list")}</h3>
-        <p className="mb-3 text-xs text-gray-500">{uiText("Choose a merchant and send a text list or photo directly to them.")}</p>
-        <select value={merchantId} onChange={event => setMerchantId(event.target.value)} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm"><option value="">{uiText("Select merchant")}</option>{merchants.map(merchant => <option key={merchant.id} value={merchant.id}>{merchant.merchant_name}</option>)}</select>
-        <textarea value={productList} onChange={event => setProductList(event.target.value)} rows={4} maxLength={5000} placeholder={uiText("Type the products you need...")} className="mb-3 w-full rounded-xl border border-gray-200 p-3 text-sm" />
-        <label className="mb-4 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-600"><Upload size={18} />{productImage ? productImage.name : uiText("Upload a product-list photo")}<input type="file" accept="image/*" className="hidden" onChange={event => setProductImage(event.target.files?.[0] || null)} /></label>
-        {productListMessage ? <p className="mb-3 text-sm text-green-700">{productListMessage}</p> : null}
-        {submitProductList.error ? <p className="mb-3 text-sm text-red-600">{(submitProductList.error as Error).message}</p> : null}
-        <button type="button" disabled={!merchantId || (!productList.trim() && !productImage) || submitProductList.isPending} onClick={() => submitProductList.mutate()} className="w-full rounded-xl bg-[#087a4b] p-3 font-bold text-white disabled:opacity-50">{submitProductList.isPending ? uiText("Sending...") : uiText("Send Product List")}</button>
-      </div></div> : null}
-      {previewImage ? <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage('')}><button type="button" onClick={() => setPreviewImage('')} className="absolute right-4 top-4 rounded-full bg-white/90 p-2 text-gray-900"><X /></button><img src={previewImage} alt={uiText("Product list full preview")} onClick={event => event.stopPropagation()} className="max-h-[90vh] max-w-full rounded-xl object-contain" /></div> : null}
+      {productListOpen&&<ProductListPanel name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
     </div>
   );
 }

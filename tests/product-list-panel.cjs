@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),Module=require('node:module'),path=require('node:path');
+const ts=require('typescript'),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+const filename=path.resolve(__dirname,'../src/components/ProductListPanel.tsx');
+const compiled=ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+const moduleInstance=new Module(filename,module);moduleInstance.filename=filename;moduleInstance.paths=Module._nodeModulePaths(path.dirname(filename));const baseRequire=moduleInstance.require.bind(moduleInstance);moduleInstance.require=id=>id.endsWith('.css')?{}:id==='../uiText'?{uiText:value=>value}:baseRequire(id);moduleInstance._compile(compiled,filename);
+const {ProductListPanel}=moduleInstance.exports;
+const props={name:'Customer <test>',requests:[{id:'old',status:'pending',created_at:'2026-01-01',product_list:'OLD HISTORY'},{id:'new',status:'approved',created_at:'2026-10-01',product_list:'NEW HISTORY'}],loading:false,historyError:false,retry(){},merchants:[{id:'shop',merchant_name:'Sample shop'}],merchantId:'',setMerchantId(){},value:'',setValue(){},image:null,setImage(){},message:'',error:'',pending:false,send(){},close(){}};
+const render=changes=>renderToStaticMarkup(React.createElement(ProductListPanel,{...props,...changes}));
+const initial=render();assert.match(initial,/role="dialog"/);assert.match(initial,/Recent history/);assert.match(initial,/NEW HISTORY/);assert.ok(!initial.includes('OLD HISTORY'));assert.match(initial,/Customer &lt;test&gt;/);assert.match(initial,/Approved/);assert.match(initial,/disabled=""[^>]*>Send Product List/);
+assert.ok(!/disabled=""[^>]*>Send Product List/.test(render({merchantId:'shop',value:'Rice'})));
+assert.match(render({requests:[]}),/No product lists sent yet/);assert.match(render({historyError:true}),/Unable to load product list history/);assert.match(render({loading:true}),/Loading/);
+console.log('PASS: modal semantics, newest-only recent history, real status, escaped names, empty/error/loading states and send validation');

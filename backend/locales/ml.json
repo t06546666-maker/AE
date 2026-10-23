@@ -2368,5 +2368,12 @@
   "ui.Sign in with your assigned staff credentials to manage your expenses.": "ചെലവുകൾ നിയന്ത്രിക്കാൻ നിങ്ങൾക്ക് നൽകിയ ജീവനക്കാരുടെ അക്കൗണ്ട് ഉപയോഗിച്ച് പ്രവേശിക്കുക.",
   "ui.Your assigned department access only": "നിങ്ങൾക്ക് അനുവദിച്ച വിഭാഗത്തിലേക്ക് മാത്രം പ്രവേശനം",
   "ui.QR Poster": "QR പോസ്റ്റർ",
-  "ui.QR Common": "QR കോമൺ"
+  "ui.QR Common": "QR കോമൺ",
+  "ui.Product List History": "ഉൽപ്പന്ന പട്ടികകളുടെ ചരിത്രം",
+  "ui.Recent history": "സമീപകാല ചരിത്രം",
+  "ui.Showing your latest 100 product lists.": "നിങ്ങളുടെ ഏറ്റവും പുതിയ 100 ഉൽപ്പന്ന പട്ടികകൾ കാണിക്കുന്നു.",
+  "ui.View photo": "ഫോട്ടോ കാണുക",
+  "ui.Product list": "ഉൽപ്പന്ന പട്ടിക",
+  "ui.Unable to load product list history": "ഉൽപ്പന്ന പട്ടികകളുടെ ചരിത്രം ലഭ്യമല്ല",
+  "ui.Your product list was sent to the selected merchant.": "നിങ്ങളുടെ ഉൽപ്പന്ന പട്ടിക തിരഞ്ഞെടുത്ത വ്യാപാരിക്ക് അയച്ചു."
 }
