@@ -12,7 +12,7 @@ function money(value){if(typeof value!=='string'||!/^\d{1,9}(\.\d{1,2})?$/.test(
 function text(value,max=2000){return typeof value==='string'?value.trim().slice(0,max):'';}
 function claimInput(body){const kind=body.claim_type||'expense';if(!['expense','money_request'].includes(kind))throw Error('Choose expense claim or money request.');if(kind==='money_request'&&(!date(body.needed_by)||body.needed_by<(body.requested_on||today())))throw Error('Choose a valid money needed by date.');const expenseDate=kind==='money_request'?(body.requested_on||today()):body.expense_date;if(!categories.includes(body.category)||!date(expenseDate)||expenseDate>today()||!text(body.reason))throw Error('Category, valid expense date and reason are required.');return {category:body.category,expense_date:expenseDate,amount_paise:money(body.amount),reason:text(body.reason),missing_receipt_reason:text(body.missing_receipt_reason),...(kind==='money_request'?{claim_type:kind,requested_on:expenseDate,needed_by:body.needed_by}:{claim_type:kind,requested_on:null,needed_by:null})};}
 function receiptType(buffer){if(buffer.subarray(0,3).equals(Buffer.from([255,216,255])))return 'image/jpeg';if(buffer.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))return 'image/png';if(buffer.subarray(0,5).toString()==='%PDF-')return 'application/pdf';return null;}
-function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,notifyRole}){
+function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,notifyRole,sendApprovalEmail}){
  const attempts=new Map();
  function loginLimit(req,res,next){const now=Date.now();for(const [key,value]of attempts)if(value.until<now)attempts.delete(key);const key=crypto.createHash('sha256').update(String(req.ip)+'|'+text(req.body.email,254).toLowerCase()).digest('hex');const value=attempts.get(key)||{count:0,until:now+15*60000};if(value.count>=10||attempts.size>10000)return res.status(429).json({error:'Too many sign-in attempts. Try again later.'});value.count++;attempts.set(key,value);next();}
  const wrap=fn=>async(req,res)=>{try{await fn(req,res)}catch(error){console.warn('Expense request failed:',error.code||error.message);res.status(error.status||503).json({error:error.status?error.message:'Expenses unavailable. Check the expense migration and retry.'})}};
@@ -41,7 +41,14 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
   const version=action==='create'?null:Number(req.body.version);if(action!=='create'&&(!Number.isInteger(version)||version<1))fail('Claim version required.');
   const response=await db.rpc('expense_action',{p_actor:req.auth.profile.id,p_claim:id,p_action:action,p_payload:payload,p_request:req.body.request_id,p_version:version});
   if(response.error){const message=response.error.message||'';if(response.error.code==='P0001')fail(message,/changed|status|already/.test(message)?409:400);throw response.error;}
-  if(!response.data.replayed)await event(response.data.claim,action);return response.data;
+  if(!response.data.replayed){
+   await event(response.data.claim,action);
+   if(action==='approve'&&sendApprovalEmail){
+    try{await sendApprovalEmail(response.data.claim);response.data.approval_email='sent';}
+    catch{console.warn('Expense approval saved, but approval email was not sent.');response.data.approval_email='failed';}
+   }
+  }
+  return response.data;
  }
  app.post('/api/expenses/login',loginLimit,wrap(async(req,res)=>{
   if(!auth||!db)fail('Expenses unavailable.',503);

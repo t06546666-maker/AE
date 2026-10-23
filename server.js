@@ -6188,7 +6188,7 @@ if (webRoot === reactBuildPath) {
   });
 }
 
-require('./backend/expenses.cjs').registerExpenses(app, {db:supabaseAdmin,auth:supabaseAuth,requireAuth,requireRole,notifyProfile:pushToProfile,notifyRole:pushToRole});
+require('./backend/expenses.cjs').registerExpenses(app, {db:supabaseAdmin,auth:supabaseAuth,requireAuth,requireRole,notifyProfile:pushToProfile,notifyRole:pushToRole,sendApprovalEmail:require('./backend/expense-email.cjs').createApprovalEmail({db:supabaseAdmin,resend})});
 module.exports = app;
 
 const PORT = process.env.PORT || 3000;
