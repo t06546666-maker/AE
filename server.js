@@ -6188,6 +6188,7 @@ if (webRoot === reactBuildPath) {
   });
 }
 
+require('./backend/expense-email-test.cjs').registerEmailTest(app,{requireAuth,requireRole});
 require('./backend/expenses.cjs').registerExpenses(app, {db:supabaseAdmin,auth:supabaseAuth,requireAuth,requireRole,notifyProfile:pushToProfile,notifyRole:pushToRole,sendApprovalEmail:require('./backend/expense-email.cjs').createApprovalEmail({db:supabaseAdmin,resend})});
 module.exports = app;
 
