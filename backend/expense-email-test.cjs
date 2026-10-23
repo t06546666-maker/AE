@@ -2,7 +2,7 @@ const {titanTransport}=require('./expense-email.cjs');
 const recipient='safar@affiliateinnovations.co.in';
 async function testTitan({env=process.env,mailer}={}){
  const failures=[];
- for(const port of [465,587]){
+ for(const port of (env.TITAN_SMTP_HOST==='smtp.titan.email'?[465,587]:[465])){
   let transport;
   try{
    transport=titanTransport({...env,TITAN_SMTP_PORT:String(port)},mailer);

@@ -16,7 +16,9 @@ function titanTransport(env=process.env,mailer){
  if(env.TITAN_SMTP_USER!=='info@affiliateinnovations.co.in'||!env.TITAN_SMTP_PASSWORD)throw Error('Titan credentials are not configured.');
  const port=Number(env.TITAN_SMTP_PORT||465);
  if(![465,587].includes(port))throw Error('Invalid Titan SMTP port.');
- return (mailer||require('nodemailer')).createTransport({host:'smtp.titan.email',port,secure:port===465,requireTLS:true,auth:{user:env.TITAN_SMTP_USER,pass:env.TITAN_SMTP_PASSWORD},connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000,disableFileAccess:true,disableUrlAccess:true});
+ const host=env.TITAN_SMTP_HOST||'smtpout.secureserver.net';
+ if(!['smtp.titan.email','smtpout.secureserver.net'].includes(host))throw Error('Unsupported Titan SMTP host.');
+ return (mailer||require('nodemailer')).createTransport({host,port,secure:port===465,requireTLS:true,auth:{user:env.TITAN_SMTP_USER,pass:env.TITAN_SMTP_PASSWORD},connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000,disableFileAccess:true,disableUrlAccess:true});
 }
 function createApprovalEmail({db,resend,from=process.env.EXPENSE_FROM_EMAIL,env=process.env,mailer}){
  return async claim=>{

@@ -2,6 +2,8 @@
 
 ## Titan SMTP (preferred when configured)
 
+GoDaddy-hosted Titan uses `smtpout.secureserver.net` with SSL port 465, now the default for this GoDaddy mailbox. Standalone Titan accounts may explicitly set `TITAN_SMTP_HOST=smtp.titan.email`. Only these two vendor hosts are allowed. The hosted diagnostic uses only port 465 for GoDaddy and can try 465/587 for standalone Titan. This corrects the earlier standalone-host assumption; a 535 response from the wrong server does not establish that the mailbox password is wrong.
+
 Set server-only environment variables: `EXPENSE_EMAIL_PROVIDER=titan`, `TITAN_SMTP_USER=info@affiliateinnovations.co.in`, `TITAN_SMTP_PASSWORD` (enter securely in hosting settings), and optionally `TITAN_SMTP_PORT=465` (SSL/TLS) or `587` (mandatory STARTTLS). Never use VITE-prefixed variables for credentials. Host is fixed to `smtp.titan.email` with certificate verification enabled. Existing Resend configuration is preserved for other app emails. No DNS/MX changes are required by this implementation.
 
 The sender display name is AE Accounts — No Reply. This is a notice, not a mechanism to block inbound replies. Titan SMTP does not provide provider idempotency: database replay suppression remains, but a stable Message-ID is not a guarantee of duplicate prevention or inbox delivery. Failed sends are not retried automatically. Do not re-approve to resend. Titan third-party app access must be enabled by the mailbox owner if required; do not disable security protections automatically.

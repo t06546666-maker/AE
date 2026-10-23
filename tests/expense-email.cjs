@@ -16,10 +16,11 @@ async function main(){
  const mailer={createTransport(config){smtpConfig=config;return {sendMail:async message=>{smtpMessage=message;return {accepted:['staff@example.test'],rejected:[],messageId:message.messageId}},close(){closed=true}}}};
  const env={EXPENSE_EMAIL_PROVIDER:'titan',TITAN_SMTP_USER:'info@affiliateinnovations.co.in',TITAN_SMTP_PASSWORD:'test-only'};
  await createApprovalEmail({db,env,mailer})(claim);
- assert.equal(smtpConfig.host,'smtp.titan.email');assert.equal(smtpConfig.port,465);assert.equal(smtpConfig.secure,true);assert.equal(smtpConfig.requireTLS,true);
+ assert.equal(smtpConfig.host,'smtpout.secureserver.net');assert.equal(smtpConfig.port,465);assert.equal(smtpConfig.secure,true);assert.equal(smtpConfig.requireTLS,true);
  assert.match(smtpMessage.from,/No Reply/);assert.deepEqual(smtpMessage.to,['staff@example.test']);assert.equal(closed,true);
  await assert.rejects(createApprovalEmail({db,env:{...env,TITAN_SMTP_PASSWORD:''},mailer})(claim));
  await assert.rejects(createApprovalEmail({db,env:{...env,TITAN_SMTP_PORT:'25'},mailer})(claim));
+ await assert.rejects(createApprovalEmail({db,env:{...env,TITAN_SMTP_HOST:'untrusted.example'},mailer})(claim));
  console.log('Expense approval email tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

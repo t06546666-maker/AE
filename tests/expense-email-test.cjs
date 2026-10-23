@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const {testTitan,registerEmailTest}=require('../backend/expense-email-test.cjs');
 async function main(){
- const env={EXPENSE_EMAIL_PROVIDER:'titan',TITAN_SMTP_USER:'info@affiliateinnovations.co.in',TITAN_SMTP_PASSWORD:'test-only'};
+ const env={EXPENSE_EMAIL_PROVIDER:'titan',TITAN_SMTP_USER:'info@affiliateinnovations.co.in',TITAN_SMTP_PASSWORD:'test-only',TITAN_SMTP_HOST:'smtp.titan.email'};
  let sends=0,closed=0;
  const mailer={createTransport:({port})=>({verify:async()=>{if(port===465)throw Object.assign(Error(),{code:'ETIMEDOUT'})},sendMail:async mail=>{sends++;assert.deepEqual(mail.to,['safar@affiliateinnovations.co.in']);return {accepted:mail.to,rejected:[],messageId:'test'}},close(){closed++}})};
  const result=await testTitan({env,mailer});assert.equal(result.sent,true);assert.equal(result.port,587);assert.equal(sends,1);assert.equal(closed,2);
