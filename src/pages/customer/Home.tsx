@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
-import { useCustomerDashboard, useCustomerMerchants, useCustomerOffers } from '../../hooks/useCustomerData';
+import { useCustomerDashboard, useCustomerOffers } from '../../hooks/useCustomerData';
 import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
@@ -33,11 +33,18 @@ export function CustomerHome({ user }: { user: UserProfile }) {
     const timer = window.setTimeout(() => setLoadSecondaryContent(true), 1800);
     return () => window.clearTimeout(timer);
   }, []);
-  const { data: merchantData } = useCustomerMerchants(1, undefined, undefined, undefined, productListOpen);
+  const [merchantSearch,setMerchantSearch]=useState('');
+  const merchantDirectory=useInfiniteQuery({
+    queryKey:['product-list-merchants',user.id,merchantSearch],
+    initialPageParam:1,
+    queryFn:({pageParam,signal})=>apiFetch<{merchants:{id:string;merchant_name:string}[];pagination:{page:number;totalPages:number}}>(`/api/customer/merchants?${new URLSearchParams({page:String(pageParam),pageSize:'20',search:merchantSearch})}`,{signal}),
+    getNextPageParam:last=>last.pagination.page<last.pagination.totalPages?last.pagination.page+1:undefined,
+    enabled:productListOpen,
+  });
   const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
   const offers = (offersData?.offers || []).slice(0, 6);
-  const merchants = merchantData?.merchants || [];
+  const merchants = merchantDirectory.data?.pages.flatMap(page=>page.merchants) || [];
   const location = useLocation();
   useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
   const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] }); } });
@@ -184,7 +191,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </section>
 
       </div>
-      {productListOpen&&<ProductListPanel name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
+      {productListOpen&&<ProductListPanel name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} searchMerchants={setMerchantSearch} merchantsLoading={merchantDirectory.isFetching} merchantsError={merchantDirectory.isError} hasMoreMerchants={merchantDirectory.hasNextPage} loadMoreMerchants={()=>void merchantDirectory.fetchNextPage()} retryMerchants={()=>void merchantDirectory.refetch()} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
     </div>
   );
 }

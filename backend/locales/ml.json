@@ -1322,6 +1322,8 @@
   "ui.Search location, store or merchant ID…": "സ്ഥലമോ കടയോ വ്യാപാരി ID-യോ തിരയുക…",
   "ui.Search merchant locations": "വ്യാപാരികളുടെ സ്ഥലങ്ങൾ തിരയുക",
   "ui.Search merchants": "വ്യാപാരികളെ തിരയുക",
+  "ui.Unable to load merchants.": "വ്യാപാരികളുടെ വിവരങ്ങൾ ലഭ്യമാക്കാനായില്ല.",
+  "ui.Load more merchants": "കൂടുതൽ വ്യാപാരികളെ കാണുക",
   "ui.Search merchants for check-in": "ചെക്ക് ഇൻ ചെയ്യാൻ വ്യാപാരികളെ തിരയുക",
   "ui.Search merchants, locations…": "വ്യാപാരികളോ സ്ഥലങ്ങളോ തിരയുക…",
   "ui.Search merchants...": "വ്യാപാരികളെ തിരയുക…",
