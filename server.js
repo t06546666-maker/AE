@@ -1097,7 +1097,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     // Send the Utility password message independently. A Marketing welcome
     // template can be blocked by Meta policy and must not prevent credentials.
     let passwordResult = null;
-    if (WA_TEMPORARY_TEMPLATE && purchase.temporary_password) {
+    if (WA_TEMPORARY_TEMPLATE && require('./backend/customer-signup-whatsapp.cjs').shouldSendTemporaryPassword(purchase)) {
       // The current Meta `temporary` template is static (zero body variables):
       // it explains that the password is the last six digits of the phone.
       // Custom templates may still use the three-variable format.
@@ -2333,6 +2333,15 @@ app.post('/api/auth/customer/signup', async (req, res) => {
     else created.data.reward_points = welcomeBonus.balance;
 
     const customer = { ...created.data, role: 'customer' };
+    // Only a newly created, phone-verified account triggers this welcome.
+    // No password or merchant credential template is involved; login/retries
+    // that find an existing customer do not schedule another message.
+    scheduleBackground(async () => {
+      const result = await require('./backend/customer-signup-whatsapp.cjs').sendSelfSignupWelcome(created.data, {
+        queue: queueWhatsApp, sendTemplate: sendWhatsAppTemplate, appLink: WA_CUSTOMER_APP_LINK,
+      });
+      if (!result.sent) console.warn('Self-signup welcome WhatsApp was not sent; account remains created.');
+    });
     const accessToken = jwt.sign({ customerId: customer.id, role: 'customer' }, CUSTOMER_JWT_SECRET, { expiresIn: '30d' });
     if (welcomeBonus.awarded) void pushToCustomer(customer.id, 'Welcome to AE — 200 points added!', 'Your 200 AE welcome points are ready to use.', { url: '/customer/notifications', type: 'welcome_bonus', points: welcomeBonus.points });
     return res.status(201).json({ success: true, ...customerSessionTokens(customer), user: customer, welcomeBonusAwarded: welcomeBonus.awarded, welcomeBonusPoints: welcomeBonus.awarded ? welcomeBonus.points : 0, welcomeBonusUnavailable: Boolean(welcomeBonus.error) });
@@ -4735,6 +4744,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   // Attach temporary password to purchase so it is included in the welcome QR template
   if (customer.temporaryPassword) {
     purchase.temporary_password = customer.temporaryPassword;
+    purchase.send_temporary_password = createdCustomer && req.auth.profile.role === 'merchant';
   }
   const notificationKind = createdCustomer ? 'registration' : 'reward';
   const whatsapp = await queueWhatsApp(purchase, notificationKind);
@@ -5006,13 +5016,13 @@ function parseExportDateRange(req) {
   return { from, to };
 }
 
-async function queueWhatsApp(purchase, kind) {
+async function queueWhatsApp(purchase, kind, templateOverride) {
   if (!WA_TOKEN || !WA_PHONE_ID) {
     return { queued: false, sent: false, error: 'WhatsApp Cloud API is not configured' };
   }
-  const templateName = kind === 'registration'
+  const templateName = templateOverride || (kind === 'registration'
     ? WA_REGISTRATION_TEMPLATE
-    : (kind === 'redeem' ? WA_REDEEM_TEMPLATE : WA_REWARD_TEMPLATE);
+    : (kind === 'redeem' ? WA_REDEEM_TEMPLATE : WA_REWARD_TEMPLATE));
   const { data, error } = await supabaseAdmin.from('whatsapp_messages').insert({
     customer_id: purchase.customer_id,
     order_id: purchase.order_id,
