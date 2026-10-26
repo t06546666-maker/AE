@@ -1596,6 +1596,7 @@ const fieldManagerRole = (req, res, next) => {
 };
 
 const attendanceDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+require('./backend/admin-attendance.cjs').registerAdminAttendance(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,workDate:attendanceDate});
 app.get('/api/field/route-plan', requireAuth, requireRole('field_manager'), async (req, res) => {
   const workDate = attendanceDate();
   const { data, error } = await supabaseAdmin.from('field_route_plans').select('route_name,work_date').eq('manager_id', req.auth.profile.id).eq('work_date', workDate).maybeSingle();
@@ -1901,13 +1902,17 @@ app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), 
   res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
 });
 app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin'),async(req,res)=>{
-  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
+  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie,admin_started_by,admin_started_at,admin_start_reason,admin_ended_by,admin_ended_at,admin_end_reason','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
   const selection=selections[req.query.type||'visits'];
   if(!selection)return res.status(400).json({error:'Invalid record type'});
   const paging=paginationFromRequest(req,25,100);
   let query=supabaseAdmin.from(selection[0]).select(selection[0]==='field_manager_visits'?'*,merchants(name,merchant_code)':selection[1],{count:'exact'}).eq('manager_id',req.params.id).order(selection[2],{ascending:false});
   if(req.query.from||req.query.to){const from=Date.parse(req.query.from),to=Date.parse(req.query.to);if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a valid date range up to one year.'});if(selection[2]==='work_date')query=query.gte('work_date',new Date(from+330*60000).toISOString().slice(0,10)).lte('work_date',new Date(to-1+330*60000).toISOString().slice(0,10));else query=query.gte(selection[2],new Date(from).toISOString()).lt(selection[2],new Date(to).toISOString());}
-  const result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
+  let result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
+  if(selection[0]==='field_attendance'&&result.error&&['42703','PGRST204'].includes(result.error.code)){
+    query=query.select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie',{count:'exact'});
+    result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
+  }
   if(result.error)return res.status(500).json({error:result.error.message});
   function safe(value){if(Array.isArray(value))return value.map(safe);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!/password|token|secret|credential/i.test(key)).map(([key,item])=>[key,safe(item)]));return value;}
   if(req.query.format==='xlsx'){

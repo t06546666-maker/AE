@@ -9,22 +9,24 @@ import { Camera, Clock, MapPin, CalendarDays, CheckCircle2 } from 'lucide-react'
 import './field-attendance.css';
 import './field-visit-preview.css';
 import { LiveCamera } from './LiveCamera';
+import { getAttendanceLocation } from '../attendanceLocation';
 
 type Attendance = { id: string; started_at: string; ended_at?: string; latitude: number; longitude: number };
 type WorkRequest = { id: string; kind: string; starts_at: string; ends_at: string; reason: string; status: string };
 export function FieldAttendance({ name }: { name: string }) {
   const client = useQueryClient(); const { showToast } = useToast();
   const [mode, setMode] = useState<'start' | 'leave' | 'non_field' | null>(null);
+  const [locationAttempt,setLocationAttempt]=useState(0);
   const [selfie, setSelfie] = useState(''); const [starts, setStarts] = useState(''); const [ends, setEnds] = useState(''); const [reason, setReason] = useState('');
   const data = useQuery({ queryKey: ['field-attendance'], queryFn: () => apiFetch<{ attendance: Attendance | null; requests: WorkRequest[] }>('/api/field/attendance'), refetchInterval: 60000 });
   const attendance = data.data?.attendance;
   const refresh = () => { void client.invalidateQueries({ queryKey: ['field-attendance'] }); };
   const start = useMutation({ mutationFn: async () => {
     if (!selfie) throw new Error('Capture your selfie first.');
-    if (!navigator.geolocation) throw new Error('Location is not supported.');
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }));
+    const position = await getAttendanceLocation(navigator.geolocation,setLocationAttempt);
+    setLocationAttempt(0);
     return apiFetch('/api/field/attendance/start', { method: 'POST', body: JSON.stringify({ selfie, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy_m: position.coords.accuracy }) });
-  }, onSuccess: () => { refresh(); setMode(null); setSelfie(''); showToast('Your day has started.'); }, onError: error => showToast(error.message, 'error') });
+  }, onSuccess: () => { refresh(); setMode(null); setSelfie(''); showToast('Your day has started.'); }, onError: error => showToast(uiText(error.message), 'error'), onSettled:()=>setLocationAttempt(0) });
   const end = useMutation({ mutationFn: () => apiFetch('/api/field/attendance/end', { method: 'POST' }), onSuccess: () => { refresh(); showToast('Your day is complete.'); }, onError: error => showToast(error.message, 'error') });
   const request = useMutation({ mutationFn: () => apiFetch('/api/field/work-requests', { method: 'POST', body: JSON.stringify({ kind: mode, starts_at: new Date(`${starts}:00+05:30`).toISOString(), ends_at: new Date(`${ends}:00+05:30`).toISOString(), reason }) }), onSuccess: () => { refresh(); setMode(null); setStarts(''); setEnds(''); setReason(''); showToast('Request submitted for review—not yet approved.'); }, onError: error => showToast(error.message, 'error') });
   const busy = start.isPending || end.isPending || request.isPending;
@@ -37,7 +39,7 @@ export function FieldAttendance({ name }: { name: string }) {
     <header><CalendarDays /><div><h1>{uiText("Attendance")}</h1><p>{uiText("Start your day, record attendance and manage work requests.")}</p></div></header>
     {data.isPending ? <p>{uiText("Loading attendance…")}</p> : data.isError ? <div role="alert"><p>{data.error.message}</p><button className="button secondary" onClick={() => void data.refetch()}>{uiText("Retry")}</button></div> : <>
       <div className="ae-greeting"><h2>{uiText("Good ")}{Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date())) < 12 ? uiText("morning") : uiText("day")}, {name}</h2><p>{new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p></div>
-      {!attendance && <article className="attendance-card"><h2>{uiText("Take attendance selfie")}</h2><LiveCamera facing="user" disabled={busy} label={selfie ? 'Retake selfie' : 'Take attendance selfie'} onCapture={file => void capture(file)} />{selfie && <img className="attendance-selfie" src={selfie} alt={uiText("Your attendance selfie preview")} />}<p className="fpr-note">{uiText("Your location is recorded when you submit attendance and is visible to Admin.")}</p><button className="button primary ae-cta" disabled={busy || !selfie} onClick={() => start.mutate()}>{start.isPending ? uiText("Starting…") : uiText("Start Day")}</button></article>}
+      {!attendance && <article className="attendance-card"><h2>{uiText("Take attendance selfie")}</h2><LiveCamera facing="user" disabled={busy} label={selfie ? 'Retake selfie' : 'Take attendance selfie'} onCapture={file => void capture(file)} />{selfie && <img className="attendance-selfie" src={selfie} alt={uiText("Your attendance selfie preview")} />}<p className="fpr-note">{uiText("Your location is recorded when you submit attendance and is visible to Admin.")}</p>{start.isPending&&locationAttempt>0&&<p role="status">{uiText("Finding your location (attempt {{attempt}} of 3)…",{attempt:locationAttempt})}</p>}<button className="button primary ae-cta" disabled={busy || !selfie} onClick={() => start.mutate()}>{start.isPending ? uiText("Starting…") : uiText("Start Day")}</button></article>}
       {attendance && <article className="attendance-card"><h2>{attendance.ended_at ? uiText("Day completed") : uiText("Attendance recorded")}</h2><p>{uiText("Started: ")}{formatDateTime(attendance.started_at)}</p><p className="fpr-note">{uiText("Your attendance location is available to Admin.")}</p>{attendance.ended_at ? <p><CheckCircle2 size={17} />{uiText(" Ended: ")}{formatDateTime(attendance.ended_at)}</p> : <button className="button primary ae-cta" disabled={busy} onClick={() => { if (window.confirm('End your working day?')) end.mutate(); }}>{uiText("End Day")}</button>}</article>}
       <div className="attendance-actions"><button className="button secondary" onClick={() => setMode('leave')}>{uiText("Apply for Leave")}</button><button className="button secondary" onClick={() => setMode('non_field')}>{uiText("Non-field Work")}</button></div>
       <article className="attendance-card"><h2>{uiText("My requests")}</h2>{!data.data?.requests.length && <p>{uiText("No requests yet.")}</p>}{data.data?.requests.map(item => <div key={item.id} className="attendance-request"><strong>{item.kind === 'leave' ? uiText("Leave") : uiText("Non-field work")}</strong><span>{uiText(item.status)}</span><p>{formatDateTime(item.starts_at)} — {formatDateTime(item.ends_at)}</p><p>{item.reason}</p></div>)}</article>
