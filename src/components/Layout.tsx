@@ -48,6 +48,7 @@ const fieldNav = [
   ['/field?section=directory', 'All Merchants', Building2],
   ['/field?section=visits', 'Visits & Check-in', MapPin],
   ['/field?section=routes', 'Routes', MapPin],
+  ['/field?section=mapper', 'Merchant Mapper', MapPin],
   ['/field?section=profile', 'My Profile', UserCog],
 ] as const;
 
@@ -147,7 +148,7 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
           <nav>
             {nav.map(([to, label, Icon]) => (
               <NavLink key={to} to={to} className={({ isActive }) => (user.role === 'field_manager' ? location.pathname === '/field' && new URLSearchParams(to.split('?')[1]).get('section') === (new URLSearchParams(location.search).get('section') || 'home') : isActive || (to === '/merchants' && location.pathname.startsWith('/merchants/'))) ? 'active' : ''}>
-                <Icon size={18} /><span>{label === 'QR Common' ? uiText(label) : t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
+                <Icon size={18} /><span>{label === 'QR Common' || label === 'Merchant Mapper' ? uiText(label) : t(label)}</span>{to === '/customer-orders' && user.role === 'merchant' && notifications.data?.unreadCount ? <b className="nav-badge">{notifications.data.unreadCount}</b> : null}
               </NavLink>
             ))}
           </nav>

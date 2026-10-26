@@ -38,7 +38,7 @@ import { useToast } from '../toast';
 import '../field-onboarding.css';
 import '../field-directory.css';
 import { FieldVisits } from '../components/FieldVisits';
-import { FieldMerchantMapper } from '../components/FieldMerchantMapper';
+import { OnboardedMerchantsMap } from '../components/OnboardedMerchantsMap';
 import { FieldProfile } from '../components/FieldProfile';
 
 interface FieldMerchant {
@@ -94,6 +94,7 @@ interface CreateMerchantApiResponse {
   whatsapp: { sent: boolean; status: string; error: string | null };
   welcomeBonusPoints?: number;
   welcomeBonusError?: string | null;
+  onboardingMapWarning?: string | null;
 }
 
 interface ShopImageItem {
@@ -456,9 +457,10 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       setLatitude('');
       setLongitude('');
       setShopImages([]);
-      const setupWarnings = [data.welcomeBonusError].filter(Boolean).join(' ');
+      const setupWarnings = [data.welcomeBonusError, data.onboardingMapWarning].filter(Boolean).join(' ');
       showToast(setupWarnings || t('merchants.created'), setupWarnings ? 'error' : undefined);
       void queryClient.invalidateQueries({ queryKey: ['field-merchants'] });
+      void queryClient.invalidateQueries({ queryKey: ['field-onboarded-merchants'] });
       void queryClient.invalidateQueries({ queryKey: ['merchant-categories'] });
     },
     onError(error) {
@@ -878,7 +880,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {/* ========================================================================= */}
       {/* EXACT ADMIN CREDENTIALS MODAL */}
       {/* ========================================================================= */}
-      {activeTab === 'mapper' && <FieldMerchantMapper merchants={allMerchants} categories={categories} />}
+      {activeTab === 'mapper' && <OnboardedMerchantsMap viewerId={user.id} allMerchants={allMerchants} categories={categories} />}
       {activeTab === 'profile' && <FieldProfile user={user} visits={visitsQuery.data?.visits || []} merchantCount={allMerchants.length} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} />}
       <FieldCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 

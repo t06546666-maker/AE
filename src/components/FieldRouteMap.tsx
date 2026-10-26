@@ -1,10 +1,12 @@
 import { uiText } from '../uiText';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadMaps } from './FieldMerchantMapper';
+import { hasShopLocation, shopDrivingRoute, type ShopRouteStop } from '../shopRoute';
 
-type Stop = { id: string; name: string; latitude?: number; longitude?: number };
+type Stop = ShopRouteStop;
 export function FieldRouteMap({ merchants }: { merchants: Stop[] }) {
-  const stops = merchants.filter(m => m.latitude != null && m.longitude != null && Number.isFinite(Number(m.latitude)) && Number.isFinite(Number(m.longitude)) && Math.abs(Number(m.latitude)) <= 90 && Math.abs(Number(m.longitude)) <= 180);
+  const stops = useMemo(() => merchants.filter(hasShopLocation), [merchants]);
+  const stopSignature = JSON.stringify(stops.map(stop => [stop.id, stop.latitude, stop.longitude]));
   const [chosen, setChosen] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
@@ -32,6 +34,12 @@ export function FieldRouteMap({ merchants }: { merchants: Stop[] }) {
     setChosen(ids => ids.includes(id) ? ids.filter(value => value !== id) : [...ids, id]);
   };
   useEffect(() => {
+    // Refreshed/deleted/moved shops must not leave an old road route visible.
+    generation.current++; setBusy(false); setSummary('');
+    renderer.current?.set('directions', null);
+    setChosen(ids => { const retained = ids.filter(id => stops.some(stop => stop.id === id)); return retained.length === ids.length ? ids : retained; });
+  }, [stopSignature]);
+  useEffect(() => {
     if (!ready) return;
     const google = (window as any).google;
     const bounds = new google.maps.LatLngBounds();
@@ -47,20 +55,34 @@ export function FieldRouteMap({ merchants }: { merchants: Stop[] }) {
     return () => markers.forEach(marker => { google.maps.event.clearInstanceListeners(marker); marker.setMap(null); });
   }, [ready, merchants, chosen]);
   async function build() {
-    const selected = chosen.map(id => stops.find(stop => stop.id === id)!);
-    if (selected.length < 2 || selected.length > 27) { setError('Choose between 2 and 27 stops.'); return; }
+    let routeRequest;
+    try { routeRequest = shopDrivingRoute(chosen, stops); }
+    catch (error) { setError((error as Error).message); return; }
     const request = ++generation.current;
     setBusy(true); setError(''); setSummary('');
     const google = (window as any).google;
-    const position = (stop: Stop) => ({ lat: Number(stop.latitude), lng: Number(stop.longitude) });
     try {
-      const result = await new google.maps.DirectionsService().route({ origin: position(selected[0]), destination: position(selected[selected.length - 1]), waypoints: selected.slice(1, -1).map(stop => ({ location: position(stop), stopover: true })), optimizeWaypoints: false, travelMode: google.maps.TravelMode.DRIVING });
+      const result = await new google.maps.DirectionsService().route(routeRequest);
       if (request !== generation.current) return;
       renderer.current.setDirections(result);
       const metres = result.routes[0].legs.reduce((total: number, leg: any) => total + (leg.distance?.value || 0), 0);
-      setSummary(`${selected.length} stops · ${(metres / 1000).toFixed(1)} km`);
+      setSummary(uiText('{{count}} stops · {{distance}} km', { count: chosen.length, distance: (metres / 1000).toFixed(1) }));
     } catch { if (request === generation.current) setError('Road route unavailable. Check Directions API settings and merchant locations.'); }
     finally { if (request === generation.current) setBusy(false); }
   }
-  return <article className="route-summary" style={{ display: 'block' }}><h2>{uiText("Route map")}</h2><p>{uiText("Select stops in visit order, using the map or checkboxes.")}</p><div ref={host} aria-label={uiText("Merchant route map")} style={{ height: 320, borderRadius: 16 }} />{merchants.length > stops.length && <p>{merchants.length - stops.length}{uiText(" merchants need valid GPS coordinates before they can be mapped.")}</p>}<div>{stops.map(stop => <label key={stop.id} style={{ display: 'block', padding: 8 }}><input type="checkbox" checked={chosen.includes(stop.id)} onChange={() => toggle(stop.id)} /> {chosen.includes(stop.id) ? `${chosen.indexOf(stop.id) + 1}. ` : ''}{stop.name}</label>)}</div><button className="button primary" disabled={!ready || busy || chosen.length < 2} onClick={() => void build()}>{busy ? uiText("Calculating…") : uiText("Build road route")}</button>{summary && <p>{summary}</p>}{error && <p role="alert">{error}</p>}</article>;
+  return <article className="route-summary" style={{ display: 'block' }}>
+    <h2>{uiText('Route map')}</h2>
+    <p>{uiText('Select stops in visit order, using the map or checkboxes.')}</p>
+    <p>{uiText('Planned route between selected shops.')}</p>
+    <div ref={host} aria-label={uiText('Merchant route map')} style={{ height: 320, borderRadius: 16 }} />
+    {merchants.length > stops.length && <p>{merchants.length - stops.length}{uiText(' merchants need valid GPS coordinates before they can be mapped.')}</p>}
+    <div className="route-stop-list">{stops.map(stop => <label key={stop.id}>
+      <input type="checkbox" checked={chosen.includes(stop.id)} onChange={() => toggle(stop.id)} />
+      <span>{chosen.includes(stop.id) ? `${chosen.indexOf(stop.id) + 1}. ` : ''}{stop.name}</span>
+    </label>)}</div>
+    <button className="button primary" disabled={!ready || busy || chosen.length < 2 || chosen.length > 27} onClick={() => void build()}>{busy ? uiText('Calculating…') : uiText('Build road route')}</button>
+    {chosen.length > 27 && <p role="alert">{uiText('Choose between 2 and 27 stops.')}</p>}
+    {summary && <p role="status">{summary}</p>}
+    {error && <p role="alert">{uiText(error)}</p>}
+  </article>;
 }

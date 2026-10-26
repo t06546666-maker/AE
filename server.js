@@ -1948,6 +1948,7 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   }
   res.json({records:safe(selection[0]==='field_manager_visits'?result.data.map(fieldVisitRecord):result.data),pagination:paginationMeta(paging,result.count)});
 });
+require('./backend/field-onboarded-merchants.cjs').registerFieldOnboardingMaps(app, { auth: requireAuth, fieldRole: requireRole('field_manager'), adminRole: requireRole('admin'), db: supabaseAdmin });
 app.get('/api/admin/field-managers/:id/check-in-map', requireAuth, requireRole('admin'), async (req, res) => {
   const range = checkinDay(req.query.day);
   if (!range) return res.status(400).json({error:'Choose a valid date.'});
@@ -3482,9 +3483,10 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     return res.status(400).json({ success: false, error: profileError.message });
   }
 
+  let onboardingMapWarning = null;
   if (req.auth.profile?.role === 'field_manager') {
     try {
-      await supabaseAdmin.from('field_manager_merchant_updates').insert({
+      const onboardingRecord = await supabaseAdmin.from('field_manager_merchant_updates').insert({
         manager_id: req.auth.profile.id,
         merchant_id: merchant.id,
         payload: {
@@ -3503,8 +3505,10 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
         review_note: `Onboarded by field manager (${req.auth.profile.full_name || req.auth.profile.email})`,
         reviewed_at: new Date().toISOString()
       });
+      if (onboardingRecord.error) throw onboardingRecord.error;
     } catch (e) {
       console.warn('Could not record field manager onboarding record:', e.message);
+      onboardingMapWarning = 'Merchant created, but the Field Manager map link could not be saved. Contact Admin; do not create the merchant again.';
     }
   }
 
@@ -3525,6 +3529,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
       mustChangePassword: true,
     },
     temporaryPassword: password,
+    onboardingMapWarning,
     welcomeBonusPoints: bonus.error ? 0 : 2000,
     welcomeBonusError: bonus.error ? 'Welcome points could not be credited. Apply supabase-onboarding-welcome-bonuses.sql and retry the bonus from Admin.' : null,
     whatsapp: {
