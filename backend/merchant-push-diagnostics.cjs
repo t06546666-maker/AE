@@ -1,9 +1,9 @@
-function registerMerchantPushDiagnostics(app,{auth,merchantRole,supabase,ready,send}) {
+function registerMerchantPushDiagnostics(app,{auth,merchantRole,supabase,ready,send,getTarget}) {
  const attempts=new Map();
  async function target(req){
   const result=await supabase.from('profiles').select('push_token,push_enabled').eq('id',req.auth.profile.id).single();
   if(result.error||!result.data)throw Error('Phone registration unavailable');
-  return result.data;
+  return getTarget ? getTarget(req.auth.profile.id,result.data) : result.data;
  }
  app.get('/api/merchant/push-status',auth,merchantRole,async(req,res)=>{
   res.set('Cache-Control','no-store');

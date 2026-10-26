@@ -26,6 +26,7 @@ const profileNotificationInbox = createProfileNotificationInbox(async () => {
   const { getFirestore } = await import('firebase-admin/firestore');
   return getFirestore();
 });
+const profilePushRegistry = require('./backend/profile-push-registry.cjs').createProfilePushRegistry(async()=>{await firebaseInitializationPromise;if(!firebaseInitialized)throw new Error('Firebase Admin is not configured');const {getFirestore}=await import('firebase-admin/firestore');return getFirestore();});
 const languagePacks = { en: require('./backend/locales/en.json'), ml: require('./backend/locales/ml.json') };
 let initializeApp;
 let cert;
@@ -457,8 +458,11 @@ async function pushToProfile(profileId, title, body, data = {}) {
   if (!profileId) return false;
   const { data: profile } = await supabaseAdmin.from('profiles').select('push_token,push_enabled').eq('id', profileId).maybeSingle();
   await saveAppNotification(profileId, title, body, data);
-  return profile?.push_enabled !== false && profile?.push_token
-    ? sendPushNotification(profile.push_token, title, body, data) : false;
+  let target;
+  try { target=await profilePushRegistry.get(profileId,profile||{}); }
+  catch { console.warn('Firebase profile push lookup unavailable'); return false; }
+  return target.push_enabled !== false && target.push_token
+    ? sendPushNotification(target.push_token, title, body, data) : false;
 }
 
 async function saveAppNotification(profileId, title, body, data = {}) {
@@ -475,7 +479,10 @@ async function pushToRole(role, title, body, data = {}) {
   const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', role);
   await Promise.all((profiles || []).map(async (profile) => {
     await saveAppNotification(profile.id, title, body, data);
-    if (profile.push_enabled !== false && profile.push_token) await sendPushNotification(profile.push_token, title, body, data);
+    let target;
+    try { target=await profilePushRegistry.get(profile.id,profile); }
+    catch { console.warn('Firebase role push lookup unavailable'); return; }
+    if (target.push_enabled !== false && target.push_token) await sendPushNotification(target.push_token, title, body, data);
   }));
 }
 
@@ -484,9 +491,12 @@ async function pushToMerchant(merchantId, title, body, data = {}) {
   if (error) throw new Error('Merchant notification recipients unavailable');
   const outcomes = await Promise.all((profiles || []).map(async (profile) => {
     await saveAppNotification(profile.id, title, body, data);
-    if (profile.push_enabled === false) return 'disabled';
-    if (!profile.push_token) return 'no_token';
-    return await sendPushNotification(profile.push_token, title, body, data) ? 'accepted' : 'failed';
+    let target;
+    try { target=await profilePushRegistry.get(profile.id,profile); }
+    catch { console.warn('Merchant Firebase push registration lookup unavailable'); return 'failed'; }
+    if (target.push_enabled === false) return 'disabled';
+    if (!target.push_token) return 'no_token';
+    return await sendPushNotification(target.push_token, title, body, data) ? 'accepted' : 'failed';
   }));
   return { recipients: outcomes.length, accepted: outcomes.filter(value=>value==='accepted').length, disabled: outcomes.filter(value=>value==='disabled').length, missingToken: outcomes.filter(value=>value==='no_token').length, failed: outcomes.filter(value=>value==='failed').length };
 }
@@ -2907,18 +2917,27 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   res.json({ success: true, welcomeAccepted: null });
 });
 
-require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification});
+require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification,getTarget:(id,legacy)=>profilePushRegistry.get(id,legacy)});
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   const updates = {};
-  if (req.body.push_token !== undefined) updates.push_token = cleanText(req.body.push_token, 4096);
-  if (req.body.push_enabled !== undefined) updates.push_enabled = Boolean(req.body.push_enabled);
+  if (req.body.push_token !== undefined) {
+    if(typeof req.body.push_token!=='string'||!req.body.push_token.trim()||req.body.push_token.length>4096)return res.status(400).json({error:'A valid phone notification token is required.'});
+    updates.push_token = req.body.push_token.trim();
+  }
+  if (req.body.push_enabled !== undefined) {
+    if(typeof req.body.push_enabled!=='boolean')return res.status(400).json({error:'push_enabled must be true or false.'});
+    updates.push_enabled = req.body.push_enabled;
+  }
   if (!Object.keys(updates).length) return res.json({ success: true });
   const { data: previous, error: readError } = await supabaseAdmin.from('profiles')
     .select('push_token,push_enabled').eq('id', req.auth.user.id).single();
   if (readError) return res.status(400).json({ success: false, error: readError.message });
+  try { await profilePushRegistry.save(req.auth.profile,req.auth.user.email,updates); }
+  catch { return res.status(503).json({success:false,error:'Could not register this phone in Firebase. Please reconnect phone notifications.'}); }
+  // Compatibility mirror for older installs. Firebase is the delivery source.
   const { error } = await supabaseAdmin.from('profiles').update(updates).eq('id', req.auth.user.id);
-  if (error) return res.status(400).json({ success: false, error: error.message });
+  if (error) console.warn('Legacy phone registration mirror unavailable');
   const welcomeNeeded = updates.push_token && updates.push_enabled === true &&
     (previous.push_token !== updates.push_token || previous.push_enabled === false);
   const welcomeAccepted = welcomeNeeded ? await sendPushNotification(
