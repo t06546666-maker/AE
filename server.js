@@ -105,8 +105,9 @@ function verifyPassword(password, hash) {
   if (!hash || typeof hash !== 'string' || !hash.includes(':')) return false;
   const [salt, key] = hash.split(':');
   try {
-    const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
-    return key === derivedKey;
+    const derivedKey = crypto.scryptSync(password, salt, 64);
+    const storedKey = Buffer.from(key, 'hex');
+    return storedKey.length === derivedKey.length && crypto.timingSafeEqual(storedKey, derivedKey);
   } catch {
     return false;
   }
@@ -115,7 +116,7 @@ function verifyPassword(password, hash) {
 function generateCustomerPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let pwd = '';
-  for(let i=0; i<6; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  for(let i=0; i<6; i++) pwd += chars.charAt(crypto.randomInt(chars.length));
   return pwd;
 }
 // --------------------------------------
@@ -136,6 +137,7 @@ const allowedOrigins = [...new Set(`${process.env.CORS_ORIGINS || ''},https://af
   .filter(Boolean))];
 
 app.disable('x-powered-by');
+app.use(require('./backend/security-headers.cjs').securityHeaders);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
@@ -1594,7 +1596,7 @@ app.post('/api/auth/customer/forgot-password/request-otp', async (req, res) => {
     return res.status(404).json({ success: false, error: 'Customer not found. Please register first.' });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = crypto.randomInt(100000, 1000000).toString();
   customerOtps.set(cleanPhone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
   
   const templateResult = await sendWhatsAppTemplate({
