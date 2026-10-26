@@ -2406,6 +2406,8 @@
   "ui.Capture a selfie or confirm that the camera is not working.": "സെൽഫി എടുക്കുക അല്ലെങ്കിൽ ക്യാമറ പ്രവർത്തിക്കുന്നില്ലെന്ന് സ്ഥിരീകരിക്കുക.",
   "ui.A valid current GPS location is required.": "സാധുവായ നിലവിലെ GPS ലൊക്കേഷൻ നിർബന്ധമാണ്.",
   "ui.Phone notifications": "ഫോൺ അറിയിപ്പുകൾ",
+  "ui.Sync phone registrations": "ഫോൺ രജിസ്ട്രേഷനുകൾ സമന്വയിപ്പിക്കുക",
+  "ui.Syncing phone registrations…": "ഫോൺ രജിസ്ട്രേഷനുകൾ സമന്വയിപ്പിക്കുന്നു…",
   "ui.Phone not connected": "ഫോൺ ബന്ധിപ്പിച്ചിട്ടില്ല",
   "ui.Connect phone notifications": "ഫോൺ അറിയിപ്പുകൾ ബന്ധിപ്പിക്കുക",
   "ui.Connecting phone notifications…": "ഫോൺ അറിയിപ്പുകൾ ബന്ധിപ്പിക്കുന്നു…",

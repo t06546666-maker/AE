@@ -16,6 +16,19 @@ function createProfilePushRegistry(database) {
    if(updates.push_token!==undefined){if(typeof updates.push_token!=='string'||!updates.push_token.trim()||updates.push_token.length>4096)throw Error('Invalid phone token');data.push_token=updates.push_token.trim();}
    if(updates.push_enabled!==undefined){if(typeof updates.push_enabled!=='boolean')throw Error('Invalid notification preference');data.push_enabled=updates.push_enabled;}
    await(await document(profile.id)).set(data,{merge:true});
+  },
+  async syncLegacy(profile) {
+   const ref=await document(profile.id),db=await database();
+   return db.runTransaction(async tx=>{
+    const snapshot=await tx.get(ref),existing=snapshot.exists?snapshot.data():{};
+    const data={};
+    // Backfill missing token/preferences only. Never overwrite newer device data.
+    if(!Object.hasOwn(existing,'push_token')&&typeof profile.push_token==='string'&&profile.push_token.trim()&&profile.push_token.length<=4096)data.push_token=profile.push_token.trim();
+    if(!Object.hasOwn(existing,'push_enabled')&&typeof profile.push_enabled==='boolean')data.push_enabled=profile.push_enabled;
+    if(Object.keys(data).length)tx.set(ref,data,{merge:true});
+    const result={...existing,...data};
+    return {registered:!!result.push_token,enabled:result.push_enabled!==false};
+   });
   }
  };
 }

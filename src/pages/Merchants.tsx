@@ -157,6 +157,18 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
     onError(error) { showToast(error.message, 'error'); },
   });
 
+  const syncPhones = useMutation({retry:false,mutationFn:async()=>{
+    let after:string|undefined;let logins=0,registered=0,needs=0,disabled=0;let previous='';
+    do {
+      const result=await apiFetch<{logins:number;registered:number;needsPhoneRegistration:number;disabled:number;hasMore:boolean;nextCursor:string|null}>('/api/admin/merchant-push-sync',{method:'POST',body:JSON.stringify({after})});
+      logins+=result.logins;registered+=result.registered;needs+=result.needsPhoneRegistration;disabled+=result.disabled;
+      if(!result.hasMore)break;
+      if(!result.nextCursor||result.nextCursor===previous)throw new Error('Sync paused. Please retry.');
+      previous=result.nextCursor;after=result.nextCursor;
+    }while(true);
+    return {logins,registered,needs,disabled};
+  },onSuccess:r=>showToast(`${r.logins} merchant logins checked. ${r.registered} phone registrations synced; ${r.needs} still need phone registration; ${r.disabled} have notifications disabled.`),onError:e=>showToast(e.message,'error')});
+
   function submit(event: FormEvent) {
     event.preventDefault();
     if (onboardStep >= 2 && !shopImages.length) { showToast('Add at least one shop photo.', 'error'); return; }
@@ -209,7 +221,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
 
   return (
     <div className={`admin-directory-page ${onboardingOnly?'admin-onboarding-only':''}`}>
-      <PageHeader title={onboardingOnly?uiText('Add merchant'):t('merchants.title')} subtitle={onboardingOnly?t('merchants.createSecure'):uiText('Stores and linked customers across your network')} actions={onboardingOnly?<Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link>:<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
+      <PageHeader title={onboardingOnly?uiText('Add merchant'):t('merchants.title')} subtitle={onboardingOnly?t('merchants.createSecure'):uiText('Stores and linked customers across your network')} actions={onboardingOnly?<Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link>:<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button secondary" disabled={syncPhones.isPending} onClick={()=>syncPhones.mutate()}>{uiText(syncPhones.isPending?"Syncing phone registrations…":"Sync phone registrations")}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
       <div className="admin-directory-metrics"><article><span>{uiText('Matching merchants')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.pagination.total.toLocaleString('en-IN')}</strong></article><article><span>{uiText('Categories')}</span><strong>{categoriesQuery.isPending?'…':categoriesQuery.isError?'—':categoriesQuery.data?.categories.length}</strong></article><article><span>{uiText('Showing on this page')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.merchants.length}</strong></article></div>
       {(onboardingOnly || showOnboarding) && <form className="panel merchant-form" onSubmit={submit}>
         <div className="panel-heading">

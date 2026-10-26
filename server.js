@@ -2917,6 +2917,8 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   res.json({ success: true, welcomeAccepted: null });
 });
 
+require('./backend/merchant-push-sync.cjs').registerMerchantPushSync(app,{auth:requireAuth,adminRole:requireRole('admin'),supabase:supabaseAdmin,registry:profilePushRegistry});
+
 require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification,getTarget:(id,legacy)=>profilePushRegistry.get(id,legacy)});
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
