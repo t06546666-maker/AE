@@ -2394,5 +2394,11 @@
   "ui.No active working day.": "സജീവമായ ജോലിദിവസമില്ല.",
   "ui.Start this manager’s attendance now without a selfie or GPS? This will be marked as an Admin override.": "സെൽഫിയോ GPS വിവരങ്ങളോ ഇല്ലാതെ ഈ മാനേജരുടെ ഹാജർ ഇപ്പോൾ ആരംഭിക്കണോ? ഇത് അഡ്മിൻ മാറ്റമായി അടയാളപ്പെടുത്തും.",
   "ui.End this manager’s active working day now? This does not close any active shop visit.": "ഈ മാനേജരുടെ സജീവമായ ജോലിദിവസം ഇപ്പോൾ അവസാനിപ്പിക്കണോ? സജീവമായ കടസന്ദർശനങ്ങൾ ഇതിലൂടെ അവസാനിക്കില്ല.",
-  "ui.Confirm attendance override": "ഹാജർ മാറ്റം സ്ഥിരീകരിക്കുക"
+  "ui.Confirm attendance override": "ഹാജർ മാറ്റം സ്ഥിരീകരിക്കുക",
+  "ui.Delete permanently": "സ്ഥിരമായി ഇല്ലാതാക്കുക",
+  "ui.Delete Field Manager permanently": "ഫീൽഡ് മാനേജരെ സ്ഥിരമായി ഇല്ലാതാക്കുക",
+  "ui.Type DELETE to confirm": "സ്ഥിരീകരിക്കാൻ DELETE എന്ന് ടൈപ്പ് ചെയ്യുക",
+  "ui.Deleting…": "ഇല്ലാതാക്കുന്നു…",
+  "ui.This permanently deletes the login, profile and linked attendance, selfies, visits, sessions, routes, work requests and field activity. This cannot be undone. Shops, customers, rewards and financial records are not deleted.": "ലോഗിൻ, പ്രൊഫൈൽ, ബന്ധപ്പെട്ട ഹാജർ, സെൽഫികൾ, സന്ദർശനങ്ങൾ, സെഷനുകൾ, റൂട്ടുകൾ, ജോലി അഭ്യർത്ഥനകൾ, പ്രവർത്തനങ്ങൾ എന്നിവ സ്ഥിരമായി ഇല്ലാതാക്കും. ഇത് തിരികെ കൊണ്ടുവരാനാകില്ല. കടകൾ, ഉപഭോക്താക്കൾ, റിവാർഡുകൾ, സാമ്പത്തിക രേഖകൾ എന്നിവ ഇല്ലാതാക്കില്ല.",
+  "ui.Deletion is blocked if financial or other protected records still depend on this account.": "സാമ്പത്തിക രേഖകളോ മറ്റ് സംരക്ഷിത രേഖകളോ ഈ അക്കൗണ്ടുമായി ബന്ധപ്പെട്ടുണ്ടെങ്കിൽ ഇല്ലാതാക്കൽ അനുവദിക്കില്ല."
 }

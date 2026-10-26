@@ -7,7 +7,12 @@ export async function getAttendanceLocation(
  for(let attempt=1;attempt<=3;attempt++){
   onAttempt(attempt);
   try{
-   const position=await new Promise<GeolocationPosition>((resolve,reject)=>geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:attempt<3,timeout:10000,maximumAge:0}));
+   const position=await new Promise<GeolocationPosition>((resolve,reject)=>{
+    // Some browsers fail to invoke either callback. Bound every attempt ourselves.
+    const timer=setTimeout(()=>reject({code:3}),10500);
+    try{geolocation.getCurrentPosition(position=>{clearTimeout(timer);resolve(position);},error=>{clearTimeout(timer);reject(error);},{enableHighAccuracy:attempt<3,timeout:10000,maximumAge:0});}
+    catch(error){clearTimeout(timer);reject(error);}
+   });
    const {latitude,longitude,accuracy}=position.coords;
    if(!Number.isFinite(latitude)||Math.abs(latitude)>90||!Number.isFinite(longitude)||Math.abs(longitude)>180||!Number.isFinite(accuracy)||accuracy<0)throw {code:2};
    return position;

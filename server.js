@@ -2124,11 +2124,10 @@ app.post('/api/admin/field-managers', requireAuth, requireRole('admin'), async (
 app.delete('/api/admin/field-managers/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const id = req.params.id;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ success: false, error: 'Invalid manager ID' });
-  const { data: manager, error: lookupError } = await supabaseAdmin.from('profiles').select('id').eq('id', id).eq('role', 'field_manager').maybeSingle();
-  if (lookupError) return res.status(500).json({ success: false, error: lookupError.message });
-  if (!manager) return res.status(404).json({ success: false, error: 'Field manager not found' });
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
-  if (error) return res.status(400).json({ success: false, error: error.message });
+  const reason=typeof req.body?.reason==='string'?req.body.reason.trim():'';
+  if(req.body?.confirmation!=='DELETE'||reason.length<5||reason.length>2000)return res.status(400).json({error:'Type DELETE and enter a reason of 5–2000 characters.'});
+  const {error}=await supabaseAdmin.rpc('admin_delete_field_manager',{p_admin:req.auth.profile.id,p_manager:id,p_reason:reason});
+  if(error)return res.status(error.code==='23503'?409:error.code==='P0002'?404:error.code==='42501'?403:503).json({error:error.code==='23503'?'Linked financial or protected records prevent permanent deletion. No data was deleted.':error.code==='P0002'?'Field manager not found.':error.code==='42501'?'Admin access required.':'Deletion could not be completed. Check the deletion database update and refresh before retrying.'});
   return res.json({ success: true });
 });
 
