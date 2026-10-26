@@ -1913,7 +1913,7 @@ app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), 
   res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
 });
 app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin'),async(req,res)=>{
-  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie,admin_started_by,admin_started_at,admin_start_reason,admin_ended_by,admin_ended_at,admin_end_reason','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
+  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie,admin_started_by,admin_started_at,admin_start_reason,admin_ended_by,admin_ended_at,admin_end_reason','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,merchant_name_snapshot,merchant_code_snapshot,deleted_merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
   const selection=selections[req.query.type||'visits'];
   if(!selection)return res.status(400).json({error:'Invalid record type'});
   const paging=paginationFromRequest(req,25,100);
@@ -1922,6 +1922,10 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   let result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
   if(selection[0]==='field_attendance'&&result.error&&['42703','PGRST204'].includes(result.error.code)){
     query=query.select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie',{count:'exact'});
+    result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
+  }
+  if(selection[0]==='field_manager_activity'&&result.error&&['42703','PGRST204'].includes(result.error.code)){
+    query=query.select('id,merchant_id,action,created_at,merchants(name,merchant_code)',{count:'exact'});
     result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
   }
   if(result.error)return res.status(500).json({error:result.error.message});
@@ -3561,77 +3565,17 @@ app.post('/api/merchants/:id/reset-password', requireAuth, (req, res, next) => {
 
 app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
-  const { data: merchant, error: merchantError } = await supabaseAdmin
-    .from('merchants')
-    .select('id,name')
-    .eq('id', merchantId)
-    .single();
-  if (merchantError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
-
-  const [{ data: profiles }, { data: orders }, { data: memberships }, { data: legacyCustomers }] = await Promise.all([
-    supabaseAdmin.from('profiles').select('id').eq('role', 'merchant').eq('merchant_id', merchantId),
-    supabaseAdmin.from('orders').select('id,customer_id').eq('merchant_id', merchantId),
-    supabaseAdmin.from('customer_merchants').select('customer_id').eq('merchant_id', merchantId),
-    supabaseAdmin.from('customers').select('id,merchant_id').eq('merchant_id', merchantId),
-  ]);
-
-  for (const profile of profiles || []) {
-    await supabaseAdmin.auth.admin.deleteUser(profile.id);
-  }
-  await supabaseAdmin.from('profiles').delete().eq('merchant_id', merchantId);
-
-  const orderIds = [...new Set((orders || []).map((order) => order.id).filter(Boolean))];
-  const customerIds = [...new Set([
-    ...(orders || []).map((order) => order.customer_id),
-    ...(memberships || []).map((row) => row.customer_id),
-    ...(legacyCustomers || []).map((customer) => customer.id),
-  ].filter(Boolean))];
-
-  if (orderIds.length) {
-    await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orderIds);
-  }
-  await supabaseAdmin.from('orders').delete().eq('merchant_id', merchantId);
-  await supabaseAdmin.from('customer_merchants').delete().eq('merchant_id', merchantId);
-  await supabaseAdmin.from('customer_orders').delete().eq('merchant_id', merchantId);
-
-  let deletedCustomers = 0;
-  if (customerIds.length) {
-    const [{ data: remainingMemberships }, { data: candidateCustomers }] = await Promise.all([
-      supabaseAdmin.from('customer_merchants').select('customer_id,merchant_id').in('customer_id', customerIds),
-      supabaseAdmin.from('customers').select('id,merchant_id').in('id', customerIds),
-    ]);
-    const remainingByCustomer = new Map();
-    for (const row of remainingMemberships || []) {
-      if (!remainingByCustomer.has(row.customer_id)) remainingByCustomer.set(row.customer_id, []);
-      remainingByCustomer.get(row.customer_id).push(row.merchant_id);
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(merchantId)) return res.status(400).json({error:'Invalid merchant ID'});
+  if (req.body?.confirmation !== 'DELETE') return res.status(400).json({error:'Confirm merchant deletion first.'});
+  try {
+    const { error } = await supabaseAdmin.rpc('admin_delete_unused_merchant', {p_admin:req.auth.profile.id,p_merchant:merchantId});
+    if (error) {
+      const code=error.code;
+      const status=code==='23503'?409:code==='P0002'?404:code==='42501'?403:503;
+      return res.status(status).json({success:false,error:code==='23503'?'This merchant has linked business or financial records and cannot be deleted. No records were removed.':code==='P0002'?'Merchant not found':code==='42501'?'Admin access required':'Safe merchant deletion is not available. Apply the merchant deletion database update first.'});
     }
-    const orphanCustomerIds = [];
-    for (const customer of candidateCustomers || []) {
-      const remainingMerchantIds = remainingByCustomer.get(customer.id) || [];
-      if (!remainingMerchantIds.length) {
-        orphanCustomerIds.push(customer.id);
-      } else if (customer.merchant_id === merchantId) {
-        await supabaseAdmin.from('customers').update({ merchant_id: remainingMerchantIds[0] }).eq('id', customer.id);
-      }
-    }
-    if (orphanCustomerIds.length) {
-      const { data: orphanOrders } = await supabaseAdmin.from('orders').select('id').in('customer_id', orphanCustomerIds);
-      const orphanOrderIds = (orphanOrders || []).map((order) => order.id).filter(Boolean);
-      if (orphanOrderIds.length) await supabaseAdmin.from('whatsapp_messages').delete().in('order_id', orphanOrderIds);
-      await supabaseAdmin.from('whatsapp_messages').delete().in('customer_id', orphanCustomerIds);
-      await supabaseAdmin.from('orders').delete().in('customer_id', orphanCustomerIds);
-      await supabaseAdmin.from('customer_merchants').delete().in('customer_id', orphanCustomerIds);
-      await supabaseAdmin.from('customer_orders').delete().in('customer_id', orphanCustomerIds);
-      
-      const { error: customerDeleteError } = await supabaseAdmin.from('customers').delete().in('id', orphanCustomerIds);
-      if (customerDeleteError) return res.status(400).json({ success: false, error: customerDeleteError.message });
-      deletedCustomers = orphanCustomerIds.length;
-    }
-  }
-
-  const { error } = await supabaseAdmin.from('merchants').delete().eq('id', merchantId);
-  if (error) return res.status(400).json({ success: false, error: error.message });
-  res.json({ success: true, deletedCustomers });
+    res.json({success:true,deletedCustomers:0});
+  } catch { res.status(503).json({success:false,error:'Could not confirm deletion. Refresh the merchant list before retrying.'}); }
 });
 
 function customerOrderDto(row) {

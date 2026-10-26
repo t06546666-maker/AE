@@ -142,9 +142,10 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   });
 
   const remove = useMutation({
+    retry: false,
     mutationFn: (merchant: Merchant) => apiFetch<{ deletedCustomers?: number }>(
       `/api/merchants/${encodeURIComponent(merchant.id)}`,
-      { method: 'DELETE' },
+      { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE'}) },
     ),
     onSuccess(data) {
       showToast(data.deletedCustomers
@@ -195,7 +196,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   }, [mapPickerOpen]);
 
   function deleteMerchant(merchant: Merchant) {
-    if (window.confirm(`Delete ${merchant.name} fully?\n\nThis removes the merchant login, orders, links, and customers that belong only to this merchant.`)) {
+    if (window.confirm(`Delete ${merchant.name} fully?\n\nThis removes an unused merchant and its login. Linked business or financial records block deletion. Customer records and Field Manager activity are preserved.`)) {
       remove.mutate(merchant);
     }
   }
