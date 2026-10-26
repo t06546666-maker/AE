@@ -112,6 +112,8 @@ export function App() {
   const [restoring, setRestoring] = useState(Boolean(getAccessToken()));
   const [restoreError, setRestoreError] = useState('');
   const [restoreAttempt, setRestoreAttempt] = useState(0);
+  const [pushSetupAttempt,setPushSetupAttempt]=useState(0);
+  useEffect(()=>{const retry=()=>setPushSetupAttempt(value=>value+1);window.addEventListener('ae:register-push',retry);return()=>window.removeEventListener('ae:register-push',retry);},[]);
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -247,10 +249,10 @@ export function App() {
             void PushNotifications.register();
           }, 15000);
         } else reportPush('Allow notifications in Android settings to receive alerts.');
-      }).catch((error) => reportPush(`Notification setup failed: ${error.message}`)); }, 8000);
+      }).catch((error) => reportPush(`Notification setup failed: ${error.message}`)); }, pushSetupAttempt ? 0 : 1000);
     }
     return () => { disposed = true; clearTimeout(setupTimer); clearTimeout(registrationTimer); if (registrationRetryTimer) clearInterval(registrationRetryTimer); for (const listener of listeners) void listener.remove(); };
-  }, [user?.id, user?.role, navigate, queryClient]);
+  }, [user?.id, user?.role, navigate, queryClient, pushSetupAttempt]);
 
   useEffect(() => {
     const token = getAccessToken();

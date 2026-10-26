@@ -2404,5 +2404,15 @@
   "ui.Current location is required. Attendance without a selfie is marked for Admin.": "നിലവിലെ ലൊക്കേഷൻ നിർബന്ധമാണ്. സെൽഫി ഇല്ലാത്ത ഹാജർ അഡ്മിന് പ്രത്യേകം കാണിക്കും.",
   "ui.No selfie captured": "സെൽഫി എടുത്തിട്ടില്ല",
   "ui.Capture a selfie or confirm that the camera is not working.": "സെൽഫി എടുക്കുക അല്ലെങ്കിൽ ക്യാമറ പ്രവർത്തിക്കുന്നില്ലെന്ന് സ്ഥിരീകരിക്കുക.",
-  "ui.A valid current GPS location is required.": "സാധുവായ നിലവിലെ GPS ലൊക്കേഷൻ നിർബന്ധമാണ്."
+  "ui.A valid current GPS location is required.": "സാധുവായ നിലവിലെ GPS ലൊക്കേഷൻ നിർബന്ധമാണ്.",
+  "ui.Phone notifications": "ഫോൺ അറിയിപ്പുകൾ",
+  "ui.Phone not connected": "ഫോൺ ബന്ധിപ്പിച്ചിട്ടില്ല",
+  "ui.Connect phone notifications": "ഫോൺ അറിയിപ്പുകൾ ബന്ധിപ്പിക്കുക",
+  "ui.Connecting phone notifications…": "ഫോൺ അറിയിപ്പുകൾ ബന്ധിപ്പിക്കുന്നു…",
+  "ui.Send test notification": "പരീക്ഷണ അറിയിപ്പ് അയയ്ക്കുക",
+  "ui.Notification server unavailable": "അറിയിപ്പ് സേവനം ലഭ്യമല്ല",
+  "ui.Notifications disabled": "അറിയിപ്പുകൾ ഓഫാണ്",
+  "ui.Phone registered for notifications.": "അറിയിപ്പുകൾക്കായി ഫോൺ രജിസ്റ്റർ ചെയ്തു.",
+  "ui.Receive checkout alerts while AE is in the background. Tap an alert to open the checkout request.": "AE പശ്ചാത്തലത്തിൽ പ്രവർത്തിക്കുമ്പോഴും ചെക്ക്ഔട്ട് അറിയിപ്പുകൾ ലഭിക്കും. അപേക്ഷ തുറക്കാൻ അറിയിപ്പിൽ ടാപ്പ് ചെയ്യുക.",
+  "ui.Open the installed AE app to connect this phone. The customer can send the checkout request from the website.": "ഈ ഫോൺ ബന്ധിപ്പിക്കാൻ ഇൻസ്റ്റാൾ ചെയ്ത AE ആപ്പ് തുറക്കുക. ഉപഭോക്താവിന് വെബ്സൈറ്റിൽ നിന്ന് ചെക്ക്ഔട്ട് അപേക്ഷ അയയ്ക്കാം."
 }

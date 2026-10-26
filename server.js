@@ -2907,6 +2907,8 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   res.json({ success: true, welcomeAccepted: null });
 });
 
+require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification});
+
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   const updates = {};
   if (req.body.push_token !== undefined) updates.push_token = cleanText(req.body.push_token, 4096);
