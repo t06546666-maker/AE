@@ -13,7 +13,7 @@ const tabs=[['visits','Visits'],['attendance','Attendance'],['updates','Onboardi
 const fields:Record<string,string[]>={visits:['merchants','check_in_at','check_out_at','challenge_status','status'],attendance:['work_date','started_at','ended_at','accuracy_m'],updates:['merchant_id','status','created_at'],sessions:['login_at','logout_at'],activity:['merchants','action','created_at'],requests:['kind','starts_at','ends_at','status']};
 const labels:Record<string,string>={merchants:'Merchant',merchant_id:'Merchant',check_in_at:'Check-in',check_out_at:'Check-out',challenge_status:'Challenge status',status:'Status',work_date:'Date',started_at:'Started',ended_at:'Ended',accuracy_m:'GPS accuracy',login_at:'Login',logout_at:'Logout',created_at:'Submitted',action:'Action',kind:'Request type',starts_at:'Start',ends_at:'End',notes:'Notes',reason:'Reason',outcome:'Outcome',follow_up_date:'Follow-up date',feedback:'Merchant feedback',problems:'Problems',admin_close_reason:'Admin close reason',payload:'Submitted details',photos:'Photos',selfie:'Attendance photo',report_image:'Visit photo'};
 function display(value:any,key=''):any{
- if(value==null||value==='')return '—';
+ if(value==null||value==='')return key==='selfie'?uiText('No selfie captured'):'—';
  if(Array.isArray(value))return value.map((item,index)=><div key={index}>{display(item,key)}</div>);
  if(typeof value==='object')return <dl className="admin-field-detail-grid">{Object.entries(value).map(([name,item])=><div key={name}><dt>{uiText(labels[name]||name.replaceAll('_',' '))}</dt><dd>{display(item,name)}</dd></div>)}</dl>;
  if(typeof value==='string'&&/^https:\/\//.test(value))return <a href={value} target="_blank" rel="noopener noreferrer">{uiText('Open attachment')}</a>;

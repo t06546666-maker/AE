@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const server=fs.readFileSync('server.js','utf8');
+const route=server.slice(server.indexOf("app.post('/api/field/attendance/start'"),server.indexOf("app.post('/api/field/attendance/end'"));
+let handler,inserted,calls=0;
+vm.runInNewContext(route,{app:{post(path,...handlers){handler=handlers.at(-1)}},requireAuth(){},requireRole(role){assert.equal(role,'field_manager');return ()=>{}},attendanceDate:()=> '2026-10-26',supabaseAdmin:{from(table){assert.equal(table,'field_attendance');return {insert(row){calls++;inserted=row;return {select(){return {async single(){return {data:{id:'attendance-id'},error:null}}}}}}}}}});
+const res=()=>({statusCode:200,status(n){this.statusCode=n;return this},json(body){this.body=body;return this}});
+const call=async body=>{const r=res();await handler({body,auth:{profile:{id:'trusted-manager'}}},r);return r};
+(async()=>{
+ const gps={latitude:10.7,longitude:76.7,accuracy_m:25};
+ assert.equal((await call({...gps,selfie:null,photo_unavailable:true,manager_id:'spoof'})).statusCode,201);
+ assert.equal(inserted.selfie,null);assert.equal(inserted.manager_id,'trusted-manager');
+ const selfie='data:image/jpeg;base64,'+'A'.repeat(120);
+ assert.equal((await call({...gps,selfie})).statusCode,201);assert.equal(inserted.selfie,selfie);
+ const before=calls;
+ for(const body of [{...gps},{...gps,photo_unavailable:'true'},{...gps,selfie:'invalid'},{photo_unavailable:true},{...gps,latitude:NaN,photo_unavailable:true},{...gps,longitude:181,photo_unavailable:true},{...gps,accuracy_m:-1,photo_unavailable:true}])assert.equal((await call(body)).statusCode,400);
+ assert.equal(calls,before,'Invalid captures must never insert attendance');
+ const sql=fs.readFileSync('supabase-field-attendance-photo-optional.sql','utf8');
+ assert.match(sql,/latitude is not null and longitude is not null and accuracy_m is not null/);
+ assert.doesNotMatch(sql,/update public|delete from/i);
+ console.log('PASS: valid GPS with photo or explicit camera fallback; invalid/missing GPS and malformed photos blocked; trusted manager ownership; no live attendance created.');
+})().catch(e=>{console.error(e);process.exitCode=1});

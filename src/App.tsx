@@ -1,3 +1,4 @@
+import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -207,10 +208,10 @@ export function App() {
           if (disposed) return;
           clearTimeout(registrationTimer);
           if (registrationRetryTimer) clearInterval(registrationRetryTimer);
-          void apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
+          void savePushRegistration(() => apiFetch(user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences', {
             method: 'PUT',
             body: JSON.stringify({ push_token: token.value, push_enabled: true })
-          }).then(() => reportPush('Phone registered for notifications.')).catch(error => reportPush(`Could not save phone registration: ${error.message}`));
+          }), () => !disposed).then(saved => { if (saved) reportPush('Phone registered for notifications.'); }).catch(error => { if (!disposed) reportPush(`Could not save phone registration: ${error.message}`); });
         }));
         listeners.push(await PushNotifications.addListener('registrationError', error => {
           clearTimeout(registrationTimer);
@@ -222,6 +223,7 @@ export function App() {
         listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
           void queryClient.invalidateQueries({ queryKey: ['customer'] });
           void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          void queryClient.invalidateQueries({ queryKey: ['shop-requests'] });
           reportPush('A notification was received on this phone.');
         }));
 

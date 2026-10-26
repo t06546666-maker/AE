@@ -67,9 +67,13 @@ async function sendPushNotification(token, title, body, data = {}) {
       data: Object.fromEntries(Object.entries(data).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)])),
       android: {
         priority: 'high',
+        // Checkout requests expire after ten minutes. Do not alert a phone
+        // reconnecting hours later about a request it can no longer handle.
+        ...(data.type === 'shop_checkout' ? { ttl: 10 * 60 * 1000 } : {}),
         notification: {
           channelId: 'ae_notifications',
-          sound: 'default'
+          sound: 'default',
+          ...(data.type === 'shop_checkout' && data.requestId ? { tag: `shop-checkout-${data.requestId}` } : {})
         }
       }
     });
@@ -476,11 +480,15 @@ async function pushToRole(role, title, body, data = {}) {
 }
 
 async function pushToMerchant(merchantId, title, body, data = {}) {
-  const { data: profiles } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', 'merchant').eq('merchant_id', merchantId);
-  await Promise.all((profiles || []).map(async (profile) => {
+  const { data: profiles, error } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', 'merchant').eq('merchant_id', merchantId);
+  if (error) throw new Error('Merchant notification recipients unavailable');
+  const outcomes = await Promise.all((profiles || []).map(async (profile) => {
     await saveAppNotification(profile.id, title, body, data);
-    if (profile.push_enabled !== false && profile.push_token) await sendPushNotification(profile.push_token, title, body, data);
+    if (profile.push_enabled === false) return 'disabled';
+    if (!profile.push_token) return 'no_token';
+    return await sendPushNotification(profile.push_token, title, body, data) ? 'accepted' : 'failed';
   }));
+  return { recipients: outcomes.length, accepted: outcomes.filter(value=>value==='accepted').length, disabled: outcomes.filter(value=>value==='disabled').length, missingToken: outcomes.filter(value=>value==='no_token').length, failed: outcomes.filter(value=>value==='failed').length };
 }
 
 async function pushToCustomer(customerId, title, body, data = {}) {
@@ -1634,8 +1642,11 @@ app.get('/api/field/attendance', requireAuth, requireRole('field_manager'), asyn
   res.json({ attendance: day.data, requests: requests.data || [] });
 });
 app.post('/api/field/attendance/start', requireAuth, requireRole('field_manager'), async (req, res) => {
-  const { selfie, latitude, longitude, accuracy_m } = req.body;
-  if (typeof selfie !== 'string' || !/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/]+=*$/.test(selfie) || selfie.length > 2800000 || selfie.length < 100 || ![latitude, longitude, accuracy_m].every(value => typeof value === 'number' && Number.isFinite(value)) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180 || accuracy_m < 0) return res.status(400).json({ error: 'A valid selfie and GPS location are required.' });
+  const { latitude, longitude, accuracy_m } = req.body;
+  const selfie = req.body.selfie || null;
+  if (!selfie && req.body.photo_unavailable !== true) return res.status(400).json({ error: 'Capture a selfie or confirm that the camera is not working.' });
+  if (selfie && (typeof selfie !== 'string' || !/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/]+=*$/.test(selfie) || selfie.length > 2800000 || selfie.length < 100)) return res.status(400).json({ error: 'Use a valid JPG or PNG selfie under 2 MB.' });
+  if (![latitude, longitude, accuracy_m].every(value => typeof value === 'number' && Number.isFinite(value)) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180 || accuracy_m < 0) return res.status(400).json({ error: 'A valid current GPS location is required.' });
   const { data, error } = await supabaseAdmin.from('field_attendance').insert({ manager_id: req.auth.profile.id, work_date: attendanceDate(), selfie, latitude, longitude, accuracy_m }).select('id,started_at').single();
   if (error) return res.status(error.code === '23505' ? 409 : 503).json({ error: error.code === '23505' ? 'Attendance already recorded for today. Refresh to view it.' : 'Could not record attendance. Check database setup.' });
   res.status(201).json({ attendance: data });
