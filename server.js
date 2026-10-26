@@ -3214,7 +3214,7 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
 app.get('/api/merchants', requireAuth, async (req, res) => {
   const paging = paginationFromRequest(req, 20, 100);
   let query = supabaseAdmin.from('merchants')
-    .select('id, merchant_code, name, email, phone, created_at', paging.enabled ? { count: 'exact' } : undefined)
+    .select('id, merchant_code, name, email, phone, created_at, category_id, merchant_categories(name)', paging.enabled ? { count: 'exact' } : undefined)
     .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
   if (req.query.networkId) query = query.eq('network_id', req.query.networkId);
@@ -3251,6 +3251,8 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
     merchants: (data || []).map((row) => ({
       id: row.id, merchantCode: row.merchant_code,
       name: row.name, email: row.email, phone: row.phone, joined: row.created_at,
+      categoryId: row.category_id || undefined,
+      category: row.merchant_categories?.name || undefined,
       orderCount: orderCounts.get(row.id) || 0,
       mustChangePassword: passwordStates.get(row.id) || false,
     })),
