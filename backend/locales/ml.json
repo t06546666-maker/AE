@@ -2435,5 +2435,11 @@
   "ui.Planned route between selected shops.": "തിരഞ്ഞെടുത്ത കടകൾക്കിടയിലെ ആസൂത്രിത യാത്രാമാർഗം.",
   "ui.Choose between 2 and 27 stops.": "2 മുതൽ 27 വരെ സന്ദർശനസ്ഥാനങ്ങൾ തിരഞ്ഞെടുക്കുക.",
   "ui.{{count}} stops · {{distance}} km": "{{count}} സ്ഥാനങ്ങൾ · {{distance}} കി.മീ.",
-  "ui.A selected shop no longer has a valid saved location. Refresh and select your stops again.": "തിരഞ്ഞെടുത്ത ഒരു കടയ്ക്ക് ഇപ്പോൾ സാധുവായ രേഖപ്പെടുത്തിയ സ്ഥാനമില്ല. പുതുക്കിയ ശേഷം സ്ഥാനങ്ങൾ വീണ്ടും തിരഞ്ഞെടുക്കുക."
+  "ui.A selected shop no longer has a valid saved location. Refresh and select your stops again.": "തിരഞ്ഞെടുത്ത ഒരു കടയ്ക്ക് ഇപ്പോൾ സാധുവായ രേഖപ്പെടുത്തിയ സ്ഥാനമില്ല. പുതുക്കിയ ശേഷം സ്ഥാനങ്ങൾ വീണ്ടും തിരഞ്ഞെടുക്കുക.",
+  "ui.Road route unavailable. Check Routes API settings and saved shop locations.": "റോഡ് വഴി ലഭ്യമല്ല. Routes API ക്രമീകരണങ്ങളും രേഖപ്പെടുത്തിയ കടയുടെ സ്ഥാനങ്ങളും പരിശോധിക്കുക.",
+  "ui.Road route could not load here. Open it in Google Maps to continue.": "ഇവിടെ റോഡ് വഴി ലോഡ് ചെയ്യാനായില്ല. തുടരാൻ Google Maps-ൽ തുറക്കുക.",
+  "ui.Open route in Google Maps": "Google Maps-ൽ യാത്രാമാർഗം തുറക്കുക",
+  "ui.Open route section {{number}} (stops {{from}}–{{to}})": "യാത്രാഭാഗം {{number}} തുറക്കുക (സ്ഥാനങ്ങൾ {{from}}–{{to}})",
+  "ui.Long routes are split into sections so every selected shop is included on mobile.": "മൊബൈലിൽ തിരഞ്ഞെടുത്ത എല്ലാ കടകളും ഉൾപ്പെടുത്താൻ നീണ്ട യാത്രകൾ ഭാഗങ്ങളായി കാണിക്കുന്നു.",
+  "ui.Choose at least two shops to open directions.": "യാത്രാമാർഗം തുറക്കാൻ കുറഞ്ഞത് രണ്ട് കടകൾ തിരഞ്ഞെടുക്കുക."
 }
