@@ -1,4 +1,3 @@
-import { MerchantPushSetup } from './MerchantPushSetup';
 import { uiText } from '../uiText';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -186,7 +185,6 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
                 </> : null}
             </div>
           </div>
-          {user.role==='merchant' && <MerchantPushSetup userId={user.id}/>}
           <FieldSignOutContext.Provider value={user.role === 'field_manager' ? signOut : null}>{children}</FieldSignOutContext.Provider>
         </main>
       </div>
