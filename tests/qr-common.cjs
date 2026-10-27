@@ -24,7 +24,31 @@ assert.deepEqual(
 );
 assert.equal(assignedHeading(5, false, 2).id, 'savings');
 
-// 1. Default A3 4-in-1 layout test with 6 shops (produces 2 A3 sheets: Sheet 1 with 4, Sheet 2 with 2 + 2 empty slots)
+// 1. Default 2-in-1 layout test with 5 shops (produces 3 sheets: Sheet 1 with 2, Sheet 2 with 2, Sheet 3 with 1 + 1 empty slot)
+const html2in1 = batchPosterDocument(
+  'data:image/png;base64,AA',
+  Array.from({ length: 5 }, (_, i) => ({
+    name: `Shop ${i + 1}<script>`,
+    merchant_code: `M00${i + 1}&code`,
+    qr: `data:image/svg+xml,test${i}`,
+    lines: assignedHeading(i, true, 0).lines,
+  })),
+  { size: 27, weight: 900, design: 'bold', scan: 'സ്കാൻ ചെയ്യൂ' }
+);
+
+assert.equal((html2in1.match(/<article /g) || []).length, 5);
+assert.equal((html2in1.match(/class="ae-2in1-sheet"/g) || []).length, 3);
+assert.equal((html2in1.match(/ae-2in1-slot-empty/g) || []).length, 1);
+assert.ok(html2in1.includes('@page{size:A4 landscape;margin:0}'));
+assert.ok(html2in1.includes('ae-2in1-cut-line-v'));
+assert.ok(html2in1.includes('✂'));
+assert.ok(html2in1.includes('break-after:page'));
+assert.ok(!html2in1.includes('<script>'));
+assert.ok(html2in1.includes('Shop 5&lt;script&gt;'));
+assert.ok(html2in1.includes('M001&amp;code'));
+for (let i = 0; i < 5; i++) assert.ok(html2in1.includes(`data:image/svg+xml,test${i}`));
+
+// 2. Explicit A3 4-in-1 layout test with 6 shops (produces 2 A3 sheets: Sheet 1 with 4, Sheet 2 with 2 + 2 empty slots)
 const htmlA3 = batchPosterDocument(
   'data:image/png;base64,AA',
   Array.from({ length: 6 }, (_, i) => ({
@@ -33,7 +57,7 @@ const htmlA3 = batchPosterDocument(
     qr: `data:image/svg+xml,test${i}`,
     lines: assignedHeading(i, true, 0).lines,
   })),
-  { size: 27, weight: 900, design: 'bold', scan: 'സ്കാൻ ചെയ്യൂ' }
+  { size: 27, weight: 900, design: 'bold', scan: 'സ്കാൻ ചെയ്യൂ', paperSize: 'A3' }
 );
 
 assert.equal((htmlA3.match(/<article /g) || []).length, 6);
@@ -46,7 +70,7 @@ assert.ok(htmlA3.includes('Shop 6&lt;script&gt;'));
 assert.ok(htmlA3.includes('M001&amp;code'));
 for (let i = 0; i < 6; i++) assert.ok(htmlA3.includes(`data:image/svg+xml,test${i}`));
 
-// 2. A5 single layout test
+// 3. A5 single layout test
 const htmlA5 = batchPosterDocument(
   'data:image/png;base64,AA',
   Array.from({ length: 6 }, (_, i) => ({
@@ -59,10 +83,22 @@ const htmlA5 = batchPosterDocument(
 );
 assert.equal((htmlA5.match(/<article /g) || []).length, 6);
 assert.equal((htmlA5.match(/class="ae-a3-sheet"/g) || []).length, 0);
+assert.equal((htmlA5.match(/class="ae-2in1-sheet"/g) || []).length, 0);
 assert.ok(htmlA5.includes('@page{size:A5 portrait;margin:0}'));
 assert.ok(htmlA5.includes('break-after:page'));
 
-// 3. Single poster document test (A3: 4 copies on 1 sheet, A5: 1 copy)
+// 4. Single poster document test (Default 2in1: 2 copies on 1 sheet, A3: 4 copies on 1 sheet, A5: 1 copy)
+const single2in1 = singlePosterDocument(
+  'data:image/png;base64,AA',
+  { name: 'Baker & Spice', merchant_code: 'BSP-01', qr: 'data:image/svg+xml,bsp', lines: headingPresets[0].lines },
+  { size: 27, weight: 900, design: 'bold', scan: 'സ്കാൻ ചെയ്യൂ' }
+);
+assert.equal((single2in1.match(/<article /g) || []).length, 2, 'Default 2-in-1 single poster should repeat 2 copies on 1 sheet');
+assert.ok(single2in1.includes('ae-2in1-sheet'));
+assert.ok(single2in1.includes('@page{size:A4 landscape;margin:0}'));
+assert.ok(single2in1.includes('Baker &amp; Spice'));
+assert.ok(single2in1.includes('BSP-01'));
+
 const singleA3 = singlePosterDocument(
   'data:image/png;base64,AA',
   { name: 'Baker & Spice', merchant_code: 'BSP-01', qr: 'data:image/svg+xml,bsp', lines: headingPresets[0].lines },
@@ -70,6 +106,7 @@ const singleA3 = singlePosterDocument(
 );
 assert.equal((singleA3.match(/<article /g) || []).length, 4, 'A3 single poster should repeat 4 copies on 1 sheet');
 assert.ok(singleA3.includes('ae-a3-sheet'));
+assert.ok(singleA3.includes('@page{size:A3 portrait;margin:0}'));
 assert.ok(singleA3.includes('Baker &amp; Spice'));
 assert.ok(singleA3.includes('BSP-01'));
 
@@ -80,5 +117,6 @@ const singleA5 = singlePosterDocument(
 );
 assert.equal((singleA5.match(/<article /g) || []).length, 1);
 assert.ok(!singleA5.includes('ae-a3-sheet'));
+assert.ok(!singleA5.includes('ae-2in1-sheet'));
 
-console.log('PASS: six-merchant rotation, A3 4-in-1 layout, empty slot placeholders, merchant code escaping, and A5 fallback');
+console.log('PASS: six-merchant rotation, 2-in-1 default layout (2 per page), A3 4-in-1 layout, empty slot placeholders, merchant code escaping, and A5 fallback');

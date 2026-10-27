@@ -18,12 +18,14 @@ export type PosterPage = {
   details?: string;
 };
 
+export type PaperLayout = '2in1' | 'A3' | 'A5';
+
 export interface PosterSettings {
   size: number;
   weight: number;
   design: string;
   scan: string;
-  paperSize?: 'A3' | 'A5';
+  paperSize?: PaperLayout;
   showDetails?: boolean;
 }
 
@@ -52,19 +54,20 @@ export function batchPosterDocument(
   pages: PosterPage[],
   settings: PosterSettings
 ) {
-  const isA3 = settings.paperSize !== 'A5';
+  const layout: PaperLayout = settings.paperSize || '2in1';
 
-  if (!isA3) {
+  if (layout === 'A5') {
     return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>AE Merchant Posters</title><style>${posterCss}\n.ae-poster-export .ae-counter-poster{break-after:page;page-break-after:always}.ae-poster-export .ae-counter-poster:last-child{break-after:auto;page-break-after:auto}\n@page{size:A5 portrait;margin:0}</style></head><body class="ae-poster-export">${pages.map(page => renderPosterArticle(page, logo, settings)).join('')}</body></html>`;
   }
 
-  const sheets: PosterPage[][] = [];
-  for (let i = 0; i < pages.length; i += 4) {
-    sheets.push(pages.slice(i, i + 4));
-  }
+  if (layout === 'A3') {
+    const sheets: PosterPage[][] = [];
+    for (let i = 0; i < pages.length; i += 4) {
+      sheets.push(pages.slice(i, i + 4));
+    }
 
-  const sheetsHtml = sheets.map((sheet, sheetIdx) => {
-    return `<div class="ae-a3-sheet" data-sheet="${sheetIdx + 1}">
+    const sheetsHtml = sheets.map((sheet, sheetIdx) => {
+      return `<div class="ae-a3-sheet" data-sheet="${sheetIdx + 1}">
   <div class="ae-a3-slot ae-a3-slot-1">${sheet[0] ? renderPosterArticle(sheet[0], logo, settings) : '<div class="ae-a3-slot-empty"><div class="ae-a3-empty-hint"><span>Slot 1</span></div></div>'}</div>
   <div class="ae-a3-slot ae-a3-slot-2">${sheet[1] ? renderPosterArticle(sheet[1], logo, settings) : '<div class="ae-a3-slot-empty"><div class="ae-a3-empty-hint"><span>Slot 2</span></div></div>'}</div>
   <div class="ae-a3-slot ae-a3-slot-3">${sheet[2] ? renderPosterArticle(sheet[2], logo, settings) : '<div class="ae-a3-slot-empty"><div class="ae-a3-empty-hint"><span>Slot 3</span></div></div>'}</div>
@@ -73,9 +76,27 @@ export function batchPosterDocument(
   <div class="ae-a3-cut-line-v" aria-hidden="true"></div>
   <div class="ae-a3-cut-center" aria-hidden="true">✂</div>
 </div>`;
+    }).join('');
+
+    return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>AE Merchant Posters (A3 · 4 in 1)</title><style>${posterCss}\n@page{size:A3 portrait;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-a3-sheet{break-after:page;page-break-after:always}\n.ae-poster-export .ae-a3-sheet:last-child{break-after:auto;page-break-after:auto}</style></head><body class="ae-poster-export ae-export-a3">${sheetsHtml}</body></html>`;
+  }
+
+  // 2 in 1 layout (2 QR codes per page on A4 landscape, 297mm x 210mm)
+  const sheets: PosterPage[][] = [];
+  for (let i = 0; i < pages.length; i += 2) {
+    sheets.push(pages.slice(i, i + 2));
+  }
+
+  const sheetsHtml = sheets.map((sheet, sheetIdx) => {
+    return `<div class="ae-2in1-sheet" data-sheet="${sheetIdx + 1}">
+  <div class="ae-2in1-slot ae-2in1-slot-1">${sheet[0] ? renderPosterArticle(sheet[0], logo, settings) : '<div class="ae-2in1-slot-empty"><div class="ae-a3-empty-hint"><span>Slot 1</span></div></div>'}</div>
+  <div class="ae-2in1-slot ae-2in1-slot-2">${sheet[1] ? renderPosterArticle(sheet[1], logo, settings) : '<div class="ae-2in1-slot-empty"><div class="ae-a3-empty-hint"><span>Slot 2</span></div></div>'}</div>
+  <div class="ae-2in1-cut-line-v" aria-hidden="true"></div>
+  <div class="ae-2in1-cut-center" aria-hidden="true">✂</div>
+</div>`;
   }).join('');
 
-  return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>AE Merchant Posters (A3)</title><style>${posterCss}\n@page{size:A3 portrait;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-a3-sheet{break-after:page;page-break-after:always}\n.ae-poster-export .ae-a3-sheet:last-child{break-after:auto;page-break-after:auto}</style></head><body class="ae-poster-export ae-export-a3">${sheetsHtml}</body></html>`;
+  return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>AE Merchant Posters (2 in 1 Page)</title><style>${posterCss}\n@page{size:A4 landscape;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-2in1-sheet{break-after:page;page-break-after:always}\n.ae-poster-export .ae-2in1-sheet:last-child{break-after:auto;page-break-after:auto}</style></head><body class="ae-poster-export ae-export-2in1">${sheetsHtml}</body></html>`;
 }
 
 export function singlePosterDocument(
@@ -83,7 +104,7 @@ export function singlePosterDocument(
   page: PosterPage,
   settings: PosterSettings & { alignment?: string; colours?: string[]; scanStyle?: string; accents?: boolean }
 ) {
-  const isA3 = settings.paperSize === 'A3';
+  const layout: PaperLayout = settings.paperSize || '2in1';
   const colours = settings.colours || ['#102967', '#7533c9', '#086de0'];
   const alignment = settings.alignment || 'center';
   const scanStyle = settings.scanStyle || 'pill';
@@ -93,11 +114,12 @@ export function singlePosterDocument(
 
   const articleHtml = `<article class="ae-counter-poster ae-poster-${escape(settings.design)} ae-scan-${escape(scanStyle)}${accents ? ' ae-poster-accents' : ''}" style="${cssVars}"><div class="ae-poster-paper"><img class="ae-poster-logo" src="${logo}" alt="AE"><div class="ae-poster-divider"></div><h1 class="ae-poster-headline">${page.lines.map(line => `<span>${escape(line)}</span>`).join('')}</h1><div class="ae-poster-scan">${escape(settings.scan)}</div><div class="ae-poster-qr"><img src="${page.qr}" alt="Merchant QR"></div><div class="ae-poster-shop"><div class="ae-poster-shop-name">${escape(page.name)}</div>${showCode ? `<div class="ae-poster-shop-code">${escape(page.merchant_code || '')}</div>` : ''}</div><div class="ae-poster-divider"></div><div class="ae-poster-wave"></div></div></article>`;
 
-  if (!isA3) {
+  if (layout === 'A5') {
     return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>${escape(page.name)} - AE A5</title><style>${posterCss}\n@page{size:A5 portrait;margin:0}</style></head><body class="ae-poster-export">${articleHtml}</body></html>`;
   }
 
-  return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>${escape(page.name)} - AE A3 (4 in 1)</title><style>${posterCss}\n@page{size:A3 portrait;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-a3-sheet{break-after:avoid;page-break-after:avoid}</style></head><body class="ae-poster-export ae-export-a3"><div class="ae-a3-sheet" data-sheet="1">
+  if (layout === 'A3') {
+    return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>${escape(page.name)} - AE A3 (4 in 1)</title><style>${posterCss}\n@page{size:A3 portrait;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-a3-sheet{break-after:avoid;page-break-after:avoid}</style></head><body class="ae-poster-export ae-export-a3"><div class="ae-a3-sheet" data-sheet="1">
   <div class="ae-a3-slot ae-a3-slot-1">${articleHtml}</div>
   <div class="ae-a3-slot ae-a3-slot-2">${articleHtml}</div>
   <div class="ae-a3-slot ae-a3-slot-3">${articleHtml}</div>
@@ -105,5 +127,14 @@ export function singlePosterDocument(
   <div class="ae-a3-cut-line-h" aria-hidden="true"></div>
   <div class="ae-a3-cut-line-v" aria-hidden="true"></div>
   <div class="ae-a3-cut-center" aria-hidden="true">✂</div>
+</div></body></html>`;
+  }
+
+  // 2 in 1 layout (2 copies on 1 page)
+  return `<!doctype html><html lang="ml"><head><meta charset="utf-8"><title>${escape(page.name)} - AE 2 in 1 Page</title><style>${posterCss}\n@page{size:A4 landscape;margin:0}\n.ae-poster-export .ae-counter-poster{break-after:avoid;page-break-after:avoid}\n.ae-poster-export .ae-2in1-sheet{break-after:avoid;page-break-after:avoid}</style></head><body class="ae-poster-export ae-export-2in1"><div class="ae-2in1-sheet" data-sheet="1">
+  <div class="ae-2in1-slot ae-2in1-slot-1">${articleHtml}</div>
+  <div class="ae-2in1-slot ae-2in1-slot-2">${articleHtml}</div>
+  <div class="ae-2in1-cut-line-v" aria-hidden="true"></div>
+  <div class="ae-2in1-cut-center" aria-hidden="true">✂</div>
 </div></body></html>`;
 }

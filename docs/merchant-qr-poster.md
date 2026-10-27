@@ -11,23 +11,29 @@ Presentation controls offer Bold/reference (default) or Clean, 18–30 pt headli
 Four heading cards appear in one row: Original, Happiness, Savings and Growth. Each replaces only the three headline lines and remains editable afterwards. The scan label, QR and merchant identity are unchanged. Boldness, cyan accents and gradient/outline scan-label controls are also included.
 
 ### Paper & sheet layouts
-1. **A3 Sheet (4 in 1 · 2×2 grid)**:
+1. **2 in 1 Page (Default · A4 Landscape · 2 side-by-side)**:
+   - Fits two A5 posters onto one standard A4 landscape sheet (297 × 210 mm).
+   - In `/qr-common`, shops are arranged in pairs (Slot 1: Left, Slot 2: Right) per A4 landscape page.
+   - Subtle vertical dashed cutting guideline at 148.5 mm with center scissor marker (✂) for trimming into 2 individual A5 posters.
+   - In single-merchant `/merchants/:id/qr-poster`, 2-in-1 mode prints 2 identical copies on 1 A4 landscape sheet.
+2. **A3 Sheet (4 in 1 · 2×2 grid)**:
    - Fits four A5 posters onto one standard A3 portrait sheet (297 × 420 mm).
    - In `/qr-common`, multiple shops are arranged in groups of 4 per A3 page.
    - Subtle dashed cutting guidelines (horizontal at 210 mm and vertical at 148.5 mm) with center cut markers provide clear guidance for cutting into 4 individual posters.
    - In single-merchant `/merchants/:id/qr-poster`, A3 sheet mode prints 4 copies of that shop's poster on 1 A3 sheet.
-2. **A5 Single (1 poster per page)**:
+3. **A5 Single (1 poster per page)**:
    - Individual A5 portrait poster (148 × 210 mm).
 
 ### Shop arrangement in QR Common (`/qr-common`)
 - Lists merchants with search, pagination, and QR thumbnails.
-- Selected shops appear in the **Arrange & review shops** section, organized by A3 sheet:
-  - Each shop card shows its quadrant slot (e.g. Slot 1: Top-Left, Slot 2: Top-Right, Slot 3: Bottom-Left, Slot 4: Bottom-Right), store name, merchant code, and assigned heading slogan.
+- Selected shops appear in the **Arrange & review shops** section, organized by sheet according to the selected layout (2 in 1 Page, A3 Sheet, or A5 Single):
+  - In 2-in-1 mode, shop cards show their slot (Slot 1: Left, Slot 2: Right), store name, merchant code, and assigned heading slogan.
+  - In A3 mode, cards show quadrant slots (Slot 1: Top-Left, Slot 2: Top-Right, Slot 3: Bottom-Left, Slot 4: Bottom-Right).
   - Interactive **Move Up (↑)** and **Move Down (↓)** buttons allow rearranging the order and slots of shops before printing.
   - Interactive **Remove (✕)** button removes a shop from the batch.
   - Empty slots on the final sheet are cleanly handled with placeholder cards and print as blank cutting space.
 - Heading rotation automatically tracks the user's arranged sequence.
-- Preview iframe renders the combined A3 (or A5) sheets before printing or saving.
-- Print / Save selected as PDF triggers the browser's print dialog configured with `@page { size: A3 portrait; margin: 0; }` (or A5).
+- Preview iframe renders the combined sheets before printing or saving.
+- Print / Save selected as PDF triggers the browser's print dialog configured with `@page { size: A4 landscape; margin: 0; }` (or A3 portrait / A5 portrait).
 
 Verification: `node tests/merchant-qr-poster.cjs`, `node tests/qr-common.cjs`, `node tests/shop-checkout-requests.cjs`, `npm run build`.

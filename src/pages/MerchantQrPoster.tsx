@@ -6,7 +6,7 @@ import QRCode from 'qrcode';
 import { apiFetch } from '../api';
 import { ErrorState, LoadingState } from '../components/Common';
 import './merchant-qr-poster.css';
-import { headingPresets, singlePosterDocument, loadPosterLogo } from '../merchantPoster';
+import { headingPresets, singlePosterDocument, loadPosterLogo, type PaperLayout } from '../merchantPoster';
 
 const defaults = ['നമ്മുടെ നാട്', 'നമ്മുടെ സ്ഥാപനങ്ങൾ', 'നമ്മുടെ നേട്ടങ്ങൾ'];
 
@@ -28,7 +28,7 @@ export function MerchantQrPoster() {
   const [weight, setWeight] = useState(900);
   const [scanStyle, setScanStyle] = useState('pill');
   const [accents, setAccents] = useState(true);
-  const [paperSize, setPaperSize] = useState<'A3' | 'A5'>('A3');
+  const [paperSize, setPaperSize] = useState<PaperLayout>('2in1');
   const [showDetails, setShowDetails] = useState(true);
 
   const styleVars = {
@@ -188,7 +188,13 @@ export function MerchantQrPoster() {
       <div className="ae-poster-workspace">
         <section className="panel ae-poster-editor">
           <h2>{text('Counter display poster', 'കൗണ്ടർ ഡിസ്പ്ലേ പോസ്റ്റർ')}</h2>
-          <p>{paperSize === 'A3' ? text('A3 sheet (4 copies · 2×2 grid)', 'A3 ഷീറ്റ് (4 എണ്ണം)') : 'A5 (148 × 210 mm)'}</p>
+          <p>
+            {paperSize === '2in1'
+              ? text('2 QR codes in 1 page (A4 landscape · 2 copies)', 'ഒരു പേജിൽ 2 എണ്ണം (A4 ലാൻഡ്‌സ്‌കേപ്പ്)')
+              : paperSize === 'A3'
+              ? text('A3 sheet (4 copies · 2×2 grid)', 'A3 ഷീറ്റ് (4 എണ്ണം)')
+              : 'A5 (148 × 210 mm)'}
+          </p>
 
           <fieldset className="ae-poster-design-controls">
             <legend>{text('Paper layout', 'പേപ്പർ ലേഔട്ട്')}</legend>
@@ -196,10 +202,18 @@ export function MerchantQrPoster() {
               <button
                 type="button"
                 className="button secondary"
+                aria-pressed={paperSize === '2in1'}
+                onClick={() => setPaperSize('2in1')}
+              >
+                {text('2 in 1 Page', 'പേജിൽ 2 എണ്ണം')}
+              </button>
+              <button
+                type="button"
+                className="button secondary"
                 aria-pressed={paperSize === 'A3'}
                 onClick={() => setPaperSize('A3')}
               >
-                {text('A3 Sheet (4 in 1)', 'A3 ഷീറ്റ് (4 എണ്ണം)')}
+                {text('4 in 1 (A3)', '4 എണ്ണം (A3)')}
               </button>
               <button
                 type="button"
@@ -207,7 +221,7 @@ export function MerchantQrPoster() {
                 aria-pressed={paperSize === 'A5'}
                 onClick={() => setPaperSize('A5')}
               >
-                {text('A5 Single', 'A5 ഒരെണ്ണം')}
+                {text('1 per page (A5)', 'ഒരെണ്ണം (A5)')}
               </button>
             </div>
           </fieldset>
@@ -303,7 +317,12 @@ export function MerchantQrPoster() {
             {text('Download printable poster', 'പ്രിന്റ് ചെയ്യാവുന്ന പോസ്റ്റർ ഡൗൺലോഡ്')}
           </button>
           <p>
-            {paperSize === 'A3'
+            {paperSize === '2in1'
+              ? text(
+                  'Choose A4 Landscape, actual size (100%), no margins, and background graphics. Prints 2 copies on 1 page to cut in half.',
+                  'A4 ലാൻഡ്‌സ്‌കേപ്പ്, യഥാർത്ഥ വലുപ്പം (100%), മാർജിൻ ഇല്ല, പശ്ചാത്തല ഗ്രാഫിക്സ് എന്നിവ തിരഞ്ഞെടുക്കുക. ഒരു പേജിൽ 2 എണ്ണം പ്രിന്റ് ചെയ്ത് മുറിച്ചെടുക്കാം.'
+                )
+              : paperSize === 'A3'
               ? text(
                   'Choose A3, actual size (100%), no margins, and background graphics. Prints 4 copies on 1 A3 sheet to cut into 4.',
                   'A3, യഥാർത്ഥ വലുപ്പം (100%), മാർജിൻ ഇല്ല, പശ്ചാത്തല ഗ്രാഫിക്സ് എന്നിവ തിരഞ്ഞെടുക്കുക. ഒരു A3 ഷീറ്റിൽ 4 എണ്ണം പ്രിന്റ് ചെയ്ത് മുറിച്ചെടുക്കാം.'

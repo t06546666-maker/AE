@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { apiFetch, queryString } from '../api';
-import { headingPresets, assignedHeading, loadPosterLogo, batchPosterDocument, type PosterPage } from '../merchantPoster';
+import { headingPresets, assignedHeading, loadPosterLogo, batchPosterDocument, type PosterPage, type PaperLayout } from '../merchantPoster';
 import './merchant-qr-poster.css';
 import './qr-common.css';
 
@@ -50,7 +50,7 @@ export function QrCommon() {
   const [weight, setWeight] = useState(900);
   const [design, setDesign] = useState('bold');
   const [scan, setScan] = useState('സ്കാൻ ചെയ്യൂ');
-  const [paperSize, setPaperSize] = useState<'A3' | 'A5'>('A3');
+  const [paperSize, setPaperSize] = useState<PaperLayout>('2in1');
   const [showDetails, setShowDetails] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
@@ -197,8 +197,8 @@ export function QrCommon() {
         <h1>{t('QR Common', 'QR കോമൺ')}</h1>
         <p>
           {t(
-            'Select and arrange shops, review headings, and print 4 shops per A3 sheet or 1 per A5.',
-            'സ്ഥാപനങ്ങൾ തിരഞ്ഞെടുത്ത് ക്രമീകരിക്കുക. ഓരോ A3 ഷീറ്റിലും 4 സ്ഥാപനങ്ങളുടെ QR അല്ലെങ്കിൽ A5-ൽ പ്രിന്റ് ചെയ്യാം.'
+            'Select and arrange shops, review headings, and print 2 QR codes in one page or choose A3 / A5.',
+            'സ്ഥാപനങ്ങൾ തിരഞ്ഞെടുത്ത് ക്രമീകരിക്കുക. ഒരു പേജിൽ 2 QR കോഡുകൾ അല്ലെങ്കിൽ A3 / A5 വലുപ്പത്തിൽ പ്രിന്റ് ചെയ്യാം.'
           )}
         </p>
       </header>
@@ -288,19 +288,27 @@ export function QrCommon() {
             <div className="ae-common-paper-options">
               <button
                 type="button"
+                aria-pressed={paperSize === '2in1'}
+                onClick={() => setPaperSize('2in1')}
+              >
+                <strong>{t('2 in 1 Page', 'പേജിൽ 2 എണ്ണം')}</strong>
+                <small>{t('2 QR codes · A4 landscape', '2 QR കോഡുകൾ · A4 ലാൻഡ്‌സ്‌കേപ്പ്')}</small>
+              </button>
+              <button
+                type="button"
                 aria-pressed={paperSize === 'A3'}
                 onClick={() => setPaperSize('A3')}
               >
-                <strong>{t('A3 Sheet (4 in 1)', 'A3 ഷീറ്റ് (4 എണ്ണം)')}</strong>
-                <small>{t('2×2 grid · Cut into 4 A5 posters', '2×2 ഗ്രിഡ് · 4 പോസ്റ്ററുകൾ')}</small>
+                <strong>{t('4 in 1 Page (A3)', '4 എണ്ണം (A3)')}</strong>
+                <small>{t('2×2 grid · 4 QR codes', '2×2 ഗ്രിഡ് · 4 QR കോഡുകൾ')}</small>
               </button>
               <button
                 type="button"
                 aria-pressed={paperSize === 'A5'}
                 onClick={() => setPaperSize('A5')}
               >
-                <strong>{t('A5 Single', 'A5 ഒരെണ്ണം')}</strong>
-                <small>{t('1 poster per page', 'ഒരു പേജിൽ ഒരെണ്ണം')}</small>
+                <strong>{t('1 per page (A5)', 'ഒരെണ്ണം (A5)')}</strong>
+                <small>{t('Single poster', 'ഒരു പോസ്റ്റർ')}</small>
               </button>
             </div>
           </fieldset>
@@ -367,16 +375,94 @@ export function QrCommon() {
 
           <div className="ae-common-arrange-header">
             <h3>{t('Arrange & review shops', 'സ്ഥാപനങ്ങളുടെ ക്രമം നിശ്ചയിക്കുക')}</h3>
-            {paperSize === 'A3' && rows.length > 0 && (
+            {rows.length > 0 && (
               <span className="ae-common-sheet-count">
-                {Math.ceil(rows.length / 4)} {t('A3 sheets', 'A3 ഷീറ്റുകൾ')}
+                {paperSize === '2in1'
+                  ? `${Math.ceil(rows.length / 2)} ${t('Pages (2 per page)', 'പേജുകൾ (2 എണ്ണം വീതം)')}`
+                  : paperSize === 'A3'
+                  ? `${Math.ceil(rows.length / 4)} ${t('A3 sheets', 'A3 ഷീറ്റുകൾ')}`
+                  : `${rows.length} ${t('pages', 'പേജുകൾ')}`}
               </span>
             )}
           </div>
 
           {!rows.length && <p>{t('Select merchants to begin.', 'ആരംഭിക്കാൻ സ്ഥാപനങ്ങൾ തിരഞ്ഞെടുക്കുക.')}</p>}
 
-          {paperSize === 'A3' ? (
+          {paperSize === '2in1' ? (
+            <div className="ae-common-sheets-container">
+              {Array.from({ length: Math.ceil(rows.length / 2) }, (_, sheetIdx) => {
+                const sheetShops = rows.slice(sheetIdx * 2, sheetIdx * 2 + 2);
+                const slotNames = [
+                  t('Slot 1: Left', 'സ്ലോട്ട് 1: ഇടത്'),
+                  t('Slot 2: Right', 'സ്ലോട്ട് 2: വലത്'),
+                ];
+                return (
+                  <div key={sheetIdx} className="ae-common-sheet-card">
+                    <header className="ae-common-sheet-header">
+                      <strong>{t(`Page ${sheetIdx + 1} (2 QR codes)`, `പേജ് ${sheetIdx + 1} (2 QR കോഡുകൾ)`)}</strong>
+                      <span>{sheetShops.length} / 2 {t('posters', 'പോസ്റ്ററുകൾ')}</span>
+                    </header>
+                    <div className="ae-common-sheet-grid">
+                      {[0, 1].map(slotIdx => {
+                        const globalIdx = sheetIdx * 2 + slotIdx;
+                        const shop = sheetShops[slotIdx];
+                        if (!shop) {
+                          return (
+                            <div key={slotIdx} className="ae-common-slot-empty">
+                              <small>{slotNames[slotIdx]}</small>
+                              <span>{t('Empty slot', 'ഒഴിവ്')}</span>
+                            </div>
+                          );
+                        }
+                        const heading = assignedHeading(globalIdx, rotate, fixed);
+                        return (
+                          <div key={shop.id} className="ae-common-slot-card">
+                            <div className="ae-common-slot-badge">
+                              <span>{slotNames[slotIdx]}</span>
+                              <span className="ae-heading-pill">{ml ? heading.ml : heading.en}</span>
+                            </div>
+                            <div className="ae-common-slot-info">
+                              <strong>{shop.name}</strong>
+                              <small>{shop.merchant_code}</small>
+                            </div>
+                            <div className="ae-common-slot-actions">
+                              <button
+                                type="button"
+                                title={t('Move up', 'മുകളിലേക്ക്')}
+                                disabled={busy || globalIdx === 0}
+                                onClick={() => moveShop(globalIdx, -1)}
+                                className="ae-slot-btn"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                title={t('Move down', 'താഴേക്ക്')}
+                                disabled={busy || globalIdx === rows.length - 1}
+                                onClick={() => moveShop(globalIdx, 1)}
+                                className="ae-slot-btn"
+                              >
+                                ↓
+                              </button>
+                              <button
+                                type="button"
+                                title={t('Remove', 'ഒഴിവാക്കുക')}
+                                disabled={busy}
+                                onClick={() => removeShop(shop.id)}
+                                className="ae-slot-btn ae-slot-remove"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : paperSize === 'A3' ? (
             <div className="ae-common-sheets-container">
               {Array.from({ length: Math.ceil(rows.length / 4) }, (_, sheetIdx) => {
                 const sheetShops = rows.slice(sheetIdx * 4, sheetIdx * 4 + 4);
@@ -506,7 +592,12 @@ export function QrCommon() {
             {t('Print / Save selected as PDF', 'തിരഞ്ഞെടുത്തവ പ്രിന്റ് / PDF ആയി സൂക്ഷിക്കുക')} ({rows.length})
           </button>
           <p>
-            {paperSize === 'A3'
+            {paperSize === '2in1'
+              ? t(
+                  'Choose Save as PDF, A4 Landscape, 100%, no margins, backgrounds on, browser headers/footers off. 2 shops per page.',
+                  'PDF ആയി സൂക്ഷിക്കുക, A4 ലാൻഡ്‌സ്‌കേപ്പ്, 100%, മാർജിൻ ഇല്ല, പശ്ചാത്തലം ഓൺ, ബ്രൗസർ ഹെഡർ/ഫൂട്ടർ ഓഫ്. ഒരു പേജിൽ 2 സ്ഥാപനങ്ങൾ.'
+                )
+              : paperSize === 'A3'
               ? t(
                   'Choose Save as PDF, A3, 100%, no margins, backgrounds on, browser headers/footers off. 4 shops per A3 page.',
                   'PDF ആയി സൂക്ഷിക്കുക, A3, 100%, മാർജിൻ ഇല്ല, പശ്ചാത്തലം ഓൺ, ബ്രൗസർ ഹെഡർ/ഫൂട്ടർ ഓഫ്. ഒരു A3 പേജിൽ 4 സ്ഥാപനങ്ങൾ.'
@@ -522,8 +613,10 @@ export function QrCommon() {
       {printDocument && (
         <section className="panel ae-common-batch">
           <h2>
-            {paperSize === 'A3'
-              ? t('Combined A3 preview (4 per page)', 'ഒന്നിച്ചുള്ള A3 പ്രിവ്യൂ (പേജിൽ 4 എണ്ണം)')
+            {paperSize === '2in1'
+              ? t('Combined preview (2 QR codes in 1 page)', 'ഒന്നിച്ചുള്ള പ്രിവ്യൂ (ഒരു പേജിൽ 2 QR കോഡുകൾ)')
+              : paperSize === 'A3'
+              ? t('Combined A3 preview (4 in 1)', 'ഒന്നിച്ചുള്ള A3 പ്രിവ്യൂ (പേജിൽ 4 എണ്ണം)')
               : t('Combined A5 preview', 'ഒന്നിച്ചുള്ള A5 പ്രിവ്യൂ')}
           </h2>
           <p>
