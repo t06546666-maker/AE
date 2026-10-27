@@ -316,6 +316,12 @@ async function requireAuth(req, res, next) {
     return res.status(403).json({ success: false, error: 'Account profile is not configured' });
   }
 
+  if (profile.role === 'merchant') {
+    const shop = await supabaseAdmin.from('active_merchants').select('id').eq('id', profile.merchant_id).maybeSingle();
+    if (shop.error) return res.status(503).json({error:'Unable to check shop access. Please retry.'});
+    if (!shop.data) return res.status(403).json({error:'This merchant account has been removed.'});
+  }
+
   req.auth = { user, profile, token };
   if (['staff','account_head'].includes(profile.role) && !/^\/api\/(expenses|accounts|auth|notifications|push)(\/|$)/.test(req.path) && req.path !== '/api/profile/preferences') {
     return res.status(403).json({error:'Use your assigned staff portal.'});
@@ -574,9 +580,9 @@ async function getMerchantEarnRateWithCap(merchantId) {
 }
 
 async function getMerchantRewardSettings(merchantId) {
-  const { data, error } = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100, redeem_discount_type, redeem_flat_amount').eq('id', merchantId).single();
+  const { data, error } = await supabaseAdmin.from('active_merchants').select('earn_points_per_100, redeem_discount_per_100, redeem_discount_type, redeem_flat_amount').eq('id', merchantId).single();
   if (error?.code === '42703' || error?.code === 'PGRST204') {
-    const legacy = await supabaseAdmin.from('merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
+    const legacy = await supabaseAdmin.from('active_merchants').select('earn_points_per_100, redeem_discount_per_100').eq('id', merchantId).single();
     if (legacy.error) throw legacy.error;
     return { ...legacy.data, redeem_discount_type: 'percentage', redeem_flat_amount: 50 };
   }
@@ -1420,7 +1426,7 @@ async function showMerchantChoices(customer, session, page = 0) {
     .select('merchant_id').eq('active', true);
   const merchantIds = [...new Set((products || []).map((product) => product.merchant_id))];
   if (!merchantIds.length) return sendWhatsAppText(customer.phone, 'No merchant catalogues are available yet. Please try again later.');
-  const { data: merchants } = await supabaseAdmin.from('merchants')
+  const { data: merchants } = await supabaseAdmin.from('active_merchants')
     .select('id,name,merchant_code').in('id', merchantIds).order('name');
   const pageSize = 8;
   const start = Math.max(0, page) * pageSize;
@@ -1438,7 +1444,7 @@ async function showMerchantChoices(customer, session, page = 0) {
 
 async function showProductChoices(customer, session, page = 0) {
   if (!session.merchant_id) return showMerchantChoices(customer, session);
-  const { data: merchant } = await supabaseAdmin.from('merchants')
+  const { data: merchant } = await supabaseAdmin.from('active_merchants')
     .select('id,name').eq('id', session.merchant_id).maybeSingle();
   const { data: products } = await supabaseAdmin.from('products')
     .select('id,name,description,price').eq('merchant_id', session.merchant_id).eq('active', true).order('name');
@@ -1490,7 +1496,7 @@ async function handleIncomingCustomerWhatsApp(message) {
   if (command === 'merchant-menu') return showMerchantChoices(customer, session);
   if (command.startsWith('merchant:')) {
     const merchantId = command.slice('merchant:'.length);
-    const { data: merchant } = await supabaseAdmin.from('merchants').select('id').eq('id', merchantId).maybeSingle();
+    const { data: merchant } = await supabaseAdmin.from('active_merchants').select('id').eq('id', merchantId).maybeSingle();
     if (!merchant) return sendWhatsAppText(customer.phone, 'That shop is no longer available. Please choose another shop.');
     const next = await saveCustomerOrderSession(session, { merchant_id: merchantId, state: 'product', cart: [], pending_item: null });
     return showProductChoices(customer, next);
@@ -1752,15 +1758,15 @@ app.post('/api/profile/legal', requireAuth, acceptLegal);
 
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
   let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,route_name,merchant_categories(name)';
-  let { data, error } = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+  let { data, error } = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
   if (error?.message?.includes('route_name')) {
     selectQuery = selectQuery.replace(',route_name', '');
-    const retry = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
     data = retry.data; error = retry.error;
   }
   if (error && (error.message?.includes('image') || error.code === '42703')) {
     selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)';
-    const retry = await supabaseAdmin.from('merchants').select(selectQuery).order('name');
+    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
     data = retry.data;
     error = retry.error;
   }
@@ -1789,7 +1795,7 @@ app.post(['/api/field/visits/check-in', '/api/field/visits/start'], requireAuth,
     if (dayError) return res.status(503).json({ error: 'Attendance is unavailable. Check attendance database setup.' });
     if (!day) return res.status(409).json({ error: 'Start your working day in Attendance before starting a visit.' });
   }
-  const { data: merchant } = await supabaseAdmin.from('merchants').select('id,name,latitude,longitude').eq('id', merchantId).maybeSingle();
+  const { data: merchant } = await supabaseAdmin.from('active_merchants').select('id,name,latitude,longitude').eq('id', merchantId).maybeSingle();
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   if (merchant.latitude == null || merchant.longitude == null || !Number.isFinite(Number(merchant.latitude)) || !Number.isFinite(Number(merchant.longitude))) return res.status(400).json({ success: false, error: 'This merchant has no saved GPS location' });
   const distance = haversineDistanceMeters(lat, lng, Number(merchant.latitude), Number(merchant.longitude));
@@ -1855,7 +1861,7 @@ app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager
 });
 
 app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_manager'), async (req, res) => {
-  const { data: merchant, error } = await supabaseAdmin.from('merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,opening_time,closing_time,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
+  const { data: merchant, error } = await supabaseAdmin.from('active_merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,opening_time,closing_time,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
   const activity = await supabaseAdmin.from('field_manager_activity').insert({ manager_id: req.auth.profile.id, merchant_id: merchant.id, action: 'merchant_profile_view' });
@@ -1909,7 +1915,7 @@ app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), a
   if(memberships.error)return res.status(500).json({error:memberships.error.message});
   let onboardingMerchant=null;
   if(result.data.merchant_id){
-    const merchant=await supabaseAdmin.from('merchants').select('id,name,merchant_code').eq('id',result.data.merchant_id).maybeSingle();
+    const merchant=await supabaseAdmin.from('active_merchants').select('id,name,merchant_code').eq('id',result.data.merchant_id).maybeSingle();
     if(merchant.error)return res.status(500).json({error:merchant.error.message});
     onboardingMerchant=merchant.data;
   }
@@ -2022,7 +2028,7 @@ app.post('/api/usage',requireAuth,recordUsage);
 app.post('/api/customer/usage',requireCustomerAuth,recordUsage);
 async function adminAreaMerchants(area){
  const rows=[];
- for(let offset=0;;offset+=500){let query=supabaseAdmin.from('merchants').select('id,name,merchant_code,route_name').order('id').range(offset,offset+499);if(area)query=query.eq('route_name',area);const result=await query;if(result.error)throw result.error;rows.push(...result.data);if(result.data.length<500)break;}
+ for(let offset=0;;offset+=500){let query=supabaseAdmin.from('active_merchants').select('id,name,merchant_code,route_name').order('id').range(offset,offset+499);if(area)query=query.eq('route_name',area);const result=await query;if(result.error)throw result.error;rows.push(...result.data);if(result.data.length<500)break;}
  return rows;
 }
 async function adminExcel(res,rows,filename,notes){
@@ -2041,7 +2047,7 @@ app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,
  async function sum(table,column){let total=0;for(let offset=0;;offset+=500){const result=await supabaseAdmin.from(table).select(`id,${column}`).order('id').range(offset,offset+499);if(result.error)throw result.error;total+=result.data.reduce((n,row)=>n+Number(row[column]||0),0);if(result.data.length<500)return total;}}
  const totals=await Promise.allSettled([
   supabaseAdmin.from('customers').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
-  supabaseAdmin.from('merchants').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
+  supabaseAdmin.from('active_merchants').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
   Promise.all([sum('orders','reward_points'),sum('loyalty_bonuses','points')]).then(values=>values[0]+values[1]),
   sum('point_redemptions','points_redeemed'),
   checkoutBillDatabase().then(database=>database.collection('ae_android_installations').count().get()).then(result=>result.data().count),
@@ -2092,7 +2098,7 @@ app.get('/api/admin/usage',requireAuth,requireRole('admin'),async(req,res)=>{
 });
 
 app.get('/api/admin/merchants/:id/details',requireAuth,requireRole('admin'),async(req,res)=>{
-  const {data,error}=await supabaseAdmin.from('merchants').select('*,merchant_categories(name)').eq('id',req.params.id).maybeSingle();
+  const {data,error}=await supabaseAdmin.from('active_merchants').select('*,merchant_categories(name)').eq('id',req.params.id).maybeSingle();
   if(error)return res.status(500).json({error:error.message});if(!data)return res.status(404).json({error:'Merchant not found'});
   const allowed=['id','merchant_code','name','email','phone','address','latitude','longitude','category_id','merchant_categories','route_name','opening_time','closing_time','image_url','images','created_at','point_balance','reward_rate_bps','earn_points_per_100','redeem_discount_per_100','redeem_discount_type','redeem_flat_amount','subscription_expires_at'];
   res.json({merchant:Object.fromEntries(allowed.filter(key=>key in data).map(key=>[key,data[key]]))});
@@ -2167,7 +2173,7 @@ app.patch('/api/admin/field-updates/:id', requireAuth, requireRole('admin'), asy
   if (status === 'approved') {
     const allowed = ['name','email','phone','address','latitude','longitude','category','active'];
     const patch = Object.fromEntries(allowed.filter(key => Object.prototype.hasOwnProperty.call(update.payload || {}, key)).map(key => [key, update.payload[key]]));
-    const { error } = await supabaseAdmin.from('merchants').update(patch).eq('id', update.merchant_id); if (error) return res.status(500).json({ success: false, error: error.message });
+    const { error } = await supabaseAdmin.from('active_merchants').update(patch).eq('id', update.merchant_id); if (error) return res.status(500).json({ success: false, error: error.message });
   }
   const { data, error } = await supabaseAdmin.from('field_manager_merchant_updates').update({ status, review_note: cleanText(req.body.reviewNote, 500) || null, reviewed_by: req.auth.profile.id, reviewed_at: new Date().toISOString() }).eq('id', req.params.id).select('*').single();
   if (error) return res.status(500).json({ success: false, error: error.message });
@@ -2644,7 +2650,7 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
-  let query = supabaseAdmin.from('merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, merchant_categories(name)', { count: 'exact' });
+  let query = supabaseAdmin.from('active_merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, merchant_categories(name)', { count: 'exact' });
   if (routeGroup && routeGroup !== 'all') query = query.in('route_name', customerRouteGroups[routeGroup]);
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
@@ -2763,7 +2769,7 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   const merchantId = cleanText(req.body.merchant_id, 100);
   const productList = cleanText(req.body.product_list, 5000);
   if (!merchantId || (!productList && !req.file)) return res.status(400).json({ success: false, error: 'Select a merchant and add a product list or image' });
-  const { data: merchant } = await supabaseAdmin.from('merchants').select('id').eq('id', merchantId).maybeSingle();
+  const { data: merchant } = await supabaseAdmin.from('active_merchants').select('id').eq('id', merchantId).maybeSingle();
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   let imagePath = null;
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
@@ -2963,7 +2969,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   if (!isEmail(email)) {
-    const { data: m } = await supabaseAdmin.from('merchants').select('email').ilike('merchant_code', email).maybeSingle();
+    const { data: m } = await supabaseAdmin.from('active_merchants').select('email').ilike('merchant_code', email).maybeSingle();
     if (m?.email) {
       email = m.email.toLowerCase();
     } else {
@@ -3056,7 +3062,7 @@ app.get('/api/merchants/:id/point-balance', requireAuth, async (req, res) => {
   if (req.auth.profile.role !== 'admin' && (req.auth.profile.role !== 'merchant' || req.auth.profile.merchant_id !== req.params.id)) return res.status(403).json({ error: 'Forbidden' });
   const { data: grantedBalance, error: bonusError } = await supabaseAdmin.rpc('grant_merchant_onboarding_bonus', { p_merchant_id: req.params.id });
   if (bonusError) return res.status(503).json({ error: 'Merchant welcome points could not be verified. Confirm that supabase-onboarding-welcome-bonuses.sql is applied to the Supabase project used by this backend.' });
-  const { data, error } = await supabaseAdmin.from('merchants').select('point_balance').eq('id', req.params.id).maybeSingle();
+  const { data, error } = await supabaseAdmin.from('active_merchants').select('point_balance').eq('id', req.params.id).maybeSingle();
   if (error) return res.status(503).json({ error: 'Merchant points are unavailable. Apply the merchant point allocation migration.' });
   if (!data) return res.status(404).json({ error: 'Merchant not found' });
   return res.json({ balance: Number(data.point_balance ?? grantedBalance ?? 0) });
@@ -3176,7 +3182,7 @@ app.get('/api/offers-performance', requireAuth, requireRole('merchant'), async (
 app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (req, res) => {
   const merchantId = req.auth.profile.merchant_id;
   if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });
-  const { data, error } = await supabaseAdmin.from('merchants').select('name,merchant_code,email,phone,address,image_url,opening_time,closing_time,latitude,longitude,merchant_categories(name)').eq('id', merchantId).maybeSingle();
+  const { data, error } = await supabaseAdmin.from('active_merchants').select('name,merchant_code,email,phone,address,image_url,opening_time,closing_time,latitude,longitude,merchant_categories(name)').eq('id', merchantId).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: 'Merchant not found' });
   return res.json({ data });
@@ -3185,7 +3191,7 @@ app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (re
 app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
   if (req.params.id === 'summary' || req.params.id === 'reset-password') return next(); // Skip specific routes
   const { data, error } = await supabaseAdmin
-    .from('merchants')
+    .from('active_merchants')
     .select('*')
     .eq('id', req.params.id)
     .maybeSingle();
@@ -3214,7 +3220,7 @@ app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, r
   for (const key of ['latitude', 'longitude']) if (req.body[key] !== undefined) updates[key] = req.body[key] === '' || req.body[key] === null ? null : Number(req.body[key]);
   if (!updates.name || !updates.email || !isEmail(updates.email) || !updates.phone) return res.status(400).json({ success: false, error: 'Name, valid email, and phone are required' });
   if ((updates.latitude === null) !== (updates.longitude === null) || (updates.latitude !== undefined && (!Number.isFinite(updates.latitude) || !Number.isFinite(updates.longitude)))) return res.status(400).json({ success: false, error: 'Latitude and longitude must be valid together' });
-  const { data, error } = await supabaseAdmin.from('merchants').update(updates).eq('id', merchantId).select('*').single();
+  const { data, error } = await supabaseAdmin.from('active_merchants').update(updates).eq('id', merchantId).select('*').single();
   if (error) return res.status(400).json({ success: false, error: error.message });
   return res.json({ success: true, data });
 });
@@ -3236,8 +3242,15 @@ app.patch('/api/merchants/:id/entitlements', requireAuth, requireRole('admin'), 
 });
 
 app.get('/api/merchants', requireAuth, async (req, res) => {
+  if (req.auth.profile.role === 'admin') {
+    const cleanup = (async () => {
+      const jobs = await supabaseAdmin.from('merchant_removal_jobs').select('merchant_id').is('completed_at',null).limit(3);
+      for (const job of jobs.data || []) await require('./backend/merchant-removal.cjs').cleanupMerchantRemoval({db:supabaseAdmin,database:checkoutBillDatabase,merchantId:job.merchant_id});
+    })().catch(error => console.warn('Merchant cleanup retry unavailable:',error.message));
+    if (vercelWaitUntil) vercelWaitUntil(cleanup);
+  }
   const paging = paginationFromRequest(req, 20, 100);
-  let query = supabaseAdmin.from('merchants')
+  let query = supabaseAdmin.from('active_merchants')
     .select('id, merchant_code, name, email, phone, created_at, category_id, merchant_categories(name)', paging.enabled ? { count: 'exact' } : undefined)
     .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
@@ -3287,7 +3300,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
 app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
   const { data: merchant, error: merchantError } = await supabaseAdmin
-    .from('merchants')
+    .from('active_merchants')
     .select('id,merchant_code,name,email,phone,created_at')
     .eq('id', merchantId)
     .single();
@@ -3445,7 +3458,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   };
 
   let { data: merchant, error: merchantError } = await supabaseAdmin
-    .from('merchants')
+    .from('active_merchants')
     .insert(insertPayload)
     .select('id,merchant_code,name,email,phone,created_at')
     .single();
@@ -3464,7 +3477,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
     user_metadata: { full_name: name, role: 'merchant', merchant_id: merchant.id },
   });
   if (authError) {
-    await supabaseAdmin.from('merchants').delete().eq('id', merchant.id);
+    await supabaseAdmin.from('active_merchants').delete().eq('id', merchant.id);
     return res.status(400).json({ success: false, error: authError.message });
   }
 
@@ -3479,7 +3492,7 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   });
   if (profileError) {
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-    await supabaseAdmin.from('merchants').delete().eq('id', merchant.id);
+    await supabaseAdmin.from('active_merchants').delete().eq('id', merchant.id);
     return res.status(400).json({ success: false, error: profileError.message });
   }
 
@@ -3548,7 +3561,7 @@ app.post('/api/merchants/:id/reset-password', requireAuth, (req, res, next) => {
 }, async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
   const [{ data: merchant }, { data: profile }] = await Promise.all([
-    supabaseAdmin.from('merchants')
+    supabaseAdmin.from('active_merchants')
       .select('id,merchant_code,name,email,phone,created_at')
       .eq('id', merchantId)
       .maybeSingle(),
@@ -3600,13 +3613,14 @@ app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, 
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(merchantId)) return res.status(400).json({error:'Invalid merchant ID'});
   if (req.body?.confirmation !== 'DELETE') return res.status(400).json({error:'Confirm merchant deletion first.'});
   try {
-    const { error } = await supabaseAdmin.rpc('admin_delete_unused_merchant', {p_admin:req.auth.profile.id,p_merchant:merchantId});
+    const { error } = await supabaseAdmin.rpc('admin_remove_merchant', {p_admin:req.auth.profile.id,p_merchant:merchantId});
     if (error) {
       const code=error.code;
       const status=code==='23503'?409:code==='P0002'?404:code==='42501'?403:503;
-      return res.status(status).json({success:false,error:code==='23503'?'This merchant has linked business or financial records and cannot be deleted. No records were removed.':code==='P0002'?'Merchant not found':code==='42501'?'Admin access required':'Safe merchant deletion is not available. Apply the merchant deletion database update first.'});
+      return res.status(status).json({success:false,error:code==='23503'?'A linked account record needs review before removal. No records were removed.':code==='P0002'?'Merchant not found':code==='42501'?'Admin access required':'Merchant removal is unavailable. Please retry or contact support.'});
     }
-    res.json({success:true,deletedCustomers:0});
+    const cleanup = await require('./backend/merchant-removal.cjs').cleanupMerchantRemoval({db:supabaseAdmin,database:checkoutBillDatabase,merchantId});
+    res.json({success:true,removed:true,deletedCustomers:0,cleanupPending:!cleanup});
   } catch { res.status(503).json({success:false,error:'Could not confirm deletion. Refresh the merchant list before retrying.'}); }
 });
 
@@ -4372,7 +4386,7 @@ async function pagedCustomers(req, res, paging) {
   const merchantIds = [...new Set(memberships.map((row) => row.merchant_id))];
   const [merchantResult, orderResult] = await Promise.all([
     merchantIds.length
-      ? supabaseAdmin.from('merchants').select('id,name').in('id', merchantIds)
+      ? supabaseAdmin.from('active_merchants').select('id,name').in('id', merchantIds)
       : Promise.resolve({ data: [], error: null }),
     customerIds.length
       ? (() => {
@@ -4494,7 +4508,7 @@ app.get('/api/customers', requireAuth, async (req, res) => {
     supabaseAdmin.from('customers')
       .select('id,customer_code,name,phone,email,created_at')
       .in('id', customerIds),
-    supabaseAdmin.from('merchants').select('id,name').in('id', merchantIds),
+    supabaseAdmin.from('active_merchants').select('id,name').in('id', merchantIds),
   ]);
   const relatedError = customersResult.error || merchantsResult.error;
   if (relatedError) return res.status(500).json({ success: false, error: relatedError.message });
@@ -4681,7 +4695,7 @@ app.post('/api/customers', requireAuth, async (req, res) => {
   let createdCustomer = false;
   if (error) return res.status(400).json({ success: false, error: error.message });
   if (!customer) {
-    const { data: merchantData } = await supabaseAdmin.from('merchants').select('network_id').eq('id', merchantId).single();
+    const { data: merchantData } = await supabaseAdmin.from('active_merchants').select('network_id').eq('id', merchantId).single();
     const networkId = merchantData?.network_id;
 
     const customerCode = `C${Date.now().toString(36).toUpperCase()}`;
@@ -4791,7 +4805,7 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
       .eq('customer_id', data.id)
       .eq('merchant_id', req.auth.profile.merchant_id)
       .maybeSingle(),
-    supabaseAdmin.from('merchants')
+    supabaseAdmin.from('active_merchants')
       .select('name')
       .eq('id', req.auth.profile.merchant_id)
       .single(),
@@ -4902,7 +4916,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     await supabaseAdmin.from('customer_merchants').update({ reward_points: Math.max(0, Number(redemptionContext.membership.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('customer_id', redemptionContext.customer.id).eq('merchant_id', req.auth.profile.merchant_id);
   }
   const { data: merchantForNotification } = await supabaseAdmin
-    .from('merchants')
+    .from('active_merchants')
     .select('name')
     .eq('id', req.auth.profile.merchant_id)
     .maybeSingle();
@@ -5075,7 +5089,7 @@ async function buildExportReport(req) {
   }
 
   let scopedMerchantsQuery = supabaseAdmin
-    .from('merchants')
+    .from('active_merchants')
     .select('id,name,email,phone,created_at')
     .order('name');
   if (merchantId) scopedMerchantsQuery = scopedMerchantsQuery.eq('id', merchantId);
@@ -5794,7 +5808,7 @@ app.put('/api/merchants/:id/reward-settings', requireAuth, async (req, res) => {
     const { earn_points_per_100, redeem_discount_per_100, redeem_discount_type = 'percentage', redeem_flat_amount = 50 } = req.body;
     const earn = Number(earn_points_per_100), percent = Number(redeem_discount_per_100), flat = Number(redeem_flat_amount);
     if (!Number.isInteger(earn) || earn < 1 || earn > 100 || !Number.isInteger(percent) || percent < 0 || percent > 100 || !['percentage', 'flat'].includes(redeem_discount_type) || !Number.isFinite(flat) || flat < 0 || flat > 1000000) return res.status(400).json({ error: 'Invalid reward settings. Percentage must be 0–100 and flat rupees must be 0–1,000,000.' });
-    const { error: saveError } = await supabaseAdmin.from('merchants').update({
+    const { error: saveError } = await supabaseAdmin.from('active_merchants').update({
       earn_points_per_100: Number(earn_points_per_100),
       redeem_discount_per_100: percent,
       redeem_discount_type,

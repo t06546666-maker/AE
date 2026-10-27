@@ -16,7 +16,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     res.set('Cache-Control','no-store');
     const page=Math.floor(Math.max(1,Math.min(100000,Number(req.query.page)||1))),size=20,search=String(req.query.search||'').trim().slice(0,100);
     try {
-      let query=supabase.from('merchants').select('id,name,merchant_code',{count:'exact'}).order('name').order('id');
+      let query=supabase.from('active_merchants').select('id,name,merchant_code',{count:'exact'}).order('name').order('id');
       if(search)query=query.ilike('name',`%${search.replace(/[%_\\]/g,'\\$&')}%`);
       const {data,error,count}=await query.range((page-1)*size,page*size-1);
       if(error)return unavailable(res);
@@ -27,7 +27,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     res.set('Cache-Control','no-store');
     if(!/^[a-f0-9-]{36}$/i.test(req.params.id))return res.status(400).json({error:'Invalid merchant ID'});
     try {
-      const {data,error}=await supabase.from('merchants').select('id,name,merchant_code').eq('id',req.params.id).maybeSingle();
+      const {data,error}=await supabase.from('active_merchants').select('id,name,merchant_code').eq('id',req.params.id).maybeSingle();
       if(error)return unavailable(res);
       if(!data)return res.status(404).json({error:'Merchant not found'});
       res.json({merchant:data,payload:await shopQrPayload(database,data.id)});
@@ -46,7 +46,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     try {
       const db=await database();const qr=await db.collection('ae_shop_qr').doc(merchantId).get();
       if(!qr.exists||qr.data().token!==token)return res.status(400).json({error:'Shop QR is not valid.'});
-      const merchant=await supabase.from('merchants').select('id,name').eq('id',merchantId).maybeSingle();
+      const merchant=await supabase.from('active_merchants').select('id,name').eq('id',merchantId).maybeSingle();
       if(merchant.error||!merchant.data)return res.status(404).json({error:'Shop unavailable.'});
       const key=crypto.createHash('sha256').update(req.customer.id+':'+merchantId).digest('hex');
       const lock=db.collection('ae_shop_request_locks').doc(key), ref=db.collection('ae_shop_requests').doc();

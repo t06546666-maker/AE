@@ -39,7 +39,7 @@ async function readOnboardedMerchants(db, managerId) {
   const ids = [...new Set(records.map(row => row.merchant_id).filter(Boolean))];
   const merchants = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
-    const result = await db.from('merchants')
+    const result = await db.from('active_merchants')
       .select('id,name,merchant_code,address,latitude,longitude,category_id,merchant_categories(name)')
       .in('id', ids.slice(offset, offset + 100));
     if (result.error) throw new Error('Saved shop locations unavailable');

@@ -143,14 +143,12 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
 
   const remove = useMutation({
     retry: false,
-    mutationFn: (merchant: Merchant) => apiFetch<{ deletedCustomers?: number }>(
+    mutationFn: (merchant: Merchant) => apiFetch<{ cleanupPending?: boolean }>(
       `/api/merchants/${encodeURIComponent(merchant.id)}`,
       { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE'}) },
     ),
     onSuccess(data) {
-      showToast(data.deletedCustomers
-        ? `Merchant removed · ${data.deletedCustomers} customer records removed`
-        : "Merchant removed");
+      showToast(data.cleanupPending ? 'Merchant removed. Remaining shop files are queued for cleanup.' : 'Merchant removed. Customer history is preserved.');
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -208,7 +206,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   }, [mapPickerOpen]);
 
   function deleteMerchant(merchant: Merchant) {
-    if (window.confirm(`Delete ${merchant.name} fully?\n\nThis removes an unused merchant and its login. Linked business or financial records block deletion. Customer records and Field Manager activity are preserved.`)) {
+    if (window.confirm(`Permanently remove ${merchant.name}?\n\nThe merchant login, contact details and shop content will be removed. Customers, balances and purchase/payment history remain, labelled Deleted merchant. This cannot be undone.`)) {
       remove.mutate(merchant);
     }
   }

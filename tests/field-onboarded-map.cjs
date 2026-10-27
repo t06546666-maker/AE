@@ -49,7 +49,7 @@ const db = { from(table) {
   merchants = records.map(row => ({ id: row.merchant_id, name: row.merchant_id, merchant_code: row.merchant_id, latitude: 10, longitude: 76 }));
   assert.equal((await readOnboardedMerchants(db, manager)).merchants.length, 501, 'must load beyond a single database page');
   assert.equal(calls.filter(call => call.table === 'field_manager_merchant_updates').length, 2);
-  assert.equal(calls.filter(call => call.table === 'merchants').length, 6);
+  assert.equal(calls.filter(call => call.table === 'active_merchants').length, 6);
 
   const auth = (req, res, next) => {
     const role = req.headers.authorization;
@@ -79,3 +79,4 @@ const db = { from(table) {
   } finally { await new Promise(resolve => server.close(resolve)); }
   console.log('PASS: saved shop coordinates, missing GPS, deduplication, private-field exclusion, complete pagination, authenticated manager scope, admin-only selected-manager lookup and database failure handling. Synthetic local records only.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
