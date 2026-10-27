@@ -2441,5 +2441,6 @@
   "ui.Open route in Google Maps": "Google Maps-ൽ യാത്രാമാർഗം തുറക്കുക",
   "ui.Open route section {{number}} (stops {{from}}–{{to}})": "യാത്രാഭാഗം {{number}} തുറക്കുക (സ്ഥാനങ്ങൾ {{from}}–{{to}})",
   "ui.Long routes are split into sections so every selected shop is included on mobile.": "മൊബൈലിൽ തിരഞ്ഞെടുത്ത എല്ലാ കടകളും ഉൾപ്പെടുത്താൻ നീണ്ട യാത്രകൾ ഭാഗങ്ങളായി കാണിക്കുന്നു.",
-  "ui.Choose at least two shops to open directions.": "യാത്രാമാർഗം തുറക്കാൻ കുറഞ്ഞത് രണ്ട് കടകൾ തിരഞ്ഞെടുക്കുക."
+  "ui.Choose at least two shops to open directions.": "യാത്രാമാർഗം തുറക്കാൻ കുറഞ്ഞത് രണ്ട് കടകൾ തിരഞ്ഞെടുക്കുക.",
+  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "പോയിന്റുകൾ ഉപയോഗിക്കാൻ ഉപഭോക്താവിന്റെ ആകെ ബാലൻസിൽ 100 പോയിന്റുകൾ വേണം. തുടരാൻ പോയിന്റുകൾ നൽകുക മാത്രം എന്നത് തിരഞ്ഞെടുക്കുക."
 }

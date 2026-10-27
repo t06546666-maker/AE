@@ -2338,5 +2338,6 @@
   "ui.Sign in with your assigned staff credentials to manage your expenses.": "Sign in with your assigned staff credentials to manage your expenses.",
   "ui.Your assigned department access only": "Your assigned department access only",
   "ui.QR Poster": "QR Poster",
-  "ui.QR Common": "QR Common"
+  "ui.QR Common": "QR Common",
+  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "This customer needs 100 total points to redeem. Choose Issue Only to continue."
 }

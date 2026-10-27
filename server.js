@@ -604,7 +604,7 @@ function calculateFixedPurchasePoints(amount, pointsPer100 = 10) {
 
 const atomicPointsEnabled = process.env.ATOMIC_POINTS_ENABLED === 'true';
 async function processPurchase(params, idempotencyKey, redemption = null) {
-  if (atomicPointsEnabled) {
+  if (atomicPointsEnabled || redemption) {
     const result = await supabaseAdmin.rpc('ae_points_transaction', {
       p_merchant_id: params.p_merchant_id, p_customer_code: params.p_customer_code,
       p_amount: params.p_amount, p_rate: params.p_points_per_100,
@@ -4790,7 +4790,7 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
   const isDatabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
   const { data, error } = await supabaseAdmin
     .from('customers')
-    .select('id,customer_code,name,phone,email')
+    .select('id,customer_code,name,phone,email,reward_points')
     .eq(isDatabaseId ? 'id' : 'customer_code', identifier)
     .maybeSingle();
   if (error) {
@@ -4817,7 +4817,7 @@ app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async
       name: data.name,
       phone: data.phone,
       email: data.email || '',
-      rewardPoints: membership?.reward_points || 0,
+      rewardPoints: Number(data.reward_points || 0),
       merchant: merchant?.name || '',
       isNewToMerchant: !membership,
     },
@@ -4868,11 +4868,11 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   if (
     !customerCode ||
     !Number.isFinite(amount) ||
-    amount < (pointsToRedeem > 0 ? 100 : 1)
+    amount < 1
   ) {
     return res.status(400).json({
       success: false,
-      error: pointsToRedeem > 0 ? 'Purchase must be at least ₹100 when redeeming points.' : 'Purchase must be at least ₹1.',
+      error: 'Purchase must be at least ₹1.',
     });
   }
   if (!Number.isFinite(pointsToRedeem) || (pointsToRedeem !== 0 && pointsToRedeem !== 100)) {
@@ -4884,7 +4884,7 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
     const { data: customer, error: customerError } = await supabaseAdmin.from('customers').select('id, reward_points').eq(customerIsUuid ? 'id' : 'customer_code', customerCode).maybeSingle();
     if (customerError) return res.status(500).json({ success: false, error: 'Unable to read customer balance. Please try again.' });
     const { data: membership } = customer ? await supabaseAdmin.from('customer_merchants').select('reward_points').eq('customer_id', customer.id).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle() : { data: null };
-    if (!customer || (!atomicPointsEnabled && (!membership || Number(membership.reward_points || 0) < pointsToRedeem))) return res.status(400).json({ success: false, error: 'Insufficient points balance at this store.' });
+    if (!customer) return res.status(400).json({ success: false, error: 'Customer not found.' });
     const rewardSettings = await getMerchantRewardSettings(req.auth.profile.merchant_id);
     const discount = redemptionDiscount(amount, discountType, req.body.discountValue ?? (rewardSettings.redeem_discount_per_100 || 5));
     if (!discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater.' });
@@ -4908,13 +4908,6 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   const purchase = data[0];
   const orderId = purchase.order_id || purchase.id;
   let redemption = atomicRedemption || null;
-  if (redemptionContext && !atomicPointsEnabled) {
-    const { data: redemptionRow, error: redemptionError } = await supabaseAdmin.from('point_redemptions').insert({ customer_id: redemptionContext.customer.id, merchant_id: req.auth.profile.merchant_id, transaction_amount: amount, points_redeemed: pointsToRedeem, discount_percentage: redemptionContext.discountPercentage, discount_amount: redemptionContext.discountAmount }).select().single();
-    if (redemptionError) return res.status(500).json({ success: false, error: redemptionError.message });
-    redemption = redemptionRow;
-    await supabaseAdmin.from('customers').update({ reward_points: Math.max(0, Number(redemptionContext.customer.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('id', redemptionContext.customer.id);
-    await supabaseAdmin.from('customer_merchants').update({ reward_points: Math.max(0, Number(redemptionContext.membership.reward_points || 0) - pointsToRedeem + Number(purchase.points_earned || 0)) }).eq('customer_id', redemptionContext.customer.id).eq('merchant_id', req.auth.profile.merchant_id);
-  }
   const { data: merchantForNotification } = await supabaseAdmin
     .from('active_merchants')
     .select('name')
@@ -6230,7 +6223,7 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       return res.status(400).json({ success: false, error: 'Invalid parameters' });
     }
     
-    if (transactionAmount < 100) return res.status(400).json({ success: false, error: 'Minimum transaction for redemption is ₹100' });
+    if (transactionAmount < 1) return res.status(400).json({ success: false, error: 'Purchase must be at least ₹1.' });
     if (pointsToRedeem !== 100) return res.status(400).json({ success: false, error: 'Redemption is fixed at exactly 100 points' });
 
     // 1. Get Merchant settings
@@ -6251,75 +6244,27 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
       .single();
     if (custError || !customer) return res.status(404).json({ success: false, error: 'Customer not found' });
     
-    const { data: cm } = await supabaseAdmin.from('customer_merchants').select('reward_points, merchants(name)').eq('customer_id', customer.id).eq('merchant_id', merchantId).single();
-    if (!atomicPointsEnabled && (!cm || cm.reward_points < pointsToRedeem)) {
-      return res.status(400).json({ success: false, error: 'Insufficient points balance at this store' });
-    }
-    
+    const { data: redeemingShop } = await supabaseAdmin.from('active_merchants').select('name').eq('id',merchantId).maybeSingle();
+    if(!redeemingShop)return res.status(404).json({success:false,error:'Shop unavailable.'});
     // 3. Calculate Discount
     const discount = redemptionDiscount(transactionAmount, discountType, req.body.discountValue ?? discountPer100);
     if (!discount) return res.status(400).json({ success: false, error: 'Discount value must be zero or greater' });
     const discountPercentage = discount.percentage;
     const discountAmount = discount.amount;
     
-    let redemption;
-    let newBalance;
-    if (atomicPointsEnabled) {
-      const result = await supabaseAdmin.rpc('ae_points_transaction', {
-        p_merchant_id: merchantId, p_customer_code: customer.id,
-        p_amount: transactionAmount, p_rate: 10, p_source: 'qr', p_location: 'In-store',
-        p_request_key: cleanText(req.get('Idempotency-Key'),120) || crypto.randomUUID(),
-        p_redeem: pointsToRedeem, p_discount_type: discount.type,
-        p_discount_value: discount.value, p_issue: false,
-      });
-      if (result.error) throw new Error(result.error.message);
-      redemption = result.data.redemption;
-      newBalance = result.data.newBalance;
-    } else {
-    // 4. Perform deduction transaction in Supabase
-    const { data: row, error: redError } = await supabaseAdmin.from('point_redemptions').insert({
-      customer_id: customer.id,
-      merchant_id: merchantId,
-      transaction_amount: transactionAmount,
-      points_redeemed: pointsToRedeem,
-      discount_percentage: discountPercentage,
-      discount_amount: discountAmount
-    }).select().single();
-    
-    if (redError) throw redError;
-    redemption = row;
-
-    // Deduct points from global customer balance
-    const { error: deductCustError } = await supabaseAdmin.from('customers')
-      .update({ reward_points: Math.max(0, customer.reward_points - pointsToRedeem) })
-      .eq('id', customer.id);
-      
-    if (deductCustError) {
-      console.error('Failed to deduct global points:', deductCustError);
-      throw new Error(`Failed to deduct global points: ${deductCustError.message}`);
-    }
-
-    // Deduct points from merchant-specific balance
-    const { error: deductMerchError } = await supabaseAdmin.from('customer_merchants')
-      .update({ reward_points: Math.max(0, cm.reward_points - pointsToRedeem) })
-      .eq('customer_id', customer.id)
-      .eq('merchant_id', merchantId);
-      
-    if (deductMerchError) {
-      console.error('Failed to deduct merchant points:', deductMerchError);
-      throw new Error(`Failed to deduct merchant points: ${deductMerchError.message}`);
-    }
-    
-    newBalance = cm.reward_points - pointsToRedeem;
-
-    }
-    
+    const result = await supabaseAdmin.rpc('ae_points_transaction', {
+      p_merchant_id:merchantId,p_customer_code:customer.id,p_amount:transactionAmount,p_rate:10,
+      p_source:'qr',p_location:'In-store',p_request_key:cleanText(req.get('Idempotency-Key'),120)||crypto.randomUUID(),
+      p_redeem:pointsToRedeem,p_discount_type:discount.type,p_discount_value:discount.value,p_issue:false,
+    });
+    if(result.error)return res.status(400).json({success:false,error:result.error.message});
+    const redemption=result.data.redemption,newBalance=result.data.newBalance;
     const fakePurchase = {
       customer_id: customer.id,
       customer_name: customer.name || 'Customer',
       customer_phone: customer.phone,
       merchant_id: merchantId,
-      merchant_name: cm?.merchants?.name || 'Store',
+      merchant_name: redeemingShop.name,
       order_id: null,
       order_no: `RD-${String(Date.now()).slice(-6)}`,
       amount: transactionAmount,

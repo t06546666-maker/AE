@@ -79,7 +79,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     const id=req.body.shopRequestId;if(!id)return next();
     if(!/^[a-zA-Z0-9]{20}$/.test(id))return res.status(400).json({error:'Invalid request'});
     const amount=Number(req.body.amount), rate=Number(req.body.rewardPercentage);
-    if(!Number.isFinite(amount)||amount<(Number(req.body.pointsToRedeem||0)>0?100:1)||!Number.isFinite(rate)||rate<1||rate>100)return res.status(400).json({error:'Enter a valid bill amount and reward rate.'});
+    if(!Number.isFinite(amount)||amount<1||!Number.isFinite(rate)||rate<1||rate>100)return res.status(400).json({error:'Enter a valid bill amount and reward rate.'});
     try{
       const db=await database(),ref=db.collection('ae_shop_requests').doc(id);
       await db.runTransaction(async tx=>{const doc=await tx.get(ref);const row=doc.exists?doc.data():null;assertPending(row,req.auth.profile.merchant_id);if(req.body.customerCode!==row.customerCode||Number(req.body.pointsToRedeem||0)!==(row.action==='combined'?100:0))throw new Error('Checkout does not match customer request');tx.update(ref,{status:'processing'});});
