@@ -1,6 +1,7 @@
 ext {
-    // Optional diagnostic override; normal builds retain the current SDK.
-    firebaseMessagingVersion = project.findProperty('aeDiagnosticMessagingVersion') ?: '25.0.1'
+    // 25.0.1 stalls during token registration on the tested Android device.
+    // 24.1.2 passed fresh registration with our Firebase Auth dependency.
+    firebaseMessagingVersion = '24.1.2'
     minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36
