@@ -1,22 +1,33 @@
 # Merchant QR poster
 
-Admin navigation: Merchants → open merchant → QR Poster.
-Route: `/merchants/:id/qr-poster` (admin only).
+Admin navigation: Merchants → open merchant → QR Poster (`/merchants/:id/qr-poster`) or QR Common (`/qr-common`) (admin only).
 
 The protected `/api/admin/merchants/:id/qr-poster` endpoint checks the merchant in Supabase and gets or creates its persistent Firestore `ae_shop_qr` token using the same transaction helper as the merchant app. Reopening a poster does not rotate its QR. Field Manager onboarding requires no separate QR upload: once the merchant exists, Admin can open its poster. No SQL migration or balance/attendance changes.
 
-The A5 portrait template (148 × 210 mm) uses the official AE logo, editable Malayalam headlines and scan instruction, and the real merchant name. The printable HTML download is self-contained, including logo and SVG QR. Print / Save PDF opens a print-only document; choose A5, 100%, zero margins, background graphics and disable browser headers/footers. Malayalam requires a locally installed Malayalam-capable font. No claim of embedded fonts or CMYK/bleed export is made. Test-scan the first physical print using AE's customer scanner before distribution. This QR carries the app's JSON shop payload, not a generic camera URL or UPI payment link.
+The poster template uses the official AE logo, editable Malayalam headlines and scan instruction, the real merchant name, and store code badge. Malayalam requires a locally installed Malayalam-capable font. No claim of embedded fonts or CMYK/bleed export is made. Test-scan the first physical print using AE's customer scanner before distribution. This QR carries the app's JSON shop payload, not a generic camera URL or UPI payment link.
 
-Presentation controls offer Bold/reference (default) or Clean, 18–30 pt headline size, left/centre/right alignment and individual headline colours. Both English and Malayalam input are preserved exactly; there is no automatic translation. Style changes are included in the print/download export and never change QR content. Export refuses overflowing text instead of knowingly printing a clipped layout.
+Presentation controls offer Bold/reference (default) or Clean, 18–30 pt headline size, left/centre/right alignment, individual headline colours, and a toggle to show/hide the merchant store code on the poster.
 
-Four heading cards appear in one row (horizontally scrollable on mobile): Original, Happiness, Savings and Growth. Each replaces only the three headline lines and remains editable afterwards. The scan label, QR and merchant identity are unchanged. Boldness, cyan accents and gradient/outline scan-label controls are also included.
+Four heading cards appear in one row: Original, Happiness, Savings and Growth. Each replaces only the three headline lines and remains editable afterwards. The scan label, QR and merchant identity are unchanged. Boldness, cyan accents and gradient/outline scan-label controls are also included.
 
-Download walkthrough: Admin → Merchants → select the actual store → QR Poster → choose heading/style → verify the displayed store name → Print / Save PDF → select Save as PDF, A5, 100%, zero margins, backgrounds enabled, headers/footers disabled. The alternate Download printable poster action saves a self-contained HTML file named with the store name and merchant code; open it in a browser to print. Do not distribute DEMO-ONLY fixture posters.
+### Paper & sheet layouts
+1. **A3 Sheet (4 in 1 · 2×2 grid)**:
+   - Fits four A5 posters onto one standard A3 portrait sheet (297 × 420 mm).
+   - In `/qr-common`, multiple shops are arranged in groups of 4 per A3 page.
+   - Subtle dashed cutting guidelines (horizontal at 210 mm and vertical at 148.5 mm) with center cut markers provide clear guidance for cutting into 4 individual posters.
+   - In single-merchant `/merchants/:id/qr-poster`, A3 sheet mode prints 4 copies of that shop's poster on 1 A3 sheet.
+2. **A5 Single (1 poster per page)**:
+   - Individual A5 portrait poster (148 × 210 mm).
 
-Admin → QR Common (`/qr-common`) lists merchants with QR thumbnails and a name/QR-only viewer. Search and selection work across pages; Select all matching loads every matching page. Selection order is insertion order, shown in the assignment review; removing a shop compacts the rotation. With Rotate headings enabled, assignments repeat Original → Happiness → Savings → Growth. Disabling rotation applies one fixed heading to every selected shop.
-
-Print / Save selected as PDF prepares the entire batch with at most four concurrent QR requests, rechecks merchant identities, and writes one A5 page per merchant to one print document. An error prevents partial printing. The browser's Save as PDF destination produces the combined PDF; this is not a server-generated PDF download. Print settings and physical scan testing remain necessary. No SQL migration is needed.
-
-QR-PDF import/matching and saved brand-template settings are not implemented. Selections, style choices and text edits are local to the current page; merchant names come from the saved merchant profile.
+### Shop arrangement in QR Common (`/qr-common`)
+- Lists merchants with search, pagination, and QR thumbnails.
+- Selected shops appear in the **Arrange & review shops** section, organized by A3 sheet:
+  - Each shop card shows its quadrant slot (e.g. Slot 1: Top-Left, Slot 2: Top-Right, Slot 3: Bottom-Left, Slot 4: Bottom-Right), store name, merchant code, and assigned heading slogan.
+  - Interactive **Move Up (↑)** and **Move Down (↓)** buttons allow rearranging the order and slots of shops before printing.
+  - Interactive **Remove (✕)** button removes a shop from the batch.
+  - Empty slots on the final sheet are cleanly handled with placeholder cards and print as blank cutting space.
+- Heading rotation automatically tracks the user's arranged sequence.
+- Preview iframe renders the combined A3 (or A5) sheets before printing or saving.
+- Print / Save selected as PDF triggers the browser's print dialog configured with `@page { size: A3 portrait; margin: 0; }` (or A5).
 
 Verification: `node tests/merchant-qr-poster.cjs`, `node tests/qr-common.cjs`, `node tests/shop-checkout-requests.cjs`, `npm run build`.
