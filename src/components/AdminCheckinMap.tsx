@@ -5,13 +5,13 @@ import { uiText } from '../uiText';
 import { formatDateTime } from '../utils';
 import { loadGoogleMaps } from './CustomerNearbyMap';
 
-type Pin = {id:string;kind:'attendance'|'visit';at:string;latitude:number;longitude:number;accuracy_m:number|null;name:string|null;number:number};
+type Pin = {id:string;kind:'attendance'|'attendance_end'|'visit';at:string;latitude:number;longitude:number;accuracy_m:number|null;name:string|null;number:number};
 export function AdminCheckinMap({managerId}:{managerId:string}) {
   const [day,setDay]=useState(()=>new Date(Date.now()+330*60000).toISOString().slice(0,10));
   const [ready,setReady]=useState(false),[mapError,setMapError]=useState('');
   const host=useRef<HTMLDivElement>(null),map=useRef<any>(null),markers=useRef<Map<string,{marker:any;popup:any}>>(new Map());
   const q=useQuery({queryKey:['admin-check-in-map',managerId,day],enabled:Boolean(day),queryFn:({signal})=>apiFetch<{pins:Pin[];missingLocations:number}>(`/api/admin/field-managers/${encodeURIComponent(managerId)}/check-in-map?day=${encodeURIComponent(day)}`,{signal})});
-  const label=(pin:Pin)=>pin.kind==='attendance'?uiText('Workday started'):pin.name || uiText('Visit check-in');
+  const label=(pin:Pin)=>pin.kind==='attendance'?uiText('Workday started'):pin.kind==='attendance_end'?uiText('Workday ended'):pin.name || uiText('Visit check-in');
   const detail=(pin:Pin)=>`${formatDateTime(pin.at)}${pin.accuracy_m==null?'':` · ${uiText('GPS accuracy')}: ±${Math.ceil(pin.accuracy_m)} m`}`;
   useEffect(()=>{
     let alive=true;
@@ -42,7 +42,7 @@ export function AdminCheckinMap({managerId}:{managerId:string}) {
   return <section className="panel" style={{minWidth:0}}>
     <div className="panel-heading"><h2>{uiText('Check-in map')}</h2><button type="button" className="button secondary" onClick={()=>void q.refetch()} disabled={!day||q.isFetching}>{uiText('Refresh')}</button></div>
     <label>{uiText('Date (India)')}<input type="date" value={day} onChange={event=>setDay(event.target.value)}/></label>
-    <p>{uiText('Saved attendance-start and visit check-in locations, numbered by time. This is not live tracking or a travelled route.')}</p>
+    <p>{uiText('Saved attendance start, end and visit check-in locations, numbered by time. This is not live tracking or a travelled route.')}</p>
     <div ref={host} style={{height:380,width:'100%',borderRadius:14,border:'1px solid #dce6f2'}} aria-label={uiText('Check-in map')}/>
     {mapError&&<p role="alert">{uiText(mapError)}</p>}
     {!day?<p>{uiText('Choose a valid date.')}</p>:q.isPending?<p role="status">{uiText('Loading check-ins…')}</p>:q.isError?<p role="alert">{uiText('Check-in map unavailable. Please retry.')}</p>:<>

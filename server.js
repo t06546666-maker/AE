@@ -1670,7 +1670,10 @@ app.post('/api/field/attendance/start', requireAuth, requireRole('field_manager'
   res.status(201).json({ attendance: data });
 });
 app.post('/api/field/attendance/end', requireAuth, requireRole('field_manager'), async (req, res) => {
-  const { data, error } = await supabaseAdmin.from('field_attendance').update({ ended_at: new Date().toISOString() }).eq('manager_id', req.auth.profile.id).is('ended_at', null).select('id').maybeSingle();
+  const { latitude, longitude, accuracy_m } = req.body || {};
+  const hasLocation = [latitude, longitude, accuracy_m].some(value => value !== undefined);
+  if (hasLocation && (![latitude, longitude, accuracy_m].every(value => typeof value === 'number' && Number.isFinite(value)) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180 || accuracy_m < 0 || accuracy_m > 100000)) return res.status(400).json({ error: 'A valid current GPS location is required.' });
+  const { data, error } = await supabaseAdmin.from('field_attendance').update({ ended_at: new Date().toISOString(), ...(hasLocation ? { end_latitude: latitude, end_longitude: longitude, end_accuracy_m: accuracy_m } : {}) }).eq('manager_id', req.auth.profile.id).is('ended_at', null).select('id').maybeSingle();
   if (error) return res.status(503).json({ error: 'Could not end attendance. Check database setup.' });
   if (!data) return res.status(409).json({ error: 'No active working day found.' });
   res.json({ success: true });
@@ -1931,7 +1934,7 @@ app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), 
   res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
 });
 app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin'),async(req,res)=>{
-  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie,admin_started_by,admin_started_at,admin_start_reason,admin_ended_by,admin_ended_at,admin_end_reason','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,merchant_name_snapshot,merchant_code_snapshot,deleted_merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
+  const selections={visits:['field_manager_visits','id,merchant_id,status,check_in_at,check_out_at,accuracy_m,distance_m,check_in_latitude,check_in_longitude,check_out_latitude,check_out_longitude,admin_closed_by,admin_closed_at,admin_close_reason,notes,reason,challenge_status,report_image,outcome,follow_up_date,problems,feedback,photos,merchants(name,merchant_code)','check_in_at'],attendance:['field_attendance','id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,end_latitude,end_longitude,end_accuracy_m,selfie,admin_started_by,admin_started_at,admin_start_reason,admin_ended_by,admin_ended_at,admin_end_reason','work_date'],updates:['field_manager_merchant_updates','id,merchant_id,status,payload,created_at','created_at'],activity:['field_manager_activity','id,merchant_id,merchant_name_snapshot,merchant_code_snapshot,deleted_merchant_id,action,created_at,merchants(name,merchant_code)','created_at'],sessions:['field_manager_sessions','id,login_at,logout_at','login_at'],requests:['field_work_requests','id,kind,starts_at,ends_at,reason,status','starts_at']};
   const selection=selections[req.query.type||'visits'];
   if(!selection)return res.status(400).json({error:'Invalid record type'});
   const paging=paginationFromRequest(req,25,100);
@@ -1939,7 +1942,7 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   if(req.query.from||req.query.to){const from=Date.parse(req.query.from),to=Date.parse(req.query.to);if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a valid date range up to one year.'});if(selection[2]==='work_date')query=query.gte('work_date',new Date(from+330*60000).toISOString().slice(0,10)).lte('work_date',new Date(to-1+330*60000).toISOString().slice(0,10));else query=query.gte(selection[2],new Date(from).toISOString()).lt(selection[2],new Date(to).toISOString());}
   let result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
   if(selection[0]==='field_attendance'&&result.error&&['42703','PGRST204'].includes(result.error.code)){
-    query=query.select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie',{count:'exact'});
+    query=query.select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,end_latitude,end_longitude,end_accuracy_m,selfie',{count:'exact'});
     result=req.query.format==='xlsx'?await query.range(0,499):await query.range(paging.from,paging.to);
   }
   if(selection[0]==='field_manager_activity'&&result.error&&['42703','PGRST204'].includes(result.error.code)){
@@ -1971,12 +1974,15 @@ app.get('/api/admin/field-managers/:id/check-in-map', requireAuth, requireRole('
         if(result.data.length<500) return rows;
       }
     }
-    const [attendance,visits]=await Promise.all([
-      readAll('field_attendance','id,started_at,latitude,longitude,accuracy_m','started_at'),
+    const [attendance,attendanceEnds,visits]=await Promise.all([
+      readAll('field_attendance','id,started_at,ended_at,latitude,longitude,accuracy_m,end_latitude,end_longitude,end_accuracy_m','started_at'),
+      readAll('field_attendance','id,started_at,ended_at,latitude,longitude,accuracy_m,end_latitude,end_longitude,end_accuracy_m','ended_at'),
       readAll('field_manager_visits','id,check_in_at,check_in_latitude,check_in_longitude,accuracy_m,merchants(name)','check_in_at'),
     ]);
     res.setHeader('Cache-Control','no-store');
-    res.json({day:req.query.day,timeZone:'Asia/Kolkata',...checkinPins(attendance,visits)});
+    const mapped=checkinPins([...new Map([...attendance,...attendanceEnds].map(row=>[row.id,row])).values()],visits);
+    mapped.pins=mapped.pins.filter(pin=>pin.at>=range.from && pin.at<range.to).map((pin,index)=>({...pin,number:index+1}));
+    res.json({day:req.query.day,timeZone:'Asia/Kolkata',...mapped});
   } catch { res.status(503).json({error:'Check-in map unavailable. Please retry.'}); }
 });
 app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin'), async (req, res) => {
@@ -1991,7 +1997,7 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
     supabaseAdmin.from('field_manager_activity').select('id,merchant_id,action,created_at,merchants(name,merchant_code)').eq('manager_id', profile.id).order('created_at', { ascending: false }).limit(200),
   ]);
   const [attendance, workRequests, onboarded] = await Promise.all([
-    supabaseAdmin.from('field_attendance').select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,selfie').eq('manager_id', profile.id).order('work_date', { ascending: false }).limit(200),
+    supabaseAdmin.from('field_attendance').select('id,work_date,started_at,ended_at,latitude,longitude,accuracy_m,end_latitude,end_longitude,end_accuracy_m,selfie').eq('manager_id', profile.id).order('work_date', { ascending: false }).limit(200),
     supabaseAdmin.from('field_work_requests').select('id,kind,starts_at,ends_at,reason,status').eq('manager_id', profile.id).order('starts_at', { ascending: false }).limit(200),
     supabaseAdmin.from('field_manager_merchant_updates').select('id', { count: 'exact', head: true }).eq('manager_id', profile.id).eq('payload->>action', 'onboard_merchant'),
   ]);
