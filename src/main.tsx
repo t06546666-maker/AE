@@ -10,6 +10,14 @@ import './customer-glass.css';
 import './customer-home-polish.css';
 import './malayalam-layout.css';
 
+if (import.meta.env.VITE_AE_ENV === 'staging') {
+  const notice = document.createElement('div');
+  notice.textContent = 'AE STAGING — SYNTHETIC TEST DATA ONLY — NO REAL PAYMENTS OR MESSAGES';
+  notice.setAttribute('role', 'status');
+  notice.style.cssText = 'background:#fff1b8;color:#172b45;padding:10px;text-align:center;font:700 12px Arial;position:relative;z-index:9999';
+  document.body.prepend(notice);
+}
+
 try {
   const initialTheme = localStorage.getItem('ae_theme') === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = initialTheme;

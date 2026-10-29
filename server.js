@@ -1924,6 +1924,44 @@ app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), a
   }
   res.json({customer:result.data,memberships:memberships.data,onboardingMerchant});
 });
+app.patch('/api/admin/customers/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const customerId = cleanText(req.params.id, 100);
+  const { data: existing, error: findError } = await supabaseAdmin.from('customers').select('*').eq('id', customerId).maybeSingle();
+  if (findError || !existing) return res.status(404).json({ success: false, error: 'Customer not found' });
+
+  const updates = {};
+  if (req.body.name !== undefined) {
+    const cleanName = cleanText(req.body.name, 100);
+    if (!cleanName) return res.status(400).json({ success: false, error: 'Customer name is required' });
+    updates.name = cleanName;
+  }
+  if (req.body.phone !== undefined) {
+    const cleanPhone = normalizePhone(req.body.phone);
+    if (!cleanPhone) return res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number' });
+    if (cleanPhone !== existing.phone) {
+      const { data: dupPhone } = await supabaseAdmin.from('customers').select('id,customer_code').eq('phone', cleanPhone).neq('id', customerId).maybeSingle();
+      if (dupPhone) return res.status(400).json({ success: false, error: 'Phone number is already registered to customer ' + dupPhone.customer_code });
+    }
+    updates.phone = cleanPhone;
+  }
+  if (req.body.email !== undefined) {
+    const rawEmail = cleanText(req.body.email, 254).toLowerCase();
+    if (rawEmail) {
+      if (!isEmail(rawEmail)) return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
+      updates.email = rawEmail;
+    } else {
+      updates.email = null;
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ success: false, error: 'No fields to update' });
+  }
+
+  const { data, error } = await supabaseAdmin.from('customers').update(updates).eq('id', customerId).select('*').single();
+  if (error) return res.status(400).json({ success: false, error: error.message });
+  return res.json({ success: true, customer: data });
+});
 app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), async(req,res)=>{
   const selections={orders:['orders','id,order_no,merchant_id,amount,reward_points,source,created_at,merchants(name,merchant_code)'],redemptions:['point_redemptions','id,merchant_id,transaction_amount,points_redeemed,discount_amount,created_at,merchants(name,merchant_code)'],payments:['payment_transactions','id,merchant_id,amount,status,created_at,merchants(name,merchant_code)']};
   const selection=selections[req.query.type||'orders'];
@@ -3217,15 +3255,47 @@ app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
 // Admins can maintain the merchant's business profile from the merchant detail screen.
 app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
+  const { data: existing, error: findError } = await supabaseAdmin.from('merchants').select('*').eq('id', merchantId).maybeSingle();
+  if (findError || !existing) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
   const updates = {};
   if (req.body.name !== undefined) updates.name = cleanText(req.body.name, 120);
   if (req.body.email !== undefined) updates.email = cleanText(req.body.email, 254).toLowerCase();
-  if (req.body.phone !== undefined) updates.phone = normalizePhone(req.body.phone);
+  if (req.body.phone !== undefined) {
+    const cleanPhone = normalizePhone(req.body.phone);
+    if (!cleanPhone) return res.status(400).json({ success: false, error: 'Please enter a valid 10-digit phone number' });
+    updates.phone = cleanPhone;
+  }
   if (req.body.address !== undefined) updates.address = cleanText(req.body.address, 300) || null;
   if (req.body.category_id !== undefined) updates.category_id = cleanText(req.body.category_id, 100) || null;
   for (const key of ['latitude', 'longitude']) if (req.body[key] !== undefined) updates[key] = req.body[key] === '' || req.body[key] === null ? null : Number(req.body[key]);
-  if (!updates.name || !updates.email || !isEmail(updates.email) || !updates.phone) return res.status(400).json({ success: false, error: 'Name, valid email, and phone are required' });
-  if ((updates.latitude === null) !== (updates.longitude === null) || (updates.latitude !== undefined && (!Number.isFinite(updates.latitude) || !Number.isFinite(updates.longitude)))) return res.status(400).json({ success: false, error: 'Latitude and longitude must be valid together' });
+  const finalName = updates.name !== undefined ? updates.name : existing.name;
+  const finalEmail = updates.email !== undefined ? updates.email : existing.email;
+  const finalPhone = updates.phone !== undefined ? updates.phone : existing.phone;
+  if (!finalName || !finalEmail || !isEmail(finalEmail) || !finalPhone) {
+    return res.status(400).json({ success: false, error: 'Name, valid email, and phone are required' });
+  }
+  if ((updates.latitude === null) !== (updates.longitude === null) || (updates.latitude !== undefined && (!Number.isFinite(updates.latitude) || !Number.isFinite(updates.longitude)))) {
+    return res.status(400).json({ success: false, error: 'Latitude and longitude must be valid together' });
+  }
+
+  if (updates.email && updates.email !== existing.email) {
+    const { data: dupEmail } = await supabaseAdmin.from('active_merchants').select('id').eq('email', updates.email).neq('id', merchantId).maybeSingle();
+    if (dupEmail) return res.status(400).json({ success: false, error: 'Another merchant is already registered with this email address' });
+
+    const { data: profiles } = await supabaseAdmin.from('profiles').select('id').eq('role', 'merchant').eq('merchant_id', merchantId);
+    if (profiles && profiles.length) {
+      for (const prof of profiles) {
+        const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(prof.id, { email: updates.email, email_confirm: true });
+        if (authErr) console.warn('Merchant auth email sync warning:', authErr.message);
+      }
+    }
+  }
+
+  if (updates.name && updates.name !== existing.name) {
+    await supabaseAdmin.from('profiles').update({ full_name: updates.name }).eq('role', 'merchant').eq('merchant_id', merchantId);
+  }
+
   const { data, error } = await supabaseAdmin.from('active_merchants').update(updates).eq('id', merchantId).select('*').single();
   if (error) return res.status(400).json({ success: false, error: error.message });
   return res.json({ success: true, data });

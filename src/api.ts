@@ -10,7 +10,7 @@ const isLiveAffiliateDomain = typeof window !== 'undefined'
   && window.location.hostname.endsWith('affiliateae.co.in');
 // Installed apps must reach the hosted backend, never the phone's localhost.
 const API_BASE_URL = Capacitor.isNativePlatform()
-  ? 'https://www.affiliateae.co.in'
+  ? import.meta.env.VITE_AE_ENV === 'staging' ? configuredApiUrl : 'https://www.affiliateae.co.in'
   : isLiveAffiliateDomain ? '' : configuredApiUrl;
 
 export class ApiError extends Error {

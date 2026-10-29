@@ -9,6 +9,7 @@ import { Layout } from './components/Layout';
 import { CustomerLayout } from './components/CustomerLayout';
 import { useTranslation } from 'react-i18next';
 import { LegalGate } from './components/LegalGate';
+import { OldLegalGate } from './components/OldLegalGate';
 import { useUsageTracking } from './useUsageTracking';
 import type { Role, UserProfile } from './types';
 
@@ -290,6 +291,7 @@ export function App() {
   if (location.pathname === '/delete-account') return <Suspense fallback={<StartupFallback />}><AccountDeletion /></Suspense>;
   if (import.meta.env.DEV && location.pathname === '/consent-preview') {
     const role = new URLSearchParams(location.search).get('role') === 'merchant' ? 'merchant' : 'customer';
+    if (new URLSearchParams(location.search).get('version') === 'old') return <OldLegalGate preview user={{ id: 'old-local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</OldLegalGate>;
     return <LegalGate preview user={{ id: 'local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</LegalGate>;
   }
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Suspense fallback={<StartupFallback />}><LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation></Suspense>;

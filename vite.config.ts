@@ -1,8 +1,19 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import dotenv from 'dotenv';
+const { assertStaging } = createRequire(import.meta.url)('./backend/staging-safety.cjs');
 
 export default defineConfig(({ mode, command }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  // Vite normally merges .env into every mode; never allow that in staging.
+  const staging = mode === 'staging' || process.env.AE_ENV === 'staging';
+  const env = staging
+    ? { ...(fs.existsSync('.env.staging') ? dotenv.parse(fs.readFileSync('.env.staging')) : {}), ...process.env }
+    : loadEnv(mode, process.cwd(), '');
+  if (mode === 'staging' || process.env.AE_ENV === 'staging') {
+    assertStaging({ ...env, AE_ENV: 'staging' }, { backend: false });
+  }
   const supabaseUrl = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || '').trim();
   const supabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '').trim();
 
@@ -38,8 +49,10 @@ export default defineConfig(({ mode, command }) => {
   }
   
   return {
+    envDir: staging ? false : undefined,
     plugins: [react()],
     define: {
+      ...(staging ? Object.fromEntries(Object.entries(env).filter(([key]) => key.startsWith('VITE_')).map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)])) : {}),
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
     },
@@ -50,7 +63,7 @@ export default defineConfig(({ mode, command }) => {
       },
     },
     build: {
-      outDir: 'dist',
+      outDir: mode === 'staging' ? 'dist-staging' : 'dist',
       sourcemap: false,
     },
   };

@@ -24,7 +24,7 @@ void i18n.use(initReactI18next).init({
   lng: savedLanguage(), supportedLngs: [...languages], fallbackLng: 'en',
   keySeparator: false, nsSeparator: false, interpolation: { escapeValue: false },
 });
-const apiRoot = Capacitor.isNativePlatform() ? 'https://www.affiliateae.co.in' : window.location.hostname.endsWith('affiliateae.co.in') ? '' : import.meta.env.VITE_API_URL || '';
+const apiRoot = Capacitor.isNativePlatform() ? import.meta.env.VITE_AE_ENV === 'staging' ? import.meta.env.VITE_API_URL || '' : 'https://www.affiliateae.co.in' : window.location.hostname.endsWith('affiliateae.co.in') ? '' : import.meta.env.VITE_API_URL || '';
 const inFlight = new Map<string,Promise<void>>();
 export function refreshLanguagePack(language: string) {
   const locale = language.startsWith('ml') ? 'ml' : 'en';

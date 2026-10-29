@@ -1,0 +1,10 @@
+const assert = require('node:assert/strict');
+const { assertStaging } = require('../backend/staging-safety.cjs');
+const ref = 'abcdefghijklmnopqrst', project = 'ae-staging-unit-test';
+const good = { AE_ENV:'staging', AE_STAGING_SUPABASE_REF:ref, AE_STAGING_FIREBASE_PROJECT:project, SUPABASE_URL:`https://${ref}.supabase.co`, VITE_SUPABASE_URL:`https://${ref}.supabase.co`, SUPABASE_ANON_KEY:'test', VITE_SUPABASE_ANON_KEY:'test', SUPABASE_SERVICE_ROLE_KEY:'test', VITE_FIREBASE_PROJECT_ID:project, VITE_FIREBASE_AUTH_DOMAIN:`${project}.firebaseapp.com`, FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({project_id:project,private_key:'test'}), CUSTOMER_JWT_SECRET:'x'.repeat(64), VITE_API_URL:'http://127.0.0.1:3020', AE_STAGING_PUSH_MODE:'disabled' };
+assert.doesNotThrow(()=>assertStaging({}));
+assert.doesNotThrow(()=>assertStaging(good));
+for (const delta of [{AE_STAGING_SUPABASE_REF:'zrsjgbgzkaxccetjahcy'},{SUPABASE_URL:'https://zrsjgbgzkaxccetjahcy.supabase.co'},{VITE_API_URL:'https://affiliateae.co.in'},{WA_TOKEN:'test'},{RESEND_API_KEY:'test'},{RAZORPAY_KEY_ID:'test'},{AE_STAGING_PUSH_MODE:'enabled'},{VITE_FIREBASE_PROJECT_ID:'ae2026-27134'},{CUSTOMER_JWT_SECRET:''},{FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({project_id:'ae2026-27134',private_key:'test'})}]) assert.throws(()=>assertStaging({...good,...delta}),/Staging safety/);
+const foreign = 'x.'+Buffer.from(JSON.stringify({ref:'zrsjgbgzkaxccetjahcy'})).toString('base64url')+'.x';
+assert.throws(()=>assertStaging({...good,SUPABASE_SERVICE_ROLE_KEY:foreign}),/another project/);
+console.log('PASS: staging allowlist, production target rejection, key mismatch, outbound credentials, push disable and separate JWT secret');

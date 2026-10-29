@@ -1,0 +1,12 @@
+const fs=require('node:fs');const path='src/components/PurchaseAmountGroups.tsx';let text=fs.readFileSync(path,'utf8');
+text=text.replace("{uiText('Create offer for this group')}</Link>}<div", "{uiText('Create offer for this group')}</Link>}<div");
+text=text.replace("{uiText('Create offer for this group')}</Link><div", "{uiText('Create offer for this group')}</Link>}<div");
+fs.writeFileSync(path,text);
+if(!text.includes("import { maskedPhone }"))text="import { maskedPhone } from '../maskedPhone';\n"+text;
+text=text.replace('{customer.id} · {customer.matches.length}', '{customer.id} · {maskedPhone(customer.phone)} · {customer.matches.length}');
+fs.writeFileSync(path,text);
+const overview='src/pages/MerchantOverview.tsx';
+const existing=fs.readFileSync(overview,'utf8');
+fs.writeFileSync(overview,existing.replace('view === \'customers\' ? uiText("Your customers")','(view === \'customers\' || view === \'purchase-group\') ? uiText("Your customers")'));
+text=text.replace("{uiText('No customers in this range for the selected dates.')}</p></section>","{uiText('No customers in this range for the selected dates.')}</p>}</section>");
+fs.writeFileSync(path,text);
