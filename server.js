@@ -4699,7 +4699,7 @@ app.get('/api/customers/phone-status', requireAuth, async (req, res) => {
   return res.json({ success: true, registered: true, registeredWithMerchant });
 });
 
-app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, res) => {
+app.delete(['/api/customers/:id', '/api/admin/customers/:id'], requireAuth, requireRole('admin'), async (req, res) => {
   const rawId = cleanText(req.params.id, 100);
   let query = supabaseAdmin.from('customers').select('id,customer_code,name').limit(1);
   query = rawId.startsWith('C') ? query.eq('customer_code', rawId) : query.eq('id', rawId);
@@ -4720,6 +4720,13 @@ app.delete('/api/customers/:id', requireAuth, requireRole('admin'), async (req, 
   await supabaseAdmin.from('customer_product_list_requests').delete().eq('customer_id', customer.id);
   await supabaseAdmin.from('customer_feedback').delete().eq('customer_id', customer.id);
   await supabaseAdmin.from('customer_orders').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('whatsapp_customer_sessions').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('app_notifications').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('admin_customer_point_grants').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('customer_onboarding_bonuses').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('loyalty_bonuses').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('point_redemptions').delete().eq('customer_id', customer.id);
+  await supabaseAdmin.from('payment_transactions').delete().eq('customer_id', customer.id);
   // Settlement tables use restrictive foreign keys, so clear them before orders/customers.
   const { data: customerLots } = await supabaseAdmin.from('reward_lots').select('id').eq('customer_id', customer.id);
   const lotIds = (customerLots || []).map((row) => row.id).filter(Boolean);

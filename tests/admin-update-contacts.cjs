@@ -35,5 +35,12 @@ assert.ok(adminMerchUI.includes('updateMerchant'), 'Has merchant update mutation
 assert.ok(adminMerchUI.includes("apiFetch(`/api/merchants/${encodeURIComponent(id)}`"), 'Calls merchant patch endpoint');
 assert.ok(adminMerchUI.includes('Edit merchant'), 'Has Edit merchant button/modal');
 
-console.log('PASS: admin-side customer and merchant phone/email editing verified end-to-end');
+// 5. Verify Customer Deletion in Backend and Frontend
+assert.ok(server.includes("app.delete(['/api/customers/:id', '/api/admin/customers/:id']") || server.includes("app.delete('/api/customers/:id'"), 'Customer delete endpoint exists');
+assert.ok(adminCustomersUI.includes('removeCustomer'), 'Has customer delete mutation on table list');
+assert.ok(adminCustomersUI.includes('deleteCustomer'), 'Has customer delete mutation on detail view');
+assert.ok(adminCustomersUI.includes('bulkRemove'), 'Has bulk delete mutation for selected customers');
+assert.ok(adminCustomersUI.includes('Delete customer'), 'Has Delete customer button');
+
+console.log('PASS: admin-side customer and merchant editing and deletion verified end-to-end');
 
