@@ -4,7 +4,7 @@ const {validNewPassword,PASSWORD_HELP}=require('./password-policy.cjs');
 const {summarize,filters:reportFilters}=require('./expense-reports.cjs');
 const departments=['Accounts','Developer','Field Manager','HR','Marketing','Other'];
 const categories=['Petrol/Fuel','Travel','IT Support','Marketing','Office Supplies','Other'];
-const statuses=['draft','submitted','corrections','approved','rejected','paid'];
+const statuses=['draft','submitted','corrections','approved','rejected','paid','cancelled'];
 const uuid=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const today=()=>new Date(Date.now()+330*60000).toISOString().slice(0,10);
 function date(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;}
@@ -86,6 +86,13 @@ function registerExpenses(app,{db,auth,requireAuth,requireRole,notifyProfile,not
  app.post('/api/expenses/claims',...employee,wrap(async(req,res)=>{let input;try{input=claimInput(req.body)}catch(e){fail(e.message)}res.json(await act(req,req.body.id,'create',input));}));
  app.put('/api/expenses/claims/:id',...employee,wrap(async(req,res)=>{let input;try{input=claimInput(req.body)}catch(e){fail(e.message)}res.json(await act(req,req.params.id,'save',input));}));
  app.post('/api/expenses/claims/:id/submit',...employee,wrap(async(req,res)=>res.json(await act(req,req.params.id,'submit',{}))));
+ // Cancellation is deliberately silent: no email or push event is emitted.
+ app.post('/api/expenses/claims/:id/cancel',...employee,wrap(async(req,res)=>{
+  if(!uuid(req.params.id)||!uuid(req.body.request_id)||!Number.isInteger(req.body.version)||req.body.version<1)fail('Valid claim, request and version are required.');
+  const response=await db.rpc('expense_cancel',{p_actor:req.auth.profile.id,p_claim:req.params.id,p_request:req.body.request_id,p_version:req.body.version});
+  if(response.error){if(response.error.code==='P0001')fail(response.error.message,409);throw response.error;}
+  res.json(response.data);
+ }));
  const upload=multer({storage:multer.memoryStorage(),limits:{files:1,fileSize:5*1024*1024}}).single('receipt');
  app.post('/api/expenses/claims/:id/receipts',...employee,(req,res,next)=>upload(req,res,error=>error?res.status(400).json({error:'Upload one JPG, PNG or PDF, up to 5 MB.'}):next()),wrap(async(req,res)=>{
   const claim=await owned(req,req.params.id,false);if(!['draft','corrections'].includes(claim.status))fail('This claim cannot be edited.',409);

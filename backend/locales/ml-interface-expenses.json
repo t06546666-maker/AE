@@ -162,5 +162,9 @@
  "Disable expense access":"ചെലവ് പോർട്ടലിലേക്കുള്ള പ്രവേശനം നിർത്തുക",
  "Enable expense access":"ചെലവ് പോർട്ടലിലേക്കുള്ള പ്രവേശനം അനുവദിക്കുക",
  "Reset staff password":"ജീവനക്കാരന്റെ രഹസ്യവാക്ക് പുനഃക്രമീകരിക്കുക",
- "Set temporary password":"താൽക്കാലിക രഹസ്യവാക്ക് നൽകുക"
+ "Set temporary password":"താൽക്കാലിക രഹസ്യവാക്ക് നൽകുക",
+ "Cancelled":"റദ്ദാക്കി",
+ "Cancel claim":"ക്ലെയിം റദ്ദാക്കുക",
+ "Claim cancelled":"ക്ലെയിം റദ്ദാക്കി",
+ "Cancel this claim? The Account Head will not be notified.":"ഈ ക്ലെയിം റദ്ദാക്കണോ? അക്കൗണ്ട് ഹെഡിന് അറിയിപ്പ് അയയ്ക്കില്ല."
 }

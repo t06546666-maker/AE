@@ -68,6 +68,10 @@ async function main(){
   assert.equal((await call('/api/expenses/claims','employee')).body.summary.draft.amount_paise,'12345');
   const body={id:crypto.randomUUID(),request_id:crypto.randomUUID(),category:'IT Support',amount:'10.01',expense_date:'2026-01-01',reason:'Company tools',owner_id:ids.other};assert.equal((await call('/api/expenses/claims','employee',body)).status,200);assert.equal(rpcArgs.p_actor,ids.employee);assert.equal(rpcArgs.p_payload.amount_paise,1001);assert.ok(!('owner_id'in rpcArgs.p_payload));
   assert.equal((await call('/api/expenses/claims/'+claim.id+'/submit','employee',{request_id:crypto.randomUUID(),version:1})).status,200);assert.equal(notifications[0][0],ids.head);assert.ok(notifications[0][3].url.startsWith('/accounts?claim='));
+  const cancelNotifications=notifications.length;
+  assert.equal((await call('/api/expenses/claims/'+claim.id+'/cancel','employee',{request_id:crypto.randomUUID(),version:1})).status,200);
+  assert.equal(rpcArgs.p_actor,ids.employee);assert.equal(notifications.length,cancelNotifications);
+  assert.equal((await call('/api/expenses/claims/'+claim.id+'/cancel','admin',{request_id:crypto.randomUUID(),version:1})).status,403);
   const before=notifications.length;await call('/api/expenses/claims/'+claim.id+'/submit','employee',{request_id:ids.other,version:1});assert.equal(notifications.length,before);
   await call('/api/accounts/claims/'+claim.id+'/review','head',{request_id:crypto.randomUUID(),version:1,action:'approve'});assert.equal(notifications.at(-1)[0],ids.employee);
   const bad=new FormData();bad.set('receipt',new Blob(['<html>'],{type:'application/pdf'}),'bad.pdf');bad.set('request_id',crypto.randomUUID());bad.set('version','1');assert.equal((await call('/api/expenses/claims/'+claim.id+'/receipts','employee',bad)).status,400);

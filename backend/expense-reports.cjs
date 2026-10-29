@@ -1,7 +1,7 @@
-const states=['draft','submitted','corrections','approved','rejected','paid'];
+const states=['draft','submitted','corrections','approved','rejected','paid','cancelled'];
 function summarize(rows){
  const totals={requested:0n,approved:0n,paid:0n,outstanding:0n};
- for(const row of rows){const value=BigInt(row.amount_paise);if(row.status!=='draft')totals.requested+=value;if(['approved','paid'].includes(row.status))totals.approved+=value;if(row.status==='paid')totals.paid+=value;if(row.status==='approved')totals.outstanding+=value;}
+ for(const row of rows){const value=BigInt(row.amount_paise);if(!['draft','cancelled'].includes(row.status))totals.requested+=value;if(['approved','paid'].includes(row.status))totals.approved+=value;if(row.status==='paid')totals.paid+=value;if(row.status==='approved')totals.outstanding+=value;}
  return Object.fromEntries(Object.entries(totals).map(([key,value])=>[key,value.toString()]));
 }
 function filters(query,input,fail,{summary=false}={}){

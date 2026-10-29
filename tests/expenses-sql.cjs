@@ -64,6 +64,23 @@ async function main(){
  await db.exec('set role authenticated');await assert.rejects(db.query('select * from expense_claims'),/permission denied/);await assert.rejects(action(employee,id,'submit',{},7),/permission denied/);await db.exec('reset role');
  assert.equal((await db.query("select public from storage.buckets where id='expense-receipts'")).rows[0].public,false);
  assert.ok((await db.query('select count(*)::int as n from expense_audit where claim_id=$1',[id])).rows[0].n>=7);
+ await db.exec(fs.readFileSync('supabase-expense-cancellation.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase-expense-cancellation.sql','utf8'));
+ const cancel=(actor,claim,version,key=crypto.randomUUID())=>db.query('select expense_cancel($1,$2,$3,$4) as result',[actor,claim,key,version]).then(r=>r.rows[0].result);
+ const draftCancel=crypto.randomUUID();await action(employee,draftCancel,'create',input,null);
+ await assert.rejects(cancel(other,draftCancel,1),/Claim not found/);
+ await assert.rejects(cancel(admin,draftCancel,1),/Employee access/);
+ const cancelKey=crypto.randomUUID();assert.equal((await cancel(employee,draftCancel,1,cancelKey)).claim.status,'cancelled');
+ assert.equal((await cancel(employee,draftCancel,1,cancelKey)).replayed,true);
+ assert.equal((await db.query("select count(*)::int as n from expense_audit where claim_id=$1 and action='cancel'",[draftCancel])).rows[0].n,1);
+ await assert.rejects(action(employee,draftCancel,'submit',{},2),/cannot be edited/);
+ for(const state of ['approved','paid','rejected','corrections']){const cid=crypto.randomUUID();await action(employee,cid,'create',input,null);await db.query('update expense_claims set status=$1 where id=$2',[state,cid]);await assert.rejects(cancel(employee,cid,1),/Only draft/);}
+ const race=crypto.randomUUID();await action(employee,race,'create',input,null);await action(employee,race,'submit',{},1);
+ await db.query('update expense_members set active=true where profile_id=$1',[head]);
+ const competing=await Promise.allSettled([cancel(employee,race,2),action(head,race,'approve',{},2)]);
+ assert.equal(competing.filter(x=>x.status==='fulfilled').length,1);assert.equal(competing.filter(x=>x.status==='rejected').length,1);
+ await db.exec('set role authenticated');await assert.rejects(cancel(employee,race,2),/permission denied/);await db.exec('reset role');
+ console.log('PASS: cancellation ownership, locked statuses, replay, audit and competing approval.');
  await db.close();console.log('PASS: real embedded PostgreSQL migration/rerun, roles, ownership, exact paise, receipt requirement, corrections, stale concurrent decisions, idempotency, three payment methods, immutable paid claims, private bucket and client-denied access.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
