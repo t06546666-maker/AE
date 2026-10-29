@@ -44,9 +44,12 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     const {merchantId,token,action}=req.body;
     if(typeof merchantId!=='string'||! /^[a-f0-9-]{36}$/i.test(merchantId)||typeof token!=='string'||! /^[a-f0-9]{48}$/.test(token)||!validateAction(action))return res.status(400).json({error:'Scan a valid AE shop QR and choose a checkout action.'});
     try {
-      const db=await database();const qr=await db.collection('ae_shop_qr').doc(merchantId).get();
+      const db=await database();
+      const [qr,merchant]=await Promise.all([
+        db.collection('ae_shop_qr').doc(merchantId).get(),
+        supabase.from('active_merchants').select('id,name').eq('id',merchantId).maybeSingle(),
+      ]);
       if(!qr.exists||qr.data().token!==token)return res.status(400).json({error:'Shop QR is not valid.'});
-      const merchant=await supabase.from('active_merchants').select('id,name').eq('id',merchantId).maybeSingle();
       if(merchant.error||!merchant.data)return res.status(404).json({error:'Shop unavailable.'});
       const key=crypto.createHash('sha256').update(req.customer.id+':'+merchantId).digest('hex');
       const lock=db.collection('ae_shop_request_locks').doc(key), ref=db.collection('ae_shop_requests').doc();

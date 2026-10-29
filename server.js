@@ -498,13 +498,18 @@ async function pushToMerchant(merchantId, title, body, data = {}) {
   const { data: profiles, error } = await supabaseAdmin.from('profiles').select('id,push_token,push_enabled').eq('role', 'merchant').eq('merchant_id', merchantId);
   if (error) throw new Error('Merchant notification recipients unavailable');
   const outcomes = await Promise.all((profiles || []).map(async (profile) => {
-    await saveAppNotification(profile.id, title, body, data);
-    let target;
-    try { target=await profilePushRegistry.get(profile.id,profile); }
-    catch { console.warn('Merchant Firebase push registration lookup unavailable'); return 'failed'; }
-    if (target.push_enabled === false) return 'disabled';
-    if (!target.push_token) return 'no_token';
-    return await sendPushNotification(target.push_token, title, body, data) ? 'accepted' : 'failed';
+    // Persist the inbox independently: slow storage must not delay the phone push.
+    const inbox = saveAppNotification(profile.id, title, body, data).catch(() => console.warn('Merchant inbox save unavailable'));
+    const delivery = (async () => {
+      let target;
+      try { target=await profilePushRegistry.get(profile.id,profile); }
+      catch { console.warn('Merchant Firebase push registration lookup unavailable'); return 'failed'; }
+      if (target.push_enabled === false) return 'disabled';
+      if (!target.push_token) return 'no_token';
+      return await sendPushNotification(target.push_token, title, body, data) ? 'accepted' : 'failed';
+    })();
+    const [outcome] = await Promise.all([delivery,inbox]);
+    return outcome;
   }));
   return { recipients: outcomes.length, accepted: outcomes.filter(value=>value==='accepted').length, disabled: outcomes.filter(value=>value==='disabled').length, missingToken: outcomes.filter(value=>value==='no_token').length, failed: outcomes.filter(value=>value==='failed').length };
 }
