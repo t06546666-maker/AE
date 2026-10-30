@@ -1,7 +1,7 @@
 import { uiText } from '../uiText';
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, Download, Gift, ImagePlus, Pencil, Search, Send, Upload, X } from 'lucide-react';
+import { CalendarDays, Check, Download, Gift, ImagePlus, Pencil, Search, Send, Upload, X, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { apiFetch, downloadExport, queryString } from '../api';
@@ -41,6 +41,17 @@ export function Offers({ user }: { user: UserProfile }) {
   const [rejectionReason, setRejectionReason] = useState('');
   const [downloadingOfferId, setDownloadingOfferId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
+  const [adminMerchantId, setAdminMerchantId] = useState('');
+  const merchantsQuery = useQuery({
+    queryKey: ['admin-merchants-selection'],
+    queryFn: () => apiFetch<{ merchants: { id: string; name: string; merchantCode: string }[] }>('/api/merchants?pageSize=100'),
+    enabled: user.role === 'admin',
+  });
+  useEffect(() => {
+    if (user.role === 'admin' && !adminMerchantId && merchantsQuery.data?.merchants?.length) {
+      setAdminMerchantId(merchantsQuery.data.merchants[0].id);
+    }
+  }, [user.role, adminMerchantId, merchantsQuery.data]);
 
   useEffect(() => setPage(1), [deferredSearch, status]);
 
@@ -79,6 +90,9 @@ export function Offers({ user }: { user: UserProfile }) {
     setSegment(null);
     setExpiresAt(tomorrowInput());
     setImage(null);
+    if (user.role === 'admin' && merchantsQuery.data?.merchants?.length) {
+      setAdminMerchantId(merchantsQuery.data.merchants[0].id);
+    }
   }
 
   function editOffer(offer: Offer) {
@@ -89,6 +103,9 @@ export function Offers({ user }: { user: UserProfile }) {
     setAudience(offer.audience || 'all');
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
+    if (user.role === 'admin' && offer.merchantId) {
+      setAdminMerchantId(offer.merchantId);
+    }
     setFormOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -102,6 +119,9 @@ export function Offers({ user }: { user: UserProfile }) {
       body.set('audience', audience);
       if(segment && audience==='purchase_range')body.set('purchaseSegment',JSON.stringify(segment));
       body.set('expiresAt', new Date(`${expiresAt}T23:59:59+05:30`).toISOString());
+      if (user.role === 'admin' && adminMerchantId) {
+        body.set('merchantId', adminMerchantId);
+      }
       if (image) body.set('image', image);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
         method: editing ? "PUT" : "POST",
@@ -111,6 +131,15 @@ export function Offers({ user }: { user: UserProfile }) {
     onSuccess() {
       showToast(t(editing ? 'offers.updated' : 'offers.created'));
       resetForm();
+      void queryClient.invalidateQueries({ queryKey: ['offers'] });
+    },
+    onError(error) { showToast(error.message, 'error'); },
+  });
+
+  const deleteOffer = useMutation({
+    mutationFn: (offerId: string) => apiFetch(`/api/offers/${encodeURIComponent(offerId)}`, { method: 'DELETE' }),
+    onSuccess() {
+      showToast(uiText('Offer deleted.'));
       void queryClient.invalidateQueries({ queryKey: ['offers'] });
     },
     onError(error) { showToast(error.message, 'error'); },
@@ -177,24 +206,34 @@ export function Offers({ user }: { user: UserProfile }) {
       <PageHeader
         title={t('offers.title')}
         subtitle={t(user.role === 'admin' ? 'offers.adminSubtitle' : 'offers.merchantSubtitle')}
-        actions={user.role === 'merchant' ? (
+        actions={(
           <button className="button primary" onClick={() => { resetForm(); setFormOpen(true); }}>
-            <ImagePlus size={17} />{t('offers.create')}
+            <ImagePlus size={17} />{user.role === 'admin' ? uiText('Create Offer / Ad') : t('offers.create')}
           </button>
-        ) : undefined}
+        )}
       />
 
       {user.role === 'merchant' && !formOpen && <OfferPerformance merchantId={user.merchant_id} />}
-      {user.role === 'merchant' && formOpen ? (
+      {formOpen ? (
         <form className="panel offer-form" onSubmit={submit}>
           <div className="panel-heading">
             <div>
-              <h2>{t(editing ? 'offers.editResubmit' : 'offers.create')}</h2>
-              <p>{t('offers.merchantSubtitle')}</p>
+              <h2>{editing ? t('offers.editResubmit') : user.role === 'admin' ? uiText('Create Digital Ad / Offer') : t('offers.create')}</h2>
+              <p>{user.role === 'admin' ? uiText('Upload a digital ad banner or offer that will appear in the customer app.') : t('offers.merchantSubtitle')}</p>
             </div>
             <Gift />
           </div>
           <div className="offer-form-grid">
+            {user.role === 'admin' && (
+              <label>
+                {uiText('Store / Merchant')}
+                <select value={adminMerchantId} onChange={(e) => setAdminMerchantId(e.target.value)} required>
+                  {(merchantsQuery.data?.merchants || []).map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} ({m.merchantCode || m.id.slice(0, 8)})</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
               {t('offers.offerTitle')}
               <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} required />
@@ -223,7 +262,7 @@ export function Offers({ user }: { user: UserProfile }) {
           </div>
           <div className="form-actions">
             <button className="button primary" disabled={save.isPending}>
-              <Send size={16} />{t(editing ? 'offers.resubmit' : 'offers.submit')}
+              <Send size={16} />{editing ? t('offers.resubmit') : user.role === 'admin' ? uiText('Publish Ad / Offer') : t('offers.submit')}
             </button>
             <button type="button" className="button secondary" onClick={resetForm}>{t('offers.cancel')}</button>
           </div>
@@ -273,6 +312,25 @@ export function Offers({ user }: { user: UserProfile }) {
                     <div className="offer-actions">
                       {user.role === 'merchant' && offer.status === 'rejected' ? (
                         <button className="button secondary" onClick={() => editOffer(offer)}><Pencil size={16} />{t('offers.editResubmit')}</button>
+                      ) : null}
+                      {user.role === 'admin' ? (
+                        <>
+                          <button className="button secondary" onClick={() => editOffer(offer)}>
+                            <Pencil size={16} />{uiText('Edit')}
+                          </button>
+                          <button
+                            className="button secondary"
+                            style={{ color: '#ef4444', borderColor: '#fca5a5' }}
+                            disabled={deleteOffer.isPending}
+                            onClick={() => {
+                              if (window.confirm(uiText(`Permanently delete offer "${offer.title}"?\n\nThis will remove it from the customer app immediately.`))) {
+                                deleteOffer.mutate(offer.id);
+                              }
+                            }}
+                          >
+                            <Trash2 size={16} />{uiText('Delete')}
+                          </button>
+                        </>
                       ) : null}
                       {user.role === 'admin' && offer.status === 'pending' && !expired ? (
                         <>

@@ -11,6 +11,7 @@ import { useCustomerDashboard, useCustomerOffers } from '../../hooks/useCustomer
 import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
+import { CustomerAds } from '../../components/CustomerAds';
 import './home-reference.css';
 import {ProductListPanel} from '../../components/ProductListPanel';
 
@@ -121,6 +122,9 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <ChevronRight size={20} className="text-white" />
           </div>
         </Link>
+
+        {/* Digital Ads Carousel */}
+        <CustomerAds />
 
         <nav className="ae-home-shortcuts" aria-label={uiText("Customer quick actions")}>
           <Link to="/customer/shop-scan?mode=claim" className="qr"><QrCode/><span>{uiText("My QR Claim Points")}</span></Link>

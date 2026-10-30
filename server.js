@@ -2682,9 +2682,34 @@ app.get('/api/customer/categories', async (req, res) => {
   }
 });
 
-app.get('/api/customer/ads', requireCustomerAuth, (_req, res) => {
+app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ ads: customerAds });
+  try {
+    const { data: offers } = await supabaseAdmin
+      .from('offers')
+      .select('id, title, description, image_path, category, expires_at, merchants(name)')
+      .eq('status', 'approved')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    const dynamicAds = await Promise.all((offers || []).map(async (o) => ({
+      id: o.id,
+      title: o.title,
+      description: o.description,
+      theme: 'blue',
+      icon: 'gift',
+      action: o.merchants?.name ? `View offer at ${o.merchants.name}` : 'View offer',
+      url: '/customer/offers',
+      test: false,
+      imageUrl: await signedOfferImageUrl(o.image_path),
+    })));
+
+    const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
+    res.json({ ads: [...validDynamic, ...(customerAds || [])] });
+  } catch (_e) {
+    res.json({ ads: customerAds || [] });
+  }
 });
 
 app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
@@ -3995,9 +4020,33 @@ app.post('/api/merchant/loyalty-bonus', requireAuth, requireRole('merchant'), as
 app.post(
   '/api/offers',
   requireAuth,
-  requireRole('merchant'),
+  (req, res, next) => {
+    if (!['merchant', 'admin'].includes(req.auth.profile?.role)) {
+      return res.status(403).json({ success: false, error: 'Merchant or admin access required' });
+    }
+    next();
+  },
   offerImageMiddleware,
   async (req, res) => {
+    const isAdmin = req.auth.profile?.role === 'admin';
+    let merchantId = req.auth.profile?.merchant_id;
+    if (isAdmin) {
+      const requestedMerchantId = cleanText(req.body.merchantId || req.body.merchant_id, 100);
+      if (requestedMerchantId) {
+        const { data: m } = await supabaseAdmin.from('merchants').select('id').eq('id', requestedMerchantId).maybeSingle();
+        if (m) merchantId = m.id;
+        else return res.status(400).json({ success: false, error: 'Selected merchant was not found' });
+      } else {
+        const { data: firstM } = await supabaseAdmin.from('active_merchants').select('id').order('created_at', { ascending: true }).limit(1).maybeSingle();
+        if (firstM) merchantId = firstM.id;
+        else {
+          const { data: anyM } = await supabaseAdmin.from('merchants').select('id').limit(1).maybeSingle();
+          if (anyM) merchantId = anyM.id;
+          else return res.status(400).json({ success: false, error: 'A merchant is required for the offer' });
+        }
+      }
+    }
+
     const title = cleanText(req.body.title, 120);
     const description = cleanText(req.body.description, 1000);
     const category = cleanText(req.body.category, 80) || null;
@@ -4022,9 +4071,11 @@ app.post(
 
     let imagePath;
     try {
-      imagePath = await uploadOfferImage(req.auth.profile.merchant_id, req.file);
+      imagePath = await uploadOfferImage(merchantId, req.file);
+      const status = isAdmin ? 'approved' : 'pending';
+      const now = new Date().toISOString();
       const { data: offer, error } = await supabaseAdmin.from('offers').insert({
-        merchant_id: req.auth.profile.merchant_id,
+        merchant_id: merchantId,
         title,
         description,
         category,
@@ -4032,13 +4083,16 @@ app.post(
         ...(segment?{purchase_segment:segment}:{}),
         image_path: imagePath,
         expires_at: expiresAt.toISOString(),
-        status: 'pending',
+        status,
         submitted_by: req.auth.user.id,
+        ...(isAdmin ? { reviewed_by: req.auth.user.id, reviewed_at: now } : {}),
       }).select(
         'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
-      await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
+      if (!isAdmin) {
+        await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
+      }
       return res.status(201).json({ success: true, offer: await offerDto(offer) });
     } catch (error) {
       if (imagePath) {
@@ -4052,19 +4106,27 @@ app.post(
 app.put(
   '/api/offers/:id',
   requireAuth,
-  requireRole('merchant'),
+  (req, res, next) => {
+    if (!['merchant', 'admin'].includes(req.auth.profile?.role)) {
+      return res.status(403).json({ success: false, error: 'Merchant or admin access required' });
+    }
+    next();
+  },
   offerImageMiddleware,
   async (req, res) => {
     const offerId = cleanText(req.params.id, 100);
-    const { data: currentOffer } = await supabaseAdmin.from('offers')
+    const isAdmin = req.auth.profile?.role === 'admin';
+    let query = supabaseAdmin.from('offers')
       .select('id,merchant_id,status,image_path')
-      .eq('id', offerId)
-      .eq('merchant_id', req.auth.profile.merchant_id)
-      .maybeSingle();
+      .eq('id', offerId);
+    if (!isAdmin) {
+      query = query.eq('merchant_id', req.auth.profile.merchant_id);
+    }
+    const { data: currentOffer } = await query.maybeSingle();
     if (!currentOffer) {
       return res.status(404).json({ success: false, error: 'Offer was not found' });
     }
-    if (currentOffer.status !== 'rejected') {
+    if (!isAdmin && currentOffer.status !== 'rejected') {
       return res.status(409).json({ success: false, error: 'Only rejected offers can be edited' });
     }
 
@@ -4089,35 +4151,64 @@ app.put(
     let uploadedPath = '';
     try {
       if (req.file) {
-        uploadedPath = await uploadOfferImage(req.auth.profile.merchant_id, req.file);
+        uploadedPath = await uploadOfferImage(currentOffer.merchant_id, req.file);
         replacementPath = uploadedPath;
       }
-      const { data: offer, error } = await supabaseAdmin.from('offers').update({
+      const now = new Date().toISOString();
+      const updates = {
         title,
         description,
         category,
         image_path: replacementPath,
         expires_at: expiresAt.toISOString(),
-        status: 'pending',
-        rejection_reason: null,
-        reviewed_by: null,
-        reviewed_at: null,
-        submitted_by: req.auth.user.id,
-        updated_at: new Date().toISOString(),
-      }).eq('id', offerId).select(
+        updated_at: now,
+      };
+      if (isAdmin) {
+        updates.status = 'approved';
+        updates.reviewed_by = req.auth.user.id;
+        updates.reviewed_at = now;
+      } else {
+        updates.status = 'pending';
+        updates.rejection_reason = null;
+        updates.reviewed_by = null;
+        updates.reviewed_at = null;
+        updates.submitted_by = req.auth.user.id;
+      }
+      const { data: offer, error } = await supabaseAdmin.from('offers').update(updates).eq('id', offerId).select(
         'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
       if (error) throw error;
-      if (uploadedPath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]);
+      if (uploadedPath && currentOffer.image_path && currentOffer.image_path !== replacementPath) {
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]).catch(() => {});
+      }
+      if (!isAdmin) {
+        await pushToRole('admin', 'Offer resubmitted', `${title} was resubmitted for review.`, { url: '/offers', offerId: offer.id });
       }
       return res.json({ success: true, offer: await offerDto(offer) });
     } catch (error) {
       if (uploadedPath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([uploadedPath]);
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([uploadedPath]).catch(() => {});
       }
       return res.status(400).json({ success: false, error: error.message });
     }
+  },
+);
+
+app.delete(
+  '/api/offers/:id',
+  requireAuth,
+  requireRole('admin'),
+  async (req, res) => {
+    const offerId = cleanText(req.params.id, 100);
+    const { data: currentOffer, error: findError } = await supabaseAdmin.from('offers').select('id,image_path').eq('id', offerId).maybeSingle();
+    if (findError || !currentOffer) return res.status(404).json({ success: false, error: 'Offer was not found' });
+
+    if (currentOffer.image_path) {
+      await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]).catch(() => {});
+    }
+    const { error: deleteError } = await supabaseAdmin.from('offers').delete().eq('id', offerId);
+    if (deleteError) return res.status(400).json({ success: false, error: deleteError.message });
+    return res.json({ success: true });
   },
 );
 
