@@ -2730,23 +2730,35 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
   try {
     const { data: offers } = await supabaseAdmin
       .from('offers')
-      .select('id, title, description, image_path, category, expires_at, merchants(name)')
+      .select('id, title, description, image_path, category, expires_at, merchant_id, merchants(id, name, merchant_code, phone, email, address)')
       .eq('status', 'approved')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(6);
 
-    const dynamicAds = await Promise.all((offers || []).map(async (o) => ({
-      id: o.id,
-      title: o.title,
-      description: o.description,
-      theme: 'blue',
-      icon: 'gift',
-      action: o.merchants?.name ? `View offer at ${o.merchants.name}` : 'View offer',
-      url: '/customer/offers',
-      test: false,
-      imageUrl: await signedOfferImageUrl(o.image_path),
-    })));
+    const dynamicAds = await Promise.all((offers || []).map(async (o) => {
+      const merchantName = o.merchants?.name || '';
+      const phone = o.merchants?.phone || '';
+      const imageUrl = await signedOfferImageUrl(o.image_path);
+      return {
+        id: o.id,
+        title: o.title,
+        description: o.description ? (phone ? `${o.description} | Call: ${phone}` : o.description) : (phone ? `Call: ${phone}` : ''),
+        rawDescription: o.description || '',
+        category: o.category || '',
+        expiresAt: o.expires_at,
+        merchantId: o.merchant_id || o.merchants?.id,
+        merchantName,
+        merchantPhone: phone,
+        merchantAddress: o.merchants?.address || '',
+        theme: 'blue',
+        icon: 'gift',
+        action: merchantName ? (phone ? `📞 ${phone}` : `View at ${merchantName}`) : 'View offer',
+        url: '/customer/offers',
+        test: false,
+        imageUrl,
+      };
+    }));
 
     const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
     res.json({ ads: [...validDynamic, ...(customerAds || [])] });
@@ -2950,7 +2962,7 @@ app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('mer
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   const { data: offers, error } = await supabaseAdmin
     .from('offers')
-    .select('*, merchants(name)')
+    .select('*, merchants(id, name, merchant_code, phone, email, address)')
     .eq('status', 'approved')
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
@@ -2975,14 +2987,24 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     }catch { /* Invalid targeting metadata must never expose a restricted offer. */ }
   }
   const visibleOffers = (offers || []).filter(o => o.audience==='purchase_range'?eligibleSegments.has(o.id):o.audience !== 'loyal' || eligibleMerchants.has(o.merchant_id));
-  const mappedOffers = await Promise.all(visibleOffers.map(async o => ({
-    id: o.id,
-    title: o.title,
-    description: o.description,
-    imageUrl: await signedOfferImageUrl(o.image_path),
-    merchant_name: o.merchants?.name,
-    expires_at: o.expires_at
-  })));
+  const mappedOffers = await Promise.all(visibleOffers.map(async o => {
+    const phone = o.merchants?.phone || '';
+    const phoneTag = phone ? ` • 📞 ${phone}` : '';
+    const name = o.merchants?.name || 'Store';
+    return {
+      id: o.id,
+      title: o.title,
+      description: o.description || '',
+      imageUrl: await signedOfferImageUrl(o.image_path),
+      merchant_id: o.merchant_id || o.merchants?.id,
+      merchant_name: `${name}${phoneTag}`,
+      merchant_raw_name: name,
+      merchant_phone: phone,
+      merchant_address: o.merchants?.address || '',
+      category: o.category || '',
+      expires_at: o.expires_at,
+    };
+  }));
   
   res.json({ success: true, offers: mappedOffers });
 });

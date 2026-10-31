@@ -1,13 +1,15 @@
 import { uiText } from '../../uiText';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye } from 'lucide-react';
 import { useCustomerOffers } from '../../hooks/useCustomerData';
+import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 
 const CATEGORIES = ['All', 'Nearby', 'Trending', 'Favorites'];
 
 export function CustomerOffers() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
   const { data, isLoading } = useCustomerOffers();
   const offers = data?.offers ?? [];
 
@@ -47,31 +49,80 @@ export function CustomerOffers() {
         {isLoading ? (
           <div className="py-12 text-center text-gray-400">{uiText("Loading offers...")}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">{uiText("No active offers")}{activeCategory !== 'All' ? ` in "${activeCategory}"` : ''}.</div>
+          <div className="py-12 text-center text-gray-400">
+            {uiText("No active offers")}{activeCategory !== 'All' ? ` in "${activeCategory}"` : ''}.
+          </div>
         ) : (
           filtered.map((offer) => (
-            <div key={offer.id} className="bg-white rounded-[20px] shadow-sm border border-gray-100 overflow-hidden flex active:scale-[0.98] transition-transform p-3">
-              <div className="w-[100px] h-[100px] bg-gray-100 rounded-[16px] flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <div
+              key={offer.id}
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                setSelectedOffer({
+                  id: offer.id,
+                  title: offer.title,
+                  description: offer.description,
+                  imageUrl: offer.imageUrl,
+                  merchantName: offer.merchant_raw_name || offer.merchant_name,
+                  merchantPhone: offer.merchant_phone,
+                  merchantAddress: offer.merchant_address,
+                  category: offer.category,
+                  expiresAt: offer.expires_at,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedOffer({
+                    id: offer.id,
+                    title: offer.title,
+                    description: offer.description,
+                    imageUrl: offer.imageUrl,
+                    merchantName: offer.merchant_raw_name || offer.merchant_name,
+                    merchantPhone: offer.merchant_phone,
+                    merchantAddress: offer.merchant_address,
+                    category: offer.category,
+                    expiresAt: offer.expires_at,
+                  });
+                }
+              }}
+              className="bg-white rounded-[20px] shadow-sm border border-gray-100 overflow-hidden flex active:scale-[0.98] transition-transform p-3 cursor-pointer hover:border-blue-200"
+            >
+              <div className="w-[100px] h-[100px] bg-gray-100 rounded-[16px] flex-shrink-0 flex items-center justify-center overflow-hidden relative">
                 {offer.imageUrl ? (
                   <img src={offer.imageUrl} alt={offer.title} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+                  <div className="w-16 h-16 bg-gray-300 rounded-full" />
                 )}
+                <span className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1">
+                  <Eye size={12} />
+                </span>
               </div>
               <div className="p-3 flex-1 flex flex-col justify-center relative">
                 <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{offer.title}</h3>
-                <p className="font-bold text-[14px] text-[#e11d48] mt-1 leading-tight line-clamp-2">{offer.description}</p>
-                <p className="font-semibold text-[13px] text-gray-700 leading-tight mt-1">{uiText("at ")}{offer.merchant_name || 'Store'}</p>
+                <p className="font-bold text-[14px] text-[#e11d48] mt-1 leading-tight line-clamp-2">
+                  {offer.description}
+                </p>
+                <p className="font-semibold text-[13px] text-gray-700 leading-tight mt-1">
+                  {uiText("at ")}{offer.merchant_name || 'Store'}
+                </p>
                 <div className="flex items-center justify-between mt-3">
-                  <p className="text-[11px] font-medium text-gray-500">{uiText(" Valid till ")}{new Date(offer.expires_at).toLocaleDateString()}
+                  <p className="text-[11px] font-medium text-gray-500">
+                    {uiText(" Valid till ")}{new Date(offer.expires_at).toLocaleDateString()}
                   </p>
-                  <ChevronRight size={16} className="text-gray-400" />
+                  <span className="text-xs font-semibold text-blue-600 flex items-center gap-1">
+                    {uiText('View Ad')} <ChevronRight size={14} />
+                  </span>
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Full In-App Offer Preview Modal */}
+      <CustomerOfferPreviewModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
     </div>
   );
 }

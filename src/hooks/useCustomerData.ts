@@ -42,7 +42,12 @@ export type CustomerOffer = {
   title: string;
   description: string;
   imageUrl?: string;
+  merchant_id?: string;
   merchant_name?: string;
+  merchant_raw_name?: string;
+  merchant_phone?: string;
+  merchant_address?: string;
+  category?: string;
   expires_at: string;
 };
 

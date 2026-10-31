@@ -12,6 +12,7 @@ import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerAds } from '../../components/CustomerAds';
+import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import {ProductListPanel} from '../../components/ProductListPanel';
 
@@ -24,6 +25,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
   const [qrSrc, setQrSrc] = useState('');
+  const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
   const [productListOpen, setProductListOpen] = useState(false);
   const [merchantId, setMerchantId] = useState('');
   const [productList, setProductList] = useState('');
@@ -138,7 +140,54 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <div><h3 className="text-[16px] font-bold text-gray-900">{uiText("Featured Offers Near You")}</h3><p className="text-[11px] text-gray-500">{uiText("Save more at AE businesses near you")}</p></div>
             <Link to="/customer/offers" className="text-[12px] font-bold text-[#087a4b]">{uiText("View all")}</Link>
           </div>
-          {offersLoading ? <div className="rounded-2xl bg-gray-50 py-8 text-center text-sm text-gray-400">{uiText("Loading offers...")}</div> : offers.length ? <div className="grid grid-cols-2 gap-3">{offers.map((offer) => <Link to="/customer/offers" key={offer.id} className="overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform"><div className="h-[112px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">{offer.imageUrl ? <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={34} /></div>}</div><div className="p-3"><h4 className="line-clamp-2 text-[13px] font-bold leading-tight text-gray-900">{offer.title}</h4><p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p><p className="mt-2 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p></div></Link>)}</div> : <div className="rounded-2xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">{uiText("No active offers right now.")}</div>}
+          {offersLoading ? <div className="rounded-2xl bg-gray-50 py-8 text-center text-sm text-gray-400">{uiText("Loading offers...")}</div> : offers.length ? <div className="grid grid-cols-2 gap-3">{offers.map((offer) => (
+              <div
+                key={offer.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedOffer({
+                  id: offer.id,
+                  title: offer.title,
+                  description: offer.description,
+                  imageUrl: offer.imageUrl,
+                  merchantName: offer.merchant_raw_name || offer.merchant_name,
+                  merchantPhone: offer.merchant_phone,
+                  merchantAddress: offer.merchant_address,
+                  category: offer.category,
+                  expiresAt: offer.expires_at,
+                })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedOffer({
+                      id: offer.id,
+                      title: offer.title,
+                      description: offer.description,
+                      imageUrl: offer.imageUrl,
+                      merchantName: offer.merchant_raw_name || offer.merchant_name,
+                      merchantPhone: offer.merchant_phone,
+                      merchantAddress: offer.merchant_address,
+                      category: offer.category,
+                      expiresAt: offer.expires_at,
+                    });
+                  }
+                }}
+                className="overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform cursor-pointer hover:border-blue-200"
+              >
+                <div className="h-[112px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">
+                  {offer.imageUrl ? (
+                    <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={34} /></div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <h4 className="line-clamp-2 text-[13px] font-bold leading-tight text-gray-900">{offer.title}</h4>
+                  <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p>
+                  <p className="mt-2 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p>
+                </div>
+              </div>
+            ))}</div> : <div className="rounded-2xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">{uiText("No active offers right now.")}</div>}
         </section>
         <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
           <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">{uiText("Send Product List")}</span></div></div><ChevronRight size={20} />
@@ -195,6 +244,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </section>
 
       </div>
+      <CustomerOfferPreviewModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
       {productListOpen&&<ProductListPanel name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} searchMerchants={setMerchantSearch} merchantsLoading={merchantDirectory.isFetching} merchantsError={merchantDirectory.isError} hasMoreMerchants={merchantDirectory.hasNextPage} loadMoreMerchants={()=>void merchantDirectory.fetchNextPage()} retryMerchants={()=>void merchantDirectory.refetch()} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
     </div>
   );
