@@ -115,3 +115,4 @@ assert.ok(
 );
 
 console.log('ALL TESTS PASSED: Admin Merchant Photos, Front Photo Selection, and Customer Explore Card Sync verified.');
+

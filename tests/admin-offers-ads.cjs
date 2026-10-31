@@ -14,7 +14,7 @@ assert.ok(postSnippet.includes("isAdmin ? 'approved' : 'pending'"), 'Admin creat
 // DELETE /api/offers/:id
 const deleteStart = server.indexOf("app.delete(\n  '/api/offers/:id',");
 assert.ok(deleteStart >= 0, 'DELETE /api/offers/:id route exists');
-const deleteSnippet = server.slice(deleteStart, deleteStart + 800);
+const deleteSnippet = server.slice(deleteStart, deleteStart + 1500);
 assert.ok(deleteSnippet.includes("requireRole('admin')"), 'DELETE /api/offers/:id is admin only');
 assert.ok(deleteSnippet.includes(".from('offers').delete()"), 'DELETE /api/offers/:id deletes the offer record');
 

@@ -4422,6 +4422,22 @@ app.delete(
   requireRole('admin'),
   async (req, res) => {
     const offerId = cleanText(req.params.id, 100);
+    try {
+      const adsFile = path.join(__dirname, 'backend', 'customer-ads.json');
+      if (fs.existsSync(adsFile)) {
+        const rawAds = JSON.parse(fs.readFileSync(adsFile, 'utf8') || '[]');
+        const filteredAds = rawAds.filter(a => a.id !== offerId);
+        if (filteredAds.length !== rawAds.length) {
+          fs.writeFileSync(adsFile, JSON.stringify(filteredAds, null, 2));
+          if (Array.isArray(customerAds)) {
+            customerAds.length = 0;
+            customerAds.push(...filteredAds);
+          }
+          return res.json({ success: true });
+        }
+      }
+    } catch (_) {}
+
     const { data: currentOffer, error: findError } = await supabaseAdmin.from('offers').select('id,image_path').eq('id', offerId).maybeSingle();
     if (findError || !currentOffer) return res.status(404).json({ success: false, error: 'Offer was not found' });
 
