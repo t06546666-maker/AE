@@ -2719,7 +2719,10 @@ app.get('/api/customer/categories', async (req, res) => {
     await ensureDefaultMerchantCategories();
     const { data: categories, error } = await supabaseAdmin.from('merchant_categories').select('id, name').order('name');
     if (error) throw error;
-    res.json({ success: true, categories });
+    res.json({ success: true, categories: (categories || []).map(category => ({
+      ...category,
+      name: String(category.name || '').trim().toLowerCase().replace(/(^|[\s/&()-])([a-z])/g, (_match, prefix, letter) => prefix + letter.toUpperCase()),
+    })) });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
