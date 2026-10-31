@@ -1,0 +1,220 @@
+.admin-photos-panel {
+  background: #ffffff;
+  border: 1px solid #e3e9f3;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.admin-photos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-photos-header h2 {
+  font-size: 20px;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #18233e;
+}
+
+.admin-photos-header p {
+  font-size: 13px;
+  color: #62728e;
+  margin: 0;
+  max-width: 680px;
+  line-height: 1.5;
+}
+
+.admin-photos-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-photos-badge-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eff4fe;
+  color: #2563eb;
+}
+
+.admin-photos-url-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-photos-url-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-photos-url-input {
+  flex: 1;
+  min-width: 260px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.admin-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.admin-photo-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.admin-photo-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.admin-photo-card.is-front {
+  border: 2px solid #2563eb;
+  background: #fbfdff;
+}
+
+.admin-photo-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 175px;
+  background: #0f172a;
+}
+
+.admin-photo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-photo-front-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.admin-photo-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+}
+
+.admin-photo-status-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-photo-subtext {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.admin-photo-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.admin-photo-actions .button {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.admin-photo-delete-btn {
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.admin-photo-delete-btn:hover {
+  background: #fee2e2 !important;
+}
+
+.admin-photos-empty {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.admin-photos-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #475569;
+  display: grid;
+  place-items: center;
+}
+
+.admin-photos-empty h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.admin-photos-empty p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  max-width: 440px;
+}

@@ -45,3 +45,4 @@ assert.ok(homeUI.includes('<CustomerOfferPreviewModal'), 'Home page renders prev
 assert.ok(fs.existsSync('android/app/src/main/assets/public/index.html'), 'Android assets index.html exists');
 
 console.log('ALL TESTS PASSED: Customer ad & offer preview mode, backend phone enrichment, and Android bundle synced successfully.');
+

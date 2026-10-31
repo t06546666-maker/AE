@@ -3358,6 +3358,8 @@ app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, r
   }
   if (req.body.address !== undefined) updates.address = cleanText(req.body.address, 300) || null;
   if (req.body.category_id !== undefined) updates.category_id = cleanText(req.body.category_id, 100) || null;
+  if (req.body.image_url !== undefined) updates.image_url = typeof req.body.image_url === 'string' && req.body.image_url.trim() ? req.body.image_url.trim() : null;
+  if (req.body.images !== undefined && Array.isArray(req.body.images)) updates.images = req.body.images.filter(img => typeof img === 'string' && img.trim().length > 0);
   for (const key of ['latitude', 'longitude']) if (req.body[key] !== undefined) updates[key] = req.body[key] === '' || req.body[key] === null ? null : Number(req.body[key]);
   const finalName = updates.name !== undefined ? updates.name : existing.name;
   const finalEmail = updates.email !== undefined ? updates.email : existing.email;
@@ -3389,6 +3391,166 @@ app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, r
   const { data, error } = await supabaseAdmin.from('active_merchants').update(updates).eq('id', merchantId).select('*').single();
   if (error) return res.status(400).json({ success: false, error: error.message });
   return res.json({ success: true, data });
+});
+
+app.post('/api/admin/merchants/:id/photos', requireAuth, requireRole('admin'), shopImageUpload.any(), async (req, res) => {
+  try {
+    const merchantId = cleanText(req.params.id, 100);
+    const { data: merchant, error: findError } = await supabaseAdmin
+      .from('active_merchants')
+      .select('id, name, image_url, images')
+      .eq('id', merchantId)
+      .maybeSingle();
+    if (findError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
+    const uploadedUrls = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        if (!file.mimetype || !file.mimetype.startsWith('image/')) continue;
+        const extension = offerImageExtension(file.mimetype) || 'jpg';
+        const fileName = `shops/${merchantId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(OFFER_IMAGE_BUCKET)
+          .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        let photoUrl = '';
+        if (uploadError) {
+          console.warn('Supabase storage upload failed, using Data URI fallback:', uploadError.message);
+          const base64 = file.buffer.toString('base64');
+          photoUrl = `data:${file.mimetype};base64,${base64}`;
+        } else {
+          const { data: signedData } = await supabaseAdmin.storage
+            .from(OFFER_IMAGE_BUCKET)
+            .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+          const publicUrl = supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).getPublicUrl(fileName).data?.publicUrl;
+          photoUrl = signedData?.signedUrl || publicUrl;
+        }
+        if (photoUrl) uploadedUrls.push(photoUrl);
+      }
+    }
+
+    if (req.body?.url && typeof req.body.url === 'string' && req.body.url.trim()) {
+      uploadedUrls.push(req.body.url.trim());
+    }
+
+    if (!uploadedUrls.length) {
+      return res.status(400).json({ success: false, error: 'No valid image file or URL provided' });
+    }
+
+    const currentImages = Array.isArray(merchant.images) ? [...merchant.images] : [];
+    if (merchant.image_url && !currentImages.includes(merchant.image_url)) {
+      currentImages.unshift(merchant.image_url);
+    }
+
+    for (const url of uploadedUrls) {
+      if (!currentImages.includes(url)) currentImages.push(url);
+    }
+
+    const setAsFront = req.body?.setAsFront === 'true' || req.body?.setAsFront === true || !merchant.image_url;
+    let nextImageUrl = merchant.image_url || uploadedUrls[0];
+    let nextImages = currentImages;
+
+    if (setAsFront && uploadedUrls.length > 0) {
+      nextImageUrl = uploadedUrls[0];
+      nextImages = [uploadedUrls[0], ...currentImages.filter(img => img !== uploadedUrls[0])];
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from('active_merchants')
+      .update({
+        image_url: nextImageUrl,
+        images: nextImages,
+      })
+      .eq('id', merchantId)
+      .select('id, name, image_url, images')
+      .single();
+
+    if (updateErr) return res.status(400).json({ success: false, error: updateErr.message });
+
+    return res.json({
+      success: true,
+      uploaded: uploadedUrls,
+      image_url: updated.image_url,
+      images: updated.images,
+    });
+  } catch (error) {
+    console.error('Admin merchant photo upload error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.patch('/api/admin/merchants/:id/photos', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const merchantId = cleanText(req.params.id, 100);
+    const { action, imageUrl, images: requestedImages } = req.body || {};
+
+    const { data: merchant, error: findError } = await supabaseAdmin
+      .from('active_merchants')
+      .select('id, name, image_url, images')
+      .eq('id', merchantId)
+      .maybeSingle();
+    if (findError || !merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
+
+    let currentImages = Array.isArray(merchant.images) ? [...merchant.images] : [];
+    if (merchant.image_url && !currentImages.includes(merchant.image_url)) {
+      currentImages.unshift(merchant.image_url);
+    }
+
+    let nextImageUrl = merchant.image_url;
+    let nextImages = [...currentImages];
+
+    if (action === 'set_front' || action === 'set_primary') {
+      if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+        return res.status(400).json({ success: false, error: 'Missing imageUrl' });
+      }
+      const targetUrl = imageUrl.trim();
+      nextImageUrl = targetUrl;
+      // Reorder so targetUrl is at position 0
+      nextImages = [targetUrl, ...nextImages.filter(img => img !== targetUrl)];
+    } else if (action === 'delete') {
+      if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) {
+        return res.status(400).json({ success: false, error: 'Missing imageUrl to delete' });
+      }
+      const targetUrl = imageUrl.trim();
+      nextImages = nextImages.filter(img => img !== targetUrl);
+      if (nextImageUrl === targetUrl) {
+        nextImageUrl = nextImages.length > 0 ? nextImages[0] : null;
+      }
+    } else if (action === 'reorder') {
+      if (!Array.isArray(requestedImages)) {
+        return res.status(400).json({ success: false, error: 'Images must be an array' });
+      }
+      nextImages = requestedImages.filter(x => typeof x === 'string' && x.trim());
+      nextImageUrl = nextImages.length > 0 ? nextImages[0] : null;
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid action. Supported actions: set_front, delete, reorder' });
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from('active_merchants')
+      .update({
+        image_url: nextImageUrl,
+        images: nextImages,
+      })
+      .eq('id', merchantId)
+      .select('id, name, image_url, images')
+      .single();
+
+    if (updateErr) return res.status(400).json({ success: false, error: updateErr.message });
+
+    return res.json({
+      success: true,
+      image_url: updated.image_url,
+      images: updated.images,
+    });
+  } catch (error) {
+    console.error('Admin merchant photos update error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 const defaultMerchantEntitlements = { plan: 'free', paid: false, expiresAt: null, features: { analytics: true, crm: false, advertising: false, offers: true, products: true, whatsapp: false, reports: false }, limits: { customers: 100, offers: 5, campaigns: 0 } };
