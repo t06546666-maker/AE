@@ -2204,6 +2204,49 @@ app.post('/api/admin/field-managers', requireAuth, requireRole('admin'), async (
   res.status(201).json({ success: true, manager: data, temporaryPassword: password });
 });
 
+app.post('/api/admin/field-managers/:id/reset-password', requireAuth, requireRole('admin'), async (req, res) => {
+  const managerId = cleanText(req.params.id, 100);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(managerId)) return res.status(400).json({ success: false, error: 'Invalid manager ID' });
+
+  const { data: profile, error: profileErr } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, role')
+    .eq('id', managerId)
+    .eq('role', 'field_manager')
+    .maybeSingle();
+  if (profileErr) return res.status(500).json({ success: false, error: profileErr.message });
+  if (!profile) return res.status(404).json({ success: false, error: 'Field manager not found' });
+
+  const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.getUserById(managerId);
+  if (authErr || !authUser?.user) return res.status(404).json({ success: false, error: 'Field manager auth account not found' });
+
+  const customPassword = typeof req.body?.password === 'string' && req.body.password.trim() ? req.body.password.trim() : null;
+  const temporaryPassword = customPassword || generateTemporaryPassword();
+  if (customPassword && !isStrongPassword(customPassword)) {
+    return res.status(400).json({ success: false, error: 'Password does not meet security requirements. Use at least 8 characters with an uppercase letter.' });
+  }
+
+  const { error: updateAuthErr } = await supabaseAdmin.auth.admin.updateUserById(managerId, { password: temporaryPassword });
+  if (updateAuthErr) return res.status(400).json({ success: false, error: updateAuthErr.message });
+
+  const resetAt = new Date().toISOString();
+  const { error: updateProfileErr } = await supabaseAdmin
+    .from('profiles')
+    .update({ must_change_password: true, password_reset_at: resetAt })
+    .eq('id', managerId);
+  if (updateProfileErr) return res.status(500).json({ success: false, error: updateProfileErr.message });
+
+  return res.json({
+    success: true,
+    managerId,
+    fullName: profile.full_name,
+    loginEmail: authUser.user.email,
+    temporaryPassword,
+    mustChangePassword: true,
+  });
+});
+
 app.delete('/api/admin/field-managers/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const id = req.params.id;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ success: false, error: 'Invalid manager ID' });
