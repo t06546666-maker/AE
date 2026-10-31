@@ -112,10 +112,10 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
         </div>
         {user.role === 'field_manager' && <form className="field-shell-search" onSubmit={event => { event.preventDefault(); navigate(`/field?section=directory&search=${encodeURIComponent(fieldSearch.trim())}`); }}><Search size={17} /><input aria-label={uiText("Search merchants")} placeholder={uiText("Search merchants, locations…")} value={fieldSearch} onChange={event => setFieldSearch(event.target.value)} /><button type="submit">{uiText("Search")}</button></form>}
         <div className="topbar-right">
-          <div className="integration-health" title={t('layout.integrationStatus')}>
+          {user.role === 'admin' && <div className="integration-health" title={t('layout.integrationStatus')}>
             <span className={status.data?.resend ? 'online' : 'offline'}>{t('layout.email')}</span>
             <span className={status.data?.whatsapp ? 'online' : 'offline'}>{t('layout.whatsapp')}</span>
-          </div>
+          </div>}
           <label className="language-control" title={t('language.malayalam')}>
             <Languages size={17} />
             <select

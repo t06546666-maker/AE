@@ -38,6 +38,7 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
   const submittingRef = useRef(false);
   const mountedRef = useRef(true);
   const sentPhoneRef = useRef('');
+  const smsSentPhoneRef = useRef('');
   const [nativeVerified, setNativeVerified] = useState(false);
   const verifiedUserRef = useRef<import('firebase/auth').User | null>(null);
   const nativeVerifiedRef = useRef(false);
@@ -96,7 +97,8 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
         });
         const controller = await nativeControllerRef.current;
         if (!mountedRef.current) { await controller.dispose(); return; }
-        const result = await controller.start(sentPhoneRef.current);
+        const result = await controller.start(sentPhoneRef.current, smsSentPhoneRef.current === sentPhoneRef.current);
+        if (result.kind === 'sms') smsSentPhoneRef.current = sentPhoneRef.current;
         if (!mountedRef.current) return;
         if (result.kind === 'sms') setVerificationId(result.verificationId);
         setStep('otp');
@@ -143,7 +145,13 @@ export function CustomerSignup({ onLogin }: { onLogin: (user: UserProfile) => vo
       let idToken: string;
       if (nativeAuth) {
         if (!nativeVerifiedRef.current) {
-          await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
+          try {
+            await FirebaseAuthentication.confirmVerificationCode({ verificationId, verificationCode: otp.trim() });
+          } catch (cause) {
+            // Auto-verification can consume the code during manual submission.
+            // Continue only when this active verification callback confirmed it.
+            if (!nativeVerifiedRef.current) throw cause;
+          }
           nativeVerifiedRef.current = true;
         }
         const current = await FirebaseAuthentication.getCurrentUser();

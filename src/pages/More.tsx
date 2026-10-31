@@ -120,9 +120,8 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
         </button>
         {supportOpen && <section id="merchant-help-support" className="panel" style={{ marginTop: 16, textAlign: 'left' }}>
           <h2>{uiText("Help &amp; Support")}</h2>
-          <p>{uiText("Need assistance with your merchant account, points, QR scanning, or product lists? Chat with us on WhatsApp or email our support team.")}</p>
+          <p>{uiText("Need assistance with your merchant account, points, QR scanning, or product lists? Email our support team.")}</p>
           <div className="form-actions" style={{ flexWrap: 'wrap', margin: '20px 0' }}>
-            <a className="button whatsapp" href="https://wa.me/917306010846?text=Hello%20Affiliate%20AE%20support%2C%20I%20need%20help%20with%20my%20merchant%20account." target="_blank" rel="noopener noreferrer"><MessageCircle size={19}/>{uiText("Chat on WhatsApp")}</a>
             <a className="button secondary" href="mailto:info@affiliateinnovations.co.in?subject=Merchant%20support"><Mail size={19}/>{uiText("Email Support")}</a>
           </div>
           <p style={{ overflowWrap: 'anywhere', color: 'var(--muted)' }}>{uiText("info@affiliateinnovations.co.in")}</p>

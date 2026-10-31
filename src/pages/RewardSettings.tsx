@@ -180,7 +180,7 @@ export function RewardSettingsPage({ user }: { user: UserProfile }) {
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <h2>{t('reward.receipt', 'Monthly Subscription')}</h2>
+            <h2>{uiText("Monthly Subscription")}</h2>
             <p>{uiText("Maximum 5,000 points can be issued per month.")}</p>
           </div>
           <MessageCircle />

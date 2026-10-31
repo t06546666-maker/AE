@@ -11,7 +11,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarDays, ChevronRight, Crown, Download, Gift, Heart, IndianRupee, Lightbulb, Mail, Phone, Plus, RefreshCw, Search, TrendingUp, Users, UserPlus, X } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarDays, ChevronRight, Crown, Download, Gift, Heart, IndianRupee, Lightbulb, Mail, Plus, RefreshCw, Search, TrendingUp, Users, UserPlus, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import { maskedPhone } from '../maskedPhone';
 import { ErrorState } from '../components/Common';
@@ -135,7 +135,7 @@ function CustomerProfile({ customer, onClose }: { customer: MerchantCustomer; on
   return <dialog ref={dialog} className="mo-profile" aria-labelledby="mo-profile-title" onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="mo-profile-inner"><header className="mo-profile-top"><h2 id="mo-profile-title">{uiText("Customer profile")}</h2><button className="mo-close" aria-label={uiText("Close customer profile")} onClick={onClose}><X size={22} /></button></header>
       <div className="mo-profile-person"><span className="mo-avatar violet">{initials(customer.name)}</span><div><h3>{customer.name}</h3><span className="mo-badge">{customer.visits.length >= 5 && <Crown size={13} />}{uiText(stage(customer.visits.length))}</span></div></div>
-      <div className="mo-contact">{customer.phone && <a href={`tel:${customer.phone}`}><Phone size={19} /><span>{uiText("Call")}</span></a>}{customer.email && <a href={`mailto:${customer.email}`}><Mail size={19} /><span>{uiText("Email")}</span></a>}<Link to="/offers?create=1"><Gift size={19} /><span>{uiText("Create offer")}</span></Link></div>
+      <div className="mo-contact">{customer.email && <a href={`mailto:${customer.email}`}><Mail size={19} /><span>{uiText("Email")}</span></a>}<Link to="/offers?create=1"><Gift size={19} /><span>{uiText("Create offer")}</span></Link></div>
       <div className="mo-profile-stats"><div><strong>{customer.visits.length}</strong><small>{uiText("Recorded visits")}</small></div><div><strong>{formatCurrency(customer.spend)}</strong><small>{uiText("Total spent")}</small></div><div><strong>{customer.joined ? dateLabel(customer.joined) : '—'}</strong><small>{uiText("Customer since")}</small></div></div>
       <p className="mo-note">{uiText("Lifetime activity at your business • ")}{maskedPhone(customer.phone)}</p><h3 className="mo-history-title">{uiText("Visit history")}</h3>
       <div className="mo-history">{customer.visits.map(o => <div key={o.id}><span className="mo-history-icon"><CalendarDays size={17} /></span><span><strong>{dateLabel(o.timestamp)}</strong><small>{o.orderNo}</small></span><b>{formatCurrency(o.amount)}</b></div>)}{!customer.visits.length && <p className="mo-empty">{uiText("No purchases recorded yet.")}</p>}</div>

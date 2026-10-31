@@ -2442,5 +2442,22 @@
   "ui.Open route section {{number}} (stops {{from}}–{{to}})": "യാത്രാഭാഗം {{number}} തുറക്കുക (സ്ഥാനങ്ങൾ {{from}}–{{to}})",
   "ui.Long routes are split into sections so every selected shop is included on mobile.": "മൊബൈലിൽ തിരഞ്ഞെടുത്ത എല്ലാ കടകളും ഉൾപ്പെടുത്താൻ നീണ്ട യാത്രകൾ ഭാഗങ്ങളായി കാണിക്കുന്നു.",
   "ui.Choose at least two shops to open directions.": "യാത്രാമാർഗം തുറക്കാൻ കുറഞ്ഞത് രണ്ട് കടകൾ തിരഞ്ഞെടുക്കുക.",
-  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "പോയിന്റുകൾ ഉപയോഗിക്കാൻ ഉപഭോക്താവിന്റെ ആകെ ബാലൻസിൽ 100 പോയിന്റുകൾ വേണം. തുടരാൻ പോയിന്റുകൾ നൽകുക മാത്രം എന്നത് തിരഞ്ഞെടുക്കുക."
+  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "പോയിന്റുകൾ ഉപയോഗിക്കാൻ ഉപഭോക്താവിന്റെ ആകെ ബാലൻസിൽ 100 പോയിന്റുകൾ വേണം. തുടരാൻ പോയിന്റുകൾ നൽകുക മാത്രം എന്നത് തിരഞ്ഞെടുക്കുക.",
+  "ui.Confirmed": "സ്ഥിരീകരിച്ചു",
+  "ui.Order ready": "ഓർഡർ തയ്യാറായി",
+  "ui.Awaiting confirmation": "സ്ഥിരീകരണം കാത്തിരിക്കുന്നു",
+  "ui.Pending review": "പരിശോധന കാത്തിരിക്കുന്നു",
+  "ui.Update product list status": "ഉൽപ്പന്ന പട്ടികയുടെ നില മാറ്റുക",
+  "ui.Product list status updated.": "ഉൽപ്പന്ന പട്ടികയുടെ നില പുതുക്കി.",
+  "ui.Orders customers request through AE.": "ഉപഭോക്താക്കൾ AE വഴി നൽകുന്ന ഓർഡറുകൾ.",
+  "ui.No customer orders yet.": "ഇതുവരെ ഉപഭോക്തൃ ഓർഡറുകളില്ല.",
+  "ui.New product lists appear here automatically. Customers receive an AE notification when their order status changes.": "പുതിയ ഉൽപ്പന്ന പട്ടികകൾ ഇവിടെ സ്വയമേവ കാണാം. ഓർഡറിന്റെ നില മാറുമ്പോൾ ഉപഭോക്താവിന് AE അറിയിപ്പ് ലഭിക്കും.",
+  "ui.Contact our support team by email.": "സഹായത്തിനായി ഇമെയിൽ വഴി ബന്ധപ്പെടുക.",
+  "ui.Need assistance with your merchant account, points, QR scanning, or product lists? Email our support team.": "മർച്ചന്റ് അക്കൗണ്ട്, പോയിന്റുകൾ, QR സ്കാനിങ്, ഉൽപ്പന്ന പട്ടികകൾ എന്നിവയ്ക്ക് സഹായം വേണോ? ഞങ്ങളുടെ സഹായ സംഘത്തിന് ഇമെയിൽ അയയ്ക്കുക.",
+  "ui.Product hidden from catalogue": "ഉൽപ്പന്നം കാറ്റലോഗിൽ മറച്ചു",
+  "ui.Products customers can request through AE.": "ഉപഭോക്താക്കൾക്ക് AE വഴി ആവശ്യപ്പെടാവുന്ന ഉൽപ്പന്നങ്ങൾ.",
+  "ui.Merchant product catalogues.": "മർച്ചന്റ് ഉൽപ്പന്ന കാറ്റലോഗുകൾ.",
+  "ui.Active products are available in your catalogue.": "സജീവ ഉൽപ്പന്നങ്ങൾ നിങ്ങളുടെ കാറ്റലോഗിൽ ലഭ്യമാണ്.",
+  "ui.Show this product in catalogue": "ഈ ഉൽപ്പന്നം കാറ്റലോഗിൽ കാണിക്കുക",
+  "ui.The customer must change this temporary password on their first login.": "ആദ്യ ലോഗിനിൽ ഉപഭോക്താവ് ഈ താൽക്കാലിക പാസ്‌വേഡ് മാറ്റണം."
 }

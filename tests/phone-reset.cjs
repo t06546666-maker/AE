@@ -7,10 +7,10 @@ const scope = { exports: {}, setTimeout, clearTimeout };
 vm.runInNewContext(code, scope);
 const { createNativePhoneReset, phoneResetError } = scope.exports;
 function fakeAuth() {
-  const listeners = new Map(); let calls = 0; let removed = 0;
-  return { listeners, get calls() { return calls; }, get removed() { return removed; },
+  const listeners = new Map(); let calls = 0; let removed = 0; let options;
+  return { listeners, get options(){return options;}, get calls() { return calls; }, get removed() { return removed; },
     async addListener(name, callback) { listeners.set(name, callback); return { async remove() { removed++; listeners.delete(name); } }; },
-    async signInWithPhoneNumber() { calls++; },
+    async signInWithPhoneNumber(value) { calls++; options=value; },
   };
 }
 async function main() {
@@ -27,6 +27,10 @@ async function main() {
   assert.deepEqual(JSON.parse(JSON.stringify(await sent)), { kind: 'sms', verificationId: 'new-session' });
   auth.listeners.get('phoneVerificationCompleted')({});
   assert.equal(automatic, 1, 'Automatic verification after SMS is handled');
+  const resend=controller.start('+919000000001',true);
+  assert.equal(auth.options.resendCode,true);
+  auth.listeners.get('phoneCodeSent')({verificationId:'resent-session'});
+  assert.equal((await resend).verificationId,'resent-session');
   await controller.dispose();
   assert.equal(auth.removed, 3);
   await assert.rejects(controller.start('+919000000001'), /no longer active/);

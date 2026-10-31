@@ -227,6 +227,8 @@ export function App() {
           void queryClient.invalidateQueries({ queryKey: ['customer'] });
           void queryClient.invalidateQueries({ queryKey: ['notifications'] });
           void queryClient.invalidateQueries({ queryKey: ['shop-requests'] });
+          void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] });
+          void queryClient.invalidateQueries({ queryKey: ['merchant-product-lists'] });
           reportPush('A notification was received on this phone.');
         }));
 

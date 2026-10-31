@@ -35,14 +35,14 @@ export async function createNativePhoneReset(auth: NativeAuth, onVerified: () =>
     throw error;
   }
   return {
-    start(phoneNumber: string): Promise<Proof> {
+    start(phoneNumber: string, resendCode = false): Promise<Proof> {
       if (disposed) return Promise.reject(new Error('Phone verification is no longer active.'));
       if (pending) return Promise.reject(new Error('An SMS request is already in progress.'));
       active = true;
       return new Promise<Proof>((resolve, reject) => {
         pending = { resolve, reject };
         timer = setTimeout(() => finish(undefined, new Error('Phone verification timed out. Please try again.')), timeoutMs);
-        void auth.signInWithPhoneNumber({ phoneNumber }).catch(error => finish(undefined, error));
+        void auth.signInWithPhoneNumber({ phoneNumber, resendCode }).catch(error => finish(undefined, error));
       });
     },
     async dispose() {

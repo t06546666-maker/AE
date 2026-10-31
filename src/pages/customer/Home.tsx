@@ -27,6 +27,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const [qrSrc, setQrSrc] = useState('');
   const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
   const [productListOpen, setProductListOpen] = useState(false);
+  const [productRequestId, setProductRequestId] = useState('');
   const [merchantId, setMerchantId] = useState('');
   const [productList, setProductList] = useState('');
   const [productImage, setProductImage] = useState<File | null>(null);
@@ -49,9 +50,9 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const offers = (offersData?.offers || []).slice(0, 6);
   const merchants = merchantDirectory.data?.pages.flatMap(page=>page.merchants) || [];
   const location = useLocation();
-  useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
+  useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductRequestId(new URLSearchParams(location.search).get('requestId') || ''); setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
   const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] }); } });
-  const { data: productHistory, isPending: historyLoading, isError: historyError, refetch: retryHistory } = useQuery({ queryKey: ['customer-product-lists', user.id], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen });
+  const { data: productHistory, isPending: historyLoading, isError: historyError, refetch: retryHistory } = useQuery({ queryKey: ['customer-product-lists', user.id], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen, refetchInterval: productListOpen ? 15000 : false });
 
   useEffect(() => {
     let active = true;
@@ -245,7 +246,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
       </div>
       <CustomerOfferPreviewModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
-      {productListOpen&&<ProductListPanel name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} searchMerchants={setMerchantSearch} merchantsLoading={merchantDirectory.isFetching} merchantsError={merchantDirectory.isError} hasMoreMerchants={merchantDirectory.hasNextPage} loadMoreMerchants={()=>void merchantDirectory.fetchNextPage()} retryMerchants={()=>void merchantDirectory.refetch()} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
+      {productListOpen&&<ProductListPanel requestId={productRequestId} name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} searchMerchants={setMerchantSearch} merchantsLoading={merchantDirectory.isFetching} merchantsError={merchantDirectory.isError} hasMoreMerchants={merchantDirectory.hasNextPage} loadMoreMerchants={()=>void merchantDirectory.fetchNextPage()} retryMerchants={()=>void merchantDirectory.refetch()} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
     </div>
   );
 }

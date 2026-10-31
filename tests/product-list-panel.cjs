@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),Module=require('node:module'),path=require('node:path');
 const ts=require('typescript'),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
 require.extensions['.tsx']=(loaded,file)=>loaded._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText,file);
+require.extensions['.ts']=require.extensions['.tsx'];
 const pickerFile=path.resolve(__dirname,'../src/components/ProductMerchantPicker.tsx');
 const pickerModule=new Module(pickerFile,module);pickerModule.filename=pickerFile;pickerModule.paths=Module._nodeModulePaths(path.dirname(pickerFile));const pickerRequire=pickerModule.require.bind(pickerModule);pickerModule.require=id=>id==='../uiText'?{uiText:value=>value}:pickerRequire(id);require.extensions['.tsx'](pickerModule,pickerFile);require.cache[pickerFile]=pickerModule;
 const {filterProductMerchants}=pickerModule.exports;
@@ -15,8 +16,10 @@ const moduleInstance=new Module(filename,module);moduleInstance.filename=filenam
 const {ProductListPanel}=moduleInstance.exports;
 const props={name:'Customer <test>',requests:[{id:'old',status:'pending',created_at:'2026-01-01',product_list:'OLD HISTORY'},{id:'new',status:'approved',created_at:'2026-10-01',product_list:'NEW HISTORY'}],loading:false,historyError:false,retry(){},merchants:[{id:'shop',merchant_name:'Sample shop'}],merchantId:'',setMerchantId(){},value:'',setValue(){},image:null,setImage(){},message:'',error:'',pending:false,send(){},close(){}};
 const render=changes=>renderToStaticMarkup(React.createElement(ProductListPanel,{...props,...changes}));
-const initial=render();assert.match(initial,/role="dialog"/);assert.match(initial,/Recent history/);assert.match(initial,/NEW HISTORY/);assert.ok(!initial.includes('OLD HISTORY'));assert.match(initial,/Customer &lt;test&gt;/);assert.match(initial,/Approved/);assert.match(initial,/disabled=""[^>]*>Send Product List/);
+const initial=render();assert.match(initial,/role="dialog"/);assert.match(initial,/Recent history/);assert.match(initial,/NEW HISTORY/);assert.ok(!initial.includes('OLD HISTORY'));assert.match(initial,/Customer &lt;test&gt;/);assert.match(initial,/Awaiting confirmation/);assert.match(initial,/disabled=""[^>]*>Send Product List/);
 assert.match(initial,/type="search"/);assert.match(initial,/Search merchants/);assert.match(initial,/Sample shop/);
 assert.ok(!/disabled=""[^>]*>Send Product List/.test(render({merchantId:'shop',value:'Rice'})));
+assert.match(render({requests:[{id:'ready',status:'ready',created_at:'2026-10-31',product_list:'Rice'}]}),/Order ready/);
+assert.match(render({requests:[{id:'progress',status:'in_progress',created_at:'2026-10-31',product_list:'Rice'}]}),/In progress/);
 assert.match(render({requests:[]}),/No product lists sent yet/);assert.match(render({historyError:true}),/Unable to load product list history/);assert.match(render({loading:true}),/Loading/);
 console.log('PASS: modal semantics, newest-only recent history, real status, escaped names, empty/error/loading states and send validation');

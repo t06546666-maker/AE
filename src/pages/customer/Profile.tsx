@@ -21,18 +21,12 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   const [editName, setEditName] = useState(user.name || '');
   const [editMode, setEditMode] = useState(false);
   
-  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const { pushEnabled, locationEnabled, requestPush, requestLocation, setWhatsApp } = usePermissions();
+  const { pushEnabled, locationEnabled, requestPush, requestLocation } = usePermissions();
   const { data: merchantData } = useCustomerMerchants(1);
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  };
-
-  const handleWhatsAppHelp = () => {
-    const msg = encodeURIComponent('Hi, I need help with my AE Rewards account.');
-    window.open(`https://wa.me/917306010846?text=${msg}`, '_blank', 'noopener,noreferrer');
   };
 
   const submitFeedback = async (event: React.FormEvent) => {
@@ -188,18 +182,9 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <div className="mb-4 rounded-[16px] border border-[#bfe8d2] bg-[#effaf4] p-4">
               <p className="text-[13px] font-bold text-gray-900">{uiText("Still need help?")}</p>
-              <p className="mt-1 text-[12px] text-gray-600">{uiText("Chat with support on WhatsApp or email us.")}</p>
+              <p className="mt-1 text-[12px] text-gray-600">{uiText("Contact our support team by email.")}</p>
             </div>
             <div className="space-y-3">
-              <button onClick={handleWhatsAppHelp} className="w-full flex items-center gap-4 p-4 bg-green-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
-                <div className="w-10 h-10 bg-[#087a4b] rounded-full flex items-center justify-center">
-                  <Phone size={18} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-[14px] text-gray-900">{uiText("Chat on WhatsApp")}</p>
-                  <p className="text-[12px] text-gray-500">{uiText("Get instant support")}</p>
-                </div>
-              </button>
               <a href="mailto:info@affiliateinnovations.co.in" className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-[16px] text-left active:scale-[0.98] transition-transform">
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                   <Mail size={18} className="text-gray-600" />
@@ -238,7 +223,6 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
             <div className="space-y-4 text-[13px] text-gray-600 leading-relaxed">
               <p>{uiText("Affiliate Innovations")}</p>
-              <p><a href="https://wa.me/917306010846" target="_blank" rel="noopener noreferrer">{uiText("Chat on WhatsApp")}</a></p>
               <p><a href="mailto:info@affiliateinnovations.co.in">{uiText("Email Support: info@affiliateinnovations.co.in")}</a></p>
             </div>
           </div>
@@ -264,22 +248,6 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
                   className={`w-12 h-6 rounded-full relative transition-colors ${pushEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pushEnabled ? 'right-1' : 'left-1'}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
-                <div>
-                  <p className="font-bold text-[14px] text-gray-900">{uiText("WhatsApp Alerts")}</p>
-                  <p className="text-[12px] text-gray-500">{uiText("Point updates via WhatsApp")}</p>
-                </div>
-                <button 
-                  onClick={() => {
-                    const next = !whatsappEnabled;
-                    setWhatsappEnabled(next);
-                    setWhatsApp(next);
-                  }}
-                  className={`w-12 h-6 rounded-full relative transition-colors ${whatsappEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${whatsappEnabled ? 'right-1' : 'left-1'}`} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">

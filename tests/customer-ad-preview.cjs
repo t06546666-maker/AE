@@ -21,8 +21,8 @@ const modal = fs.readFileSync('src/components/CustomerOfferPreviewModal.tsx', 'u
 assert.ok(modal.includes('export function CustomerOfferPreviewModal'), 'CustomerOfferPreviewModal exported');
 assert.ok(modal.includes('isZoomed'), 'Modal has zoom-in / zoom-out state');
 assert.ok(modal.includes('Open in Chrome'), 'Modal has Open in Chrome button');
-assert.ok(modal.includes('tel:'), 'Modal has Call Store link');
-assert.ok(modal.includes('wa.me'), 'Modal has WhatsApp link');
+assert.ok(modal.includes('tel:'), 'Offer preview keeps Call Store');
+assert.ok(modal.includes('wa.me'), 'Offer preview keeps WhatsApp contact');
 
 // 3. Check CustomerAds integration
 const adsUI = fs.readFileSync('src/components/CustomerAds.tsx', 'utf8');

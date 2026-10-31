@@ -2912,30 +2912,34 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
 app.get('/api/customer/product-list-requests', requireCustomerAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('customer_product_list_requests')
-    .select('id,merchant_id,product_list,image_path,status,created_at,merchants(name)')
+    .select('id,merchant_id,product_list,image_path,status,merchant_status,created_at,merchants(name)')
     .eq('customer_id', req.customer.id)
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product list history' });
-  const requests = await Promise.all((data || []).map(async (request) => ({ ...request, image_url: request.image_path ? await signedOfferImageUrl(request.image_path) : '' })));
+  const requests = await Promise.all((data || []).map(async (request) => ({ ...request, status: request.merchant_status || request.status, image_url: request.image_path ? await signedOfferImageUrl(request.image_path) : '' })));
   res.json({ success: true, requests });
 });
 
 app.get('/api/product-list-requests', requireAuth, async (req, res) => {
-  let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
+  let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,merchant_status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'approved');
   else if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
   const { data, error } = await query;
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
-  res.json({ success: true, requests: data || [] });
+  const requests = await Promise.all((data || []).map(async row => ({ ...row, ...(req.auth.profile.role === 'merchant' ? { customers: { name: row.customers?.name || 'Customer' } } : {}), status: req.auth.profile.role === 'merchant' ? row.merchant_status || row.status : row.status, image_url: row.image_path ? await signedOfferImageUrl(row.image_path) : '' })));
+  res.json({ success: true, requests });
 });
 
 app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('admin'), async (req, res) => {
   const status = cleanText(req.body.status, 20).toLowerCase();
   if (!['approved', 'rejected', 'pending'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid review status' });
   const rejectionReason = cleanText(req.body.rejection_reason, 500) || null;
-  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,merchant_id,status').eq('id', cleanText(req.params.id, 100)).maybeSingle();
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status, rejection_reason: status === 'rejected' ? rejectionReason : null, reviewed_at: status === 'pending' ? null : new Date().toISOString() }).eq('id', cleanText(req.params.id, 100)).select('id,status,rejection_reason').maybeSingle();
+  const { data: existing, error: loadError } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,merchant_id,status,merchant_status').eq('id', cleanText(req.params.id, 100)).maybeSingle();
+  if (loadError) return res.status(503).json({ success: false, error: 'Unable to load this product list.' });
+  if (!existing) return res.status(404).json({ success: false, error: 'Product list not found' });
+  if (existing.merchant_status) return res.status(409).json({ success: false, error: 'The merchant has already started this order.' });
+  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status, rejection_reason: status === 'rejected' ? rejectionReason : null, reviewed_at: status === 'pending' ? null : new Date().toISOString() }).eq('id', cleanText(req.params.id, 100)).is('merchant_status', null).select('id,status,rejection_reason').maybeSingle();
   if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
   if (existing && status !== 'pending' && existing.status !== status) {
@@ -2945,19 +2949,7 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
   res.json({ success: true, request: data });
 });
 
-app.patch('/api/product-list-requests/:id/status', requireAuth, requireRole('merchant'), async (req, res) => {
-  const status = cleanText(req.body.status, 20).toLowerCase();
-  if (!['pending', 'accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid status' });
-  const { data: existing } = await supabaseAdmin.from('customer_product_list_requests').select('id,customer_id,status').eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).maybeSingle();
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').update({ status }).eq('id', cleanText(req.params.id, 100)).eq('merchant_id', req.auth.profile.merchant_id).select('id,status').maybeSingle();
-  if (error) return res.status(500).json({ success: false, error: 'Unable to update product list status' });
-  if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
-  if (existing && existing.status !== status && status !== 'pending') {
-    await pushToCustomer(existing.customer_id, `Product list ${status}`, `The merchant has ${status} your product list.`, { url: '/customer/home?productList=1', requestId: data.id, type: 'product_list' });
-    await pushToRole('admin', `Merchant ${status} product list`, `A merchant has ${status} a customer product list.`, { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
-  }
-  res.json({ success: true, request: data });
-});
+require('./backend/product-list-fulfillment.cjs').registerProductListFulfillment(app, { requireAuth, requireRole, db: supabaseAdmin, pushToCustomer, pushToRole });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   const { data: offers, error } = await supabaseAdmin

@@ -26,13 +26,13 @@ export function Orders({ user }: { user: UserProfile }) {
       <div className="list-toolbar"><label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('orders.search')} /></label></div>
       {orders.isPending ? <LoadingState label={t('common.loading')} /> : orders.isError ? <ErrorState error={orders.error} retry={() => orders.refetch()} /> : (
         <section className="table-panel">
-          <div className="table-scroll"><table><thead><tr><th>{t('orders.order')}</th><th>{t('orders.customer')}</th><th>{t('orders.phone')}</th><th>{t('layout.email')}</th><th className="amount-column">{t('orders.amount')}</th><th>{t('orders.reward')}</th><th>{t('orders.points')}</th><th>{t('orders.date')}</th><th>{t('orders.time')}</th><th>{t('layout.whatsapp')}</th><th>{t('orders.emailStatus')}</th></tr></thead><tbody>
+          <div className="table-scroll"><table><thead><tr><th>{t('orders.order')}</th><th>{t('orders.customer')}</th><th>{t('orders.phone')}</th><th>{t('layout.email')}</th><th className="amount-column">{t('orders.amount')}</th><th>{t('orders.reward')}</th><th>{t('orders.points')}</th><th>{t('orders.date')}</th><th>{t('orders.time')}</th>{user.role === 'admin' && <th>{t('layout.whatsapp')}</th>}<th>{t('orders.emailStatus')}</th></tr></thead><tbody>
             {orders.data?.orders.map((order) => <tr key={order.id}>
               <td><strong className="order-number">{order.orderNo}</strong><small>{order.source}</small></td>
               <td><div className="person-cell"><span>{initials(order.customer)}</span><div><strong>{order.customer}</strong><small>{order.cid}</small></div></div></td>
               <td>{user.role === 'merchant' ? maskedPhone(order.phone) : order.phone}</td><td>{order.email}</td><td className="amount-column"><span className="tag success amount-tag">{formatCurrency(order.amount)}</span></td>
               <td><span className="tag info">{order.rewardPercentage}%</span></td><td><strong className="points-text">{formatPoints(order.rewardPoints)}</strong></td>
-              <td>{formatDate(order.timestamp)}</td><td>{formatTime(order.timestamp)}</td><td><span className={`tag ${['delivered', 'read'].includes(order.whatsappStatus) ? 'success' : order.whatsappStatus === 'failed' ? 'danger' : 'info'}`}>{order.whatsappStatus.replace('_', ' ')}</span></td><td>{order.emailSent ? <span className="tag success">{t('orders.sent')}</span> : null}</td>
+              <td>{formatDate(order.timestamp)}</td><td>{formatTime(order.timestamp)}</td>{user.role === 'admin' && <td><span className={`tag ${['delivered', 'read'].includes(order.whatsappStatus) ? 'success' : order.whatsappStatus === 'failed' ? 'danger' : 'info'}`}>{order.whatsappStatus.replace('_', ' ')}</span></td>}<td>{order.emailSent ? <span className="tag success">{t('orders.sent')}</span> : null}</td>
             </tr>)}
           </tbody></table></div>
           {!orders.data?.orders.length ? <EmptyState>{t('orders.noOrders')}</EmptyState> : null}

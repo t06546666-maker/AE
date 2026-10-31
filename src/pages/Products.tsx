@@ -46,7 +46,7 @@ export function Products({ user }: { user: UserProfile }) {
   });
   const archive = useMutation({
     mutationFn: (product: Product) => apiFetch(`/api/products/${product.id}`, { method: 'DELETE' }),
-    onSuccess() { showToast('Product hidden from WhatsApp'); void queryClient.invalidateQueries({ queryKey: ['products'] }); },
+    onSuccess() { showToast('Product hidden from catalogue'); void queryClient.invalidateQueries({ queryKey: ['products'] }); },
     onError(error) { showToast(error.message, 'error'); },
   });
 
@@ -58,16 +58,16 @@ export function Products({ user }: { user: UserProfile }) {
   }
 
   return <>
-    <PageHeader title={uiText("Product catalogue")} subtitle={user.role === 'merchant' ? 'Products customers can choose in the AE WhatsApp chat.' : 'Merchant WhatsApp product catalogues.'} actions={
+    <PageHeader title={uiText("Product catalogue")} subtitle={user.role === 'merchant' ? 'Products customers can request through AE.' : 'Merchant product catalogues.'} actions={
       user.role === 'merchant' ? <button className="button primary" onClick={() => { reset(); setFormOpen(true); }}><PackagePlus size={16} />{uiText('Add product')}</button> : undefined
     } />
     {formOpen ? <section className="panel product-form-panel">
-      <div className="form-heading"><div><h2>{editing ? uiText("Edit product") : uiText("Add product")}</h2><p>{uiText("Active products are available immediately in WhatsApp.")}</p></div><button className="icon-button" title={uiText("Close")} onClick={reset}><X /></button></div>
+      <div className="form-heading"><div><h2>{editing ? uiText("Edit product") : uiText("Add product")}</h2><p>{uiText("Active products are available in your catalogue.")}</p></div><button className="icon-button" title={uiText("Close")} onClick={reset}><X /></button></div>
       <form onSubmit={submit} className="product-form-grid">
         <label>{uiText("Product name")}<input value={name} maxLength={100} onChange={(event) => setName(event.target.value)} /></label>
         <label>{uiText("Price (INR)")}<input type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} /></label>
         <label className="product-description">{uiText("Description (optional)")}<textarea value={description} maxLength={500} onChange={(event) => setDescription(event.target.value)} /></label>
-        {editing ? <label className="product-active"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />{uiText("Show this product in WhatsApp")}</label> : null}
+        {editing ? <label className="product-active"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />{uiText("Show this product in catalogue")}</label> : null}
         <div className="form-actions"><button className="button primary" disabled={save.isPending}>{save.isPending ? uiText("Saving...") : uiText("Save product")}</button><button type="button" className="button secondary" onClick={reset}>{uiText("Cancel")}</button></div>
       </form>
     </section> : null}

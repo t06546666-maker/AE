@@ -2339,5 +2339,22 @@
   "ui.Your assigned department access only": "Your assigned department access only",
   "ui.QR Poster": "QR Poster",
   "ui.QR Common": "QR Common",
-  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "This customer needs 100 total points to redeem. Choose Issue Only to continue."
+  "ui.This customer needs 100 total points to redeem. Choose Issue Only to continue.": "This customer needs 100 total points to redeem. Choose Issue Only to continue.",
+  "ui.Confirmed": "Confirmed",
+  "ui.Order ready": "Order ready",
+  "ui.Awaiting confirmation": "Awaiting confirmation",
+  "ui.Pending review": "Pending review",
+  "ui.Update product list status": "Update product list status",
+  "ui.Product list status updated.": "Product list status updated.",
+  "ui.Orders customers request through AE.": "Orders customers request through AE.",
+  "ui.No customer orders yet.": "No customer orders yet.",
+  "ui.New product lists appear here automatically. Customers receive an AE notification when their order status changes.": "New product lists appear here automatically. Customers receive an AE notification when their order status changes.",
+  "ui.Contact our support team by email.": "Contact our support team by email.",
+  "ui.Need assistance with your merchant account, points, QR scanning, or product lists? Email our support team.": "Need assistance with your merchant account, points, QR scanning, or product lists? Email our support team.",
+  "ui.Product hidden from catalogue": "Product hidden from catalogue",
+  "ui.Products customers can request through AE.": "Products customers can request through AE.",
+  "ui.Merchant product catalogues.": "Merchant product catalogues.",
+  "ui.Active products are available in your catalogue.": "Active products are available in your catalogue.",
+  "ui.Show this product in catalogue": "Show this product in catalogue",
+  "ui.The customer must change this temporary password on their first login.": "The customer must change this temporary password on their first login."
 }
