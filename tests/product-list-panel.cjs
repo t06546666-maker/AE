@@ -17,7 +17,7 @@ const {ProductListPanel}=moduleInstance.exports;
 const props={name:'Customer <test>',requests:[{id:'old',status:'pending',created_at:'2026-01-01',product_list:'OLD HISTORY'},{id:'new',status:'approved',created_at:'2026-10-01',product_list:'NEW HISTORY'}],loading:false,historyError:false,retry(){},merchants:[{id:'shop',merchant_name:'Sample shop'}],merchantId:'',setMerchantId(){},value:'',setValue(){},image:null,setImage(){},message:'',error:'',pending:false,send(){},close(){}};
 const render=changes=>renderToStaticMarkup(React.createElement(ProductListPanel,{...props,...changes}));
 const initial=render();assert.match(initial,/role="dialog"/);assert.match(initial,/Recent history/);assert.match(initial,/NEW HISTORY/);assert.ok(!initial.includes('OLD HISTORY'));assert.match(initial,/Customer &lt;test&gt;/);assert.match(initial,/Awaiting confirmation/);assert.match(initial,/disabled=""[^>]*>Send Product List/);
-assert.match(initial,/type="search"/);assert.match(initial,/Search merchants/);assert.match(initial,/Sample shop/);
+assert.ok(!initial.includes('type="search"'));assert.match(initial,/Select merchant/);assert.match(initial,/aria-expanded="false"/);
 assert.ok(!/disabled=""[^>]*>Send Product List/.test(render({merchantId:'shop',value:'Rice'})));
 assert.match(render({requests:[{id:'ready',status:'ready',created_at:'2026-10-31',product_list:'Rice'}]}),/Order ready/);
 assert.match(render({requests:[{id:'progress',status:'in_progress',created_at:'2026-10-31',product_list:'Rice'}]}),/In progress/);
