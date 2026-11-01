@@ -2864,9 +2864,20 @@ app.get('/api/customer/ads', requireCustomerAuth, async (req, res) => {
       };
     }));
 
-    const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
     const adminAdBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl, { latitude, longitude });
-    const combinedAds = [...adminAdBanners, ...validDynamic];
+
+    // When an ad banner is uploaded for a shop or offer, do not show that shop's regular offer poster in the slides carousel:
+    const bannerOfferIds = new Set(adminAdBanners.map(b => b.offerId).filter(Boolean));
+    const bannerMerchantIds = new Set(adminAdBanners.map(b => b.merchantId).filter(Boolean));
+
+    const nonDuplicatedOffers = dynamicAds.filter(a => {
+      if (!a.imageUrl) return false;
+      if (a.id && bannerOfferIds.has(a.id)) return false;
+      if (a.merchantId && bannerMerchantIds.has(a.merchantId)) return false;
+      return true;
+    });
+
+    const combinedAds = [...adminAdBanners, ...nonDuplicatedOffers];
 
     if (nearby) {
       // Prioritize nearby offers/banners (within 20km) and shuffle within each group for rotating freshness!

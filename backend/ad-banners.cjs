@@ -589,6 +589,7 @@ async function getActiveBannersForAds(supabase, bucket, signedUrlHelper, userCoo
         imageUrl: resolvedUrl || offerImgUrl,
         bannerImageUrl: resolvedUrl,
         offerImageUrl: offerImgUrl || resolvedUrl,
+        merchantId: b.merchantId || '',
         merchantName: b.merchantName || '',
         merchantPhone: b.merchantPhone || '',
         merchantAddress: b.merchantAddress || '',
