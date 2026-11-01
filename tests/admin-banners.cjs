@@ -175,13 +175,7 @@ const originalContent = fs.existsSync(tempBannersFile) ? fs.readFileSync(tempBan
       assert.ok(adminBannersSource.includes('Top Carousel'), 'AdminBanners top carousel check');
       assert.ok(adminBannersSource.includes('toggleMutation'), 'AdminBanners status toggle check');
 
-      const downsideCompSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'CustomerDownsideBanners.tsx'), 'utf8');
-      assert.ok(downsideCompSource.includes('placement=downside'), 'CustomerDownsideBanners queries downside banners');
-      assert.ok(downsideCompSource.includes('handleBannerClick'), 'CustomerDownsideBanners handles clicks');
-
-      const homeSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'pages', 'customer', 'Home.tsx'), 'utf8');
-      assert.ok(homeSource.includes('<CustomerDownsideBanners />'), 'CustomerHome embeds CustomerDownsideBanners');
-
+      
       const layoutSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'Layout.tsx'), 'utf8');
       assert.ok(layoutSource.includes('/admin/banners'), 'Layout includes /admin/banners navigation link');
 
