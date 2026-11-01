@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { deleteFileFromCloudStorage, isCloudStorageUrl } = require('./cloud-storage.cjs');
 
 const BANNERS_FILE = path.join(__dirname, 'ad-banners.json');
 const CONFIG_BUCKET = 'app-config';
@@ -547,8 +548,12 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
 
-      if (removed.imagePath && removed.imagePath.includes('/') && supabase && bucket) {
-        await supabase.storage.from(bucket).remove([removed.imagePath]).catch(() => {});
+      if (removed.imagePath) {
+        if (isCloudStorageUrl(removed.imagePath)) {
+          await deleteFileFromCloudStorage(removed.imagePath);
+        } else if (removed.imagePath.includes('/') && supabase && bucket) {
+          await supabase.storage.from(bucket).remove([removed.imagePath]).catch(() => {});
+        }
       }
 
       res.json({ success: true, message: 'Banner deleted successfully.' });

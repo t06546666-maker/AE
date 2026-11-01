@@ -17,6 +17,7 @@ const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { registerAdBanners, getActiveBannersForAds, calculateDistance } = require('./backend/ad-banners.cjs');
+const { uploadFileToCloudStorage, deleteFileFromCloudStorage, isCloudStorageUrl } = require('./backend/cloud-storage.cjs');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { checkinDay, checkinPins } = require('./backend/field-checkin-map.cjs');
 const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
@@ -838,24 +839,47 @@ function offerContentType(imagePath) {
 }
 
 async function uploadOfferImage(merchantId, file) {
-  const extension = offerImageExtension(file.mimetype);
-  const imagePath = `${merchantId}/${crypto.randomUUID()}.${extension}`;
+  const extension = offerImageExtension(file.mimetype) || 'jpg';
+  const fileName = `${merchantId}/${crypto.randomUUID()}.${extension}`;
+
+  // 1. Primary: Upload to Google Cloud / Firebase Storage in Mumbai (ASIA-SOUTH1)
+  try {
+    const cloudUrl = await uploadFileToCloudStorage(`offers/${fileName}`, file.buffer, file.mimetype);
+    if (cloudUrl) return cloudUrl;
+  } catch (cloudErr) {
+    console.warn('[storage] Cloud storage upload error, falling back to Supabase:', cloudErr.message);
+  }
+
+  // 2. Fallback: Upload to Supabase Storage
   const { error } = await supabaseAdmin.storage
     .from(OFFER_IMAGE_BUCKET)
-    .upload(imagePath, file.buffer, {
+    .upload(fileName, file.buffer, {
       contentType: file.mimetype,
       cacheControl: '3600',
       upsert: false,
     });
   if (error) throw error;
-  return imagePath;
+  return fileName;
 }
 
 async function signedOfferImageUrl(imagePath) {
+  if (!imagePath) return '';
+  if (isCloudStorageUrl(imagePath)) {
+    return imagePath;
+  }
   const { data, error } = await supabaseAdmin.storage
     .from(OFFER_IMAGE_BUCKET)
     .createSignedUrl(imagePath, 60 * 60);
   return error ? '' : data.signedUrl;
+}
+
+async function deleteOfferStorageImage(pathOrUrl) {
+  if (!pathOrUrl) return;
+  if (isCloudStorageUrl(pathOrUrl)) {
+    await deleteFileFromCloudStorage(pathOrUrl);
+  } else {
+    await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([pathOrUrl]).catch(() => {});
+  }
 }
 
 function campaignDto(campaign, failure) {
@@ -1794,8 +1818,18 @@ const shopImageUpload = multer({
 app.post('/api/field/upload-image', requireAuth, fieldManagerRole, shopImageUpload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No image file provided' });
-    const extension = offerImageExtension(req.file.mimetype);
+    const extension = offerImageExtension(req.file.mimetype) || 'jpg';
     const fileName = `shops/${req.auth.profile.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
+
+    // 1. Try Google Cloud Storage first
+    try {
+      const cloudUrl = await uploadFileToCloudStorage(fileName, req.file.buffer, req.file.mimetype);
+      if (cloudUrl) {
+        return res.json({ success: true, url: cloudUrl, path: cloudUrl });
+      }
+    } catch (cloudErr) {
+      console.warn('[field-upload] Cloud storage upload failed, trying Supabase:', cloudErr.message);
+    }
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from(OFFER_IMAGE_BUCKET)
@@ -3586,25 +3620,33 @@ app.post('/api/admin/merchants/:id/photos', requireAuth, requireRole('admin'), s
         if (!file.mimetype || !file.mimetype.startsWith('image/')) continue;
         const extension = offerImageExtension(file.mimetype) || 'jpg';
         const fileName = `shops/${merchantId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from(OFFER_IMAGE_BUCKET)
-          .upload(fileName, file.buffer, {
-            contentType: file.mimetype,
-            cacheControl: '3600',
-            upsert: true,
-          });
-
         let photoUrl = '';
-        if (uploadError) {
-          console.warn('Supabase storage upload failed, using Data URI fallback:', uploadError.message);
-          const base64 = file.buffer.toString('base64');
-          photoUrl = `data:${file.mimetype};base64,${base64}`;
-        } else {
-          const { data: signedData } = await supabaseAdmin.storage
+        try {
+          photoUrl = await uploadFileToCloudStorage(fileName, file.buffer, file.mimetype);
+        } catch (cloudErr) {
+          console.warn('[admin-photos] Cloud storage upload failed, trying Supabase:', cloudErr.message);
+        }
+
+        if (!photoUrl) {
+          const { error: uploadError } = await supabaseAdmin.storage
             .from(OFFER_IMAGE_BUCKET)
-            .createSignedUrl(fileName, 60 * 60 * 24 * 365);
-          const publicUrl = supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).getPublicUrl(fileName).data?.publicUrl;
-          photoUrl = signedData?.signedUrl || publicUrl;
+            .upload(fileName, file.buffer, {
+              contentType: file.mimetype,
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) {
+            console.warn('Supabase storage upload failed, using Data URI fallback:', uploadError.message);
+            const base64 = file.buffer.toString('base64');
+            photoUrl = `data:${file.mimetype};base64,${base64}`;
+          } else {
+            const { data: signedData } = await supabaseAdmin.storage
+              .from(OFFER_IMAGE_BUCKET)
+              .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+            const publicUrl = supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).getPublicUrl(fileName).data?.publicUrl;
+            photoUrl = signedData?.signedUrl || publicUrl;
+          }
         }
         if (photoUrl) uploadedUrls.push(photoUrl);
       }
@@ -4522,10 +4564,10 @@ app.post(
       return res.status(201).json({ success: true, offer: await offerDto(offer) });
     } catch (error) {
       if (imagePath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([imagePath]);
+        await deleteOfferStorageImage(imagePath);
       }
       if (bannerPath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([bannerPath]).catch(() => {});
+        await deleteOfferStorageImage(bannerPath);
       }
       return res.status(400).json({ success: false, error: error.message });
     }
@@ -4618,7 +4660,7 @@ app.put(
       ).single();
       if (error) throw error;
       if (uploadedPath && currentOffer.image_path && currentOffer.image_path !== replacementPath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]).catch(() => {});
+        await deleteOfferStorageImage(currentOffer.image_path);
       }
       if (!isAdmin) {
         await pushToRole('admin', 'Offer resubmitted', `${title} was resubmitted for review.`, { url: '/offers', offerId: offer.id });
@@ -4626,7 +4668,7 @@ app.put(
       return res.json({ success: true, offer: await offerDto(offer) });
     } catch (error) {
       if (uploadedPath) {
-        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([uploadedPath]).catch(() => {});
+        await deleteOfferStorageImage(uploadedPath);
       }
       return res.status(400).json({ success: false, error: error.message });
     }
@@ -4659,11 +4701,11 @@ app.delete(
     if (findError || !currentOffer) return res.status(404).json({ success: false, error: 'Offer was not found' });
 
     if (currentOffer.image_path) {
-      await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]).catch(() => {});
+      await deleteOfferStorageImage(currentOffer.image_path);
     }
     const oldBanner = await getOfferBannerPath(offerId);
     if (oldBanner) {
-      await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([oldBanner]).catch(() => {});
+      await deleteOfferStorageImage(oldBanner);
       await setOfferBannerPath(offerId, null);
     }
     const { error: deleteError } = await supabaseAdmin.from('offers').delete().eq('id', offerId);
