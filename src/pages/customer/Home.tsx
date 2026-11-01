@@ -1,9 +1,8 @@
 import { uiText } from '../../uiText';
-import { formatDateTime } from '../../utils';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, Star, ListPlus, ShoppingBag, QrCode, Tags, User } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -13,9 +12,10 @@ import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerAds } from '../../components/CustomerAds';
+import { CustomerPromoBanners } from '../../components/CustomerPromoBanners';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
-import {ProductListPanel} from '../../components/ProductListPanel';
+import { ProductListPanel } from '../../components/ProductListPanel';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const customerLocation = useCustomerLocation(true, true);
@@ -25,8 +25,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const queryClient = useQueryClient();
   const rewardPoints = data?.reward_points ?? 0;
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
-  const activity = data?.activity ?? [];
-  const [qrSrc, setQrSrc] = useState('');
   const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
   const [productListOpen, setProductListOpen] = useState(false);
   const [productRequestId, setProductRequestId] = useState('');
@@ -35,220 +33,261 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productListMessage, setProductListMessage] = useState('');
   const [loadSecondaryContent, setLoadSecondaryContent] = useState(false);
+
   useEffect(() => {
     const timer = window.setTimeout(() => setLoadSecondaryContent(true), 1800);
     return () => window.clearTimeout(timer);
   }, []);
-  const [merchantSearch,setMerchantSearch]=useState('');
-  const merchantDirectory=useInfiniteQuery({
-    queryKey:['product-list-merchants',user.id,merchantSearch],
-    initialPageParam:1,
-    queryFn:({pageParam,signal})=>apiFetch<{merchants:{id:string;merchant_name:string}[];pagination:{page:number;totalPages:number}}>(`/api/customer/merchants?${new URLSearchParams({page:String(pageParam),pageSize:'20',search:merchantSearch})}`,{signal}),
-    getNextPageParam:last=>last.pagination.page<last.pagination.totalPages?last.pagination.page+1:undefined,
-    enabled:productListOpen,
+
+  const [merchantSearch, setMerchantSearch] = useState('');
+  const merchantDirectory = useInfiniteQuery({
+    queryKey: ['product-list-merchants', user.id, merchantSearch],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => apiFetch<{ merchants: { id: string; merchant_name: string }[]; pagination: { page: number; totalPages: number } }>(`/api/customer/merchants?${new URLSearchParams({ page: String(pageParam), pageSize: '20', search: merchantSearch })}`, { signal }),
+    getNextPageParam: last => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+    enabled: productListOpen,
   });
+
   const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent, customerLocation.data);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
   const offers = (offersData?.offers || []).slice(0, 16);
-  const merchants = merchantDirectory.data?.pages.flatMap(page=>page.merchants) || [];
+  const merchants = merchantDirectory.data?.pages.flatMap(page => page.merchants) || [];
   const location = useLocation();
-  useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductRequestId(new URLSearchParams(location.search).get('requestId') || ''); setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
-  const submitProductList = useMutation({ mutationFn: async () => { const form = new FormData(); form.append('merchant_id', merchantId); if (productList.trim()) form.append('product_list', productList.trim()); if (productImage) form.append('image', productImage); return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form }); }, onSuccess: () => { setProductListMessage('Your product list was sent to the selected merchant.'); setProductList(''); setProductImage(null); setMerchantId(''); void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] }); } });
-  const { data: productHistory, isPending: historyLoading, isError: historyError, refetch: retryHistory } = useQuery({ queryKey: ['customer-product-lists', user.id], queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'), enabled: productListOpen, refetchInterval: productListOpen ? 15000 : false });
 
   useEffect(() => {
-    let active = true;
-    QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id, transactionMode: 'earn' }), { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
-      .then((src) => { if (active) setQrSrc(src); })
-      .catch(() => { if (active) setQrSrc(''); });
-    return () => { active = false; };
-  }, [user.id, user.customer_code]);
+    if (new URLSearchParams(location.search).get('productList') === '1') {
+      setProductRequestId(new URLSearchParams(location.search).get('requestId') || '');
+      setProductListOpen(true);
+      window.history.replaceState({}, '', '/customer/home');
+    }
+  }, [location.search]);
 
-  const getInitials = (name?: string) => {
-    if (!name) return 'AE';
-    const parts = name.trim().split(' ');
-    if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-  };
+  const submitProductList = useMutation({
+    mutationFn: async () => {
+      const form = new FormData();
+      form.append('merchant_id', merchantId);
+      if (productList.trim()) form.append('product_list', productList.trim());
+      if (productImage) form.append('image', productImage);
+      return apiFetch('/api/customer/product-list-requests', { method: 'POST', body: form });
+    },
+    onSuccess: () => {
+      setProductListMessage('Your product list was sent to the selected merchant.');
+      setProductList('');
+      setProductImage(null);
+      setMerchantId('');
+      void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] });
+    }
+  });
 
-  const getAvatarColor = (index: number) => {
-    const colors = ['bg-[#22c55e]', 'bg-[#d97706]', 'bg-[#0ea5e9]', 'bg-[#c026d3]', 'bg-[#f43f5e]'];
-    return colors[index % colors.length];
-  };
+  const { data: productHistory, isPending: historyLoading, isError: historyError, refetch: retryHistory } = useQuery({
+    queryKey: ['customer-product-lists', user.id],
+    queryFn: () => apiFetch<{ requests: Array<{ id: string; product_list?: string; image_url?: string; status: string; created_at: string; merchants?: { name?: string } }> }>('/api/customer/product-list-requests'),
+    enabled: productListOpen,
+    refetchInterval: productListOpen ? 15000 : false
+  });
 
   return (
     <div className="customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Header */}
-      <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
-        <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
+      <header className="customer-modern-topbar flex justify-between items-center px-4 py-3 bg-white sticky top-0 z-10 border-b border-gray-100">
+        <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 72, height: 42 }} />
         <CustomerLocationBar compact />
-        <Link to="/customer/profile" aria-label="Profile"><User size={24}/></Link>
-        <Link to="/customer/notifications" className="relative text-gray-800">
-          <Bell size={24} />
-          <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
+        <Link to="/customer/profile" aria-label="Profile" className="text-gray-700 hover:text-gray-900"><User size={22}/></Link>
+        <Link to="/customer/notifications" className="relative text-gray-700 hover:text-gray-900" aria-label="Notifications">
+          <Bell size={22} />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
         </Link>
       </header>
 
-      <div className="px-4 pt-1 space-y-6">
-        {/* Greeting */}
-        <div className="customer-modern-greeting flex items-center justify-between gap-3">
+      <div className="px-4 pt-1 space-y-4">
+        {/* Greeting & Language Toggle */}
+        <div className="customer-modern-greeting flex items-center justify-between gap-3 pt-1">
           <div className="min-w-0">
-            <h2 className="text-[20px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">{uiText(" Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
+            <h2 className="text-[19px] font-bold text-gray-900 mb-0.5 flex items-center gap-1">
+              {uiText(" Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[18px]">👋</span>
             </h2>
-            <p className="text-[13px] text-gray-500 font-medium tracking-wide">{uiText(dailyGreeting)}</p>
+            <p className="text-[12px] text-gray-500 font-medium tracking-wide">{uiText(dailyGreeting)}</p>
           </div>
-          <div className="ae-home-language"><label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
-            <Languages size={16} />
-            <select
-              className="w-9 border-0 bg-transparent p-0 text-[10px] font-bold outline-none"
-              value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
-              onChange={(event) => void i18n.changeLanguage(event.target.value)}
-              aria-label={t('language.malayalam')}
-            >
-              <option value="en">{uiText("EN")}</option>
-              <option value="ml">മ</option>
-            </select>
-          </label></div>
+          <div className="ae-home-language">
+            <label className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-gray-600 shadow-sm" title={t('language.malayalam')}>
+              <Languages size={15} />
+              <select
+                className="w-9 border-0 bg-transparent p-0 text-[11px] font-bold outline-none"
+                value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
+                onChange={(event) => void i18n.changeLanguage(event.target.value)}
+                aria-label={t('language.malayalam')}
+              >
+                <option value="en">{uiText("EN")}</option>
+                <option value="ml">മ</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        {/* Points Card */}
-        <Link to="/customer/transactions" className="customer-home-points customer-modern-points-card block rounded-[16px] p-5 text-white shadow-md relative overflow-hidden active:scale-[0.98] transition-transform w-full">
-          <div className="flex justify-between items-center relative z-10">
-            <div>
-              <p className="text-[13px] font-medium text-green-50 mb-1">{uiText("Your AE Points")}</p>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-inner">
-                  <Star className="text-white fill-white" size={16} />
-                </div>
-                <span className="text-[36px] font-bold tracking-tight">{isLoading ? '...' : formattedPoints}</span>
-              </div>
-              <p className="mt-1 text-[11px] text-green-50/80">{uiText("Live balance from your account")}</p>
+        {/* Compact & Clean Points Card */}
+        <Link
+          to="/customer/transactions"
+          className="customer-home-points customer-modern-points-card flex items-center justify-between rounded-xl px-4 py-3 text-white shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform w-full bg-gradient-to-r from-[#059669] via-[#0d9488] to-[#0284c7]"
+        >
+          <div className="flex items-center gap-3 relative z-10 min-w-0">
+            <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center shadow-sm shrink-0">
+              <Star className="text-white fill-white" size={16} />
             </div>
-            <ChevronRight size={20} className="text-white" />
+            <div className="min-w-0">
+              <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider block leading-none mb-1">
+                {uiText("Your AE Points")}
+              </span>
+              <span className="text-[22px] font-extrabold tracking-tight leading-none text-white block">
+                {isLoading ? '...' : formattedPoints}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg backdrop-blur-sm shrink-0 transition-colors">
+            <span className="text-[11px] font-semibold text-white">{uiText("History")}</span>
+            <ChevronRight size={14} className="text-white" />
           </div>
         </Link>
 
-        {/* Digital Ads Carousel */}
+        {/* Main Advertisements Hero Carousel */}
         <CustomerAds location={customerLocation.data} />
 
+        {/* Compact Quick Action Shortcuts */}
         <nav className="ae-home-shortcuts" aria-label={uiText("Customer quick actions")}>
-          <Link to="/customer/shop-scan?mode=claim" className="qr"><QrCode/><span>{uiText("My QR Claim Points")}</span></Link>
-          <Link to="/customer/shop-scan?mode=redeem" className="redeem"><Gift/><span>{uiText("My QR Redeem Points")}</span></Link>
-          <Link to="/customer/explore" className="shops"><ShoppingBag/><span>{uiText("Nearby Shops")}</span></Link>
-          <Link to="/customer/offers" className="offers"><Tags/><span>{uiText("Offers")}</span></Link>
+          <Link to="/customer/shop-scan?mode=claim" className="qr">
+            <QrCode size={20} />
+            <span>{uiText("Claim Points")}</span>
+          </Link>
+          <Link to="/customer/shop-scan?mode=redeem" className="redeem">
+            <Gift size={20} />
+            <span>{uiText("Redeem Points")}</span>
+          </Link>
+          <Link to="/customer/explore" className="shops">
+            <ShoppingBag size={20} />
+            <span>{uiText("Nearby Shops")}</span>
+          </Link>
+          <Link to="/customer/offers" className="offers">
+            <Tags size={20} />
+            <span>{uiText("Offers")}</span>
+          </Link>
         </nav>
-        {/* Merchant offers grid */}
+
+        {/* Featured Offers Grid */}
         <section className="pt-1">
-          <div className="mb-3 flex items-end justify-between">
-            <div><h3 className="text-[16px] font-bold text-gray-900">{uiText("Featured Offers Near You")}</h3><p className="text-[11px] text-gray-500">{uiText("Save more at AE businesses near you")}</p></div>
-            <Link to="/customer/offers" className="text-[12px] font-bold text-[#087a4b]">{uiText("View all")}</Link>
+          <div className="mb-2.5 flex items-end justify-between">
+            <div>
+              <h3 className="text-[15px] font-bold text-gray-900">{uiText("Featured Offers Near You")}</h3>
+              <p className="text-[11px] text-gray-500">{uiText("Save more at AE businesses near you")}</p>
+            </div>
+            <Link to="/customer/offers" className="text-[12px] font-bold text-[#087a4b] hover:underline">{uiText("View all")}</Link>
           </div>
-          {offersLoading ? <div className="rounded-2xl bg-gray-50 py-8 text-center text-sm text-gray-400">{uiText("Loading offers...")}</div> : offers.length ? <div className="grid grid-cols-2 gap-3">{offers.map((offer) => (
-              <div
-                key={offer.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedOffer({
-                  id: offer.id,
-                  title: offer.title,
-                  description: offer.description,
-                  imageUrl: offer.imageUrl,
-                  merchantName: offer.merchant_raw_name || offer.merchant_name,
-                  merchantPhone: offer.merchant_phone,
-                  merchantAddress: offer.merchant_address,
-                  category: offer.category,
-                  expiresAt: offer.expires_at,
-                })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedOffer({
-                      id: offer.id,
-                      title: offer.title,
-                      description: offer.description,
-                      imageUrl: offer.imageUrl,
-                      merchantName: offer.merchant_raw_name || offer.merchant_name,
-                      merchantPhone: offer.merchant_phone,
-                      merchantAddress: offer.merchant_address,
-                      category: offer.category,
-                      expiresAt: offer.expires_at,
-                    });
-                  }
-                }}
-                className="overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform cursor-pointer hover:border-blue-200"
-              >
-                <div className="h-[112px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">
-                  {offer.imageUrl ? (
-                    <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={34} /></div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h4 className="line-clamp-2 text-[13px] font-bold leading-tight text-gray-900">{offer.title}</h4>
-                  <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p>
-                  <p className="mt-2 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p>
-                </div>
-              </div>
-            ))}</div> : <div className="rounded-2xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">{uiText("No active offers right now.")}</div>}
-        </section>
-        <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">{uiText("Send Product List")}</span></div></div><ChevronRight size={20} />
-        </button>
-
-
-        {/* Recent Activity */}
-        <div className="pt-2">
-          <div className="flex justify-between items-end mb-4">
-            <h3 className="text-[16px] font-bold text-gray-900 tracking-wide">{uiText("Recent Activity")}</h3>
-            <Link to="/customer/transactions" className="text-[12px] font-bold text-[#22c55e]">{uiText("View All")}</Link>
-          </div>
-          <div className="space-y-0 divide-y divide-gray-100 border-t border-gray-100">
-            {isLoading ? (
-              <div className="py-8 text-center text-gray-400 text-sm">{uiText("Loading activity...")}</div>
-            ) : activity.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-sm">{uiText("No recent activity")}</div>
-            ) : (
-              activity.map((item, idx) => (
-                <div key={item.id} className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-[42px] h-[42px] ${getAvatarColor(idx)} text-white rounded-full flex items-center justify-center font-bold text-[10px] leading-tight text-center`}>
-                      {item.bonus_kind === 'welcome' ? <Gift size={20} /> : getInitials(item.merchant_name)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-[14px] text-gray-900 leading-tight">{item.bonus_kind === 'welcome' ? uiText('Welcome bonus') : item.merchant_name || uiText('Store')}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        {formatDateTime(item.created_at)}
-                      </p>
-                    </div>
+          {offersLoading ? (
+            <div className="rounded-xl bg-gray-50 py-8 text-center text-sm text-gray-400">{uiText("Loading offers...")}</div>
+          ) : offers.length ? (
+            <div className="grid grid-cols-2 gap-3">
+              {offers.map((offer) => (
+                <div
+                  key={offer.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedOffer({
+                    id: offer.id,
+                    title: offer.title,
+                    description: offer.description,
+                    imageUrl: offer.imageUrl,
+                    merchantName: offer.merchant_raw_name || offer.merchant_name,
+                    merchantPhone: offer.merchant_phone,
+                    merchantAddress: offer.merchant_address,
+                    category: offer.category,
+                    expiresAt: offer.expires_at,
+                  })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedOffer({
+                        id: offer.id,
+                        title: offer.title,
+                        description: offer.description,
+                        imageUrl: offer.imageUrl,
+                        merchantName: offer.merchant_raw_name || offer.merchant_name,
+                        merchantPhone: offer.merchant_phone,
+                        merchantAddress: offer.merchant_address,
+                        category: offer.category,
+                        expiresAt: offer.expires_at,
+                      });
+                    }
+                  }}
+                  className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm active:scale-[0.98] transition-transform cursor-pointer hover:border-blue-200"
+                >
+                  <div className="h-[105px] bg-gradient-to-br from-[#e6f8ef] to-[#eef4ff]">
+                    {offer.imageUrl ? (
+                      <img src={offer.imageUrl} alt={offer.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[#087a4b]"><Gift size={30} /></div>
+                    )}
                   </div>
-                  <p className={`font-bold text-[14px] ${item.type !== 'redeem' ? 'text-[#22c55e]' : 'text-gray-900'}`}>
-                    {item.type !== 'redeem' ? '+' : '-'}{item.points}{item.type === 'bonus' ? uiText(" bonus") : ''}
-                  </p>
+                  <div className="p-2.5">
+                    <h4 className="line-clamp-2 text-[12px] font-bold leading-tight text-gray-900">{offer.title}</h4>
+                    <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-[#e11d48]">{offer.description}</p>
+                    <p className="mt-1.5 line-clamp-1 text-[10px] text-gray-500">{offer.merchant_name || 'AE Merchant'}</p>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-
-        {/* Personal customer journey: counts come from all purchases, not recent activity. */}
-        <section className="customer-modern-list-card rounded-[18px] p-4 shadow-sm" aria-labelledby="customer-journey-title">
-          <h3 id="customer-journey-title" className="text-[16px] font-bold text-gray-900">{uiText("Your Customer Journey")}</h3>
-          <p className="mt-1 text-[12px] text-gray-600">{uiText("Your purchases across AE merchants.")}</p>
-          {isLoading ? <p className="py-4 text-sm text-gray-500">{uiText("Loading your journey...")}</p> : data?.purchase_count == null ? <p className="py-4 text-sm text-gray-500">{uiText("Your journey is currently unavailable.")}</p> : <>
-            <p className="my-3 text-sm font-semibold text-gray-900">{data.purchase_count.toLocaleString('en-IN')}{uiText(" recorded purchases")}</p>
-            <ol className="space-y-3">{[
-              { title: 'First visit', threshold: 1, description: 'Make your first purchase at an AE merchant.' },
-              { title: 'Repeat visit', threshold: 2, description: 'Complete two recorded purchases.' },
-              { title: 'Loyal customer', threshold: 3, description: 'Complete three recorded purchases.' },
-            ].map((stage, index) => <li key={stage.title} className="flex items-center gap-3 rounded-xl bg-white/70 p-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold ${data.purchase_count! >= stage.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{index + 1}</span><div className="flex-1"><strong className="text-sm text-gray-900">{uiText(stage.title)}</strong><p className="text-xs text-gray-600">{uiText(stage.description)}</p></div><span className="text-xs font-semibold text-gray-700">{data.purchase_count! >= stage.threshold ? uiText("Reached") : uiText("Not yet")}</span></li>)}</ol>
-          </>}
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-gray-50 px-4 py-7 text-center text-sm text-gray-400">{uiText("No active offers right now.")}</div>
+          )}
         </section>
 
+        {/* Extra Promotional Banners Section */}
+        <CustomerPromoBanners location={customerLocation.data} />
+
+        {/* Send Product List Button */}
+        <button
+          type="button"
+          onClick={() => { setProductListOpen(true); setProductListMessage(''); }}
+          className="flex w-full items-center justify-between rounded-xl border border-blue-100 bg-blue-50 p-3.5 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <ListPlus size={24} />
+            <div>
+              <span className="block text-[15px] font-bold">{uiText("Send Product List")}</span>
+              <span className="block text-[11px] text-blue-600/80">{uiText("Send grocery or shopping list to local store")}</span>
+            </div>
+          </div>
+          <ChevronRight size={18} />
+        </button>
       </div>
+
       <CustomerOfferPreviewModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
-      {productListOpen&&<ProductListPanel requestId={productRequestId} name={user.full_name||uiText('Customer')} requests={productHistory?.requests||[]} loading={historyLoading} historyError={historyError} retry={()=>void retryHistory()} merchants={merchants} searchMerchants={setMerchantSearch} merchantsLoading={merchantDirectory.isFetching} merchantsError={merchantDirectory.isError} hasMoreMerchants={merchantDirectory.hasNextPage} loadMoreMerchants={()=>void merchantDirectory.fetchNextPage()} retryMerchants={()=>void merchantDirectory.refetch()} merchantId={merchantId} setMerchantId={setMerchantId} value={productList} setValue={setProductList} image={productImage} setImage={setProductImage} message={productListMessage} error={submitProductList.error?(submitProductList.error as Error).message:''} pending={submitProductList.isPending} send={()=>submitProductList.mutate()} close={()=>setProductListOpen(false)}/>}
+
+      {productListOpen && (
+        <ProductListPanel
+          requestId={productRequestId}
+          name={user.full_name || uiText('Customer')}
+          requests={productHistory?.requests || []}
+          loading={historyLoading}
+          historyError={historyError}
+          retry={() => void retryHistory()}
+          merchants={merchants}
+          searchMerchants={setMerchantSearch}
+          merchantsLoading={merchantDirectory.isFetching}
+          merchantsError={merchantDirectory.isError}
+          hasMoreMerchants={merchantDirectory.hasNextPage}
+          loadMoreMerchants={() => void merchantDirectory.fetchNextPage()}
+          retryMerchants={() => void merchantDirectory.refetch()}
+          merchantId={merchantId}
+          setMerchantId={setMerchantId}
+          value={productList}
+          setValue={setProductList}
+          image={productImage}
+          setImage={setProductImage}
+          message={productListMessage}
+          error={submitProductList.error ? (submitProductList.error as Error).message : ''}
+          pending={submitProductList.isPending}
+          send={() => submitProductList.mutate()}
+          close={() => setProductListOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,24 @@
-.customer-glass .ae-reference-home .customer-modern-topbar { display:flex; gap:12px; min-height:68px; padding:10px 16px!important; align-items:center; }
-.customer-glass .ae-reference-home .customer-modern-topbar img.customer-home-logo { width:64px!important; height:40px!important; }
-.ae-location-pill { display:flex; flex:1; min-width:0; gap:7px; align-items:center; justify-content:center; border:1px solid #fff; border-radius:30px; padding:11px 10px; background:#ffffffbd; color:#101a40; font-size:12px; font-weight:700; }
-.ae-location-pill svg { color:#0064ff; flex-shrink:0; }.ae-location-pill span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.customer-glass .ae-reference-home .customer-modern-topbar { display:flex; gap:10px; min-height:56px; padding:8px 14px!important; align-items:center; border-bottom:1px solid #f1f5f9; }
+.customer-glass .ae-reference-home .customer-modern-topbar img.customer-home-logo { width:64px!important; height:38px!important; }
+.ae-location-pill { display:flex; flex:1; min-width:0; gap:6px; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:10px; padding:6px 10px; background:#ffffff; color:#1e293b; font-size:11.5px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.03); }
+.ae-location-pill svg { color:#0284c7; flex-shrink:0; }
+.ae-location-pill span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ae-reference-home .ae-home-shortcuts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-.ae-home-shortcuts a { display:flex; min-height:100px; padding:14px 4px; flex-direction:column; align-items:center; justify-content:center; gap:10px; border:1px solid #fff; border-radius:20px; background:#ffffffab; color:#101a40; text-align:center; font-size:11px; font-weight:700; }
-.ae-home-shortcuts svg { width:30px; height:30px; }.ae-home-shortcuts .shops svg{color:#00aa50}.ae-home-shortcuts .offers{background:#fff0f4}.ae-home-shortcuts .offers svg{color:#ff5774}.ae-home-shortcuts .qr svg{color:#0064ff}.ae-home-shortcuts .redeem{background:#f5edff}.ae-home-shortcuts .redeem svg{color:#8337ff}
-.ae-reference-home [aria-roledescription="carousel"] > div:first-child > a { height:220px; border-radius:22px; }
-.ae-reference-home .customer-modern-greeting h2 { font-size:27px; }.ae-reference-home .customer-modern-greeting p { font-size:13px; line-height:1.5; }
-.ae-reference-home .customer-home-points { min-height:160px; }.ae-home-language { display:flex; justify-content:flex-end; }
-@media(min-width:480px){.ae-home-shortcuts a{font-size:13px}.ae-reference-home [aria-roledescription="carousel"] > div:first-child > a{height:260px}}
+.ae-home-shortcuts a { display:flex; min-height:64px; padding:8px 4px; flex-direction:column; align-items:center; justify-content:center; gap:5px; border:1px solid #e2e8f0; border-radius:12px; background:#ffffff; color:#1e293b; text-align:center; font-size:10.5px; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s ease; }
+.ae-home-shortcuts a:active { transform:scale(0.97); }
+.ae-home-shortcuts svg { width:20px; height:20px; flex-shrink:0; }
+.ae-home-shortcuts .shops { background:#f0fdf4; border-color:#dcfce7; }
+.ae-home-shortcuts .shops svg { color:#16a34a; }
+.ae-home-shortcuts .offers { background:#fff1f2; border-color:#ffe4e6; }
+.ae-home-shortcuts .offers svg { color:#e11d48; }
+.ae-home-shortcuts .qr { background:#f0f9ff; border-color:#e0f2fe; }
+.ae-home-shortcuts .qr svg { color:#0284c7; }
+.ae-home-shortcuts .redeem { background:#faf5ff; border-color:#f3e8ff; }
+.ae-home-shortcuts .redeem svg { color:#9333ea; }
+.ae-reference-home [aria-roledescription="carousel"] > div:first-child > a,
+.ae-reference-home [aria-roledescription="carousel"] [role="button"] { border-radius:14px; }
+.ae-reference-home .customer-modern-greeting h2 { font-size:19px; }
+.ae-reference-home .customer-modern-greeting p { font-size:12px; line-height:1.4; color:#64748b; }
+.ae-reference-home .customer-home-points { min-height:auto!important; padding:12px 14px!important; border-radius:14px!important; }
+.ae-home-language { display:flex; justify-content:flex-end; }
+@media(min-width:480px){.ae-home-shortcuts a{font-size:11.5px}}

@@ -4,7 +4,7 @@
 }
 
 .customer-glass .main-content>div {
-    background: url('/customer-waves.svg') top center / 100% auto no-repeat, #eaf7ff !important;
+    background: #f8fafc !important;
     color: #101a40
 }
 
@@ -67,26 +67,21 @@
 }
 
 .customer-glass .customer-modern-points-card {
-    padding: 23px !important;
-    min-height: 145px;
-    background: linear-gradient(125deg, #006d6c, #09ae99 70%, #20d9c0) !important;
-    border: 1px solid #7ce8d1;
-    border-radius: 22px;
-    box-shadow: 0 12px 25px #138e9a22
+    padding: 12px 14px !important;
+    min-height: auto !important;
+    background: linear-gradient(125deg, #059669, #0d9488 70%, #0284c7) !important;
+    border: 1px solid #34d399 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.16) !important;
 }
 
 .customer-glass .customer-modern-points-card:after {
-    width: 140px;
-    height: 140px;
-    background: #ffffff12;
-    top: -80px;
-    right: 45px;
-    box-shadow: 0 0 0 48px #ffffff0a
+    display: none !important;
 }
 
 .customer-glass .customer-modern-points-card .text-\[36px\],
 .customer-glass .customer-modern-points-card .text-\[32px\] {
-    font-size: 38px
+    font-size: 22px !important;
 }
 
 .customer-glass .customer-modern-action {
