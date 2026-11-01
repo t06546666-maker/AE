@@ -1,6 +1,6 @@
 import { uiText } from '../uiText';
 import { TimeInput } from '../components/TimeInput';
-import { formatClockTime } from '../utils';
+import { formatClockTime, optimizeImageForUpload } from '../utils';
 import { useDeferredValue, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Copy, Download, Eye, KeyRound, Plus, Search, Trash2, X, MapPinned, Pencil } from 'lucide-react';
@@ -67,12 +67,13 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
 
   async function uploadShopPhoto(file?: File) {
     if (!file) return;
-    if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      showToast('Choose a JPG or PNG image under 5 MB.', 'error'); return;
+    if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 20 * 1024 * 1024) {
+      showToast('Choose a JPG or PNG image under 20 MB.', 'error'); return;
     }
     setUploadingPhoto(true);
     try {
-      const body = new FormData(); body.append('image', file);
+      const optimized = await optimizeImageForUpload(file, 1600, 0.85);
+      const body = new FormData(); body.append('image', optimized);
       const result = await apiFetch<{ url: string }>('/api/field/upload-image', { method: 'POST', body });
       setShopImages(previous => [...previous, result.url]);
     } catch (error) { showToast((error as Error).message, 'error'); }

@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import { apiFetch, downloadExport, queryString } from '../api';
 import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Offer, OfferStatus, Pagination, UserProfile } from '../types';
-import { formatDate } from '../utils';
+import { formatDate, optimizeImageForUpload } from '../utils';
 import { useToast } from '../toast';
 import { OfferPerformance } from '../components/OfferPerformance';
 
@@ -260,12 +260,12 @@ export function Offers({ user }: { user: UserProfile }) {
             </label>
             <label className="offer-image-field">
               {uiText('Offer Poster / Details Image')}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImage(event.target.files?.[0] || null)} required={!editing} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (event) => { const f = event.target.files?.[0]; if (f) { const opt = await optimizeImageForUpload(f, 1600, 0.85); setImage(opt); } else { setImage(null); } }} required={!editing} />
               <small>{uiText('The main detailed poster shown when customers tap to inspect the offer.')}</small>
             </label>
             <label className="offer-image-field">
               {uiText('Ad Banner Photo (Optional - for Home Screen Carousel)')}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setBannerImage(event.target.files?.[0] || null)} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (event) => { const f = event.target.files?.[0]; if (f) { const opt = await optimizeImageForUpload(f, 1800, 0.85); setBannerImage(opt); } else { setBannerImage(null); } }} />
               <small>{uiText('Set a different wide photo for the scrolling banner on the Home page. If omitted, your main offer poster will be used.')}</small>
               {editing?.bannerImageUrl && (
                 <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -362,9 +362,9 @@ export function Offers({ user }: { user: UserProfile }) {
                           }}><Download size={16} />{downloadingOfferId === offer.id ? 'Downloading…' : 'Download submitted image'}</button>
                           <label className="button secondary" style={{ cursor: 'pointer' }}>
                             <Upload size={16} />{replaceOfferImage.isPending ? 'Uploading…' : 'Upload enhanced image'}
-                            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={replaceOfferImage.isPending} style={{ display: 'none' }} onChange={(event) => {
+                            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={replaceOfferImage.isPending} style={{ display: 'none' }} onChange={async (event) => {
                               const file = event.target.files?.[0];
-                              if (file) replaceOfferImage.mutate({ offer, file });
+                              if (file) { const opt = await optimizeImageForUpload(file, 1600, 0.85); replaceOfferImage.mutate({ offer, file: opt }); }
                               event.currentTarget.value = '';
                             }} />
                           </label>

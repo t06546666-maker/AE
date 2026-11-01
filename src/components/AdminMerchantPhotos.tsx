@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Camera, Star, Trash2, ExternalLink, Plus, Link as LinkIcon, CheckCircle2, Loader2 } from 'lucide-react';
 import { apiFetch } from '../api';
+import { optimizeImageForUpload } from '../utils';
 import { uiText } from '../uiText';
 import { useToast } from '../toast';
 import './admin-merchant-photos.css';
@@ -69,7 +70,8 @@ export function AdminMerchantPhotos({ merchantId, merchant, onUpdated }: AdminMe
     try {
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
-        formData.append('photo', files[i]);
+        const optimized = await optimizeImageForUpload(files[i], 1600, 0.85);
+        formData.append('photo', optimized);
       }
       // If there are no photos yet, mark this new photo as Front photo
       if (!currentFrontPhoto) {

@@ -18,6 +18,7 @@ import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
 import { useToast } from '../toast';
 import { uiText } from '../uiText';
+import { optimizeImageForUpload } from '../utils';
 import type { UserProfile, Offer } from '../types';
 
 interface AdBannerItem {
@@ -54,6 +55,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState('');
+  const [optimizingImage, setOptimizingImage] = useState(false);
   const [active, setActive] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -126,12 +128,21 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setModalOpen(true);
   };
 
-  // Handle banner image file select
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle banner image file select with instant browser-side optimization
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setBannerImageFile(file);
-      setBannerImagePreview(URL.createObjectURL(file));
+      setOptimizingImage(true);
+      try {
+        const optimized = await optimizeImageForUpload(file, 1600, 0.85);
+        setBannerImageFile(optimized);
+        setBannerImagePreview(URL.createObjectURL(optimized));
+      } catch {
+        setBannerImageFile(file);
+        setBannerImagePreview(URL.createObjectURL(file));
+      } finally {
+        setOptimizingImage(false);
+      }
     }
   };
 
@@ -772,6 +783,11 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   onChange={handleFileChange}
                   style={{ display: 'none' }}
                 />
+                {optimizingImage && (
+                  <p style={{ fontSize: '12px', color: '#087a4b', fontWeight: 600, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚡</span> {uiText("Compressing photo for fast upload…")}
+                  </p>
+                )}
               </div>
 
               {/* Active Toggle */}
@@ -798,10 +814,10 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 <button
                   type="submit"
                   className="button primary"
-                  disabled={saveMutation.isPending || (!selectedOfferId && !bannerTitle.trim() && !selectedMerchantId && !bannerImageFile && !bannerImagePreview)}
+                  disabled={saveMutation.isPending || optimizingImage || (!selectedOfferId && !bannerTitle.trim() && !selectedMerchantId && !bannerImageFile && !bannerImagePreview)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  {saveMutation.isPending ? uiText("Saving…") : editingBanner ? uiText("Update Banner") : uiText("Save Banner")}
+                  {saveMutation.isPending ? uiText("Uploading & Saving…") : optimizingImage ? uiText("Optimizing Image…") : editingBanner ? uiText("Update Banner") : uiText("Save Banner")}
                 </button>
               </div>
             </form>

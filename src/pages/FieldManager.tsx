@@ -1,6 +1,6 @@
 import { uiText } from '../uiText';
 import { TimeInput } from '../components/TimeInput';
-import { formatClockTime } from '../utils';
+import { formatClockTime, optimizeImageForUpload } from '../utils';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
@@ -369,8 +369,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-          showToast('Choose a JPG or PNG image under 5 MB.', 'error');
+        if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 20 * 1024 * 1024) {
+          showToast('Choose a JPG or PNG image under 20 MB.', 'error');
           continue;
         }
         if (!file.type.startsWith('image/')) {
@@ -379,7 +379,8 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         }
 
         const formData = new FormData();
-        formData.append('image', file);
+        const optimized = await optimizeImageForUpload(file, 1600, 0.85);
+        formData.append('image', optimized);
 
         const res = await apiFetch<{ success: boolean; url: string; path?: string }>('/api/field/upload-image', {
           method: 'POST',
