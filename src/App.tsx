@@ -234,8 +234,13 @@ export function App() {
         }));
 
         listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          if (typeof notification.notification.data?.url === 'string' && notification.notification.data.url.startsWith('/') && !notification.notification.data.url.startsWith('//')) {
-            navigate(notification.notification.data.url);
+          const url = notification.notification.data?.url;
+          if (typeof url === 'string') {
+            if (url.startsWith('/') && !url.startsWith('//')) {
+              navigate(url);
+            } else if (url.startsWith('http://') || url.startsWith('https://')) {
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }
           }
         }));
 

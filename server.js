@@ -3204,6 +3204,29 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   }
 });
 
+app.get('/api/customer/announcements', requireCustomerAuth, async (req, res) => {
+  try {
+    await firebaseInitializationPromise;
+    if (!firebaseInitialized) return res.json({ success: true, announcements: [] });
+    const { getFirestore } = await import('firebase-admin/firestore');
+    const snapshot = await getFirestore().collection('ae_customer_announcements').orderBy('created_at', 'desc').limit(20).get();
+    const announcements = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || '',
+        body: data.body || '',
+        url: data.url || '',
+        created_at: data.created_at?.toDate ? data.created_at.toDate().toISOString() : (data.created_at || new Date().toISOString()),
+      };
+    });
+    res.json({ success: true, announcements });
+  } catch (err) {
+    console.warn('[announcements] Error loading announcements:', err.message);
+    res.json({ success: true, announcements: [] });
+  }
+});
+
 app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, res) => {
   let target;
   try { target = await getCustomerPushTarget(req.customer.id); }
