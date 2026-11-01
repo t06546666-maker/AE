@@ -6,10 +6,10 @@ import { Check, ChevronDown, MapPin, X } from 'lucide-react';
 import { useCustomerLocation } from '../hooks/useCustomerLocation';
 
 const CUSTOMER_AREAS = [
-  { area: 'Chittur', routeGroup: 'chittur' },
-  { area: 'Thathamangalam', routeGroup: 'thathamangalam' },
+  { area: 'Chittur', routeGroup: 'chittur', latitude: 10.7005, longitude: 76.7475 },
+  { area: 'Thathamangalam', routeGroup: 'thathamangalam', latitude: 10.6830, longitude: 76.7050 },
 ] as const;
-const CUSTOMER_AREA_OPTIONS = [{ area: 'All', routeGroup: 'all' }, ...CUSTOMER_AREAS] as const;
+const CUSTOMER_AREA_OPTIONS = [{ area: 'All', routeGroup: 'all', latitude: undefined, longitude: undefined }, ...CUSTOMER_AREAS] as const;
 
 export function CustomerLocationBar({ compact = false, defaultAll = false }: { compact?: boolean; defaultAll?: boolean }) {
   const location = useCustomerLocation(false);
@@ -25,7 +25,12 @@ export function CustomerLocationBar({ compact = false, defaultAll = false }: { c
     return()=>{document.body.style.overflow=overflow;window.visualViewport?.removeEventListener('resize',update);window.visualViewport?.removeEventListener('scroll',update);window.removeEventListener('resize',update);document.removeEventListener('keydown',escape)};
   },[open]);
   const selectArea = (area: typeof CUSTOMER_AREA_OPTIONS[number]) => {
-    location.selectLocation({ area: area.area, routeGroup: area.routeGroup });
+    location.selectLocation({
+      area: area.area,
+      routeGroup: area.routeGroup,
+      latitude: area.latitude,
+      longitude: area.longitude,
+    });
     setOpen(false);
   };
   const visibleAreas = CUSTOMER_AREA_OPTIONS.filter(area => area.area.toLowerCase().includes(locationSearch.trim().toLowerCase()));

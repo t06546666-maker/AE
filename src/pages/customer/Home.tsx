@@ -18,7 +18,7 @@ import './home-reference.css';
 import {ProductListPanel} from '../../components/ProductListPanel';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
-  const customerLocation = useCustomerLocation(false);
+  const customerLocation = useCustomerLocation(true, true);
   const dailyGreeting = useDailyGreeting('customer');
   const { data, isLoading } = useCustomerDashboard();
   const { t, i18n } = useTranslation();
