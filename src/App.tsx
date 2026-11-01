@@ -138,6 +138,13 @@ export function App() {
   }, [user?.id, user?.role]);
 
   function logout() {
+    if (user && Capacitor.isNativePlatform()) {
+      const endpoint = user.role === 'customer' ? '/api/customer/preferences' : '/api/profile/preferences';
+      void apiFetch(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify({ push_token: null, push_enabled: false })
+      }).catch(() => {});
+    }
     clearAccessToken(); setUser(null); queryClient.clear();
   }
 

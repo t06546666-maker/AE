@@ -18,6 +18,7 @@ const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
 const { registerAdBanners, getActiveBannersForAds, calculateDistance } = require('./backend/ad-banners.cjs');
 const { uploadFileToCloudStorage, deleteFileFromCloudStorage, isCloudStorageUrl } = require('./backend/cloud-storage.cjs');
+const { enforcePushTokenExclusivity } = require('./backend/push-exclusivity.cjs');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { checkinDay, checkinPins } = require('./backend/field-checkin-map.cjs');
 const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
@@ -3273,8 +3274,13 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   const updates = {};
   const pushUpdates = {};
   if (push_token !== undefined) {
-    if (typeof push_token !== 'string' || !push_token.trim() || push_token.length > 4096) return res.status(400).json({ success: false, error: 'A valid phone notification token is required.' });
-    pushUpdates.push_token = push_token.trim();
+    if (push_token === null || push_token === '') {
+      pushUpdates.push_token = null;
+    } else if (typeof push_token === 'string' && push_token.trim() && push_token.length <= 4096) {
+      pushUpdates.push_token = push_token.trim();
+    } else {
+      return res.status(400).json({ success: false, error: 'A valid phone notification token is required.' });
+    }
   }
   if (push_enabled !== undefined) {
     if (typeof push_enabled !== 'boolean') return res.status(400).json({ success: false, error: 'push_enabled must be true or false.' });
@@ -3290,6 +3296,20 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
   if (Object.keys(pushUpdates).length) {
     try {
       await saveCustomerPushTarget(customerId, pushUpdates);
+      // Enforce device exclusivity: If this device token was previously registered to a merchant or staff account,
+      // clear it immediately so merchant notifications never disturb this customer session.
+      if (pushUpdates.push_token) {
+        await enforcePushTokenExclusivity({
+          token: pushUpdates.push_token,
+          role: 'customer',
+          entityId: customerId,
+          supabaseAdmin,
+          getFirestore: async () => {
+            const { getFirestore } = await import('firebase-admin/firestore');
+            return getFirestore();
+          },
+        });
+      }
     } catch (error) {
       console.error('Firestore phone registration failed:', error.message);
       return res.status(503).json({ success: false, error: 'Could not save phone registration in Firebase. Check Firestore setup and server permissions.' });
@@ -3338,8 +3358,13 @@ require('./backend/admin-notifications.cjs').registerAdminNotifications(app, {
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   const updates = {};
   if (req.body.push_token !== undefined) {
-    if(typeof req.body.push_token!=='string'||!req.body.push_token.trim()||req.body.push_token.length>4096)return res.status(400).json({error:'A valid phone notification token is required.'});
-    updates.push_token = req.body.push_token.trim();
+    if (req.body.push_token === null || req.body.push_token === '') {
+      updates.push_token = null;
+    } else if (typeof req.body.push_token === 'string' && req.body.push_token.trim() && req.body.push_token.length <= 4096) {
+      updates.push_token = req.body.push_token.trim();
+    } else {
+      return res.status(400).json({ error: 'A valid phone notification token is required.' });
+    }
   }
   if (req.body.push_enabled !== undefined) {
     if(typeof req.body.push_enabled!=='boolean')return res.status(400).json({error:'push_enabled must be true or false.'});
@@ -3349,7 +3374,23 @@ app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   const { data: previous, error: readError } = await supabaseAdmin.from('profiles')
     .select('push_token,push_enabled').eq('id', req.auth.user.id).single();
   if (readError) return res.status(400).json({ success: false, error: readError.message });
-  try { await profilePushRegistry.save(req.auth.profile,req.auth.user.email,updates); }
+  try {
+    await profilePushRegistry.save(req.auth.profile,req.auth.user.email,updates);
+    // Enforce device exclusivity: If this device token was previously registered to a customer account,
+    // clear it immediately so customer announcements never disturb this merchant session.
+    if (updates.push_token) {
+      await enforcePushTokenExclusivity({
+        token: updates.push_token,
+        role: 'profile',
+        entityId: req.auth.user.id,
+        supabaseAdmin,
+        getFirestore: async () => {
+          const { getFirestore } = await import('firebase-admin/firestore');
+          return getFirestore();
+        },
+      });
+    }
+  }
   catch { return res.status(503).json({success:false,error:'Could not register this phone in Firebase. Please reconnect phone notifications.'}); }
   // Compatibility mirror for older installs. Firebase is the delivery source.
   const { error } = await supabaseAdmin.from('profiles').update(updates).eq('id', req.auth.user.id);
