@@ -51,6 +51,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   // Form states (minimal, focused purely on Merchant + Offer + Optional Image)
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [selectedOfferId, setSelectedOfferId] = useState('');
+  const [bannerTitle, setBannerTitle] = useState('');
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState('');
   const [active, setActive] = useState(true);
@@ -106,6 +107,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(null);
     setSelectedMerchantId('');
     setSelectedOfferId('');
+    setBannerTitle('');
     setBannerImageFile(null);
     setBannerImagePreview('');
     setActive(true);
@@ -117,6 +119,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(b);
     setSelectedMerchantId(b.merchantId || '');
     setSelectedOfferId(b.offerId || '');
+    setBannerTitle(b.title || '');
     setBannerImageFile(null);
     setBannerImagePreview(b.bannerImageUrl || b.imageUrl || '');
     setActive(Boolean(b.active));
@@ -135,25 +138,40 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   // Save / Update mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedOffer) {
-        throw new Error('Please select an offer to promote on the banner.');
+      const selectedMerchant = merchants.find((m) => m.id === selectedMerchantId);
+      const titleToUse = (bannerTitle || '').trim() || selectedOffer?.title || (selectedMerchant ? `${selectedMerchant.name} Promotion` : 'Special Promotion');
+
+      if (!titleToUse) {
+        throw new Error('Please enter a banner title or select an offer.');
+      }
+
+      if (!selectedOffer && !bannerImageFile && !editingBanner?.imageUrl && !bannerImagePreview) {
+        throw new Error('Please select an offer or upload a banner photo.');
       }
 
       const form = new FormData();
-      form.append('offerId', selectedOffer.id);
-      form.append('title', selectedOffer.title);
-      form.append('subtitle', selectedOffer.description || '');
-      form.append('merchantId', selectedOffer.merchantId || '');
-      form.append('merchantName', selectedOffer.merchant || '');
-      form.append('category', selectedOffer.category || '');
-      form.append('expiresAt', selectedOffer.expiresAt || '');
+      if (selectedOffer) {
+        form.append('offerId', selectedOffer.id);
+        form.append('title', titleToUse);
+        form.append('subtitle', selectedOffer.description || '');
+        form.append('merchantId', selectedOffer.merchantId || selectedMerchantId || '');
+        form.append('merchantName', selectedOffer.merchant || selectedMerchant?.name || '');
+        form.append('category', selectedOffer.category || '');
+        form.append('expiresAt', selectedOffer.expiresAt || '');
+        if (selectedOffer.imageUrl) {
+          form.append('offerImageUrl', selectedOffer.imageUrl);
+        }
+      } else {
+        if (selectedOfferId) form.append('offerId', selectedOfferId);
+        form.append('title', titleToUse);
+        if (selectedMerchantId) {
+          form.append('merchantId', selectedMerchantId);
+          form.append('merchantName', selectedMerchant?.name || '');
+        }
+      }
+
       form.append('active', String(active));
       form.append('placement', 'top');
-
-      // If an existing offer has a poster image, send it as fallback
-      if (selectedOffer.imageUrl) {
-        form.append('offerImageUrl', selectedOffer.imageUrl);
-      }
 
       // If custom banner file selected, attach it
       if (bannerImageFile) {
@@ -222,8 +240,12 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedOfferId) {
-      showToast('Please select which offer to display on the banner', 'error');
+    if (!selectedOffer && !bannerTitle.trim() && !selectedMerchantId) {
+      showToast('Please select an offer or enter a banner title', 'error');
+      return;
+    }
+    if (!selectedOffer && !bannerImageFile && !editingBanner?.imageUrl && !bannerImagePreview) {
+      showToast('Please select an offer with a photo or upload a banner image', 'error');
       return;
     }
     saveMutation.mutate();
@@ -525,13 +547,18 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
               {/* Step 1: Select Merchant */}
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
-                  1. {uiText("Select Merchant")} *
+                  1. {uiText("Select Merchant")}
                 </label>
                 <select
                   value={selectedMerchantId}
                   onChange={(e) => {
-                    setSelectedMerchantId(e.target.value);
+                    const mid = e.target.value;
+                    setSelectedMerchantId(mid);
                     setSelectedOfferId(''); // reset offer when merchant changes
+                    if (!bannerTitle) {
+                      const m = merchants.find(item => item.id === mid);
+                      if (m) setBannerTitle(`${m.name} Promotion`);
+                    }
                   }}
                   style={{
                     width: '100%',
@@ -553,21 +580,28 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
 
               {/* Step 2: Select Which Offer */}
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
-                  2. {uiText("Which Offer to Give / Promote")} *
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
+                    2. {uiText("Which Offer to Give / Promote")}
+                  </label>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    {uiText("(Optional: link to an existing offer)")}
+                  </span>
+                </div>
                 <select
-                  required
                   value={selectedOfferId}
                   onChange={(e) => {
                     const id = e.target.value;
                     setSelectedOfferId(id);
                     const found = allApprovedOffers.find((o) => o.id === id);
-                    if (found && !selectedMerchantId) {
-                      setSelectedMerchantId(found.merchantId || '');
-                    }
-                    if (found && !bannerImageFile && !editingBanner) {
-                      setBannerImagePreview(found.bannerImageUrl || found.imageUrl || '');
+                    if (found) {
+                      if (!selectedMerchantId && found.merchantId) {
+                        setSelectedMerchantId(found.merchantId);
+                      }
+                      setBannerTitle(found.title);
+                      if (!bannerImageFile && !editingBanner) {
+                        setBannerImagePreview(found.bannerImageUrl || found.imageUrl || '');
+                      }
                     }
                   }}
                   style={{
@@ -579,19 +613,34 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                     backgroundColor: '#ffffff',
                   }}
                 >
-                  <option value="">{uiText("-- Choose an approved offer --")}</option>
+                  <option value="">{uiText("-- Choose an approved offer (or leave empty) --")}</option>
                   {availableOffers.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.title} — ({o.merchant || 'Merchant'})
                     </option>
                   ))}
                 </select>
+              </div>
 
-                {availableOffers.length === 0 && (
-                  <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                    {uiText("No approved active offers found for this merchant. Please approve an offer first.")}
-                  </p>
-                )}
+              {/* Banner Title */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
+                  3. {uiText("Banner Title")}
+                </label>
+                <input
+                  type="text"
+                  placeholder={selectedOffer?.title || uiText("e.g. Special Festive Deal")}
+                  value={bannerTitle}
+                  onChange={(e) => setBannerTitle(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '14px',
+                    backgroundColor: '#ffffff',
+                  }}
+                />
               </div>
 
               {/* Selected Offer Preview Card */}
@@ -749,7 +798,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 <button
                   type="submit"
                   className="button primary"
-                  disabled={saveMutation.isPending || !selectedOfferId}
+                  disabled={saveMutation.isPending || (!selectedOfferId && !bannerTitle.trim() && !selectedMerchantId && !bannerImageFile && !bannerImagePreview)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   {saveMutation.isPending ? uiText("Saving…") : editingBanner ? uiText("Update Banner") : uiText("Save Banner")}

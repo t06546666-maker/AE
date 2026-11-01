@@ -101,10 +101,18 @@ export function useCustomerMerchants(page: number, search?: string, categoryId?:
   });
 }
 
-export function useCustomerOffers(enabled = true) {
+export function useCustomerOffers(enabled = true, location?: { latitude?: number; longitude?: number } | null) {
   return useQuery({
-    queryKey: ['customer', 'offers'],
-    queryFn: ({ signal }) => apiFetch<{ offers: CustomerOffer[] }>('/api/customer/offers', { signal }),
+    queryKey: ['customer', 'offers', location?.latitude, location?.longitude],
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams();
+      if (location?.latitude != null && location?.longitude != null) {
+        params.set('latitude', String(location.latitude));
+        params.set('longitude', String(location.longitude));
+      }
+      const qs = params.toString();
+      return apiFetch<{ offers: CustomerOffer[] }>(`/api/customer/offers${qs ? '?' + qs : ''}`, { signal });
+    },
     staleTime: 60000,
     enabled,
   });

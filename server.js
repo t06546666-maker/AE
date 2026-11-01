@@ -16,7 +16,7 @@ const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
-const { registerAdBanners, getActiveBannersForAds } = require('./backend/ad-banners.cjs');
+const { registerAdBanners, getActiveBannersForAds, calculateDistance } = require('./backend/ad-banners.cjs');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { checkinDay, checkinPins } = require('./backend/field-checkin-map.cjs');
 const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
@@ -2816,16 +2816,20 @@ app.get('/api/customer/categories', async (req, res) => {
   }
 });
 
-app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
+app.get('/api/customer/ads', requireCustomerAuth, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
+    const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
+    const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
+    const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
+
     const { data: offers } = await supabaseAdmin
       .from('offers')
-      .select('id, title, description, image_path, category, expires_at, merchant_id, merchants(id, name, merchant_code, phone, email, address)')
+      .select('id, title, description, image_path, category, expires_at, merchant_id, merchants(id, name, merchant_code, phone, email, address, latitude, longitude)')
       .eq('status', 'approved')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(6);
+      .limit(30);
 
     const dynamicAds = await Promise.all((offers || []).map(async (o) => {
       const merchantName = o.merchants?.name || '';
@@ -2833,6 +2837,8 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
       const offerImageUrl = await signedOfferImageUrl(o.image_path);
       const bannerPath = o.banner_image_path || await getOfferBannerPath(o.id);
       const bannerImageUrl = bannerPath ? await signedOfferImageUrl(bannerPath) : null;
+      const dist = nearby ? calculateDistance(latitude, longitude, o.merchants?.latitude, o.merchants?.longitude) : Infinity;
+
       return {
         id: o.id,
         title: o.title,
@@ -2849,22 +2855,40 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
         action: merchantName ? (phone ? `📞 ${phone}` : `View at ${merchantName}`) : 'View offer',
         url: '/customer/offers',
         test: false,
-        // The Home carousel banner uses the dedicated banner image if provided, otherwise the offer image
         imageUrl: bannerImageUrl || offerImageUrl,
         bannerImageUrl,
         offerImageUrl,
+        distance: dist,
+        latitude: o.merchants?.latitude,
+        longitude: o.merchants?.longitude,
       };
     }));
 
     const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
-    const adminAdBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl);
+    const adminAdBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl, { latitude, longitude });
     const combinedAds = [...adminAdBanners, ...validDynamic];
-    // Randomly shuffle active dynamic ads so when customers open the app, a random ad appears first!
-    for (let i = combinedAds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [combinedAds[i], combinedAds[j]] = [combinedAds[j], combinedAds[i]];
+
+    if (nearby) {
+      // Prioritize nearby offers/banners (within 20km) and shuffle within each group for rotating freshness!
+      const closeAds = combinedAds.filter(a => Number.isFinite(a.distance) && a.distance <= 20);
+      const otherAds = combinedAds.filter(a => !Number.isFinite(a.distance) || a.distance > 20);
+
+      for (let i = closeAds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [closeAds[i], closeAds[j]] = [closeAds[j], closeAds[i]];
+      }
+      for (let i = otherAds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [otherAds[i], otherAds[j]] = [otherAds[j], otherAds[i]];
+      }
+      res.json({ ads: [...closeAds, ...otherAds, ...(customerAds || [])] });
+    } else {
+      for (let i = combinedAds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combinedAds[i], combinedAds[j]] = [combinedAds[j], combinedAds[i]];
+      }
+      res.json({ ads: [...combinedAds, ...(customerAds || [])] });
     }
-    res.json({ ads: [...combinedAds, ...(customerAds || [])] });
   } catch (_e) {
     const fallbackBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl).catch(() => []);
     res.json({ ads: [...fallbackBanners, ...(customerAds || [])] });
@@ -3056,13 +3080,17 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
 require('./backend/product-list-fulfillment.cjs').registerProductListFulfillment(app, { requireAuth, requireRole, db: supabaseAdmin, pushToCustomer, pushToRole });
 
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
+  const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
+  const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
+  const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
+
   const { data: offers, error } = await supabaseAdmin
     .from('offers')
-    .select('*, merchants(id, name, merchant_code, phone, email, address)')
+    .select('*, merchants(id, name, merchant_code, phone, email, address, latitude, longitude)')
     .eq('status', 'approved')
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(60);
     
   if (error) return res.status(500).json({ success: false, error: error.message });
   
@@ -3087,6 +3115,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     const phone = o.merchants?.phone || '';
     const phoneTag = phone ? ` • 📞 ${phone}` : '';
     const name = o.merchants?.name || 'Store';
+    const dist = nearby ? calculateDistance(latitude, longitude, o.merchants?.latitude, o.merchants?.longitude) : Infinity;
     return {
       id: o.id,
       title: o.title,
@@ -3101,10 +3130,32 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
       merchant_address: o.merchants?.address || '',
       category: o.category || '',
       expires_at: o.expires_at,
+      distance: dist,
+      latitude: o.merchants?.latitude,
+      longitude: o.merchants?.longitude,
     };
   }));
-  
-  res.json({ success: true, offers: mappedOffers });
+
+  if (nearby) {
+    const closeOffers = mappedOffers.filter(o => Number.isFinite(o.distance) && o.distance <= 20);
+    const otherOffers = mappedOffers.filter(o => !Number.isFinite(o.distance) || o.distance > 20);
+
+    for (let i = closeOffers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [closeOffers[i], closeOffers[j]] = [closeOffers[j], closeOffers[i]];
+    }
+    for (let i = otherOffers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [otherOffers[i], otherOffers[j]] = [otherOffers[j], otherOffers[i]];
+    }
+    res.json({ success: true, offers: [...closeOffers, ...otherOffers] });
+  } else {
+    for (let i = mappedOffers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [mappedOffers[i], mappedOffers[j]] = [mappedOffers[j], mappedOffers[i]];
+    }
+    res.json({ success: true, offers: mappedOffers });
+  }
 });
 
 app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, res) => {
@@ -3176,6 +3227,7 @@ registerAdBanners(app, {
   bucket: OFFER_IMAGE_BUCKET,
   signedUrlHelper: signedOfferImageUrl,
   setOfferBannerPathHelper: setOfferBannerPath,
+  uploadImageHelper: uploadOfferImage,
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {

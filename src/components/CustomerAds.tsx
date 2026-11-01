@@ -35,7 +35,7 @@ const themes: Record<string, string> = {
   green: 'from-emerald-700 to-teal-500',
 };
 
-export function CustomerAds() {
+export function CustomerAds({ location }: { location?: { latitude?: number; longitude?: number } | null } = {}) {
   const { i18n } = useTranslation(undefined, { bindI18n: 'languageChanged loaded' });
   const slider = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -44,8 +44,16 @@ export function CustomerAds() {
   const [previewAd, setPreviewAd] = useState<PreviewOfferData | null>(null);
 
   const ads = useQuery({
-    queryKey: ['customer', 'ads'],
-    queryFn: () => apiFetch<{ ads: Ad[] }>('/api/customer/ads'),
+    queryKey: ['customer', 'ads', location?.latitude, location?.longitude],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (location?.latitude != null && location?.longitude != null) {
+        params.set('latitude', String(location.latitude));
+        params.set('longitude', String(location.longitude));
+      }
+      const qs = params.toString();
+      return apiFetch<{ ads: Ad[] }>(`/api/customer/ads${qs ? '?' + qs : ''}`);
+    },
     staleTime: 60_000,
   });
 

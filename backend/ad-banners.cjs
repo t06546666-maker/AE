@@ -3,13 +3,22 @@ const path = require('path');
 const crypto = require('crypto');
 
 const BANNERS_FILE = path.join(__dirname, 'ad-banners.json');
-const APP_SETTINGS_KEY = 'app_ad_banners';
+const CONFIG_BUCKET = 'app-config';
+const CONFIG_FILE = 'ad-banners.json';
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return Infinity;
+  const nlat1 = Number(lat1), nlon1 = Number(lon1), nlat2 = Number(lat2), nlon2 = Number(lon2);
+  if (!Number.isFinite(nlat1) || !Number.isFinite(nlon1) || !Number.isFinite(nlat2) || !Number.isFinite(nlon2)) return Infinity;
+  const rad = Math.PI / 180;
+  const a = Math.sin((nlat2 - nlat1) * rad / 2) ** 2 + Math.cos(nlat1 * rad) * Math.cos(nlat2 * rad) * Math.sin((nlon2 - nlon1) * rad / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+}
 
 function getBannerImageExtension(mimetype) {
-  if (mimetype === 'image/jpeg') return 'jpg';
   if (mimetype === 'image/png') return 'png';
   if (mimetype === 'image/webp') return 'webp';
-  return 'bin';
+  return 'jpg';
 }
 
 function loadLocalBanners() {
@@ -36,38 +45,31 @@ function saveLocalBanners(banners) {
 async function syncToSupabase(supabase, banners) {
   if (!supabase) return;
   try {
-    await supabase.from('app_settings').upsert({
-      key: APP_SETTINGS_KEY,
-      value: JSON.stringify(banners),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'key' });
+    const payload = Buffer.from(JSON.stringify(banners, null, 2));
+    await supabase.storage.from(CONFIG_BUCKET).upload(CONFIG_FILE, payload, {
+      upsert: true,
+      contentType: 'application/json',
+    });
   } catch (err) {
-    console.warn('[ad-banners] Supabase app_settings sync skipped:', err.message);
+    console.warn('[ad-banners] Storage sync skipped:', err.message);
   }
 }
 
 async function loadBannersFromStorage(supabase) {
-  const local = loadLocalBanners();
-  if (local && local.length > 0) return local;
-
   if (supabase) {
     try {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', APP_SETTINGS_KEY)
-        .maybeSingle();
-
-      if (data?.value) {
-        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-        if (Array.isArray(parsed)) {
+      const { data, error } = await supabase.storage.from(CONFIG_BUCKET).download(CONFIG_FILE);
+      if (data && !error) {
+        const text = await data.text();
+        const parsed = JSON.parse(text || '[]');
+        if (Array.isArray(parsed) && parsed.length > 0) {
           saveLocalBanners(parsed);
           return parsed;
         }
       }
     } catch (_) {}
   }
-  return local;
+  return loadLocalBanners();
 }
 
 async function resolveBannerImageUrl(banner, supabase, bucket, signedUrlHelper) {
@@ -92,20 +94,22 @@ async function resolveBannerImageUrl(banner, supabase, bucket, signedUrlHelper) 
   return banner.imageUrl || '';
 }
 
-function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, upload, bucket, signedUrlHelper, setOfferBannerPathHelper }) {
+function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, upload, bucket, signedUrlHelper, setOfferBannerPathHelper, uploadImageHelper }) {
   // Public / Customer endpoint: GET /api/customer/banners
   const customerHandler = async (req, res) => {
     try {
-      const placement = req.query.placement || 'top';
       const allBanners = await loadBannersFromStorage(supabase);
       const activeBanners = allBanners.filter(b => b.active);
-      const filtered = placement === 'all'
-        ? activeBanners
-        : activeBanners.filter(b => (b.placement || 'top') === placement);
 
-      const resolved = await Promise.all(filtered.map(async b => {
+      const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
+      const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
+      const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
+
+      const resolved = await Promise.all(activeBanners.map(async b => {
         const imgUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
         const offerImgUrl = b.offerImagePath ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper) : imgUrl;
+        const dist = nearby ? calculateDistance(latitude, longitude, b.latitude, b.longitude) : Infinity;
+
         return {
           id: b.id,
           offerId: b.offerId || b.linkValue,
@@ -115,8 +119,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           merchantAddress: b.merchantAddress,
           title: b.title,
           subtitle: b.subtitle || '',
-          placement: b.placement || 'top',
-          linkType: b.linkType || 'offer',
+          placement: 'top',
+          linkType: 'offer',
           linkValue: b.linkValue || b.offerId || '',
           active: b.active,
           displayOrder: Number(b.displayOrder || 0),
@@ -124,11 +128,17 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           bannerImageUrl: imgUrl,
           offerImageUrl: offerImgUrl,
           imagePath: b.imagePath,
+          distance: dist,
           createdAt: b.createdAt,
         };
       }));
 
-      resolved.sort((a, b) => (a.displayOrder - b.displayOrder) || (new Date(b.createdAt) - new Date(a.createdAt)));
+      if (nearby) {
+        resolved.sort((a, b) => a.distance - b.distance);
+      } else {
+        resolved.sort((a, b) => (a.displayOrder - b.displayOrder) || (new Date(b.createdAt) - new Date(a.createdAt)));
+      }
+
       res.json({ banners: resolved });
     } catch (err) {
       console.error('[ad-banners] Error getting customer banners:', err);
@@ -156,8 +166,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           subtitle: b.subtitle || '',
           category: b.category || '',
           expiresAt: b.expiresAt || '',
-          placement: b.placement || 'top',
-          linkType: b.linkType || 'offer',
+          placement: 'top',
+          linkType: 'offer',
           linkValue: b.linkValue || b.offerId || '',
           active: Boolean(b.active),
           displayOrder: Number(b.displayOrder || 0),
@@ -178,10 +188,29 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     }
   });
 
-  // Admin endpoint: POST /api/admin/banners
-  const uploadMiddleware = upload && typeof upload.single === 'function'
-    ? upload.single('image')
-    : (_req, _res, next) => next();
+  // Admin upload middleware supporting any image field name
+  const uploadMiddleware = (req, res, next) => {
+    if (!upload) return next();
+    if (typeof upload.any === 'function') {
+      return upload.any()(req, res, (err) => {
+        if (err) {
+          console.warn('[ad-banners] Upload warning/error:', err.message);
+          return res.status(400).json({ error: err.message || 'Image upload failed' });
+        }
+        if (req.files && req.files.length) {
+          req.file = req.files.find(f => f.fieldname === 'image' || f.fieldname === 'photo' || f.fieldname === 'bannerImage') || req.files[0];
+        }
+        next();
+      });
+    }
+    if (typeof upload.single === 'function') {
+      return upload.single('image')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.message || 'Image upload failed' });
+        next();
+      });
+    }
+    next();
+  };
 
   app.post('/api/admin/banners', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
@@ -196,13 +225,15 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       let expiresAt = (req.body.expiresAt || '').trim();
       let offerImagePath = (req.body.offerImagePath || '').trim();
       let offerImageUrl = (req.body.offerImageUrl || '').trim();
+      let latitude = null;
+      let longitude = null;
 
-      // If offerId provided and Supabase available, fetch offer details to auto-fill
+      // If offerId provided, load offer details from database
       if (offerId && supabase) {
         try {
           const { data: offer } = await supabase
             .from('offers')
-            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address)')
+            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address, latitude, longitude)')
             .eq('id', offerId)
             .maybeSingle();
 
@@ -216,24 +247,50 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
             category = category || offer.category || '';
             expiresAt = expiresAt || offer.expires_at || '';
             offerImagePath = offerImagePath || offer.image_path || '';
+            latitude = offer.merchants?.latitude || null;
+            longitude = offer.merchants?.longitude || null;
+          }
+        } catch (_) {}
+      }
+
+      // If merchantId provided without coordinates, check merchant table
+      if (merchantId && !latitude && supabase) {
+        try {
+          const { data: m } = await supabase.from('merchants').select('name, phone, address, latitude, longitude').eq('id', merchantId).maybeSingle();
+          if (m) {
+            merchantName = merchantName || m.name || '';
+            merchantPhone = merchantPhone || m.phone || '';
+            merchantAddress = merchantAddress || m.address || '';
+            latitude = m.latitude || null;
+            longitude = m.longitude || null;
           }
         } catch (_) {}
       }
 
       if (!title) {
-        title = 'Special Offer';
+        title = merchantName ? `Featured Offer from ${merchantName}` : 'Special Promotion';
       }
 
       let imagePath = '';
       let imageUrl = '';
 
       if (req.file) {
-        const ext = getBannerImageExtension(req.file.mimetype);
-        const fileId = crypto.randomUUID();
-        const storagePath = `banners/${fileId}.${ext}`;
-
-        if (supabase && bucket) {
+        const uploadFolder = merchantId && /^[0-9a-f-]{36}$/i.test(merchantId) ? merchantId : 'admin';
+        
+        // Use uploadImageHelper if available (delegates directly to uploadOfferImage in server.js)
+        if (typeof uploadImageHelper === 'function') {
           try {
+            imagePath = await uploadImageHelper(uploadFolder, req.file);
+          } catch (uploadErr) {
+            console.warn('[ad-banners] uploadImageHelper error, falling back:', uploadErr.message);
+          }
+        }
+
+        if (!imagePath && supabase && bucket) {
+          try {
+            const ext = getBannerImageExtension(req.file.mimetype);
+            const fileId = crypto.randomUUID();
+            const storagePath = `${uploadFolder}/${fileId}.${ext}`;
             const { error: uploadErr } = await supabase.storage
               .from(bucket)
               .upload(storagePath, req.file.buffer, {
@@ -241,14 +298,16 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
                 cacheControl: '3600',
                 upsert: false,
               });
-            if (uploadErr) throw uploadErr;
-            imagePath = storagePath;
-          } catch (uploadErr) {
-            console.warn('[ad-banners] Storage upload fallback:', uploadErr.message);
+            if (!uploadErr) imagePath = storagePath;
+          } catch (err) {
+            console.warn('[ad-banners] Supabase storage upload failed:', err.message);
           }
         }
 
         if (!imagePath) {
+          // Local fallback
+          const ext = getBannerImageExtension(req.file.mimetype);
+          const fileId = crypto.randomUUID();
           const publicUploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'banners');
           try {
             if (!fs.existsSync(publicUploadsDir)) fs.mkdirSync(publicUploadsDir, { recursive: true });
@@ -265,12 +324,11 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         imagePath = req.body.imageUrl.trim();
         imageUrl = imagePath;
       } else if (offerImagePath) {
-        // Optional banner image: falls back to offer image poster
         imagePath = offerImagePath;
       }
 
       if (!imagePath && !offerImageUrl) {
-        return res.status(400).json({ error: 'Please choose an offer with an image or upload a banner image.' });
+        return res.status(400).json({ error: 'Please choose an offer with a photo or upload a banner image.' });
       }
 
       const active = req.body.active !== 'false' && req.body.active !== false;
@@ -283,6 +341,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         merchantName,
         merchantPhone,
         merchantAddress,
+        latitude,
+        longitude,
         title,
         subtitle,
         category,
@@ -341,12 +401,14 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       let expiresAt = req.body.expiresAt !== undefined ? String(req.body.expiresAt).trim() : (existing.expiresAt || '');
       let offerImagePath = req.body.offerImagePath !== undefined ? String(req.body.offerImagePath).trim() : (existing.offerImagePath || '');
       let offerImageUrl = req.body.offerImageUrl !== undefined ? String(req.body.offerImageUrl).trim() : (existing.offerImageUrl || '');
+      let latitude = existing.latitude || null;
+      let longitude = existing.longitude || null;
 
       if (offerId && offerId !== existing.offerId && supabase) {
         try {
           const { data: offer } = await supabase
             .from('offers')
-            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address)')
+            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address, latitude, longitude)')
             .eq('id', offerId)
             .maybeSingle();
 
@@ -360,6 +422,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
             category = offer.category || '';
             expiresAt = offer.expires_at || '';
             offerImagePath = offer.image_path || '';
+            latitude = offer.merchants?.latitude || null;
+            longitude = offer.merchants?.longitude || null;
           }
         } catch (_) {}
       }
@@ -368,12 +432,20 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       let imageUrl = existing.imageUrl;
 
       if (req.file) {
-        const ext = getBannerImageExtension(req.file.mimetype);
-        const fileId = crypto.randomUUID();
-        const storagePath = `banners/${fileId}.${ext}`;
-
-        if (supabase && bucket) {
+        const uploadFolder = merchantId && /^[0-9a-f-]{36}$/i.test(merchantId) ? merchantId : 'admin';
+        if (typeof uploadImageHelper === 'function') {
           try {
+            imagePath = await uploadImageHelper(uploadFolder, req.file);
+          } catch (uploadErr) {
+            console.warn('[ad-banners] uploadImageHelper update error:', uploadErr.message);
+          }
+        }
+
+        if (imagePath === existing.imagePath && supabase && bucket) {
+          try {
+            const ext = getBannerImageExtension(req.file.mimetype);
+            const fileId = crypto.randomUUID();
+            const storagePath = `${uploadFolder}/${fileId}.${ext}`;
             const { error: uploadErr } = await supabase.storage
               .from(bucket)
               .upload(storagePath, req.file.buffer, {
@@ -381,28 +453,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
                 cacheControl: '3600',
                 upsert: false,
               });
-            if (!uploadErr) {
-              if (existing.imagePath && existing.imagePath.startsWith('banners/')) {
-                await supabase.storage.from(bucket).remove([existing.imagePath]).catch(() => {});
-              }
-              imagePath = storagePath;
-              imageUrl = '';
-            }
+            if (!uploadErr) imagePath = storagePath;
           } catch (_) {}
-        }
-
-        if (imagePath === existing.imagePath && req.file) {
-          const publicUploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'banners');
-          try {
-            if (!fs.existsSync(publicUploadsDir)) fs.mkdirSync(publicUploadsDir, { recursive: true });
-            const localFilename = `${fileId}.${ext}`;
-            fs.writeFileSync(path.join(publicUploadsDir, localFilename), req.file.buffer);
-            imagePath = `/uploads/banners/${localFilename}`;
-            imageUrl = imagePath;
-          } catch (_) {
-            imagePath = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-            imageUrl = imagePath;
-          }
         }
       } else if (req.body.imageUrl && req.body.imageUrl.trim() !== existing.imageUrl) {
         imagePath = req.body.imageUrl.trim();
@@ -420,6 +472,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         merchantName,
         merchantPhone,
         merchantAddress,
+        latitude,
+        longitude,
         title,
         subtitle,
         category,
@@ -493,13 +547,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
 
-      if (removed.imagePath && removed.imagePath.startsWith('banners/') && supabase && bucket) {
+      if (removed.imagePath && removed.imagePath.includes('/') && supabase && bucket) {
         await supabase.storage.from(bucket).remove([removed.imagePath]).catch(() => {});
-      } else if (removed.imagePath && removed.imagePath.startsWith('/uploads/banners/')) {
-        const localFile = path.join(__dirname, '..', 'public', removed.imagePath.replace(/^\//, ''));
-        if (fs.existsSync(localFile)) {
-          fs.unlinkSync(localFile);
-        }
       }
 
       res.json({ success: true, message: 'Banner deleted successfully.' });
@@ -511,15 +560,19 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 }
 
 // Helper for server.js to get active banners for /api/customer/ads
-async function getActiveBannersForAds(supabase, bucket, signedUrlHelper) {
+async function getActiveBannersForAds(supabase, bucket, signedUrlHelper, userCoords) {
   try {
     const all = await loadBannersFromStorage(supabase);
-    const topActive = all.filter(b => b.active && (b.placement === 'top' || !b.placement));
+    const topActive = all.filter(b => b.active);
+    const nearby = userCoords && Number.isFinite(userCoords.latitude) && Number.isFinite(userCoords.longitude);
+
     return await Promise.all(topActive.map(async b => {
       const resolvedUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
       const offerImgUrl = b.offerImagePath
         ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper)
         : (b.offerImageUrl || resolvedUrl);
+
+      const dist = nearby ? calculateDistance(userCoords.latitude, userCoords.longitude, b.latitude, b.longitude) : Infinity;
 
       return {
         id: `banner-${b.id}`,
@@ -544,6 +597,9 @@ async function getActiveBannersForAds(supabase, bucket, signedUrlHelper) {
         isAdBanner: true,
         linkType: 'offer',
         linkValue: b.offerId || b.linkValue,
+        distance: dist,
+        latitude: b.latitude,
+        longitude: b.longitude,
       };
     }));
   } catch (err) {
@@ -557,4 +613,5 @@ module.exports = {
   getActiveBannersForAds,
   loadBannersFromStorage,
   saveLocalBanners,
+  calculateDistance,
 };

@@ -8,6 +8,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
 import { useCustomerDashboard, useCustomerOffers } from '../../hooks/useCustomerData';
+import { useCustomerLocation } from '../../hooks/useCustomerLocation';
 import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
@@ -17,6 +18,7 @@ import './home-reference.css';
 import {ProductListPanel} from '../../components/ProductListPanel';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
+  const customerLocation = useCustomerLocation(false);
   const dailyGreeting = useDailyGreeting('customer');
   const { data, isLoading } = useCustomerDashboard();
   const { t, i18n } = useTranslation();
@@ -45,9 +47,9 @@ export function CustomerHome({ user }: { user: UserProfile }) {
     getNextPageParam:last=>last.pagination.page<last.pagination.totalPages?last.pagination.page+1:undefined,
     enabled:productListOpen,
   });
-  const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent);
+  const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent, customerLocation.data);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
-  const offers = (offersData?.offers || []).slice(0, 6);
+  const offers = (offersData?.offers || []).slice(0, 16);
   const merchants = merchantDirectory.data?.pages.flatMap(page=>page.merchants) || [];
   const location = useLocation();
   useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductRequestId(new URLSearchParams(location.search).get('requestId') || ''); setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
@@ -127,7 +129,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         </Link>
 
         {/* Digital Ads Carousel */}
-        <CustomerAds />
+        <CustomerAds location={customerLocation.data} />
 
         <nav className="ae-home-shortcuts" aria-label={uiText("Customer quick actions")}>
           <Link to="/customer/shop-scan?mode=claim" className="qr"><QrCode/><span>{uiText("My QR Claim Points")}</span></Link>
