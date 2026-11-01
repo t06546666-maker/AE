@@ -3178,6 +3178,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
       distance: dist,
       latitude: o.merchants?.latitude,
       longitude: o.merchants?.longitude,
+      is_trending: Boolean(o.is_trending || o.trending || o.featured),
     };
   }));
 

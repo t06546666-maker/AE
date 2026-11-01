@@ -42,6 +42,8 @@ export type CustomerOffer = {
   title: string;
   description: string;
   imageUrl?: string;
+  bannerImageUrl?: string | null;
+  offerImageUrl?: string;
   merchant_id?: string;
   merchant_name?: string;
   merchant_raw_name?: string;
@@ -49,6 +51,10 @@ export type CustomerOffer = {
   merchant_address?: string;
   category?: string;
   expires_at: string;
+  distance?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_trending?: boolean;
 };
 
 export type PaginationMeta = {
