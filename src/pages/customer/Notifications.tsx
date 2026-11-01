@@ -12,6 +12,7 @@ interface Announcement {
   title: string;
   body: string;
   url?: string;
+  image_url?: string;
   created_at: string;
 }
 
@@ -51,7 +52,17 @@ export function CustomerNotifications() {
               {announcements.map((item) => {
                 const isExternal = typeof item.url === 'string' && (item.url.startsWith('http://') || item.url.startsWith('https://'));
                 return (
-                  <div key={item.id} className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/40 p-4 shadow-sm space-y-2">
+                  <div key={item.id} className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/40 p-4 shadow-sm space-y-2.5">
+                    {item.image_url && (
+                      <div className="overflow-hidden rounded-xl border border-blue-100/60 bg-white shadow-xs">
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          className="w-full max-h-52 object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
                         <Bell size={16} />

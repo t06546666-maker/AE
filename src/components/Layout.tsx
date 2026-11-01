@@ -19,6 +19,7 @@ const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
   ['/admin/banners', 'Ad Banners', ImagePlus],
+  ['/admin/notifications', 'Push Notifications', Bell],
   ['/qr-common', 'QR Common', QrCode],
   ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],

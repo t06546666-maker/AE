@@ -59,15 +59,23 @@ async function initializeFirebaseAdmin() {
 }
 firebaseInitializationPromise = initializeFirebaseAdmin();
 
-async function sendPushNotification(token, title, body, data = {}) {
+async function sendPushNotification(token, title, body, data = {}, imageUrl = null) {
   await firebaseInitializationPromise;
   if (!firebaseInitialized || !token) return false;
   try {
     ({ getMessaging } = await import('firebase-admin/messaging'));
     await getMessaging().send({
       token,
-      notification: { title, body },
-      data: Object.fromEntries(Object.entries(data).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)])),
+      notification: {
+        title,
+        body,
+        ...(imageUrl ? { imageUrl } : {}),
+      },
+      data: Object.fromEntries(
+        Object.entries({ ...data, ...(imageUrl ? { imageUrl } : {}) })
+          .filter(([, value]) => value != null)
+          .map(([key, value]) => [key, String(value)])
+      ),
       android: {
         priority: 'high',
         // Checkout requests expire after ten minutes. Do not alert a phone
@@ -76,9 +84,18 @@ async function sendPushNotification(token, title, body, data = {}) {
         notification: {
           channelId: 'ae_notifications',
           sound: 'default',
+          ...(imageUrl ? { imageUrl } : {}),
           ...(data.type === 'shop_checkout' && data.requestId ? { tag: `shop-checkout-${data.requestId}` } : {})
         }
-      }
+      },
+      ...(imageUrl ? {
+        apns: {
+          payload: {
+            aps: { 'mutable-content': 1 },
+          },
+          fcm_options: { image: imageUrl },
+        },
+      } : {}),
     });
     return true;
   } catch (error) {
@@ -3217,6 +3234,7 @@ app.get('/api/customer/announcements', requireCustomerAuth, async (req, res) => 
         title: data.title || '',
         body: data.body || '',
         url: data.url || '',
+        image_url: data.image_url || data.imageUrl || '',
         created_at: data.created_at?.toDate ? data.created_at.toDate().toISOString() : (data.created_at || new Date().toISOString()),
       };
     });
@@ -3297,6 +3315,17 @@ registerAdBanners(app, {
   signedUrlHelper: signedOfferImageUrl,
   setOfferBannerPathHelper: setOfferBannerPath,
   uploadImageHelper: uploadOfferImage,
+});
+
+require('./backend/admin-notifications.cjs').registerAdminNotifications(app, {
+  auth: requireAuth,
+  adminRole: requireRole('admin'),
+  supabase: supabaseAdmin,
+  firebaseReady: async () => {
+    await firebaseInitializationPromise;
+    return firebaseInitialized;
+  },
+  uploadMiddleware: offerImageMiddleware,
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
