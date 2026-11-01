@@ -28,7 +28,7 @@ function registerAdminNotifications(app, {
   }
 
   /**
-   * Helper to execute broadcast notification to customers and/or merchants
+   * Helper to execute broadcast notification to customers and/or merchants or a specific customer
    */
   async function executeBroadcastNotification({
     title,
@@ -36,12 +36,32 @@ function registerAdminNotifications(app, {
     url = '',
     imageUrl = '',
     target = 'customers',
+    customerId = null,
+    customerName = '',
+    customerPhone = '',
     scheduledId = null,
   }) {
     const { db, messaging, FieldValue } = await getFirebaseInstances();
 
-    // 1. Save in customer in-app notifications if audience includes customers
-    if (target === 'customers' || target === 'all') {
+    // 1. Save in customer in-app notifications
+    // If targeted to a single customer, store customer_id so only they receive it
+    if (target === 'single_customer' && customerId) {
+      try {
+        await db.collection('ae_customer_announcements').add({
+          title,
+          body,
+          url: url || '',
+          image_url: imageUrl || '',
+          target: 'single_customer',
+          customer_id: String(customerId),
+          customer_name: customerName || '',
+          customer_phone: customerPhone || '',
+          created_at: FieldValue.serverTimestamp(),
+        });
+      } catch (saveErr) {
+        console.warn('[admin-notifications] Error saving single customer in-app announcement:', saveErr.message);
+      }
+    } else if (target === 'customers' || target === 'all') {
       try {
         await db.collection('ae_customer_announcements').add({
           title,
@@ -59,7 +79,22 @@ function registerAdminNotifications(app, {
     // 2. Collect eligible push tokens
     const tokens = [];
 
-    // Customers from Firestore ae_customer_notifications
+    // Target: Single specific customer
+    if (target === 'single_customer' && customerId) {
+      try {
+        const custDoc = await db.collection('ae_customer_notifications').doc(String(customerId)).get();
+        if (custDoc.exists) {
+          const data = custDoc.data();
+          if (data && data.push_token && data.push_enabled !== false) {
+            tokens.push(data.push_token);
+          }
+        }
+      } catch (scErr) {
+        console.warn('[admin-notifications] Error reading specific customer token:', scErr.message);
+      }
+    }
+
+    // Target: All customers
     if (target === 'customers' || target === 'all') {
       try {
         const customerSnap = await db.collection('ae_customer_notifications').get();
@@ -74,7 +109,7 @@ function registerAdminNotifications(app, {
       }
     }
 
-    // Merchants / Staff from Supabase profiles
+    // Target: All merchants
     if ((target === 'merchants' || target === 'all') && supabase) {
       try {
         const { data: profiles, error } = await supabase
@@ -96,7 +131,7 @@ function registerAdminNotifications(app, {
     const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)));
 
     if (uniqueTokens.length === 0) {
-      // Record history even if 0 devices found
+      // Record history even if 0 push devices found (notification is still saved in in-app inbox)
       try {
         await db.collection('ae_notification_history').add({
           title,
@@ -104,6 +139,9 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
+          customer_id: customerId || null,
+          customer_name: customerName || '',
+          customer_phone: customerPhone || '',
           scheduled_id: scheduledId || null,
           sent_at: FieldValue.serverTimestamp(),
           delivered: 0,
@@ -191,6 +229,9 @@ function registerAdminNotifications(app, {
         url: url || '',
         image_url: imageUrl || '',
         target,
+        customer_id: customerId || null,
+        customer_name: customerName || '',
+        customer_phone: customerPhone || '',
         scheduled_id: scheduledId || null,
         sent_at: FieldValue.serverTimestamp(),
         delivered: successCount,
@@ -247,6 +288,9 @@ function registerAdminNotifications(app, {
             url: data.url || '',
             imageUrl: data.image_url || '',
             target: data.target || 'customers',
+            customerId: data.customer_id || null,
+            customerName: data.customer_name || '',
+            customerPhone: data.customer_phone || '',
             scheduledId: doc.id,
           });
 
@@ -281,6 +325,62 @@ function registerAdminNotifications(app, {
   // ----------------------------------------------------
   // API ROUTES
   // ----------------------------------------------------
+
+  /**
+   * GET /api/admin/customers/search-push
+   * Search customers by name, phone, or customer code and return their active push status
+   */
+  app.get('/api/admin/customers/search-push', auth, adminRole, async (req, res) => {
+    try {
+      const q = (req.query.q || '').trim();
+      if (!q || q.length < 1) {
+        return res.json({ success: true, customers: [] });
+      }
+
+      if (!supabase) {
+        return res.status(500).json({ success: false, error: 'Database is unavailable' });
+      }
+
+      const { data: customers, error } = await supabase
+        .from('customers')
+        .select('id, name, phone, customer_code, created_at')
+        .or(`name.ilike.%${q}%,phone.ilike.%${q}%,customer_code.ilike.%${q}%`)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        return res.status(500).json({ success: false, error: error.message });
+      }
+
+      const { db } = await getFirebaseInstances();
+
+      // Check push status in Firestore for each matching customer
+      const enriched = await Promise.all(
+        (customers || []).map(async (c) => {
+          let hasPushToken = false;
+          try {
+            const doc = await db.collection('ae_customer_notifications').doc(String(c.id)).get();
+            const d = doc.data();
+            hasPushToken = Boolean(d && d.push_token && d.push_enabled !== false);
+          } catch (e) {
+            // Ignore individual token read error
+          }
+          return {
+            id: c.id,
+            name: c.name || 'Customer',
+            phone: c.phone || '',
+            customer_code: c.customer_code || '',
+            hasPushToken,
+          };
+        })
+      );
+
+      res.json({ success: true, customers: enriched });
+    } catch (err) {
+      console.error('[admin-notifications] Customer push search error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
 
   /**
    * GET /api/admin/notifications/stats
@@ -352,6 +452,9 @@ function registerAdminNotifications(app, {
           url: d.url || '',
           image_url: d.image_url || '',
           target: d.target || 'customers',
+          customer_id: d.customer_id || null,
+          customer_name: d.customer_name || '',
+          customer_phone: d.customer_phone || '',
           scheduled_at: d.scheduled_at,
           status: d.status || 'scheduled',
           created_at: d.created_at?.toDate ? d.created_at.toDate().toISOString() : d.created_at,
@@ -374,6 +477,9 @@ function registerAdminNotifications(app, {
           url: d.url || '',
           image_url: d.image_url || '',
           target: d.target || 'customers',
+          customer_id: d.customer_id || null,
+          customer_name: d.customer_name || '',
+          customer_phone: d.customer_phone || '',
           scheduled_id: d.scheduled_id || null,
           delivered: Number(d.delivered || 0),
           failed: Number(d.failed || 0),
@@ -396,7 +502,7 @@ function registerAdminNotifications(app, {
   /**
    * POST /api/admin/broadcast-notification
    * Broadcast immediately or schedule for future date/time
-   * Accepts multipart/form-data (with optional file upload) or JSON
+   * Supports target: 'customers' | 'merchants' | 'all' | 'single_customer'
    */
   app.post('/api/admin/broadcast-notification', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
@@ -404,6 +510,9 @@ function registerAdminNotifications(app, {
       const body = (req.body.body || '').trim();
       const url = (req.body.url || '').trim();
       const target = (req.body.target || 'customers').trim();
+      const customerId = (req.body.customerId || req.body.customer_id || '').trim();
+      const customerName = (req.body.customerName || req.body.customer_name || '').trim();
+      const customerPhone = (req.body.customerPhone || req.body.customer_phone || '').trim();
       const scheduledAtRaw = (req.body.scheduled_at || '').trim();
 
       if (!title) {
@@ -411,6 +520,10 @@ function registerAdminNotifications(app, {
       }
       if (!body) {
         return res.status(400).json({ success: false, error: 'Notification message body is required.' });
+      }
+
+      if (target === 'single_customer' && !customerId) {
+        return res.status(400).json({ success: false, error: 'Please select a customer to send this notification to.' });
       }
 
       // Handle optional image upload
@@ -444,17 +557,21 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
+          customer_id: customerId || null,
+          customer_name: customerName || '',
+          customer_phone: customerPhone || '',
           scheduled_at: scheduledAtIso,
           status: 'scheduled',
           created_at: FieldValue.serverTimestamp(),
         });
 
+        const targetDesc = target === 'single_customer' ? (customerName || 'customer') : 'audience';
         return res.json({
           success: true,
           scheduled: true,
           id: docRef.id,
           scheduled_at: scheduledAtIso,
-          message: `Push notification scheduled successfully for ${new Date(scheduledAtIso).toLocaleString('en-IN')}`,
+          message: `Push notification for ${targetDesc} scheduled for ${new Date(scheduledAtIso).toLocaleString('en-IN')}`,
         });
       }
 
@@ -465,7 +582,21 @@ function registerAdminNotifications(app, {
         url,
         imageUrl,
         target,
+        customerId,
+        customerName,
+        customerPhone,
       });
+
+      let responseMsg = '';
+      if (target === 'single_customer') {
+        responseMsg = result.delivered > 0
+          ? `Push notification delivered to ${customerName || 'customer'}'s phone!`
+          : `Saved to ${customerName || 'customer'}'s in-app inbox. (Phone app not currently registered for push)`;
+      } else {
+        responseMsg = result.total > 0
+          ? `Notification successfully broadcast to ${result.delivered} device(s)!`
+          : 'Notification saved to in-app inbox. (No active push devices were registered at this time)';
+      }
 
       return res.json({
         success: true,
@@ -473,9 +604,7 @@ function registerAdminNotifications(app, {
         delivered: result.delivered,
         failed: result.failed,
         total: result.total,
-        message: result.total > 0
-          ? `Notification successfully broadcast to ${result.delivered} device(s)!`
-          : 'Notification saved to in-app inbox. (No active push devices were registered at this time)',
+        message: responseMsg,
       });
     } catch (err) {
       console.error('[admin-notifications] Broadcast error:', err);

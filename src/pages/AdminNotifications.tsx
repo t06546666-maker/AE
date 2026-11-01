@@ -1,5 +1,6 @@
-import { useState, useRef, type FormEvent, type ChangeEvent, useMemo } from 'react';
+import { useState, useRef, useEffect, type FormEvent, type ChangeEvent, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   Bell,
   Send,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Users,
+  User,
   Store,
   Globe,
   Smartphone,
@@ -18,6 +20,8 @@ import {
   X,
   AlertCircle,
   RefreshCw,
+  Search,
+  Check,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
@@ -31,13 +35,24 @@ interface NotificationStats {
   totalTokens: number;
 }
 
+interface CustomerSearchResult {
+  id: string;
+  name: string;
+  phone: string;
+  customer_code: string;
+  hasPushToken: boolean;
+}
+
 interface ScheduledNotification {
   id: string;
   title: string;
   body: string;
   url?: string;
   image_url?: string;
-  target: 'customers' | 'merchants' | 'all';
+  target: 'customers' | 'merchants' | 'all' | 'single_customer';
+  customer_id?: string;
+  customer_name?: string;
+  customer_phone?: string;
   scheduled_at: string;
   status: string;
   created_at?: string;
@@ -50,6 +65,9 @@ interface NotificationHistoryItem {
   url?: string;
   image_url?: string;
   target: string;
+  customer_id?: string;
+  customer_name?: string;
+  customer_phone?: string;
   sent_at: string;
   delivered: number;
   failed: number;
@@ -65,9 +83,12 @@ export function AdminNotifications() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Form states
-  const [target, setTarget] = useState<'customers' | 'merchants' | 'all'>('customers');
+  const [target, setTarget] = useState<'customers' | 'merchants' | 'all' | 'single_customer'>('customers');
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
@@ -76,6 +97,23 @@ export function AdminNotifications() {
   const [dispatchMode, setDispatchMode] = useState<'now' | 'schedule'>('now');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
   const [activeTab, setActiveTab] = useState<'create' | 'scheduled' | 'history'>('create');
+
+  // Handle URL query parameters for pre-selecting a customer (e.g. from customer profile page)
+  useEffect(() => {
+    const custId = searchParams.get('customerId');
+    const custName = searchParams.get('customerName');
+    const custPhone = searchParams.get('customerPhone');
+    if (custId) {
+      setTarget('single_customer');
+      setSelectedCustomer({
+        id: custId,
+        name: custName ? decodeURIComponent(custName) : 'Customer',
+        phone: custPhone ? decodeURIComponent(custPhone) : '',
+        customer_code: '',
+        hasPushToken: true,
+      });
+    }
+  }, [searchParams]);
 
   // Stats query
   const { data: statsData } = useQuery<NotificationStats>({
@@ -89,6 +127,14 @@ export function AdminNotifications() {
     queryKey: ['admin', 'notifications', 'history'],
     queryFn: () => apiFetch<HistoryResponse>('/api/admin/notifications/history'),
     staleTime: 15_000,
+  });
+
+  // Customer search query (debounced)
+  const { data: customerSearchResults, isFetching: searchingCustomers } = useQuery<{ success: boolean; customers: CustomerSearchResult[] }>({
+    queryKey: ['admin', 'customers', 'search-push', customerSearchQuery],
+    queryFn: () => apiFetch<{ success: boolean; customers: CustomerSearchResult[] }>(`/api/admin/customers/search-push?q=${encodeURIComponent(customerSearchQuery.trim())}`),
+    enabled: target === 'single_customer' && !selectedCustomer && customerSearchQuery.trim().length >= 1,
+    staleTime: 10_000,
   });
 
   // Image selection handler
@@ -129,6 +175,12 @@ export function AdminNotifications() {
       if (url.trim()) form.append('url', url.trim());
       form.append('target', target);
 
+      if (target === 'single_customer' && selectedCustomer) {
+        form.append('customerId', selectedCustomer.id);
+        form.append('customerName', selectedCustomer.name);
+        form.append('customerPhone', selectedCustomer.phone);
+      }
+
       if (dispatchMode === 'schedule' && scheduledDateTime) {
         form.append('scheduled_at', new Date(scheduledDateTime).toISOString());
       }
@@ -146,7 +198,7 @@ export function AdminNotifications() {
       if (data.scheduled) {
         showToast(data.message || 'Notification scheduled successfully!');
       } else {
-        showToast(data.message || `Notification delivered to ${data.delivered || 0} device(s)!`);
+        showToast(data.message || 'Notification sent successfully!');
       }
 
       // Reset form
@@ -183,6 +235,10 @@ export function AdminNotifications() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (target === 'single_customer' && !selectedCustomer) {
+      showToast('Please search and select a customer first.', 'error');
+      return;
+    }
     if (!title.trim()) {
       showToast('Please enter a notification title', 'error');
       return;
@@ -218,7 +274,7 @@ export function AdminNotifications() {
     <div className="admin-notifications-page" style={{ paddingBottom: '70px', maxWidth: '1200px', margin: '0 auto' }}>
       <PageHeader
         title={uiText("Push Notifications & Broadcasts")}
-        subtitle={uiText("Send immediate or scheduled push notifications with rich images and redirect links directly to customer phones.")}
+        subtitle={uiText("Send immediate or scheduled push notifications with rich images and redirect links to all customers, merchants, or a specific customer.")}
         actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
@@ -371,7 +427,7 @@ export function AdminNotifications() {
           <form onSubmit={handleSubmit} className="panel" style={{ padding: '24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bell size={20} className="text-blue-600" />
-              <span>{uiText("Compose Broadcast Message")}</span>
+              <span>{uiText("Compose Message")}</span>
             </h2>
 
             {/* Audience Selector */}
@@ -379,12 +435,12 @@ export function AdminNotifications() {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>
                 {uiText("Target Audience")}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setTarget('customers')}
                   style={{
-                    padding: '10px 12px',
+                    padding: '10px 8px',
                     borderRadius: '10px',
                     border: target === 'customers' ? '2px solid #2563eb' : '1px solid #e2e8f0',
                     background: target === 'customers' ? '#eff6ff' : '#fff',
@@ -395,18 +451,40 @@ export function AdminNotifications() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '4px',
-                    fontSize: '12px',
+                    fontSize: '11px',
                   }}
                 >
-                  <Users size={18} />
+                  <Users size={17} />
                   <span>{uiText("All Customers")}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTarget('single_customer')}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: target === 'single_customer' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                    background: target === 'single_customer' ? '#eff6ff' : '#fff',
+                    color: target === 'single_customer' ? '#1d4ed8' : '#475569',
+                    fontWeight: target === 'single_customer' ? 700 : 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <User size={17} />
+                  <span>{uiText("Select Customer")}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setTarget('merchants')}
                   style={{
-                    padding: '10px 12px',
+                    padding: '10px 8px',
                     borderRadius: '10px',
                     border: target === 'merchants' ? '2px solid #2563eb' : '1px solid #e2e8f0',
                     background: target === 'merchants' ? '#eff6ff' : '#fff',
@@ -417,10 +495,10 @@ export function AdminNotifications() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '4px',
-                    fontSize: '12px',
+                    fontSize: '11px',
                   }}
                 >
-                  <Store size={18} />
+                  <Store size={17} />
                   <span>{uiText("All Merchants")}</span>
                 </button>
 
@@ -428,7 +506,7 @@ export function AdminNotifications() {
                   type="button"
                   onClick={() => setTarget('all')}
                   style={{
-                    padding: '10px 12px',
+                    padding: '10px 8px',
                     borderRadius: '10px',
                     border: target === 'all' ? '2px solid #2563eb' : '1px solid #e2e8f0',
                     background: target === 'all' ? '#eff6ff' : '#fff',
@@ -439,14 +517,149 @@ export function AdminNotifications() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '4px',
-                    fontSize: '12px',
+                    fontSize: '11px',
                   }}
                 >
-                  <Globe size={18} />
+                  <Globe size={17} />
                   <span>{uiText("Everyone")}</span>
                 </button>
               </div>
             </div>
+
+            {/* If Single Customer is selected, show Customer Picker */}
+            {target === 'single_customer' && (
+              <div style={{ marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  {uiText("Select Customer")} <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+
+                {selectedCustomer ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      background: '#fff',
+                      borderRadius: '10px',
+                      border: '1.5px solid #bfdbfe',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px' }}>
+                        {selectedCustomer.name.slice(0, 2).toUpperCase() || 'CU'}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
+                          {selectedCustomer.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {selectedCustomer.phone} {selectedCustomer.customer_code ? `• ${selectedCustomer.customer_code}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {selectedCustomer.hasPushToken ? (
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: '#dcfce7', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Check size={12} />
+                          <span>{uiText("Phone Push Ready")}</span>
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                          {uiText("In-App Only")}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCustomer(null);
+                          setCustomerSearchQuery('');
+                          setSearchParams({});
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          padding: '4px',
+                        }}
+                        title={uiText("Change Customer")}
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        className="input"
+                        value={customerSearchQuery}
+                        onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                        placeholder={uiText("Type customer name, phone number, or code...")}
+                        style={{ width: '100%', fontSize: '13px', padding: '10px 14px 10px 36px' }}
+                      />
+                      <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+                      {searchingCustomers && (
+                        <RefreshCw size={14} className="spin" style={{ position: 'absolute', right: '12px', top: '13px', color: '#2563eb' }} />
+                      )}
+                    </div>
+
+                    {/* Results list */}
+                    {customerSearchResults?.customers && customerSearchResults.customers.length > 0 && (
+                      <div style={{ marginTop: '8px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', maxHeight: '190px', overflowY: 'auto' }}>
+                        {customerSearchResults.customers.map((c) => (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedCustomer(c);
+                              setCustomerSearchQuery('');
+                            }}
+                            style={{
+                              padding: '10px 14px',
+                              borderBottom: '1px solid #f1f5f9',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{c.name}</div>
+                              <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone} • {c.customer_code}</div>
+                            </div>
+
+                            <div>
+                              {c.hasPushToken ? (
+                                <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                                  ● {uiText("Push Ready")}
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '10px', background: '#f1f5f9', color: '#64748b' }}>
+                                  {uiText("In-App Only")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {customerSearchQuery.trim().length >= 2 && customerSearchResults?.customers?.length === 0 && !searchingCustomers && (
+                      <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+                        {uiText("No customer found matching your search.")}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Title */}
             <div style={{ marginBottom: '16px' }}>
@@ -655,7 +868,7 @@ export function AdminNotifications() {
               ) : (
                 <>
                   <Send size={18} />
-                  <span>{uiText("Send Push Broadcast Now")}</span>
+                  <span>{target === 'single_customer' ? uiText("Send Push to Customer Now") : uiText("Send Push Broadcast Now")}</span>
                 </>
               )}
             </button>
@@ -666,7 +879,9 @@ export function AdminNotifications() {
             <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Smartphone size={18} className="text-slate-600" />
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-                {uiText("Live Phone Lockscreen Preview")}
+                {target === 'single_customer' && selectedCustomer
+                  ? uiText("Live Preview for {{name}}", { name: selectedCustomer.name })
+                  : uiText("Live Phone Lockscreen Preview")}
               </h3>
             </div>
 
@@ -831,7 +1046,7 @@ export function AdminNotifications() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{item.title}</span>
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
-                          {item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
+                          {item.target === 'single_customer' ? `${uiText("Customer")}: ${item.customer_name || 'Individual'}` : item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
                         </span>
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
@@ -940,7 +1155,7 @@ export function AdminNotifications() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{item.title}</span>
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
-                          {item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
+                          {item.target === 'single_customer' ? `${uiText("Customer")}: ${item.customer_name || 'Individual'}` : item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
                         </span>
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>

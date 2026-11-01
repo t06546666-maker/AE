@@ -3226,18 +3226,25 @@ app.get('/api/customer/announcements', requireCustomerAuth, async (req, res) => 
     await firebaseInitializationPromise;
     if (!firebaseInitialized) return res.json({ success: true, announcements: [] });
     const { getFirestore } = await import('firebase-admin/firestore');
-    const snapshot = await getFirestore().collection('ae_customer_announcements').orderBy('created_at', 'desc').limit(20).get();
-    const announcements = snapshot.docs.map(doc => {
+    const snapshot = await getFirestore().collection('ae_customer_announcements').orderBy('created_at', 'desc').limit(40).get();
+    const customerId = String(req.customer?.id || '');
+    const announcements = [];
+    for (const doc of snapshot.docs) {
       const data = doc.data();
-      return {
+      // If customer_id is present, ensure it only appears for that specific customer
+      if (data.customer_id && String(data.customer_id) !== customerId) {
+        continue;
+      }
+      announcements.push({
         id: doc.id,
         title: data.title || '',
         body: data.body || '',
         url: data.url || '',
         image_url: data.image_url || data.imageUrl || '',
         created_at: data.created_at?.toDate ? data.created_at.toDate().toISOString() : (data.created_at || new Date().toISOString()),
-      };
-    });
+      });
+      if (announcements.length >= 20) break;
+    }
     res.json({ success: true, announcements });
   } catch (err) {
     console.warn('[announcements] Error loading announcements:', err.message);
