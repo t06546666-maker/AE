@@ -42,7 +42,6 @@ async function syncToSupabase(supabase, banners) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'key' });
   } catch (err) {
-    // Non-blocking sync warning
     console.warn('[ad-banners] Supabase app_settings sync skipped:', err.message);
   }
 }
@@ -72,59 +71,64 @@ async function loadBannersFromStorage(supabase) {
 }
 
 async function resolveBannerImageUrl(banner, supabase, bucket, signedUrlHelper) {
-  if (!banner.imagePath) {
-    return banner.imageUrl || '';
+  const imgPath = banner.imagePath || banner.imageUrl;
+  if (!imgPath) return '';
+
+  if (imgPath.startsWith('http://') || imgPath.startsWith('https://') || imgPath.startsWith('data:')) {
+    return imgPath;
   }
-  // If it's already a full http(s) URL or base64 data URI, return it
-  if (banner.imagePath.startsWith('http://') || banner.imagePath.startsWith('https://') || banner.imagePath.startsWith('data:')) {
-    return banner.imagePath;
-  }
-  // Try signed URL from helper
   if (typeof signedUrlHelper === 'function') {
     try {
-      const signed = await signedUrlHelper(banner.imagePath);
+      const signed = await signedUrlHelper(imgPath);
       if (signed) return signed;
     } catch (_) {}
   }
-  // Try Supabase storage getPublicUrl
   if (supabase && bucket) {
     try {
-      const publicUrl = supabase.storage.from(bucket).getPublicUrl(banner.imagePath)?.data?.publicUrl;
+      const publicUrl = supabase.storage.from(bucket).getPublicUrl(imgPath)?.data?.publicUrl;
       if (publicUrl) return publicUrl;
     } catch (_) {}
   }
   return banner.imageUrl || '';
 }
 
-function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, upload, bucket, signedUrlHelper }) {
+function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, upload, bucket, signedUrlHelper, setOfferBannerPathHelper }) {
   // Public / Customer endpoint: GET /api/customer/banners
   const customerHandler = async (req, res) => {
     try {
-      const placement = req.query.placement || 'all';
+      const placement = req.query.placement || 'top';
       const allBanners = await loadBannersFromStorage(supabase);
-      
       const activeBanners = allBanners.filter(b => b.active);
       const filtered = placement === 'all'
         ? activeBanners
         : activeBanners.filter(b => (b.placement || 'top') === placement);
 
-      const resolved = await Promise.all(filtered.map(async b => ({
-        id: b.id,
-        title: b.title,
-        subtitle: b.subtitle || '',
-        placement: b.placement || 'top',
-        linkType: b.linkType || 'explore',
-        linkValue: b.linkValue || '',
-        active: b.active,
-        displayOrder: Number(b.displayOrder || 0),
-        imageUrl: await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper),
-        imagePath: b.imagePath,
-        createdAt: b.createdAt,
-      })));
+      const resolved = await Promise.all(filtered.map(async b => {
+        const imgUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
+        const offerImgUrl = b.offerImagePath ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper) : imgUrl;
+        return {
+          id: b.id,
+          offerId: b.offerId || b.linkValue,
+          merchantId: b.merchantId,
+          merchantName: b.merchantName,
+          merchantPhone: b.merchantPhone,
+          merchantAddress: b.merchantAddress,
+          title: b.title,
+          subtitle: b.subtitle || '',
+          placement: b.placement || 'top',
+          linkType: b.linkType || 'offer',
+          linkValue: b.linkValue || b.offerId || '',
+          active: b.active,
+          displayOrder: Number(b.displayOrder || 0),
+          imageUrl: imgUrl || offerImgUrl,
+          bannerImageUrl: imgUrl,
+          offerImageUrl: offerImgUrl,
+          imagePath: b.imagePath,
+          createdAt: b.createdAt,
+        };
+      }));
 
-      // Sort by displayOrder ascending, then createdAt descending
       resolved.sort((a, b) => (a.displayOrder - b.displayOrder) || (new Date(b.createdAt) - new Date(a.createdAt)));
-
       res.json({ banners: resolved });
     } catch (err) {
       console.error('[ad-banners] Error getting customer banners:', err);
@@ -134,25 +138,37 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 
   app.get('/api/customer/banners', customerHandler);
 
-  // Admin endpoints: requireAuth, adminRole
-  // 1. GET /api/admin/banners
+  // Admin endpoint: GET /api/admin/banners
   app.get('/api/admin/banners', auth, adminRole, async (_req, res) => {
     try {
       const banners = await loadBannersFromStorage(supabase);
-      const resolved = await Promise.all(banners.map(async b => ({
-        id: b.id,
-        title: b.title,
-        subtitle: b.subtitle || '',
-        placement: b.placement || 'top',
-        linkType: b.linkType || 'explore',
-        linkValue: b.linkValue || '',
-        active: Boolean(b.active),
-        displayOrder: Number(b.displayOrder || 0),
-        imageUrl: await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper),
-        imagePath: b.imagePath,
-        createdAt: b.createdAt,
-        updatedAt: b.updatedAt,
-      })));
+      const resolved = await Promise.all(banners.map(async b => {
+        const imgUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
+        const offerImgUrl = b.offerImagePath ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper) : (b.offerImageUrl || imgUrl);
+        return {
+          id: b.id,
+          offerId: b.offerId || b.linkValue || '',
+          merchantId: b.merchantId || '',
+          merchantName: b.merchantName || '',
+          merchantPhone: b.merchantPhone || '',
+          merchantAddress: b.merchantAddress || '',
+          title: b.title,
+          subtitle: b.subtitle || '',
+          category: b.category || '',
+          expiresAt: b.expiresAt || '',
+          placement: b.placement || 'top',
+          linkType: b.linkType || 'offer',
+          linkValue: b.linkValue || b.offerId || '',
+          active: Boolean(b.active),
+          displayOrder: Number(b.displayOrder || 0),
+          imageUrl: imgUrl || offerImgUrl,
+          bannerImageUrl: imgUrl,
+          offerImageUrl: offerImgUrl,
+          imagePath: b.imagePath,
+          createdAt: b.createdAt,
+          updatedAt: b.updatedAt,
+        };
+      }));
 
       resolved.sort((a, b) => (a.displayOrder - b.displayOrder) || (new Date(b.createdAt) - new Date(a.createdAt)));
       res.json({ banners: resolved });
@@ -162,27 +178,50 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     }
   });
 
-  // 2. POST /api/admin/banners (upload image + create banner)
+  // Admin endpoint: POST /api/admin/banners
   const uploadMiddleware = upload && typeof upload.single === 'function'
     ? upload.single('image')
     : (_req, _res, next) => next();
 
   app.post('/api/admin/banners', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
-      const title = (req.body.title || '').trim();
-      const subtitle = (req.body.subtitle || '').trim();
-      const placement = ['top', 'downside', 'explore'].includes(req.body.placement)
-        ? req.body.placement
-        : 'top';
-      const linkType = ['explore', 'merchant', 'offer', 'external'].includes(req.body.linkType)
-        ? req.body.linkType
-        : 'explore';
-      const linkValue = (req.body.linkValue || '').trim();
-      const active = req.body.active !== 'false' && req.body.active !== false;
-      const displayOrder = Number(req.body.displayOrder || 0);
+      const offerId = (req.body.offerId || req.body.linkValue || '').trim();
+      let title = (req.body.title || '').trim();
+      let subtitle = (req.body.subtitle || '').trim();
+      let merchantId = (req.body.merchantId || '').trim();
+      let merchantName = (req.body.merchantName || '').trim();
+      let merchantPhone = (req.body.merchantPhone || '').trim();
+      let merchantAddress = (req.body.merchantAddress || '').trim();
+      let category = (req.body.category || '').trim();
+      let expiresAt = (req.body.expiresAt || '').trim();
+      let offerImagePath = (req.body.offerImagePath || '').trim();
+      let offerImageUrl = (req.body.offerImageUrl || '').trim();
+
+      // If offerId provided and Supabase available, fetch offer details to auto-fill
+      if (offerId && supabase) {
+        try {
+          const { data: offer } = await supabase
+            .from('offers')
+            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address)')
+            .eq('id', offerId)
+            .maybeSingle();
+
+          if (offer) {
+            title = title || offer.title;
+            subtitle = subtitle || offer.description;
+            merchantId = merchantId || offer.merchant_id || offer.merchants?.id;
+            merchantName = merchantName || offer.merchants?.name || '';
+            merchantPhone = merchantPhone || offer.merchants?.phone || '';
+            merchantAddress = merchantAddress || offer.merchants?.address || '';
+            category = category || offer.category || '';
+            expiresAt = expiresAt || offer.expires_at || '';
+            offerImagePath = offerImagePath || offer.image_path || '';
+          }
+        } catch (_) {}
+      }
 
       if (!title) {
-        return res.status(400).json({ error: 'Banner title is required.' });
+        title = 'Special Offer';
       }
 
       let imagePath = '';
@@ -205,23 +244,19 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
             if (uploadErr) throw uploadErr;
             imagePath = storagePath;
           } catch (uploadErr) {
-            console.warn('[ad-banners] Supabase storage upload failed, saving fallback:', uploadErr.message);
+            console.warn('[ad-banners] Storage upload fallback:', uploadErr.message);
           }
         }
 
         if (!imagePath) {
-          // Fallback: save to public uploads directory or data URL
           const publicUploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'banners');
           try {
-            if (!fs.existsSync(publicUploadsDir)) {
-              fs.mkdirSync(publicUploadsDir, { recursive: true });
-            }
+            if (!fs.existsSync(publicUploadsDir)) fs.mkdirSync(publicUploadsDir, { recursive: true });
             const localFilename = `${fileId}.${ext}`;
             fs.writeFileSync(path.join(publicUploadsDir, localFilename), req.file.buffer);
             imagePath = `/uploads/banners/${localFilename}`;
             imageUrl = imagePath;
           } catch (_) {
-            // As secondary fallback, base64 data URI
             imagePath = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
             imageUrl = imagePath;
           }
@@ -229,23 +264,38 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       } else if (req.body.imageUrl) {
         imagePath = req.body.imageUrl.trim();
         imageUrl = imagePath;
+      } else if (offerImagePath) {
+        // Optional banner image: falls back to offer image poster
+        imagePath = offerImagePath;
       }
 
-      if (!imagePath) {
-        return res.status(400).json({ error: 'Please upload a banner image file.' });
+      if (!imagePath && !offerImageUrl) {
+        return res.status(400).json({ error: 'Please choose an offer with an image or upload a banner image.' });
       }
+
+      const active = req.body.active !== 'false' && req.body.active !== false;
+      const displayOrder = Number(req.body.displayOrder || 0);
 
       const newBanner = {
         id: crypto.randomUUID(),
+        offerId,
+        merchantId,
+        merchantName,
+        merchantPhone,
+        merchantAddress,
         title,
         subtitle,
-        placement,
-        linkType,
-        linkValue,
+        category,
+        expiresAt,
+        placement: 'top',
+        linkType: 'offer',
+        linkValue: offerId,
         active,
         displayOrder,
-        imagePath,
-        imageUrl: imageUrl || '',
+        imagePath: imagePath || offerImagePath,
+        imageUrl: imageUrl || offerImageUrl,
+        offerImagePath,
+        offerImageUrl,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -254,6 +304,10 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       banners.unshift(newBanner);
       saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+
+      if (offerId && req.file && typeof setOfferBannerPathHelper === 'function') {
+        try { await setOfferBannerPathHelper(offerId, imagePath); } catch (_) {}
+      }
 
       newBanner.imageUrl = await resolveBannerImageUrl(newBanner, supabase, bucket, signedUrlHelper);
 
@@ -264,7 +318,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     }
   });
 
-  // 3. PUT /api/admin/banners/:id
+  // Admin endpoint: PUT /api/admin/banners/:id
   app.put('/api/admin/banners/:id', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
       const bannerId = req.params.id;
@@ -276,21 +330,39 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       }
 
       const existing = banners[index];
-      const title = req.body.title !== undefined ? String(req.body.title).trim() : existing.title;
-      const subtitle = req.body.subtitle !== undefined ? String(req.body.subtitle).trim() : (existing.subtitle || '');
-      const placement = ['top', 'downside', 'explore'].includes(req.body.placement)
-        ? req.body.placement
-        : existing.placement;
-      const linkType = ['explore', 'merchant', 'offer', 'external'].includes(req.body.linkType)
-        ? req.body.linkType
-        : existing.linkType;
-      const linkValue = req.body.linkValue !== undefined ? String(req.body.linkValue).trim() : (existing.linkValue || '');
-      const active = req.body.active !== undefined
-        ? (req.body.active !== 'false' && req.body.active !== false)
-        : existing.active;
-      const displayOrder = req.body.displayOrder !== undefined
-        ? Number(req.body.displayOrder || 0)
-        : (existing.displayOrder || 0);
+      const offerId = req.body.offerId !== undefined ? String(req.body.offerId).trim() : (existing.offerId || '');
+      let title = req.body.title !== undefined ? String(req.body.title).trim() : existing.title;
+      let subtitle = req.body.subtitle !== undefined ? String(req.body.subtitle).trim() : (existing.subtitle || '');
+      let merchantId = req.body.merchantId !== undefined ? String(req.body.merchantId).trim() : (existing.merchantId || '');
+      let merchantName = req.body.merchantName !== undefined ? String(req.body.merchantName).trim() : (existing.merchantName || '');
+      let merchantPhone = req.body.merchantPhone !== undefined ? String(req.body.merchantPhone).trim() : (existing.merchantPhone || '');
+      let merchantAddress = req.body.merchantAddress !== undefined ? String(req.body.merchantAddress).trim() : (existing.merchantAddress || '');
+      let category = req.body.category !== undefined ? String(req.body.category).trim() : (existing.category || '');
+      let expiresAt = req.body.expiresAt !== undefined ? String(req.body.expiresAt).trim() : (existing.expiresAt || '');
+      let offerImagePath = req.body.offerImagePath !== undefined ? String(req.body.offerImagePath).trim() : (existing.offerImagePath || '');
+      let offerImageUrl = req.body.offerImageUrl !== undefined ? String(req.body.offerImageUrl).trim() : (existing.offerImageUrl || '');
+
+      if (offerId && offerId !== existing.offerId && supabase) {
+        try {
+          const { data: offer } = await supabase
+            .from('offers')
+            .select('id, title, description, category, image_path, expires_at, merchant_id, merchants(id, name, phone, address)')
+            .eq('id', offerId)
+            .maybeSingle();
+
+          if (offer) {
+            title = offer.title;
+            subtitle = offer.description;
+            merchantId = offer.merchant_id || offer.merchants?.id;
+            merchantName = offer.merchants?.name || '';
+            merchantPhone = offer.merchants?.phone || '';
+            merchantAddress = offer.merchants?.address || '';
+            category = offer.category || '';
+            expiresAt = offer.expires_at || '';
+            offerImagePath = offer.image_path || '';
+          }
+        } catch (_) {}
+      }
 
       let imagePath = existing.imagePath;
       let imageUrl = existing.imageUrl;
@@ -310,7 +382,6 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
                 upsert: false,
               });
             if (!uploadErr) {
-              // Delete old image from storage if it was a supabase path
               if (existing.imagePath && existing.imagePath.startsWith('banners/')) {
                 await supabase.storage.from(bucket).remove([existing.imagePath]).catch(() => {});
               }
@@ -321,7 +392,6 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         }
 
         if (imagePath === existing.imagePath && req.file) {
-          // Local fallback
           const publicUploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'banners');
           try {
             if (!fs.existsSync(publicUploadsDir)) fs.mkdirSync(publicUploadsDir, { recursive: true });
@@ -339,23 +409,39 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         imageUrl = imagePath;
       }
 
+      const active = req.body.active !== undefined
+        ? (req.body.active !== 'false' && req.body.active !== false)
+        : existing.active;
+
       const updated = {
         ...existing,
+        offerId,
+        merchantId,
+        merchantName,
+        merchantPhone,
+        merchantAddress,
         title,
         subtitle,
-        placement,
-        linkType,
-        linkValue,
+        category,
+        expiresAt,
+        placement: 'top',
+        linkType: 'offer',
+        linkValue: offerId,
         active,
-        displayOrder,
-        imagePath,
-        imageUrl: imageUrl || '',
+        imagePath: imagePath || offerImagePath,
+        imageUrl: imageUrl || offerImageUrl,
+        offerImagePath,
+        offerImageUrl,
         updatedAt: new Date().toISOString(),
       };
 
       banners[index] = updated;
       saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+
+      if (offerId && req.file && typeof setOfferBannerPathHelper === 'function') {
+        try { await setOfferBannerPathHelper(offerId, imagePath); } catch (_) {}
+      }
 
       updated.imageUrl = await resolveBannerImageUrl(updated, supabase, bucket, signedUrlHelper);
 
@@ -366,7 +452,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     }
   });
 
-  // 4. PATCH /api/admin/banners/:id/toggle-active
+  // Admin endpoint: PATCH /api/admin/banners/:id/toggle-active
   app.patch('/api/admin/banners/:id/toggle-active', auth, adminRole, async (req, res) => {
     try {
       const bannerId = req.params.id;
@@ -391,7 +477,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     }
   });
 
-  // 5. DELETE /api/admin/banners/:id
+  // Admin endpoint: DELETE /api/admin/banners/:id
   app.delete('/api/admin/banners/:id', auth, adminRole, async (req, res) => {
     try {
       const bannerId = req.params.id;
@@ -407,7 +493,6 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
 
-      // Clean up storage if applicable
       if (removed.imagePath && removed.imagePath.startsWith('banners/') && supabase && bucket) {
         await supabase.storage.from(bucket).remove([removed.imagePath]).catch(() => {});
       } else if (removed.imagePath && removed.imagePath.startsWith('/uploads/banners/')) {
@@ -432,29 +517,33 @@ async function getActiveBannersForAds(supabase, bucket, signedUrlHelper) {
     const topActive = all.filter(b => b.active && (b.placement === 'top' || !b.placement));
     return await Promise.all(topActive.map(async b => {
       const resolvedUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
+      const offerImgUrl = b.offerImagePath
+        ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper)
+        : (b.offerImageUrl || resolvedUrl);
+
       return {
         id: `banner-${b.id}`,
         bannerId: b.id,
+        offerId: b.offerId || b.linkValue,
         title: b.title,
         description: b.subtitle || '',
         rawDescription: b.subtitle || '',
         theme: 'blue',
         icon: 'gift',
-        action: b.linkType === 'external' ? 'Open link' : b.linkType === 'merchant' ? 'Visit shop' : 'View banner',
-        url: b.linkType === 'explore'
-          ? '/customer/explore'
-          : b.linkType === 'merchant'
-            ? `/customer/explore?merchantId=${b.linkValue}`
-            : b.linkType === 'offer'
-              ? '/customer/offers'
-              : (b.linkValue || '/customer/explore'),
+        action: b.merchantName ? `View at ${b.merchantName}` : 'View offer',
+        url: '/customer/offers',
         test: false,
-        imageUrl: resolvedUrl,
+        imageUrl: resolvedUrl || offerImgUrl,
         bannerImageUrl: resolvedUrl,
-        offerImageUrl: resolvedUrl,
+        offerImageUrl: offerImgUrl || resolvedUrl,
+        merchantName: b.merchantName || '',
+        merchantPhone: b.merchantPhone || '',
+        merchantAddress: b.merchantAddress || '',
+        category: b.category || '',
+        expiresAt: b.expiresAt || '',
         isAdBanner: true,
-        linkType: b.linkType,
-        linkValue: b.linkValue,
+        linkType: 'offer',
+        linkValue: b.offerId || b.linkValue,
       };
     }));
   } catch (err) {
@@ -469,4 +558,3 @@ module.exports = {
   loadBannersFromStorage,
   saveLocalBanners,
 };
-

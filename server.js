@@ -3175,6 +3175,7 @@ registerAdBanners(app, {
   upload: offerUpload,
   bucket: OFFER_IMAGE_BUCKET,
   signedUrlHelper: signedOfferImageUrl,
+  setOfferBannerPathHelper: setOfferBannerPath,
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
