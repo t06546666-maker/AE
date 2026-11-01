@@ -16,6 +16,7 @@ const { createClient } = require('@supabase/supabase-js');
 const jwt      = require('jsonwebtoken');
 const dailyGreetings = require('./backend/daily-messages.json');
 const customerAds = require('./backend/customer-ads.json');
+const { registerAdBanners, getActiveBannersForAds } = require('./backend/ad-banners.cjs');
 const { fieldVisitRecord } = require('./backend/field-visit-record.cjs');
 const { checkinDay, checkinPins } = require('./backend/field-checkin-map.cjs');
 const { customerWelcomeBonusActivity } = require('./backend/welcome-bonus-display.cjs');
@@ -2856,14 +2857,17 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
     }));
 
     const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
+    const adminAdBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl);
+    const combinedAds = [...adminAdBanners, ...validDynamic];
     // Randomly shuffle active dynamic ads so when customers open the app, a random ad appears first!
-    for (let i = validDynamic.length - 1; i > 0; i--) {
+    for (let i = combinedAds.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [validDynamic[i], validDynamic[j]] = [validDynamic[j], validDynamic[i]];
+      [combinedAds[i], combinedAds[j]] = [combinedAds[j], combinedAds[i]];
     }
-    res.json({ ads: [...validDynamic, ...(customerAds || [])] });
+    res.json({ ads: [...combinedAds, ...(customerAds || [])] });
   } catch (_e) {
-    res.json({ ads: customerAds || [] });
+    const fallbackBanners = await getActiveBannersForAds(supabaseAdmin, OFFER_IMAGE_BUCKET, signedOfferImageUrl).catch(() => []);
+    res.json({ ads: [...fallbackBanners, ...(customerAds || [])] });
   }
 });
 
@@ -3162,6 +3166,16 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
 require('./backend/merchant-push-sync.cjs').registerMerchantPushSync(app,{auth:requireAuth,adminRole:requireRole('admin'),supabase:supabaseAdmin,registry:profilePushRegistry});
 
 require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification,getTarget:(id,legacy)=>profilePushRegistry.get(id,legacy)});
+
+registerAdBanners(app, {
+  auth: requireAuth,
+  adminRole: requireRole('admin'),
+  customerAuth: requireCustomerAuth,
+  supabase: supabaseAdmin,
+  upload: offerUpload,
+  bucket: OFFER_IMAGE_BUCKET,
+  signedUrlHelper: signedOfferImageUrl,
+});
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
   const updates = {};

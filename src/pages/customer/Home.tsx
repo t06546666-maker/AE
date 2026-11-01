@@ -12,6 +12,7 @@ import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerAds } from '../../components/CustomerAds';
+import { CustomerDownsideBanners } from '../../components/CustomerDownsideBanners';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import {ProductListPanel} from '../../components/ProductListPanel';
@@ -193,6 +194,9 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         <button type="button" onClick={() => { setProductListOpen(true); setProductListMessage(''); }} className="flex w-full items-center justify-between rounded-[18px] border border-blue-100 bg-blue-50 p-4 text-left text-blue-700 shadow-sm active:scale-[0.98] transition-transform">
           <div className="flex items-center gap-3"><ListPlus size={28} /><div><span className="block text-[16px] font-bold">{uiText("Send Product List")}</span></div></div><ChevronRight size={20} />
         </button>
+
+        {/* Downside Promotional Banners */}
+        <CustomerDownsideBanners />
 
 
         {/* Recent Activity */}

@@ -96,3 +96,4 @@ assert.ok(modalUI.includes('offer.bannerImageUrl'), 'CustomerOfferPreviewModal m
 assert.ok(modalUI.includes('hasBothImages'), 'CustomerOfferPreviewModal must support toggling when both images are set');
 
 console.log('ALL TESTS PASSED: Dedicated offer banner images, fallback handling, and randomized app open carousel verified.');
+

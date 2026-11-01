@@ -249,3 +249,21 @@ export interface MerchantNotification {
   requestNo: string;
   status: CustomerOrderStatus;
 }
+
+export type BannerPlacement = 'top' | 'downside' | 'explore';
+export type BannerLinkType = 'explore' | 'merchant' | 'offer' | 'external';
+
+export interface AdBanner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  imagePath?: string;
+  placement: BannerPlacement;
+  linkType: BannerLinkType;
+  linkValue?: string;
+  active: boolean;
+  displayOrder?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
