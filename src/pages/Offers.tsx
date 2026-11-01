@@ -37,6 +37,7 @@ export function Offers({ user }: { user: UserProfile }) {
   const [segment,setSegment]=useState<{group:string;from:string;to:string}|null>(null);
   const [expiresAt, setExpiresAt] = useState(tomorrowInput());
   const [image, setImage] = useState<File | null>(null);
+  const [bannerImage, setBannerImage] = useState<File | null>(null);
   const [rejecting, setRejecting] = useState<Offer | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [downloadingOfferId, setDownloadingOfferId] = useState<string | null>(null);
@@ -90,6 +91,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setSegment(null);
     setExpiresAt(tomorrowInput());
     setImage(null);
+    setBannerImage(null);
     if (user.role === 'admin' && merchantsQuery.data?.merchants?.length) {
       setAdminMerchantId(merchantsQuery.data.merchants[0].id);
     }
@@ -103,6 +105,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setAudience(offer.audience || 'all');
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
+    setBannerImage(null);
     if (user.role === 'admin' && offer.merchantId) {
       setAdminMerchantId(offer.merchantId);
     }
@@ -123,6 +126,7 @@ export function Offers({ user }: { user: UserProfile }) {
         body.set('merchantId', adminMerchantId);
       }
       if (image) body.set('image', image);
+      if (bannerImage) body.set('bannerImage', bannerImage);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
         method: editing ? "PUT" : "POST",
         body,
@@ -255,9 +259,20 @@ export function Offers({ user }: { user: UserProfile }) {
               <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} required />
             </label>
             <label className="offer-image-field">
-              {t('offers.image')}
+              {uiText('Offer Poster / Details Image')}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImage(event.target.files?.[0] || null)} required={!editing} />
-              <small>{t('offers.imageHelp')}</small>
+              <small>{uiText('The main detailed poster shown when customers tap to inspect the offer.')}</small>
+            </label>
+            <label className="offer-image-field">
+              {uiText('Ad Banner Photo (Optional - for Home Screen Carousel)')}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setBannerImage(event.target.files?.[0] || null)} />
+              <small>{uiText('Set a different wide photo for the scrolling banner on the Home page. If omitted, your main offer poster will be used.')}</small>
+              {editing?.bannerImageUrl && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src={editing.bannerImageUrl} alt="Current banner" style={{ height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                  <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600 }}>{uiText('Dedicated ad banner is currently active')}</span>
+                </div>
+              )}
             </label>
           </div>
           <div className="form-actions">
@@ -298,9 +313,14 @@ export function Offers({ user }: { user: UserProfile }) {
               const expired = new Date(offer.expiresAt) <= new Date();
               return (
                 <article className="offer-card" key={offer.id}>
-                  <div className="offer-image-wrap">
+                  <div className="offer-image-wrap" style={{ position: 'relative' }}>
                     <img src={offer.imageUrl} alt={offer.title} />
                     <span className={`tag offer-status ${offer.status}`}>{t(`offers.${offer.status}`)}</span>
+                    {offer.bannerImageUrl && (
+                      <span className="tag" style={{ position: 'absolute', bottom: 8, left: 8, background: '#1e40af', color: '#ffffff', fontSize: '10px', padding: '2px 8px', borderRadius: '6px' }}>
+                        {uiText('🏷️ Ad Banner Set')}
+                      </span>
+                    )}
                   </div>
                   <div className="offer-card-body">
                     {user.role === 'admin' ? <small className="offer-merchant">{offer.merchantCode} · {offer.merchant}</small> : null}

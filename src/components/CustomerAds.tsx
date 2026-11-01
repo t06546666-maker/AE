@@ -18,6 +18,8 @@ type Ad = {
   url: string;
   test: boolean;
   imageUrl?: string;
+  bannerImageUrl?: string;
+  offerImageUrl?: string;
   imageUrls?: Partial<Record<'en' | 'ml', string>>;
   merchantId?: string;
   merchantName?: string;
@@ -49,6 +51,17 @@ export function CustomerAds() {
 
   const count = ads.data?.ads.length || 0;
 
+  // On open, randomly pick which ad banner appears first:
+  useEffect(() => {
+    if (count > 1 && slider.current) {
+      const randomIndex = Math.floor(Math.random() * count);
+      if (randomIndex > 0) {
+        setActive(randomIndex);
+        slider.current.scrollTo({ left: randomIndex * slider.current.clientWidth, behavior: 'instant' });
+      }
+    }
+  }, [count]);
+
   useEffect(() => {
     if (count < 2 || paused || previewAd || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = window.setInterval(() => {
@@ -76,12 +89,14 @@ export function CustomerAds() {
     element.scrollTo({ left: index * element.clientWidth, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? "auto" : "smooth" });
   };
 
-  const openPreview = (ad: Ad, imageUrl?: string) => {
+  const openPreview = (ad: Ad, carouselImageUrl?: string) => {
     setPreviewAd({
       id: ad.id,
       title: ad.title,
       description: ad.rawDescription || ad.description,
-      imageUrl,
+      // For preview modal, display the detailed offer poster
+      imageUrl: ad.offerImageUrl || ad.imageUrl || carouselImageUrl,
+      bannerImageUrl: ad.bannerImageUrl,
       merchantName: ad.merchantName,
       merchantPhone: ad.merchantPhone,
       merchantAddress: ad.merchantAddress,
@@ -111,7 +126,7 @@ export function CustomerAds() {
           }}
         >
           {ads.data.ads.map((ad, index) => {
-            const imageUrl = ad.imageUrls?.[i18n.resolvedLanguage === 'ml' ? 'ml' : 'en'] || ad.imageUrl;
+            const imageUrl = ad.bannerImageUrl || ad.imageUrls?.[i18n.resolvedLanguage === 'ml' ? 'ml' : 'en'] || ad.imageUrl;
             const Icon = ad.icon === 'gift' ? Gift : ad.icon === 'list' ? ListPlus : Store;
 
             if (imageUrl && !failedImages.includes(imageUrl)) {

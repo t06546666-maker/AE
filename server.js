@@ -229,7 +229,7 @@ const OFFER_IMAGE_BUCKET = 'offer-images';
 const OFFER_BATCH_SIZE = Math.min(50, Math.max(1, Number(process.env.OFFER_BATCH_SIZE || 20)));
 const offerUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
 });
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -728,13 +728,95 @@ function cleanSearch(value) {
   return cleanText(value, 80).replace(/[,()]/g, ' ').replace(/\s+/g, ' ');
 }
 
-function offerImageMiddleware(req, res, next) {
-  offerUpload.single('image')(req, res, (error) => {
-    if (!error) return next();
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ success: false, error: 'Offer image must be 5 MB or smaller' });
+const OFFER_BANNERS_FILE = path.join(__dirname, 'backend', 'offer-banners.json');
+
+function getLocalBannerPath(offerId) {
+  try {
+    if (fs.existsSync(OFFER_BANNERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(OFFER_BANNERS_FILE, 'utf8') || '{}');
+      return data[offerId] || null;
     }
-    return res.status(400).json({ success: false, error: error.message || 'Offer image upload failed' });
+  } catch (_) {}
+  return null;
+}
+
+function saveLocalBannerPath(offerId, bannerPath) {
+  try {
+    let data = {};
+    if (fs.existsSync(OFFER_BANNERS_FILE)) {
+      data = JSON.parse(fs.readFileSync(OFFER_BANNERS_FILE, 'utf8') || '{}');
+    }
+    if (bannerPath) {
+      data[offerId] = bannerPath;
+    } else {
+      delete data[offerId];
+    }
+    fs.writeFileSync(OFFER_BANNERS_FILE, JSON.stringify(data, null, 2));
+  } catch (_) {}
+}
+
+async function getOfferBannerPath(offerId) {
+  const local = getLocalBannerPath(offerId);
+  if (local) return local;
+  try {
+    const { data } = await supabaseAdmin
+      .from('app_settings')
+      .select('value')
+      .eq('key', `offer_banner_${offerId}`)
+      .maybeSingle();
+    if (data?.value) {
+      const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      const bp = parsed.banner_image_path || parsed.bannerPath || data.value;
+      if (bp && typeof bp === 'string') {
+        saveLocalBannerPath(offerId, bp);
+        return bp;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function setOfferBannerPath(offerId, bannerPath) {
+  saveLocalBannerPath(offerId, bannerPath);
+  try {
+    if (bannerPath) {
+      await supabaseAdmin
+        .from('app_settings')
+        .upsert({
+          key: `offer_banner_${offerId}`,
+          value: JSON.stringify({ banner_image_path: bannerPath }),
+        });
+    } else {
+      await supabaseAdmin
+        .from('app_settings')
+        .delete()
+        .eq('key', `offer_banner_${offerId}`);
+    }
+  } catch (_) {}
+}
+
+function offerImageMiddleware(req, res, next) {
+  offerUpload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'bannerImage', maxCount: 1 },
+    { name: 'banner_image', maxCount: 1 },
+    { name: 'photo', maxCount: 1 },
+  ])(req, res, (error) => {
+    if (!error) {
+      if (req.files) {
+        req.file = req.files['image']?.[0] || req.files['photo']?.[0] || null;
+        req.bannerFile = req.files['bannerImage']?.[0] || req.files['banner_image']?.[0] || null;
+      }
+      return next();
+    }
+    offerUpload.any()(req, res, (anyError) => {
+      if (anyError) return res.status(400).json({ success: false, error: anyError.message || 'Image upload failed' });
+      if (req.files) {
+        req.file = req.files.find(f => f.fieldname === 'image' || f.fieldname === 'photo') || req.files[0] || null;
+        req.bannerFile = req.files.find(f => f.fieldname === 'bannerImage' || f.fieldname === 'banner_image') || null;
+      }
+      return next();
+    });
   });
 }
 
@@ -799,6 +881,9 @@ function campaignDto(campaign, failure) {
 async function offerDto(row, failure) {
   const campaign = Array.isArray(row.offer_campaigns)
     ? row.offer_campaigns[0] : row.offer_campaigns;
+  const bannerPath = row.banner_image_path || await getOfferBannerPath(row.id);
+  const bannerImageUrl = bannerPath ? await signedOfferImageUrl(bannerPath) : null;
+  const offerImageUrl = await signedOfferImageUrl(row.image_path);
   return {
     id: row.id,
     merchantId: row.merchant_id,
@@ -808,7 +893,9 @@ async function offerDto(row, failure) {
     description: row.description,
     category: row.category || null,
     audience: row.audience || 'all',
-    imageUrl: await signedOfferImageUrl(row.image_path),
+    imageUrl: offerImageUrl,
+    bannerImageUrl,
+    offerImageUrl,
     expiresAt: row.expires_at,
     status: row.status,
     rejectionReason: row.rejection_reason || '',
@@ -2742,7 +2829,9 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
     const dynamicAds = await Promise.all((offers || []).map(async (o) => {
       const merchantName = o.merchants?.name || '';
       const phone = o.merchants?.phone || '';
-      const imageUrl = await signedOfferImageUrl(o.image_path);
+      const offerImageUrl = await signedOfferImageUrl(o.image_path);
+      const bannerPath = o.banner_image_path || await getOfferBannerPath(o.id);
+      const bannerImageUrl = bannerPath ? await signedOfferImageUrl(bannerPath) : null;
       return {
         id: o.id,
         title: o.title,
@@ -2759,11 +2848,19 @@ app.get('/api/customer/ads', requireCustomerAuth, async (_req, res) => {
         action: merchantName ? (phone ? `📞 ${phone}` : `View at ${merchantName}`) : 'View offer',
         url: '/customer/offers',
         test: false,
-        imageUrl,
+        // The Home carousel banner uses the dedicated banner image if provided, otherwise the offer image
+        imageUrl: bannerImageUrl || offerImageUrl,
+        bannerImageUrl,
+        offerImageUrl,
       };
     }));
 
     const validDynamic = dynamicAds.filter(a => Boolean(a.imageUrl));
+    // Randomly shuffle active dynamic ads so when customers open the app, a random ad appears first!
+    for (let i = validDynamic.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validDynamic[i], validDynamic[j]] = [validDynamic[j], validDynamic[i]];
+    }
     res.json({ ads: [...validDynamic, ...(customerAds || [])] });
   } catch (_e) {
     res.json({ ads: customerAds || [] });
@@ -2991,6 +3088,8 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
       title: o.title,
       description: o.description || '',
       imageUrl: await signedOfferImageUrl(o.image_path),
+      bannerImageUrl: (o.banner_image_path || await getOfferBannerPath(o.id)) ? await signedOfferImageUrl(o.banner_image_path || await getOfferBannerPath(o.id)) : null,
+      offerImageUrl: await signedOfferImageUrl(o.image_path),
       merchant_id: o.merchant_id || o.merchants?.id,
       merchant_name: `${name}${phoneTag}`,
       merchant_raw_name: name,
@@ -4292,11 +4391,15 @@ app.post(
     }
 
     let imagePath;
+    let bannerPath;
     try {
       imagePath = await uploadOfferImage(merchantId, req.file);
+      if (req.bannerFile && validOfferImage(req.bannerFile)) {
+        bannerPath = await uploadOfferImage(merchantId, req.bannerFile);
+      }
       const status = isAdmin ? 'approved' : 'pending';
       const now = new Date().toISOString();
-      const { data: offer, error } = await supabaseAdmin.from('offers').insert({
+      const insertPayload = {
         merchant_id: merchantId,
         title,
         description,
@@ -4308,10 +4411,33 @@ app.post(
         status,
         submitted_by: req.auth.user.id,
         ...(isAdmin ? { reviewed_by: req.auth.user.id, reviewed_at: now } : {}),
-      }).select(
+      };
+      if (bannerPath) insertPayload.banner_image_path = bannerPath;
+
+      let offer;
+      const { data: inserted, error: insertError } = await supabaseAdmin.from('offers').insert(insertPayload).select(
         'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
       ).single();
-      if (error) throw error;
+
+      if (insertError) {
+        if (bannerPath && (insertError.message.includes('banner_image_path') || insertError.code === 'PGRST204')) {
+          delete insertPayload.banner_image_path;
+          const { data: retryData, error: retryError } = await supabaseAdmin.from('offers').insert(insertPayload).select(
+            'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code)',
+          ).single();
+          if (retryError) throw retryError;
+          offer = retryData;
+        } else {
+          throw insertError;
+        }
+      } else {
+        offer = inserted;
+      }
+
+      if (bannerPath) {
+        await setOfferBannerPath(offer.id, bannerPath);
+      }
+
       if (!isAdmin) {
         await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
       }
@@ -4319,6 +4445,9 @@ app.post(
     } catch (error) {
       if (imagePath) {
         await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([imagePath]);
+      }
+      if (bannerPath) {
+        await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([bannerPath]).catch(() => {});
       }
       return res.status(400).json({ success: false, error: error.message });
     }
@@ -4375,6 +4504,16 @@ app.put(
       if (req.file) {
         uploadedPath = await uploadOfferImage(currentOffer.merchant_id, req.file);
         replacementPath = uploadedPath;
+      }
+      if (req.bannerFile && validOfferImage(req.bannerFile)) {
+        const replacementBannerPath = await uploadOfferImage(currentOffer.merchant_id, req.bannerFile);
+        await setOfferBannerPath(offerId, replacementBannerPath);
+      } else if (req.body.removeBanner === 'true' || req.body.remove_banner === 'true') {
+        const oldBanner = await getOfferBannerPath(offerId);
+        if (oldBanner) {
+          await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([oldBanner]).catch(() => {});
+        }
+        await setOfferBannerPath(offerId, null);
       }
       const now = new Date().toISOString();
       const updates = {
@@ -4443,6 +4582,11 @@ app.delete(
 
     if (currentOffer.image_path) {
       await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([currentOffer.image_path]).catch(() => {});
+    }
+    const oldBanner = await getOfferBannerPath(offerId);
+    if (oldBanner) {
+      await supabaseAdmin.storage.from(OFFER_IMAGE_BUCKET).remove([oldBanner]).catch(() => {});
+      await setOfferBannerPath(offerId, null);
     }
     const { error: deleteError } = await supabaseAdmin.from('offers').delete().eq('id', offerId);
     if (deleteError) return res.status(400).json({ success: false, error: deleteError.message });

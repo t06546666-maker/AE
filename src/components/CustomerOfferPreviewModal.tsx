@@ -8,6 +8,7 @@ export interface PreviewOfferData {
   title: string;
   description: string;
   imageUrl?: string;
+  bannerImageUrl?: string;
   merchantName?: string;
   merchantPhone?: string;
   merchantAddress?: string;
@@ -23,9 +24,12 @@ interface CustomerOfferPreviewModalProps {
 
 export function CustomerOfferPreviewModal({ offer, onClose }: CustomerOfferPreviewModalProps) {
   const [isZoomed, setIsZoomed] = useState(false);
+  const [viewMode, setViewMode] = useState<'poster' | 'banner'>('poster');
 
   if (!offer) return null;
 
+  const activeImage = (viewMode === 'banner' && offer.bannerImageUrl) ? offer.bannerImageUrl : (offer.imageUrl || offer.bannerImageUrl);
+  const hasBothImages = Boolean(offer.bannerImageUrl && offer.imageUrl && offer.bannerImageUrl !== offer.imageUrl);
   const phoneDigits = (offer.merchantPhone || '').replace(/\D/g, '');
   const cleanPhone = phoneDigits.length === 10 ? `91${phoneDigits}` : phoneDigits;
   const whatsappUrl = cleanPhone
@@ -116,9 +120,9 @@ export function CustomerOfferPreviewModal({ offer, onClose }: CustomerOfferPrevi
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {offer.imageUrl && (
+            {activeImage && (
               <a
-                href={offer.imageUrl}
+                href={activeImage}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={uiText('Open full image in Chrome / Browser')}
@@ -162,8 +166,48 @@ export function CustomerOfferPreviewModal({ offer, onClose }: CustomerOfferPrevi
 
         {/* Scrollable Content Body */}
         <div style={{ overflowY: 'auto', padding: '16px 18px', flex: 1 }}>
-          {/* Full High-Resolution Poster Image */}
-          {offer.imageUrl ? (
+          {/* Toggle between Offer Poster and Ad Banner when both exist */}
+          {hasBothImages && (
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('poster')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  borderColor: viewMode === 'poster' ? '#2563eb' : '#cbd5e1',
+                  background: viewMode === 'poster' ? '#eff6ff' : '#ffffff',
+                  color: viewMode === 'poster' ? '#1d4ed8' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                {uiText('📋 Offer Poster')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('banner')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  borderColor: viewMode === 'banner' ? '#2563eb' : '#cbd5e1',
+                  background: viewMode === 'banner' ? '#eff6ff' : '#ffffff',
+                  color: viewMode === 'banner' ? '#1d4ed8' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                {uiText('🏷️ Ad Banner')}
+              </button>
+            </div>
+          )}
+
+          {/* High-Resolution Poster / Banner Image */}
+          {activeImage ? (
             <div
               style={{
                 position: 'relative',
@@ -178,7 +222,7 @@ export function CustomerOfferPreviewModal({ offer, onClose }: CustomerOfferPrevi
               }}
             >
               <img
-                src={offer.imageUrl}
+                src={activeImage}
                 alt={offer.title}
                 style={{
                   width: '100%',
@@ -385,9 +429,9 @@ export function CustomerOfferPreviewModal({ offer, onClose }: CustomerOfferPrevi
               marginTop: '10px',
             }}
           >
-            {offer.imageUrl && (
+            {activeImage && (
               <a
-                href={offer.imageUrl}
+                href={activeImage}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

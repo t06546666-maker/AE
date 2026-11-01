@@ -92,6 +92,8 @@ export interface Offer {
   description: string;
   category?: string | null;
   imageUrl: string;
+  bannerImageUrl?: string | null;
+  offerImageUrl?: string | null;
   expiresAt: string;
   status: OfferStatus;
   rejectionReason: string;
