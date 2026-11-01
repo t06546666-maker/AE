@@ -15,3 +15,4 @@ create table if not exists public.ad_banners (
 
 -- Index for fast customer queries
 create index if not exists idx_ad_banners_placement_active on public.ad_banners(placement, active, display_order);
+
