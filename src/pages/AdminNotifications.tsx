@@ -31,6 +31,7 @@ import { formatDateTime } from '../utils';
 
 interface NotificationStats {
   customerTokens: number;
+  totalOnboardedCustomers?: number;
   merchantTokens: number;
   totalOnboardedMerchants?: number;
   totalTokens: number;
@@ -311,10 +312,15 @@ export function AdminNotifications() {
           </div>
           <div>
             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {uiText("Customer Phones")}
+              {uiText("Customer Phones Active")}
             </div>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
               {statsData?.customerTokens ?? '...'} {uiText("Devices")}
+              {statsData?.totalOnboardedCustomers ? (
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b', marginLeft: '6px' }}>
+                  ({uiText("of {{count}} onboarded", { count: statsData.totalOnboardedCustomers })})
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -351,6 +357,14 @@ export function AdminNotifications() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '12px', color: '#475569', marginBottom: 20 }}>
+        <Sparkles size={15} style={{ color: '#0284c7', flexShrink: 0 }} />
+        <span>
+          {uiText("Active devices receive instant lockscreen push alerts. In-app announcements are automatically delivered to 100% of all onboarded customers and merchants upon app open.")}
+        </span>
       </div>
 
       {/* Navigation Tabs */}

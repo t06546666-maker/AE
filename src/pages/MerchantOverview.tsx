@@ -25,6 +25,7 @@ import { ScanLine } from 'lucide-react';
 import { useDailyGreeting } from '../dailyGreeting';
 import { salesOverviewBuckets } from './salesOverview';
 import { CustomerFrequency } from '../components/CustomerFrequency';
+import { MerchantPushSetup } from '../components/MerchantPushSetup';
 
 async function loadPages<T>(resource: 'orders' | 'customers', signal: AbortSignal): Promise<T[]> {
   const fetchPage = (page: number) => apiFetch<Record<string, T[]> & { pagination: Pagination }>(`/api/${resource}?page=${page}&pageSize=100`, { signal });
@@ -242,6 +243,7 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
     <nav className="mo-tabs" aria-label={uiText("Business dashboard sections")}>{[['overview', 'Overview'], ['customers', 'Customers'], ['insights', 'Insights'], ['reports', 'Reports']].map(([id, label]) => <Link key={id} to={href(id)} aria-current={view === id ? 'page' : undefined}>{uiText(label)}</Link>)}<Link className="mo-create-link" to="/offers?create=1"><Plus size={16} />{uiText("Create offer")}</Link></nav>
     <div className="mo-content" key={view}>
     {view === 'overview' && <>
+      <MerchantPushSetup userId={user.id} />
       <div className="mo-stats">{metrics.map(({ label, value, before, icon: Icon, color, hint }) => <article key={label} className={`mo-stat ${color}`}><div className="mo-stat-label"><span className={`mo-icon ${color}`}><Icon size={21} /></span><span>{uiText(label)}</span></div><strong className="mo-stat-value">{label === 'Total sales' ? formatCurrency(value) : value.toLocaleString('en-IN')}</strong><span className="mo-stat-hint">{uiText(hint)}</span><Change value={value} previous={before} label={model.comparisonLabel} /></article>)}</div>
       <SalesTarget merchantId={user.merchant_id} month={month} />
       <SalesSnapshot key={`sales-${month}`} model={model} month={month} />

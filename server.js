@@ -3253,6 +3253,23 @@ app.get('/api/customer/announcements', requireCustomerAuth, async (req, res) => 
   }
 });
 
+app.get('/api/customer/push-status', requireCustomerAuth, async (req, res) => {
+  try {
+    const target = await getCustomerPushTarget(req.customer.id);
+    const registered = Boolean(target.push_token);
+    const enabled = target.push_enabled !== false;
+    res.json({
+      success: true,
+      registered,
+      enabled,
+      firebaseReady: Boolean(firebaseInitialized),
+      updatedAt: target.updated_at || null,
+    });
+  } catch (error) {
+    res.status(503).json({ success: false, error: 'Could not fetch notification status' });
+  }
+});
+
 app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, res) => {
   let target;
   try { target = await getCustomerPushTarget(req.customer.id); }
@@ -3262,9 +3279,23 @@ app.post('/api/customer/notifications/test', requireCustomerAuth, async (req, re
   }
   if (target.push_enabled === false) return res.status(400).json({ success: false, error: 'Enable notifications in your profile settings first.' });
   if (!target.push_token) return res.status(400).json({ success: false, error: 'No phone token is registered in Firebase. Open the updated Android app and allow notifications.' });
-  const sent = await sendPushNotification(target.push_token, 'AE notification test', 'Your phone can receive AE notifications.', { url: '/customer/notifications' });
+  const sent = await sendPushNotification(target.push_token, 'AE Notification Test', 'Your phone is connected and push notifications are verified!', { url: '/customer/notifications', type: 'customer_push_test' });
   if (!sent) return res.status(502).json({ success: false, error: 'Firebase rejected the notification. The server log contains the delivery error.' });
-  res.json({ success: true });
+  res.json({ success: true, message: 'Test notification sent! Check your phone notification tray.' });
+});
+
+app.post('/api/customer/push-test', requireCustomerAuth, async (req, res) => {
+  let target;
+  try { target = await getCustomerPushTarget(req.customer.id); }
+  catch (error) {
+    console.error('Firestore notification test lookup failed:', error.message);
+    return res.status(503).json({ success: false, error: 'Firebase notification storage is unavailable. Check Firestore setup and server permissions.' });
+  }
+  if (target.push_enabled === false) return res.status(400).json({ success: false, error: 'Enable notifications in your profile settings first.' });
+  if (!target.push_token) return res.status(400).json({ success: false, error: 'No phone token is registered in Firebase. Open the installed AE app and allow notifications.' });
+  const sent = await sendPushNotification(target.push_token, 'AE Notification Test', 'Your phone is connected and push notifications are verified!', { url: '/customer/notifications', type: 'customer_push_test' });
+  if (!sent) return res.status(502).json({ success: false, error: 'Firebase rejected the notification. The server log contains the delivery error.' });
+  res.json({ success: true, message: 'Test notification sent! Check your phone notification tray.' });
 });
 
 app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {

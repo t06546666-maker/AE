@@ -76,6 +76,65 @@ function registerAdminNotifications(app, {
       }
     }
 
+    // 1b. Save in merchant inboxes so ALL onboarded merchants receive it in their notification bell,
+    // even if their physical phone has not registered an FCM push token yet.
+    if (target === 'merchants' || target === 'all') {
+      try {
+        await db.collection('ae_merchant_announcements').add({
+          title,
+          body,
+          url: url || '',
+          image_url: imageUrl || '',
+          target,
+          created_at: FieldValue.serverTimestamp(),
+        });
+      } catch (saveErr) {
+        console.warn('[admin-notifications] Error saving merchant announcement:', saveErr.message);
+      }
+
+      try {
+        const merchantProfileIds = new Set();
+        if (supabase) {
+          const { data: mProfiles } = await supabase.from('profiles').select('id').eq('role', 'merchant');
+          if (Array.isArray(mProfiles)) {
+            mProfiles.forEach((p) => merchantProfileIds.add(p.id));
+          }
+        }
+        const profileSnap = await db.collection('ae_profile_push_registrations').get();
+        profileSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data && (data.role === 'merchant' || !data.role)) {
+            merchantProfileIds.add(doc.id);
+          }
+        });
+        const uniqueIds = Array.from(merchantProfileIds);
+        await Promise.all(
+          uniqueIds.map(async (mId) => {
+            try {
+              await db
+                .collection('ae_profile_notification_inboxes')
+                .doc(mId)
+                .collection('items')
+                .add({
+                  title: String(title).slice(0, 160),
+                  body: String(body).slice(0, 1000),
+                  target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
+                  image_url: imageUrl || null,
+                  event_type: 'admin_broadcast',
+                  entity_id: null,
+                  read_at: null,
+                  created_at: new Date().toISOString(),
+                });
+            } catch {
+              // Ignore individual inbox save error
+            }
+          })
+        );
+      } catch (inboxErr) {
+        console.warn('[admin-notifications] Error saving merchant inboxes:', inboxErr.message);
+      }
+    }
+
     // 2. Collect eligible push tokens
     const tokens = [];
 
@@ -451,20 +510,26 @@ function registerAdminNotifications(app, {
         }
       }
 
-      // Total onboarded merchants count for clear context
+      // Total onboarded customers & merchants count for clear context
+      let totalOnboardedCustomers = 0;
       let totalOnboardedMerchants = 0;
       if (supabase) {
         try {
-          const { count } = await supabase.from('merchants').select('id', { count: 'exact', head: true });
-          totalOnboardedMerchants = count || 0;
-        } catch (mCountErr) {
-          // ignore
+          const [{ count: cCount }, { count: mCount }] = await Promise.all([
+            supabase.from('customers').select('id', { count: 'exact', head: true }),
+            supabase.from('merchants').select('id', { count: 'exact', head: true }),
+          ]);
+          totalOnboardedCustomers = cCount || 0;
+          totalOnboardedMerchants = mCount || 0;
+        } catch (countErr) {
+          console.warn('Onboarded count error:', countErr.message);
         }
       }
 
       res.json({
         success: true,
         customerTokens: customerTokensCount,
+        totalOnboardedCustomers,
         merchantTokens: merchantTokens.size,
         totalOnboardedMerchants,
         totalTokens: customerTokensCount + merchantTokens.size,
