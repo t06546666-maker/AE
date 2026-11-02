@@ -193,7 +193,9 @@ export function App() {
         // Ask for the permissions needed by the native app at first use.
         // Android controls the actual system prompts; GPS cannot be enabled silently.
         // Location permission must never block push registration.
-        if (!['staff','account_head'].includes(user.role)) void Geolocation.checkPermissions().then(status => {
+        // Location is only required on launch for field managers (for field attendance).
+        // Customers and merchants do not require GPS on launch, keeping push notification setup clean.
+        if (user.role === 'field_manager') void Geolocation.checkPermissions().then(status => {
           if (status.location !== 'granted') return Geolocation.requestPermissions();
         }).catch(error => console.warn('Location permission unavailable', error));
 
