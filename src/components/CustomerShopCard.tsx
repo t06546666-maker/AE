@@ -1,7 +1,8 @@
 import { uiText } from '../uiText';
-import { Store, Heart, MapPin } from 'lucide-react';
+import { Store, Heart } from 'lucide-react';
 import { useState } from 'react';
 import type { CustomerMerchant } from '../hooks/useCustomerData';
+import { formatClockTime } from '../utils';
 import './customer-shop-grid.css';
 
 export function checkMerchantOpen(openingTime?: string | null, closingTime?: string | null): boolean {
@@ -35,7 +36,8 @@ export function ShopPhoto({ merchant }: { merchant: CustomerMerchant }) {
     />
   ) : (
     <div className="ae-shop-photo ae-shop-placeholder">
-      <Store size={26} />
+      <Store size={34} />
+      <span>{uiText("Photo not added")}</span>
     </div>
   );
 }
@@ -54,13 +56,34 @@ export function CustomerShopCard({
   distance?: number | null;
 }) {
   const isOpen = checkMerchantOpen(merchant.opening_time, merchant.closing_time);
-  const locationText = merchant.route_name || merchant.address?.split(',')?.[0]?.trim() || uiText('Chittur');
-  const categoryText = merchant.category || uiText('Store');
-  const distanceText = distance != null ? `${distance.toFixed(1)} km` : null;
-  const subtitle = distanceText ? `${categoryText} · ${distanceText}` : categoryText;
+  const hoursText = merchant.opening_time && merchant.closing_time
+    ? `${formatClockTime(merchant.opening_time)} - ${formatClockTime(merchant.closing_time)}`
+    : null;
 
   return (
     <article className="ae-shop-card">
+      <button type="button" className="ae-shop-open" onClick={onOpen}>
+        <ShopPhoto merchant={merchant} />
+        <div className="ae-shop-card-content">
+          <h3>{merchant.merchant_name}</h3>
+          <p className="ae-shop-category">{merchant.category || 'AE Merchant'}</p>
+
+          {distance != null && (
+            <small className="ae-shop-distance">
+              {distance.toFixed(1)} {uiText("km away")}
+            </small>
+          )}
+
+          <div className={`ae-shop-timing ${isOpen ? 'open' : 'closed'}`}>
+            <span className="ae-status-dot" />
+            <span className="ae-status-label">{uiText(isOpen ? "Open" : "Closed")}</span>
+            {hoursText && <span className="ae-hours-label"> · {hoursText}</span>}
+          </div>
+
+          <span className="ae-view-shop">{uiText("View shop")}</span>
+        </div>
+      </button>
+
       {onFavorite && (
         <button
           type="button"
@@ -72,26 +95,9 @@ export function CustomerShopCard({
             onFavorite();
           }}
         >
-          <Heart size={15} fill={favorite ? '#e11d48' : 'none'} color={favorite ? '#e11d48' : '#94a3b8'} />
+          <Heart size={20} fill={favorite ? '#e11d48' : 'none'} color={favorite ? '#e11d48' : '#526680'} />
         </button>
       )}
-      <button type="button" className="ae-shop-open" onClick={onOpen}>
-        <div className="ae-shop-photo-wrapper">
-          <ShopPhoto merchant={merchant} />
-        </div>
-        <div className="ae-shop-info">
-          <h3 title={merchant.merchant_name}>{merchant.merchant_name}</h3>
-          <p className="ae-shop-sub" title={subtitle}>{subtitle}</p>
-          <div className="ae-shop-loc" title={locationText}>
-            <MapPin size={11} className="ae-loc-icon" />
-            <span>{locationText}</span>
-          </div>
-          <div className={`ae-shop-status ${isOpen ? 'open' : 'closed'}`}>
-            <span className="ae-status-dot" />
-            <span>{uiText(isOpen ? "Open" : "Closed")}</span>
-          </div>
-        </div>
-      </button>
     </article>
   );
 }
