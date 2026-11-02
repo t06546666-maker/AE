@@ -1,5 +1,5 @@
 .ae-bill-backdrop { padding: 18px; z-index: 1200; }
-.ae-bill.modal { width: min(100%, 400px); padding: 24px; border-radius: 26px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #071d4840; }
+.ae-bill.modal { width: min(100%, 400px); padding: 24px 24px max(36px, calc(20px + env(safe-area-inset-bottom, 24px))); border-radius: 26px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #071d4840; }
 .ae-bill-header { display: flex; align-items: center; gap: 12px; }
 .ae-bill-header > div { flex: 1; min-width: 0; }
 .ae-bill-header h2 { margin: 0; font-size: 19px; }

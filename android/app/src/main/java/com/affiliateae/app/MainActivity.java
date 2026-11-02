@@ -5,6 +5,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.core.graphics.Insets;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.installations.FirebaseInstallations;
 import com.google.firebase.installations.InstallationTokenResult;
@@ -16,6 +22,29 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(UpiAppsPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Prevent Android system navigation bar (Back/Home/Recents buttons) from overlaying bottom checkout buttons & nav bars
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                getWindow().setNavigationBarColor(android.graphics.Color.WHITE);
+                WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                if (controller != null) {
+                    controller.setAppearanceLightNavigationBars(true);
+                }
+            }
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+            View contentView = findViewById(android.R.id.content);
+            if (contentView != null) {
+                ViewCompat.setOnApplyWindowInsetsListener(contentView, (view, insets) -> {
+                    Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+                    view.setPadding(0, 0, 0, navInsets.bottom);
+                    return insets;
+                });
+                ViewCompat.requestApplyInsets(contentView);
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error setting navigation bar insets", e);
+        }
         if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
         final Task<String> installationId = FirebaseInstallations.getInstance().getId();
         final Task<InstallationTokenResult> installationAuth = FirebaseInstallations.getInstance().getToken(false);
