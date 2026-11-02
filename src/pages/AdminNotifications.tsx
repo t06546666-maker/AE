@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Users,
   User,
+  UserCheck,
   Store,
   Globe,
   Smartphone,
@@ -22,6 +23,7 @@ import {
   RefreshCw,
   Search,
   Check,
+  Plus,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
@@ -66,16 +68,22 @@ interface MerchantPushStatusResponse {
   merchants: MerchantPushStatusItem[];
 }
 
+export type NotificationTarget = 'customers' | 'selected_customers' | 'merchants' | 'selected_merchants' | 'all' | 'single_customer';
+
 interface ScheduledNotification {
   id: string;
   title: string;
   body: string;
   url?: string;
   image_url?: string;
-  target: 'customers' | 'merchants' | 'all' | 'single_customer';
+  target: NotificationTarget;
   customer_id?: string;
   customer_name?: string;
   customer_phone?: string;
+  customer_ids?: string[];
+  merchant_ids?: string[];
+  target_summary?: string;
+  target_count?: number;
   scheduled_at: string;
   status: string;
   created_at?: string;
@@ -91,6 +99,10 @@ interface NotificationHistoryItem {
   customer_id?: string;
   customer_name?: string;
   customer_phone?: string;
+  customer_ids?: string[];
+  merchant_ids?: string[];
+  target_summary?: string;
+  target_count?: number;
   sent_at: string;
   delivered: number;
   failed: number;
@@ -109,9 +121,11 @@ export function AdminNotifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Form states
-  const [target, setTarget] = useState<'customers' | 'merchants' | 'all' | 'single_customer'>('customers');
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
+  const [target, setTarget] = useState<NotificationTarget>('customers');
+  const [selectedCustomers, setSelectedCustomers] = useState<CustomerSearchResult[]>([]);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [selectedMerchants, setSelectedMerchants] = useState<MerchantPushStatusItem[]>([]);
+  const [merchantPickerSearchQuery, setMerchantPickerSearchQuery] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
@@ -121,19 +135,46 @@ export function AdminNotifications() {
   const [scheduledDateTime, setScheduledDateTime] = useState('');
   const [activeTab, setActiveTab] = useState<'create' | 'scheduled' | 'history'>('create');
 
-  // Handle URL query parameters for pre-selecting a customer (e.g. from customer profile page)
+  // Handle URL query parameters for pre-selecting a customer or merchant
   useEffect(() => {
     const custId = searchParams.get('customerId');
     const custName = searchParams.get('customerName');
     const custPhone = searchParams.get('customerPhone');
     if (custId) {
-      setTarget('single_customer');
-      setSelectedCustomer({
-        id: custId,
-        name: custName ? decodeURIComponent(custName) : 'Customer',
-        phone: custPhone ? decodeURIComponent(custPhone) : '',
-        customer_code: '',
-        hasPushToken: true,
+      setTarget('selected_customers');
+      setSelectedCustomers((prev) => {
+        if (prev.some((c) => c.id === custId)) return prev;
+        return [
+          ...prev,
+          {
+            id: custId,
+            name: custName ? decodeURIComponent(custName) : 'Customer',
+            phone: custPhone ? decodeURIComponent(custPhone) : '',
+            customer_code: '',
+            hasPushToken: true,
+          },
+        ];
+      });
+    }
+
+    const merchId = searchParams.get('merchantId');
+    const merchName = searchParams.get('merchantName');
+    if (merchId) {
+      setTarget('selected_merchants');
+      setSelectedMerchants((prev) => {
+        if (prev.some((m) => m.id === merchId)) return prev;
+        return [
+          ...prev,
+          {
+            id: merchId,
+            merchant_code: '',
+            name: merchName ? decodeURIComponent(merchName) : 'Merchant Store',
+            phone: '',
+            email: '',
+            hasPushToken: true,
+            status: 'active',
+          },
+        ];
       });
     }
   }, [searchParams]);
@@ -156,31 +197,44 @@ export function AdminNotifications() {
   const { data: customerSearchResults, isFetching: searchingCustomers } = useQuery<{ success: boolean; customers: CustomerSearchResult[] }>({
     queryKey: ['admin', 'customers', 'search-push', customerSearchQuery],
     queryFn: () => apiFetch<{ success: boolean; customers: CustomerSearchResult[] }>(`/api/admin/customers/search-push?q=${encodeURIComponent(customerSearchQuery.trim())}`),
-    enabled: target === 'single_customer' && !selectedCustomer && customerSearchQuery.trim().length >= 1,
+    enabled: (target === 'selected_customers' || target === 'single_customer') && customerSearchQuery.trim().length >= 1,
     staleTime: 10_000,
   });
 
-  // Merchant push status modal state & query
+  // Merchant push status modal & picker state & query
   const [showMerchantModal, setShowMerchantModal] = useState(false);
   const [merchantSearchQuery, setMerchantSearchQuery] = useState('');
 
   const { data: merchantStatusData, isFetching: loadingMerchantStatus, refetch: refetchMerchantStatus } = useQuery<MerchantPushStatusResponse>({
     queryKey: ['admin', 'merchants', 'push-status'],
     queryFn: () => apiFetch<MerchantPushStatusResponse>('/api/admin/merchants/push-status'),
-    enabled: showMerchantModal,
-    staleTime: 5_000,
+    enabled: showMerchantModal || target === 'selected_merchants',
+    staleTime: 10_000,
   });
 
   const filteredMerchants = useMemo(() => {
     const list = merchantStatusData?.merchants || [];
     if (!merchantSearchQuery.trim()) return list;
     const q = merchantSearchQuery.toLowerCase();
-    return list.filter(m =>
+    return list.filter((m) =>
       m.name.toLowerCase().includes(q) ||
       m.merchant_code.toLowerCase().includes(q) ||
       m.phone.toLowerCase().includes(q)
     );
   }, [merchantStatusData, merchantSearchQuery]);
+
+  // Quick instant search for the merchant picker
+  const merchantPickerFiltered = useMemo(() => {
+    const list = merchantStatusData?.merchants || [];
+    if (!merchantPickerSearchQuery.trim()) return list.slice(0, 10);
+    const q = merchantPickerSearchQuery.toLowerCase();
+    return list.filter((m) =>
+      m.name.toLowerCase().includes(q) ||
+      m.merchant_code.toLowerCase().includes(q) ||
+      m.phone.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q)
+    ).slice(0, 25);
+  }, [merchantStatusData, merchantPickerSearchQuery]);
 
   // Image selection handler
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -211,6 +265,48 @@ export function AdminNotifications() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Add/remove customer helpers
+  const handleAddCustomer = (c: CustomerSearchResult) => {
+    setSelectedCustomers((prev) => {
+      if (prev.some((item) => item.id === c.id)) return prev;
+      return [...prev, c];
+    });
+  };
+
+  const handleRemoveCustomer = (id: string) => {
+    setSelectedCustomers((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleAddAllSearchCustomers = () => {
+    if (!customerSearchResults?.customers) return;
+    setSelectedCustomers((prev) => {
+      const existingIds = new Set(prev.map((c) => c.id));
+      const newItems = customerSearchResults.customers.filter((c) => !existingIds.has(c.id));
+      return [...prev, ...newItems];
+    });
+  };
+
+  // Add/remove merchant helpers
+  const handleAddMerchant = (m: MerchantPushStatusItem) => {
+    setSelectedMerchants((prev) => {
+      if (prev.some((item) => item.id === m.id)) return prev;
+      return [...prev, m];
+    });
+  };
+
+  const handleRemoveMerchant = (id: string) => {
+    setSelectedMerchants((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleAddAllActiveMerchants = () => {
+    const activeList = (merchantStatusData?.merchants || []).filter((m) => m.hasPushToken);
+    setSelectedMerchants((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const toAdd = activeList.filter((m) => !existingIds.has(m.id));
+      return [...prev, ...toAdd];
+    });
+  };
+
   // Broadcast mutation
   const broadcastMutation = useMutation({
     mutationFn: async () => {
@@ -220,10 +316,29 @@ export function AdminNotifications() {
       if (url.trim()) form.append('url', url.trim());
       form.append('target', target);
 
-      if (target === 'single_customer' && selectedCustomer) {
-        form.append('customerId', selectedCustomer.id);
-        form.append('customerName', selectedCustomer.name);
-        form.append('customerPhone', selectedCustomer.phone);
+      if (target === 'selected_customers' || target === 'single_customer') {
+        const cIds = selectedCustomers.map((c) => c.id);
+        form.append('customerIds', JSON.stringify(cIds));
+        const cNames = selectedCustomers.map((c) => c.name);
+        form.append('customerNames', JSON.stringify(cNames));
+        form.append('targetSummary', `${selectedCustomers.length} Customer${selectedCustomers.length === 1 ? '' : 's'} (${selectedCustomers.slice(0, 3).map((c) => c.name).join(', ')}${selectedCustomers.length > 3 ? '...' : ''})`);
+        if (selectedCustomers[0]) {
+          form.append('customerId', selectedCustomers[0].id);
+          form.append('customerName', selectedCustomers[0].name);
+          form.append('customerPhone', selectedCustomers[0].phone);
+        }
+      }
+
+      if (target === 'selected_merchants') {
+        const mIds = selectedMerchants.map((m) => m.id);
+        form.append('merchantIds', JSON.stringify(mIds));
+        const mNames = selectedMerchants.map((m) => m.name);
+        form.append('merchantNames', JSON.stringify(mNames));
+        form.append('targetSummary', `${selectedMerchants.length} Store${selectedMerchants.length === 1 ? '' : 's'} (${selectedMerchants.slice(0, 3).map((m) => m.name).join(', ')}${selectedMerchants.length > 3 ? '...' : ''})`);
+        if (selectedMerchants[0]) {
+          form.append('merchantId', selectedMerchants[0].id);
+          form.append('merchantName', selectedMerchants[0].name);
+        }
       }
 
       if (dispatchMode === 'schedule' && scheduledDateTime) {
@@ -253,6 +368,8 @@ export function AdminNotifications() {
       handleRemoveImage();
       setDispatchMode('now');
       setScheduledDateTime('');
+      setSelectedCustomers([]);
+      setSelectedMerchants([]);
 
       void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications'] });
       setActiveTab(data.scheduled ? 'scheduled' : 'history');
@@ -280,8 +397,12 @@ export function AdminNotifications() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (target === 'single_customer' && !selectedCustomer) {
-      showToast('Please search and select a customer first.', 'error');
+    if ((target === 'selected_customers' || target === 'single_customer') && selectedCustomers.length === 0) {
+      showToast('Please search and add at least one customer first.', 'error');
+      return;
+    }
+    if (target === 'selected_merchants' && selectedMerchants.length === 0) {
+      showToast('Please search and add at least one merchant store first.', 'error');
       return;
     }
     if (!title.trim()) {
@@ -522,7 +643,7 @@ export function AdminNotifications() {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>
                 {uiText("Target Audience")}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => setTarget('customers')}
@@ -547,24 +668,30 @@ export function AdminNotifications() {
 
                 <button
                   type="button"
-                  onClick={() => setTarget('single_customer')}
+                  onClick={() => setTarget('selected_customers')}
                   style={{
                     padding: '10px 8px',
                     borderRadius: '10px',
-                    border: target === 'single_customer' ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                    background: target === 'single_customer' ? '#eff6ff' : '#fff',
-                    color: target === 'single_customer' ? '#1d4ed8' : '#475569',
-                    fontWeight: target === 'single_customer' ? 700 : 500,
+                    border: (target === 'selected_customers' || target === 'single_customer') ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                    background: (target === 'selected_customers' || target === 'single_customer') ? '#eff6ff' : '#fff',
+                    color: (target === 'selected_customers' || target === 'single_customer') ? '#1d4ed8' : '#475569',
+                    fontWeight: (target === 'selected_customers' || target === 'single_customer') ? 700 : 500,
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '4px',
                     fontSize: '11px',
+                    position: 'relative',
                   }}
                 >
-                  <User size={17} />
-                  <span>{uiText("Select Customer")}</span>
+                  <UserCheck size={17} />
+                  <span>{uiText("Selected Customers")}</span>
+                  {selectedCustomers.length > 0 && (
+                    <span style={{ position: 'absolute', top: 4, right: 6, background: '#2563eb', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '10px', padding: '1px 5px' }}>
+                      {selectedCustomers.length}
+                    </span>
+                  )}
                 </button>
 
                 <button
@@ -591,6 +718,34 @@ export function AdminNotifications() {
 
                 <button
                   type="button"
+                  onClick={() => setTarget('selected_merchants')}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: target === 'selected_merchants' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                    background: target === 'selected_merchants' ? '#eff6ff' : '#fff',
+                    color: target === 'selected_merchants' ? '#1d4ed8' : '#475569',
+                    fontWeight: target === 'selected_merchants' ? 700 : 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11px',
+                    position: 'relative',
+                  }}
+                >
+                  <Store size={17} />
+                  <span>{uiText("Selected Merchants")}</span>
+                  {selectedMerchants.length > 0 && (
+                    <span style={{ position: 'absolute', top: 4, right: 6, background: '#2563eb', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '10px', padding: '1px 5px' }}>
+                      {selectedMerchants.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setTarget('all')}
                   style={{
                     padding: '10px 8px',
@@ -613,136 +768,406 @@ export function AdminNotifications() {
               </div>
             </div>
 
-            {/* If Single Customer is selected, show Customer Picker */}
-            {target === 'single_customer' && (
+            {/* If Selected Customers is target, show Multi-Customer Picker */}
+            {(target === 'selected_customers' || target === 'single_customer') && (
               <div style={{ marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-                  {uiText("Select Customer")} <span style={{ color: '#ef4444' }}>*</span>
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserCheck size={16} className="text-blue-600" />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                      {uiText("Select Specific Customers")} <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                    {selectedCustomers.length > 0 && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }}>
+                        {selectedCustomers.length} {uiText("selected")}
+                      </span>
+                    )}
+                  </div>
 
-                {selectedCustomer ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '12px 14px',
-                      background: '#fff',
-                      borderRadius: '10px',
-                      border: '1.5px solid #bfdbfe',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px' }}>
-                        {selectedCustomer.name.slice(0, 2).toUpperCase() || 'CU'}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
-                          {selectedCustomer.name}
+                  {selectedCustomers.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCustomers([]);
+                        setSearchParams({});
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '12px',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                      }}
+                    >
+                      {uiText("Clear all ({{count}})", { count: selectedCustomers.length })}
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected customer chips */}
+                {selectedCustomers.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px', maxHeight: '180px', overflowY: 'auto', padding: '4px 0' }}>
+                    {selectedCustomers.map((c) => (
+                      <div
+                        key={c.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 10px',
+                          background: '#fff',
+                          borderRadius: '20px',
+                          border: '1px solid #cbd5e1',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        }}
+                      >
+                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>
+                          {c.name.slice(0, 1).toUpperCase() || 'C'}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          {selectedCustomer.phone} {selectedCustomer.customer_code ? `• ${selectedCustomer.customer_code}` : ''}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                            {c.name}
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>
+                            {c.phone || c.customer_code}
+                          </span>
                         </div>
+                        {c.hasPushToken ? (
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
+                            ● Push
+                          </span>
+                        ) : (
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                            In-App
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomer(c.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '2px',
+                          }}
+                          title={uiText("Remove")}
+                        >
+                          <X size={14} />
+                        </button>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                    {uiText("No customers selected yet. Search below to add customers (you can select multiple).")}
+                  </p>
+                )}
+
+                {/* Customer Search Box */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="input"
+                    value={customerSearchQuery}
+                    onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                    placeholder={uiText("Search customer by name, phone number, or code to add...")}
+                    style={{ width: '100%', fontSize: '13px', padding: '10px 14px 10px 36px' }}
+                  />
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+                  {searchingCustomers && (
+                    <RefreshCw size={14} className="spin" style={{ position: 'absolute', right: '12px', top: '13px', color: '#2563eb' }} />
+                  )}
+                </div>
+
+                {/* Customer Search Results */}
+                {customerSearchResults?.customers && customerSearchResults.customers.length > 0 && (
+                  <div style={{ marginTop: '8px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', maxHeight: '200px', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                      <span>{uiText("Matching Customers ({{count}}):", { count: customerSearchResults.customers.length })}</span>
+                      <button
+                        type="button"
+                        onClick={handleAddAllSearchCustomers}
+                        style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: 700, fontSize: '11px' }}
+                      >
+                        {uiText("+ Add All ({{count}})", { count: customerSearchResults.customers.length })}
+                      </button>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {selectedCustomer.hasPushToken ? (
-                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: '#dcfce7', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Check size={12} />
-                          <span>{uiText("Phone Push Ready")}</span>
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
-                          {uiText("In-App Only")}
-                        </span>
-                      )}
+                    {customerSearchResults.customers.map((c) => {
+                      const isAdded = selectedCustomers.some((item) => item.id === c.id);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            if (!isAdded) handleAddCustomer(c);
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: isAdded ? 'default' : 'pointer',
+                            opacity: isAdded ? 0.6 : 1,
+                            background: isAdded ? '#f8fafc' : '#fff',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isAdded) e.currentTarget.style.background = '#f1f5f9';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isAdded) e.currentTarget.style.background = isAdded ? '#f8fafc' : '#fff';
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{c.name}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone} {c.customer_code ? `• ${c.customer_code}` : ''}</div>
+                          </div>
 
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {c.hasPushToken ? (
+                              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                                ● {uiText("Push Ready")}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#f1f5f9', color: '#64748b' }}>
+                                {uiText("In-App Only")}
+                              </span>
+                            )}
+
+                            {isAdded ? (
+                              <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <Check size={13} />
+                                {uiText("Added")}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: '#eff6ff', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <Plus size={13} />
+                                {uiText("Add")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {customerSearchQuery.trim().length >= 2 && customerSearchResults?.customers?.length === 0 && !searchingCustomers && (
+                  <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+                    {uiText("No customer found matching your search.")}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* If Selected Merchants is target, show Multi-Merchant Picker */}
+            {target === 'selected_merchants' && (
+              <div style={{ marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Store size={16} className="text-blue-600" />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                      {uiText("Select Specific Merchant Stores")} <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                    {selectedMerchants.length > 0 && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }}>
+                        {selectedMerchants.length} {uiText("selected")}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {merchantStatusData?.merchants && (
+                      <button
+                        type="button"
+                        onClick={handleAddAllActiveMerchants}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '11px',
+                          color: '#059669',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                        }}
+                      >
+                        {uiText("+ Add All Push Active Stores ({{count}})", {
+                          count: merchantStatusData.merchants.filter((m) => m.hasPushToken).length,
+                        })}
+                      </button>
+                    )}
+
+                    {selectedMerchants.length > 0 && (
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedCustomer(null);
-                          setCustomerSearchQuery('');
+                          setSelectedMerchants([]);
                           setSearchParams({});
                         }}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#94a3b8',
+                          fontSize: '12px',
+                          color: '#ef4444',
                           cursor: 'pointer',
-                          padding: '4px',
+                          fontWeight: 600,
+                          padding: '2px 6px',
                         }}
-                        title={uiText("Change Customer")}
                       >
-                        <X size={18} />
+                        {uiText("Clear all ({{count}})", { count: selectedMerchants.length })}
                       </button>
-                    </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Selected merchant chips */}
+                {selectedMerchants.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px', maxHeight: '180px', overflowY: 'auto', padding: '4px 0' }}>
+                    {selectedMerchants.map((m) => (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 10px',
+                          background: '#fff',
+                          borderRadius: '20px',
+                          border: '1px solid #cbd5e1',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        }}
+                      >
+                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>
+                          <Store size={12} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                            {m.name}
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>
+                            {m.merchant_code} {m.phone ? `• ${m.phone}` : ''}
+                          </span>
+                        </div>
+                        {m.hasPushToken ? (
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
+                            ● Push
+                          </span>
+                        ) : (
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                            Pending
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMerchant(m.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '2px',
+                          }}
+                          title={uiText("Remove")}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <div>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type="text"
-                        className="input"
-                        value={customerSearchQuery}
-                        onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                        placeholder={uiText("Type customer name, phone number, or code...")}
-                        style={{ width: '100%', fontSize: '13px', padding: '10px 14px 10px 36px' }}
-                      />
-                      <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
-                      {searchingCustomers && (
-                        <RefreshCw size={14} className="spin" style={{ position: 'absolute', right: '12px', top: '13px', color: '#2563eb' }} />
-                      )}
+                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                    {uiText("No stores selected yet. Search below to add stores (you can select multiple stores).")}
+                  </p>
+                )}
+
+                {/* Merchant Search Box */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="input"
+                    value={merchantPickerSearchQuery}
+                    onChange={(e) => setMerchantPickerSearchQuery(e.target.value)}
+                    placeholder={uiText("Search store by name, merchant code (e.g. MER022), or phone...")}
+                    style={{ width: '100%', fontSize: '13px', padding: '10px 14px 10px 36px' }}
+                  />
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+                  {loadingMerchantStatus && (
+                    <RefreshCw size={14} className="spin" style={{ position: 'absolute', right: '12px', top: '13px', color: '#2563eb' }} />
+                  )}
+                </div>
+
+                {/* Merchant Results */}
+                {merchantPickerFiltered.length > 0 && (
+                  <div style={{ marginTop: '8px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', maxHeight: '200px', overflowY: 'auto' }}>
+                    <div style={{ padding: '6px 12px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                      {uiText("Available Stores:")}
                     </div>
 
-                    {/* Results list */}
-                    {customerSearchResults?.customers && customerSearchResults.customers.length > 0 && (
-                      <div style={{ marginTop: '8px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', maxHeight: '190px', overflowY: 'auto' }}>
-                        {customerSearchResults.customers.map((c) => (
-                          <div
-                            key={c.id}
-                            onClick={() => {
-                              setSelectedCustomer(c);
-                              setCustomerSearchQuery('');
-                            }}
-                            style={{
-                              padding: '10px 14px',
-                              borderBottom: '1px solid #f1f5f9',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              cursor: 'pointer',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-                          >
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{c.name}</div>
-                              <div style={{ fontSize: '11px', color: '#64748b' }}>{c.phone} • {c.customer_code}</div>
-                            </div>
-
-                            <div>
-                              {c.hasPushToken ? (
-                                <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                                  ● {uiText("Push Ready")}
-                                </span>
-                              ) : (
-                                <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '10px', background: '#f1f5f9', color: '#64748b' }}>
-                                  {uiText("In-App Only")}
-                                </span>
-                              )}
+                    {merchantPickerFiltered.map((m) => {
+                      const isAdded = selectedMerchants.some((item) => item.id === m.id);
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={() => {
+                            if (!isAdded) handleAddMerchant(m);
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: isAdded ? 'default' : 'pointer',
+                            opacity: isAdded ? 0.6 : 1,
+                            background: isAdded ? '#f8fafc' : '#fff',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isAdded) e.currentTarget.style.background = '#f1f5f9';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isAdded) e.currentTarget.style.background = isAdded ? '#f8fafc' : '#fff';
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>{m.name}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>
+                              {m.merchant_code} {m.phone ? `• ${m.phone}` : ''}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
 
-                    {customerSearchQuery.trim().length >= 2 && customerSearchResults?.customers?.length === 0 && !searchingCustomers && (
-                      <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
-                        {uiText("No customer found matching your search.")}
-                      </div>
-                    )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {m.hasPushToken ? (
+                              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                                ● {uiText("Push Active")}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#f1f5f9', color: '#64748b' }}>
+                                {uiText("Pending App")}
+                              </span>
+                            )}
+
+                            {isAdded ? (
+                              <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <Check size={13} />
+                                {uiText("Added")}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: '#eff6ff', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <Plus size={13} />
+                                {uiText("Add")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -955,7 +1380,17 @@ export function AdminNotifications() {
               ) : (
                 <>
                   <Send size={18} />
-                  <span>{target === 'single_customer' ? uiText("Send Push to Customer Now") : uiText("Send Push Broadcast Now")}</span>
+                  <span>
+                    {target === 'selected_customers' || target === 'single_customer'
+                      ? (selectedCustomers.length > 0 ? uiText("Send Push to {{count}} Customer(s) Now", { count: selectedCustomers.length }) : uiText("Send Push to Customers Now"))
+                      : target === 'selected_merchants'
+                      ? (selectedMerchants.length > 0 ? uiText("Send Push to {{count}} Store(s) Now", { count: selectedMerchants.length }) : uiText("Send Push to Stores Now"))
+                      : target === 'merchants'
+                      ? uiText("Send Push to All Merchants Now")
+                      : target === 'all'
+                      ? uiText("Broadcast to Everyone Now")
+                      : uiText("Send Push to All Customers Now")}
+                  </span>
                 </>
               )}
             </button>
@@ -966,9 +1401,25 @@ export function AdminNotifications() {
             <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Smartphone size={18} className="text-slate-600" />
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-                {target === 'single_customer' && selectedCustomer
-                  ? uiText("Live Preview for {{name}}", { name: selectedCustomer.name })
-                  : uiText("Live Phone Lockscreen Preview")}
+                {target === 'selected_customers' || target === 'single_customer'
+                  ? (selectedCustomers.length > 0
+                      ? uiText("Live Preview for {{count}} Customer(s) ({{names}})", {
+                          count: selectedCustomers.length,
+                          names: selectedCustomers.slice(0, 2).map((c) => c.name).join(', ') + (selectedCustomers.length > 2 ? '...' : ''),
+                        })
+                      : uiText("Live Preview (No customers selected)"))
+                  : target === 'selected_merchants'
+                  ? (selectedMerchants.length > 0
+                      ? uiText("Live Preview for {{count}} Store(s) ({{names}})", {
+                          count: selectedMerchants.length,
+                          names: selectedMerchants.slice(0, 2).map((m) => m.name).join(', ') + (selectedMerchants.length > 2 ? '...' : ''),
+                        })
+                      : uiText("Live Preview (No stores selected)"))
+                  : target === 'merchants'
+                  ? uiText("Live Phone Preview (All Merchants)")
+                  : target === 'all'
+                  ? uiText("Live Phone Preview (Everyone)")
+                  : uiText("Live Phone Preview (All Customers)")}
               </h3>
             </div>
 
@@ -1133,7 +1584,15 @@ export function AdminNotifications() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{item.title}</span>
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
-                          {item.target === 'single_customer' ? `${uiText("Customer")}: ${item.customer_name || 'Individual'}` : item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
+                          {item.target === 'selected_customers' || item.target === 'single_customer'
+                            ? (item.target_summary || (item.target_count && item.target_count > 1 ? `${item.target_count} Selected Customers` : (item.customer_name ? `Customer: ${item.customer_name}` : uiText("Selected Customers"))))
+                            : item.target === 'selected_merchants'
+                            ? (item.target_summary || (item.target_count && item.target_count > 1 ? `${item.target_count} Selected Stores` : uiText("Selected Merchants")))
+                            : item.target === 'merchants'
+                            ? uiText("All Merchants")
+                            : item.target === 'all'
+                            ? uiText("Everyone")
+                            : uiText("All Customers")}
                         </span>
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
@@ -1242,7 +1701,15 @@ export function AdminNotifications() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{item.title}</span>
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
-                          {item.target === 'single_customer' ? `${uiText("Customer")}: ${item.customer_name || 'Individual'}` : item.target === 'merchants' ? uiText("Merchants") : item.target === 'all' ? uiText("Everyone") : uiText("Customers")}
+                          {item.target === 'selected_customers' || item.target === 'single_customer'
+                            ? (item.target_summary || (item.target_count && item.target_count > 1 ? `${item.target_count} Selected Customers` : (item.customer_name ? `Customer: ${item.customer_name}` : uiText("Selected Customers"))))
+                            : item.target === 'selected_merchants'
+                            ? (item.target_summary || (item.target_count && item.target_count > 1 ? `${item.target_count} Selected Stores` : uiText("Selected Merchants")))
+                            : item.target === 'merchants'
+                            ? uiText("All Merchants")
+                            : item.target === 'all'
+                            ? uiText("Everyone")
+                            : uiText("All Customers")}
                         </span>
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>

@@ -39,27 +39,75 @@ function registerAdminNotifications(app, {
     customerId = null,
     customerName = '',
     customerPhone = '',
+    customerIds = null,
+    customerNames = null,
+    merchantIds = null,
+    merchantNames = null,
+    targetSummary = '',
     scheduledId = null,
   }) {
     const { db, messaging, FieldValue } = await getFirebaseInstances();
 
-    // 1. Save in customer in-app notifications
-    // If targeted to a single customer, store customer_id so only they receive it
-    if (target === 'single_customer' && customerId) {
+    // Normalize customerIds array
+    let normalizedCustomerIds = [];
+    if (Array.isArray(customerIds)) {
+      normalizedCustomerIds = customerIds.map(String).filter(Boolean);
+    } else if (typeof customerIds === 'string' && customerIds.trim()) {
       try {
-        await db.collection('ae_customer_announcements').add({
-          title,
-          body,
-          url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
-          image_url: imageUrl || '',
-          target: 'single_customer',
-          customer_id: String(customerId),
-          customer_name: customerName || '',
-          customer_phone: customerPhone || '',
-          created_at: FieldValue.serverTimestamp(),
-        });
+        const parsed = JSON.parse(customerIds);
+        if (Array.isArray(parsed)) normalizedCustomerIds = parsed.map(String).filter(Boolean);
+      } catch {
+        normalizedCustomerIds = customerIds.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (customerId && !normalizedCustomerIds.includes(String(customerId))) {
+      normalizedCustomerIds.push(String(customerId));
+    }
+
+    // Normalize merchantIds array
+    let normalizedMerchantIds = [];
+    if (Array.isArray(merchantIds)) {
+      normalizedMerchantIds = merchantIds.map(String).filter(Boolean);
+    } else if (typeof merchantIds === 'string' && merchantIds.trim()) {
+      try {
+        const parsed = JSON.parse(merchantIds);
+        if (Array.isArray(parsed)) normalizedMerchantIds = parsed.map(String).filter(Boolean);
+      } catch {
+        normalizedMerchantIds = merchantIds.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+
+    // Customer name lookup map if object provided
+    let customerNameMap = {};
+    if (customerNames && typeof customerNames === 'object') {
+      customerNameMap = customerNames;
+    }
+
+    // 1. Save in customer in-app notifications
+    // If targeted to specific selected customers
+    if (target === 'selected_customers' || target === 'single_customer') {
+      try {
+        await Promise.all(
+          normalizedCustomerIds.map(async (cId) => {
+            try {
+              await db.collection('ae_customer_announcements').add({
+                title,
+                body,
+                url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
+                image_url: imageUrl || '',
+                target: 'selected_customers',
+                customer_id: String(cId),
+                customer_name: (customerNameMap && customerNameMap[cId]) || (cId === customerId ? customerName : '') || '',
+                customer_phone: (cId === customerId ? customerPhone : '') || '',
+                created_at: FieldValue.serverTimestamp(),
+              });
+            } catch (err) {
+              console.warn(`[admin-notifications] Error saving announcement for customer ${cId}:`, err.message);
+            }
+          })
+        );
       } catch (saveErr) {
-        console.warn('[admin-notifications] Error saving single customer in-app announcement:', saveErr.message);
+        console.warn('[admin-notifications] Error saving selected customer in-app announcements:', saveErr.message);
       }
     } else if (target === 'customers' || target === 'all') {
       try {
@@ -76,9 +124,75 @@ function registerAdminNotifications(app, {
       }
     }
 
-    // 1b. Save in merchant inboxes so ALL onboarded merchants receive it in their notification bell,
-    // even if their physical phone has not registered an FCM push token yet.
-    if (target === 'merchants' || target === 'all') {
+    // 1b. Save in merchant inboxes so onboarded merchants receive it in their notification bell
+    if (target === 'selected_merchants' && normalizedMerchantIds.length > 0) {
+      try {
+        await db.collection('ae_merchant_announcements').add({
+          title,
+          body,
+          url: url || '',
+          image_url: imageUrl || '',
+          target: 'selected_merchants',
+          merchant_ids: normalizedMerchantIds,
+          created_at: FieldValue.serverTimestamp(),
+        });
+      } catch (saveErr) {
+        console.warn('[admin-notifications] Error saving selected merchant announcement:', saveErr.message);
+      }
+
+      try {
+        const targetProfileIds = new Set();
+        normalizedMerchantIds.forEach((mId) => targetProfileIds.add(mId));
+
+        if (supabase) {
+          const { data: mProfiles } = await supabase
+            .from('profiles')
+            .select('id, merchant_id')
+            .eq('role', 'merchant');
+          if (Array.isArray(mProfiles)) {
+            mProfiles.forEach((p) => {
+              if (p.merchant_id && normalizedMerchantIds.includes(String(p.merchant_id))) {
+                targetProfileIds.add(p.id);
+              }
+            });
+          }
+        }
+
+        const profileSnap = await db.collection('ae_profile_push_registrations').get();
+        profileSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data && data.merchant_id && normalizedMerchantIds.includes(String(data.merchant_id))) {
+            targetProfileIds.add(doc.id);
+          }
+        });
+
+        const uniqueProfileIds = Array.from(targetProfileIds);
+        await Promise.all(
+          uniqueProfileIds.map(async (pId) => {
+            try {
+              await db
+                .collection('ae_profile_notification_inboxes')
+                .doc(pId)
+                .collection('items')
+                .add({
+                  title: String(title).slice(0, 160),
+                  body: String(body).slice(0, 1000),
+                  target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
+                  image_url: imageUrl || null,
+                  event_type: 'admin_broadcast',
+                  entity_id: null,
+                  read_at: null,
+                  created_at: new Date().toISOString(),
+                });
+            } catch {
+              // Ignore individual inbox save error
+            }
+          })
+        );
+      } catch (inboxErr) {
+        console.warn('[admin-notifications] Error saving selected merchant inboxes:', inboxErr.message);
+      }
+    } else if (target === 'merchants' || target === 'all') {
       try {
         await db.collection('ae_merchant_announcements').add({
           title,
@@ -138,19 +252,23 @@ function registerAdminNotifications(app, {
     // 2. Collect eligible push tokens
     const tokens = [];
 
-    // Target: Single specific customer
-    if (target === 'single_customer' && customerId) {
-      try {
-        const custDoc = await db.collection('ae_customer_notifications').doc(String(customerId)).get();
-        if (custDoc.exists) {
-          const data = custDoc.data();
-          if (data && data.push_token && data.push_enabled !== false) {
-            tokens.push(data.push_token);
+    // Target: Selected customers or Single customer
+    if ((target === 'selected_customers' || target === 'single_customer') && normalizedCustomerIds.length > 0) {
+      await Promise.all(
+        normalizedCustomerIds.map(async (cId) => {
+          try {
+            const custDoc = await db.collection('ae_customer_notifications').doc(String(cId)).get();
+            if (custDoc.exists) {
+              const data = custDoc.data();
+              if (data && data.push_token && data.push_enabled !== false) {
+                tokens.push(data.push_token);
+              }
+            }
+          } catch (scErr) {
+            console.warn(`[admin-notifications] Error reading specific customer token for ${cId}:`, scErr.message);
           }
-        }
-      } catch (scErr) {
-        console.warn('[admin-notifications] Error reading specific customer token:', scErr.message);
-      }
+        })
+      );
     }
 
     // Target: All customers
@@ -165,6 +283,47 @@ function registerAdminNotifications(app, {
         });
       } catch (cErr) {
         console.warn('[admin-notifications] Error reading customer tokens:', cErr.message);
+      }
+    }
+
+    // Target: Selected merchants
+    if (target === 'selected_merchants' && normalizedMerchantIds.length > 0) {
+      // 1. From Firestore ae_profile_push_registrations
+      try {
+        const profilePushSnap = await db.collection('ae_profile_push_registrations').get();
+        profilePushSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data && data.push_token && data.push_enabled !== false) {
+            const matchesId = normalizedMerchantIds.includes(String(doc.id)) ||
+              (data.merchant_id && normalizedMerchantIds.includes(String(data.merchant_id)));
+            if (matchesId) {
+              tokens.push(data.push_token);
+            }
+          }
+        });
+      } catch (pErr) {
+        console.warn('[admin-notifications] Error reading selected merchant tokens from Firestore:', pErr.message);
+      }
+
+      // 2. From Supabase profiles
+      if (supabase) {
+        try {
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('id, merchant_id, push_token, push_enabled, role')
+            .eq('role', 'merchant');
+          if (!error && Array.isArray(profiles)) {
+            profiles.forEach((p) => {
+              const matchesId = normalizedMerchantIds.includes(String(p.id)) ||
+                (p.merchant_id && normalizedMerchantIds.includes(String(p.merchant_id)));
+              if (matchesId && p.push_token && p.push_enabled !== false) {
+                tokens.push(p.push_token);
+              }
+            });
+          }
+        } catch (mErr) {
+          console.warn('[admin-notifications] Error reading selected merchant tokens from Supabase:', mErr.message);
+        }
       }
     }
 
@@ -216,9 +375,13 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
-          customer_id: customerId || null,
+          customer_id: customerId || (normalizedCustomerIds[0] || null),
           customer_name: customerName || '',
           customer_phone: customerPhone || '',
+          customer_ids: normalizedCustomerIds,
+          merchant_ids: normalizedMerchantIds,
+          target_summary: targetSummary || '',
+          target_count: normalizedCustomerIds.length || normalizedMerchantIds.length || 0,
           scheduled_id: scheduledId || null,
           sent_at: FieldValue.serverTimestamp(),
           delivered: 0,
@@ -306,9 +469,13 @@ function registerAdminNotifications(app, {
         url: url || '',
         image_url: imageUrl || '',
         target,
-        customer_id: customerId || null,
+        customer_id: customerId || (normalizedCustomerIds[0] || null),
         customer_name: customerName || '',
         customer_phone: customerPhone || '',
+        customer_ids: normalizedCustomerIds,
+        merchant_ids: normalizedMerchantIds,
+        target_summary: targetSummary || '',
+        target_count: normalizedCustomerIds.length || normalizedMerchantIds.length || 0,
         scheduled_id: scheduledId || null,
         sent_at: FieldValue.serverTimestamp(),
         delivered: successCount,
@@ -368,6 +535,11 @@ function registerAdminNotifications(app, {
             customerId: data.customer_id || null,
             customerName: data.customer_name || '',
             customerPhone: data.customer_phone || '',
+            customerIds: data.customer_ids || (data.customer_id ? [data.customer_id] : []),
+            customerNames: data.customer_names || null,
+            merchantIds: data.merchant_ids || [],
+            merchantNames: data.merchant_names || null,
+            targetSummary: data.target_summary || '',
             scheduledId: doc.id,
           });
 
@@ -423,7 +595,7 @@ function registerAdminNotifications(app, {
         .select('id, name, phone, customer_code, created_at')
         .or(`name.ilike.%${q}%,phone.ilike.%${q}%,customer_code.ilike.%${q}%`)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(25);
 
       if (error) {
         return res.status(500).json({ success: false, error: error.message });
@@ -649,6 +821,10 @@ function registerAdminNotifications(app, {
           customer_id: d.customer_id || null,
           customer_name: d.customer_name || '',
           customer_phone: d.customer_phone || '',
+          customer_ids: d.customer_ids || [],
+          merchant_ids: d.merchant_ids || [],
+          target_summary: d.target_summary || '',
+          target_count: Number(d.target_count || (d.customer_ids?.length) || (d.merchant_ids?.length) || 0),
           scheduled_at: d.scheduled_at,
           status: d.status || 'scheduled',
           created_at: d.created_at?.toDate ? d.created_at.toDate().toISOString() : d.created_at,
@@ -674,6 +850,10 @@ function registerAdminNotifications(app, {
           customer_id: d.customer_id || null,
           customer_name: d.customer_name || '',
           customer_phone: d.customer_phone || '',
+          customer_ids: d.customer_ids || [],
+          merchant_ids: d.merchant_ids || [],
+          target_summary: d.target_summary || '',
+          target_count: Number(d.target_count || (d.customer_ids?.length) || (d.merchant_ids?.length) || 0),
           scheduled_id: d.scheduled_id || null,
           delivered: Number(d.delivered || 0),
           failed: Number(d.failed || 0),
@@ -696,7 +876,7 @@ function registerAdminNotifications(app, {
   /**
    * POST /api/admin/broadcast-notification
    * Broadcast immediately or schedule for future date/time
-   * Supports target: 'customers' | 'merchants' | 'all' | 'single_customer'
+   * Supports target: 'customers' | 'selected_customers' | 'merchants' | 'selected_merchants' | 'all' | 'single_customer'
    */
   app.post('/api/admin/broadcast-notification', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
@@ -707,7 +887,36 @@ function registerAdminNotifications(app, {
       const customerId = (req.body.customerId || req.body.customer_id || '').trim();
       const customerName = (req.body.customerName || req.body.customer_name || '').trim();
       const customerPhone = (req.body.customerPhone || req.body.customer_phone || '').trim();
+      const targetSummary = (req.body.targetSummary || req.body.target_summary || '').trim();
       const scheduledAtRaw = (req.body.scheduled_at || '').trim();
+
+      // Parse multi-select customer IDs
+      let customerIds = [];
+      if (req.body.customerIds) {
+        try {
+          customerIds = typeof req.body.customerIds === 'string' ? JSON.parse(req.body.customerIds) : req.body.customerIds;
+        } catch {
+          customerIds = String(req.body.customerIds).split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+      if (!Array.isArray(customerIds)) customerIds = [];
+      if (customerId && !customerIds.includes(customerId)) {
+        customerIds.push(customerId);
+      }
+
+      // Parse multi-select merchant IDs
+      let merchantIds = [];
+      if (req.body.merchantIds) {
+        try {
+          merchantIds = typeof req.body.merchantIds === 'string' ? JSON.parse(req.body.merchantIds) : req.body.merchantIds;
+        } catch {
+          merchantIds = String(req.body.merchantIds).split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+      if (!Array.isArray(merchantIds)) merchantIds = [];
+      if (req.body.merchantId && !merchantIds.includes(req.body.merchantId)) {
+        merchantIds.push(req.body.merchantId);
+      }
 
       if (!title) {
         return res.status(400).json({ success: false, error: 'Notification title is required.' });
@@ -716,8 +925,12 @@ function registerAdminNotifications(app, {
         return res.status(400).json({ success: false, error: 'Notification message body is required.' });
       }
 
-      if (target === 'single_customer' && !customerId) {
-        return res.status(400).json({ success: false, error: 'Please select a customer to send this notification to.' });
+      if ((target === 'selected_customers' || target === 'single_customer') && customerIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'Please select at least one customer to send this notification to.' });
+      }
+
+      if (target === 'selected_merchants' && merchantIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'Please select at least one merchant to send this notification to.' });
       }
 
       // Handle optional image upload
@@ -751,15 +964,25 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
-          customer_id: customerId || null,
+          customer_id: customerId || (customerIds[0] || null),
           customer_name: customerName || '',
           customer_phone: customerPhone || '',
+          customer_ids: customerIds,
+          merchant_ids: merchantIds,
+          target_summary: targetSummary || '',
+          target_count: customerIds.length || merchantIds.length || 0,
           scheduled_at: scheduledAtIso,
           status: 'scheduled',
           created_at: FieldValue.serverTimestamp(),
         });
 
-        const targetDesc = target === 'single_customer' ? (customerName || 'customer') : 'audience';
+        let targetDesc = 'audience';
+        if (target === 'selected_customers' || target === 'single_customer') {
+          targetDesc = targetSummary || `${customerIds.length} selected customer(s)`;
+        } else if (target === 'selected_merchants') {
+          targetDesc = targetSummary || `${merchantIds.length} selected merchant(s)`;
+        }
+
         return res.json({
           success: true,
           scheduled: true,
@@ -779,13 +1002,22 @@ function registerAdminNotifications(app, {
         customerId,
         customerName,
         customerPhone,
+        customerIds,
+        merchantIds,
+        targetSummary,
       });
 
       let responseMsg = '';
-      if (target === 'single_customer') {
+      if (target === 'selected_customers' || target === 'single_customer') {
+        const cCount = customerIds.length || 1;
         responseMsg = result.delivered > 0
-          ? `Push notification delivered to ${customerName || 'customer'}'s phone!`
-          : `Saved to ${customerName || 'customer'}'s in-app inbox. (Phone app not currently registered for push)`;
+          ? `Push notification successfully delivered to ${result.delivered} of ${cCount} selected customer phone(s)!`
+          : `Saved to in-app notification inbox for ${cCount} selected customer(s).`;
+      } else if (target === 'selected_merchants') {
+        const mCount = merchantIds.length;
+        responseMsg = result.delivered > 0
+          ? `Push notification successfully delivered to ${result.delivered} of ${mCount} selected merchant phone(s)!`
+          : `Saved to in-app notification inbox for ${mCount} selected store(s).`;
       } else {
         responseMsg = result.total > 0
           ? `Notification successfully broadcast to ${result.delivered} device(s)!`

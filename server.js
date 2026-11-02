@@ -3249,8 +3249,11 @@ app.get('/api/customer/announcements', requireCustomerAuth, async (req, res) => 
     const announcements = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
-      // If customer_id is present, ensure it only appears for that specific customer
+      // If customer_id or customer_ids is present, ensure it only appears for that specific customer
       if (data.customer_id && String(data.customer_id) !== customerId) {
+        continue;
+      }
+      if (Array.isArray(data.customer_ids) && !data.customer_ids.map(String).includes(customerId)) {
         continue;
       }
       announcements.push({
