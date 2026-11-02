@@ -114,13 +114,13 @@
   color: #ffffff !important;
 }
 
-/* Hero Section: Customer Waves & Blue Theme directly behind Search & Categories */
+/* Hero Section: Customer Waves & Blue Theme directly behind Search, Categories & Quick Filters */
 .ae-explore-hero {
-  background: url('/customer-waves.svg') top center / 100% auto no-repeat, linear-gradient(180deg, #eaf7ff 0%, #d8effc 120px, #e8f5fd 240px, #f4f9fd 100%) !important;
-  padding: 10px 16px 16px !important;
+  background: url('/customer-waves.svg') top center / 100% auto no-repeat, linear-gradient(180deg, #eaf7ff 0%, #d8effc 140px, #e8f5fd 280px, #f4f9fd 100%) !important;
+  padding: 10px 16px 14px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 12px !important;
+  gap: 10px !important;
   border-bottom: 1px solid #cfe5fa !important;
 }
 
@@ -217,36 +217,41 @@
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  padding: 12px 16px 6px !important;
+  padding: 2px 0 2px !important;
+  margin: 0 !important;
   overflow-x: auto !important;
   scrollbar-width: none !important;
-  background: #f4f9fd !important;
+  background: transparent !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 .ae-explore-filters::-webkit-scrollbar { display: none !important; }
 
 .ae-filter-pill {
   flex-shrink: 0 !important;
-  padding: 6px 14px !important;
+  white-space: nowrap !important;
+  padding: 6px 16px !important;
   border-radius: 9999px !important;
   font-size: 12px !important;
-  font-weight: 600 !important;
-  background: #ffffff !important;
-  color: #334155 !important;
-  border: 1px solid #dcebf8 !important;
-  cursor: pointer !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  font-weight: 700 !important;
   transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  color: #1e3a8a !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 80, 200, 0.06) !important;
 }
 .ae-filter-pill:hover {
-  background: #f0f7ff !important;
+  background: #ffffff !important;
   border-color: #0066f4 !important;
 }
 
 .ae-filter-pill.active {
-  background: #0066f4 !important;
+  background: linear-gradient(135deg, #0066f4 0%, #00a3ff 100%) !important;
   color: #ffffff !important;
-  border-color: #0066f4 !important;
-  box-shadow: 0 2px 8px rgba(0, 102, 244, 0.28) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(0, 102, 244, 0.35) !important;
 }
 
 /* GPS Banner */
@@ -280,3 +285,4 @@
   flex-shrink: 0 !important;
   box-shadow: 0 2px 6px rgba(0, 102, 244, 0.2) !important;
 }
+

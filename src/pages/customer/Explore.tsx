@@ -199,31 +199,31 @@ export function CustomerExplore() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Quick Filter Chips (All, Nearby, Open now) */}
-      <div className="ae-explore-filters">
-        <button
-          type="button"
-          onClick={() => setQuickFilter('all')}
-          className={`ae-filter-pill ${quickFilter === 'all' ? 'active' : ''}`}
-        >
-          {uiText("All")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('nearby')}
-          className={`ae-filter-pill ${quickFilter === 'nearby' ? 'active' : ''}`}
-        >
-          {uiText("Nearby")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickFilter('open')}
-          className={`ae-filter-pill ${quickFilter === 'open' ? 'active' : ''}`}
-        >
-          {uiText("Open now")}
-        </button>
+        {/* Quick Filter Chips (All, Nearby, Open now) */}
+        <div className="ae-explore-filters">
+          <button
+            type="button"
+            onClick={() => setQuickFilter('all')}
+            className={`ae-filter-pill ${quickFilter === 'all' ? 'active' : ''}`}
+          >
+            {uiText("All")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setQuickFilter('nearby')}
+            className={`ae-filter-pill ${quickFilter === 'nearby' ? 'active' : ''}`}
+          >
+            {uiText("Nearby")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setQuickFilter('open')}
+            className={`ae-filter-pill ${quickFilter === 'open' ? 'active' : ''}`}
+          >
+            {uiText("Open now")}
+          </button>
+        </div>
       </div>
 
       {/* GPS Location Prompt Banner if not yet granted */}
