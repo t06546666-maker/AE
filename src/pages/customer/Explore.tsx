@@ -34,12 +34,20 @@ export function CustomerExplore() {
   const merchants = data?.merchants ?? [];
 
   const distanceKm = (latitude?: number | null, longitude?: number | null) => {
-    if (userLocation?.latitude == null || userLocation.longitude == null || latitude == null || longitude == null) return null;
+    if (latitude == null || longitude == null) return null;
+    const refLat = userLocation?.latitude ?? 10.7005;
+    const refLon = userLocation?.longitude ?? 76.7475;
     const rad = Math.PI / 180;
-    const dLat = (latitude - userLocation.latitude) * rad;
-    const dLon = (longitude - userLocation.longitude) * rad;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.latitude * rad) * Math.cos(latitude * rad) * Math.sin(dLon / 2) ** 2;
+    const dLat = (latitude - refLat) * rad;
+    const dLon = (longitude - refLon) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(refLat * rad) * Math.cos(latitude * rad) * Math.sin(dLon / 2) ** 2;
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const requestLiveLocation = async () => {
+    try {
+      await currentLocation.refetch();
+    } catch {}
   };
 
   useEffect(() => setPage(1), [userLocation?.routeGroup, userLocation?.latitude, userLocation?.longitude]);
@@ -244,6 +252,22 @@ export function CustomerExplore() {
           {uiText("Open now")}
         </button>
       </div>
+
+      {/* GPS Location Prompt Banner if not yet granted */}
+      {currentLocation.data?.latitude == null && (
+        <div className="mx-4 mt-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-2">
+          <p className="text-[11.5px] text-emerald-900 font-medium">
+            {uiText("Tap to use live GPS for exact distance from you")}
+          </p>
+          <button
+            type="button"
+            onClick={requestLiveLocation}
+            className="shrink-0 px-2.5 py-1 rounded-lg bg-[#087a4b] text-white text-[11px] font-bold shadow-sm active:scale-95 transition-transform"
+          >
+            {uiText("Use GPS")}
+          </button>
+        </div>
+      )}
 
       {/* Map View (Toggleable via header Map button) */}
       {showMap && (

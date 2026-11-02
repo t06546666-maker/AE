@@ -1,5 +1,5 @@
 import { uiText } from '../uiText';
-import { Store, Heart } from 'lucide-react';
+import { Store, Heart, MapPin, Navigation } from 'lucide-react';
 import { useState } from 'react';
 import type { CustomerMerchant } from '../hooks/useCustomerData';
 import { formatClockTime } from '../utils';
@@ -59,6 +59,7 @@ export function CustomerShopCard({
   const hoursText = merchant.opening_time && merchant.closing_time
     ? `${formatClockTime(merchant.opening_time)} - ${formatClockTime(merchant.closing_time)}`
     : null;
+  const locationText = merchant.route_name || merchant.address?.split(',')?.[0]?.trim() || uiText('Chittur');
 
   return (
     <article className="ae-shop-card">
@@ -68,9 +69,15 @@ export function CustomerShopCard({
           <h3>{merchant.merchant_name}</h3>
           <p className="ae-shop-category">{merchant.category || 'AE Merchant'}</p>
 
+          <div className="ae-shop-location">
+            <MapPin size={12} className="ae-loc-icon" />
+            <span>{locationText}</span>
+          </div>
+
           {distance != null && (
             <small className="ae-shop-distance">
-              {distance.toFixed(1)} {uiText("km away")}
+              <Navigation size={11} className="ae-nav-icon" />
+              <span>{distance.toFixed(1)} {uiText("km from you")}</span>
             </small>
           )}
 
