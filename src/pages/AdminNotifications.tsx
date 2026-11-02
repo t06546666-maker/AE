@@ -32,6 +32,7 @@ import { formatDateTime } from '../utils';
 interface NotificationStats {
   customerTokens: number;
   merchantTokens: number;
+  totalOnboardedMerchants?: number;
   totalTokens: number;
 }
 
@@ -324,10 +325,15 @@ export function AdminNotifications() {
           </div>
           <div>
             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {uiText("Merchant Profiles")}
+              {uiText("Merchant Phones Active")}
             </div>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
-              {statsData?.merchantTokens ?? '...'} {uiText("Registered")}
+              {statsData?.merchantTokens ?? 0} {uiText("Devices")}
+              {statsData?.totalOnboardedMerchants ? (
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b', marginLeft: '6px' }}>
+                  ({uiText("of {{count}} onboarded", { count: statsData.totalOnboardedMerchants })})
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

@@ -110,21 +110,39 @@ function registerAdminNotifications(app, {
     }
 
     // Target: All merchants
-    if ((target === 'merchants' || target === 'all') && supabase) {
+    if (target === 'merchants' || target === 'all') {
+      // 1. From Firestore ae_profile_push_registrations (primary source)
       try {
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('id, push_token, push_enabled, role')
-          .eq('role', 'merchant');
-        if (!error && Array.isArray(profiles)) {
-          profiles.forEach((p) => {
-            if (p.push_token && p.push_enabled !== false) {
-              tokens.push(p.push_token);
+        const profilePushSnap = await db.collection('ae_profile_push_registrations').get();
+        profilePushSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data && data.push_token && data.push_enabled !== false) {
+            if (target === 'all' || data.role === 'merchant') {
+              tokens.push(data.push_token);
             }
-          });
+          }
+        });
+      } catch (pErr) {
+        console.warn('[admin-notifications] Error reading profile push tokens from Firestore:', pErr.message);
+      }
+
+      // 2. From Supabase profiles (compatibility fallback)
+      if (supabase) {
+        try {
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('id, push_token, push_enabled, role')
+            .eq('role', 'merchant');
+          if (!error && Array.isArray(profiles)) {
+            profiles.forEach((p) => {
+              if (p.push_token && p.push_enabled !== false) {
+                tokens.push(p.push_token);
+              }
+            });
+          }
+        } catch (mErr) {
+          console.warn('[admin-notifications] Error reading merchant tokens from Supabase:', mErr.message);
         }
-      } catch (mErr) {
-        console.warn('[admin-notifications] Error reading merchant tokens:', mErr.message);
       }
     }
 
@@ -403,24 +421,53 @@ function registerAdminNotifications(app, {
         console.warn('Customer stats error:', cErr.message);
       }
 
-      let merchantTokensCount = 0;
+      // Merchant push tokens (from Firestore ae_profile_push_registrations + Supabase)
+      const merchantTokens = new Set();
+      try {
+        const pSnap = await db.collection('ae_profile_push_registrations').get();
+        pSnap.forEach((doc) => {
+          const d = doc.data();
+          if (d.push_token && d.push_enabled !== false && d.role === 'merchant') {
+            merchantTokens.add(d.push_token);
+          }
+        });
+      } catch (pErr) {
+        console.warn('Profile push stats error:', pErr.message);
+      }
+
       if (supabase) {
         try {
           const { data: merchants } = await supabase
             .from('profiles')
             .select('id, push_token, push_enabled')
             .eq('role', 'merchant');
-          merchantTokensCount = (merchants || []).filter((m) => m.push_token && m.push_enabled !== false).length;
+          (merchants || []).forEach((m) => {
+            if (m.push_token && m.push_enabled !== false) {
+              merchantTokens.add(m.push_token);
+            }
+          });
         } catch (mErr) {
           console.warn('Merchant stats error:', mErr.message);
+        }
+      }
+
+      // Total onboarded merchants count for clear context
+      let totalOnboardedMerchants = 0;
+      if (supabase) {
+        try {
+          const { count } = await supabase.from('merchants').select('id', { count: 'exact', head: true });
+          totalOnboardedMerchants = count || 0;
+        } catch (mCountErr) {
+          // ignore
         }
       }
 
       res.json({
         success: true,
         customerTokens: customerTokensCount,
-        merchantTokens: merchantTokensCount,
-        totalTokens: customerTokensCount + merchantTokensCount,
+        merchantTokens: merchantTokens.size,
+        totalOnboardedMerchants,
+        totalTokens: customerTokensCount + merchantTokens.size,
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
