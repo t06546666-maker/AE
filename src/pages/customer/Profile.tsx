@@ -1,8 +1,7 @@
 import { uiText } from '../../uiText';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle, ShieldCheck, UserRoundMinus, Bell, BellRing, CheckCircle2, Send } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Settings, LogOut, ChevronRight, Gift, Clock, Heart, HelpCircle, ArrowLeft, Star, X, Phone, Mail, MessageCircle, ShieldCheck, UserRoundMinus } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useCustomerMerchants } from '../../hooks/useCustomerData';
@@ -25,48 +24,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
   const { pushEnabled, locationEnabled, requestPush, requestLocation } = usePermissions();
   const { data: merchantData } = useCustomerMerchants(1);
 
-  const [pushFeedback, setPushFeedback] = useState<{ text: string; isError: boolean } | null>(null);
-  const [isTestingPush, setIsTestingPush] = useState(false);
 
-  const { data: pushStatusData, refetch: refetchPushStatus } = useQuery({
-    queryKey: ['customer', 'push-status'],
-    queryFn: () => apiFetch<{ registered: boolean; enabled: boolean; firebaseReady: boolean }>('/api/customer/push-status'),
-    staleTime: 15000,
-  });
-
-  const isPushActive = Boolean(pushStatusData?.registered && pushEnabled);
-
-  const handleCustomerTestPush = async () => {
-    setIsTestingPush(true);
-    setPushFeedback(null);
-    try {
-      const res = await apiFetch<{ success: boolean; message?: string }>('/api/customer/push-test', { method: 'POST' });
-      setPushFeedback({
-        text: res.message || uiText('Test notification sent! Check your phone notification tray.'),
-        isError: false,
-      });
-    } catch (err: any) {
-      setPushFeedback({
-        text: err.message || uiText('Could not send test notification. Please verify permissions.'),
-        isError: true,
-      });
-    } finally {
-      setIsTestingPush(false);
-    }
-  };
-
-  const handleActivatePush = async () => {
-    setPushFeedback({ text: uiText('Requesting permission and registering phone…'), isError: false });
-    const granted = await requestPush();
-    if (granted) {
-      setTimeout(() => {
-        void refetchPushStatus();
-        void handleCustomerTestPush();
-      }, 1500);
-    } else {
-      setPushFeedback({ text: uiText('Notification permission was not granted.'), isError: true });
-    }
-  };
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -130,77 +88,6 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
       </div>
 
       <div className="px-5 -mt-6 relative z-20 space-y-4">
-        {/* Push Notification Verification Card */}
-        <div className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100 space-y-2.5">
-          <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                  isPushActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                }`}
-              >
-                {isPushActive ? <BellRing size={20} /> : <Bell size={20} />}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-[14px] text-gray-900 leading-tight">{uiText("Push Notifications")}</h3>
-                  {isPushActive && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle2 size={11} /> {uiText("Verified")}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[12px] text-gray-500 mt-0.5 leading-snug">
-                  {isPushActive
-                    ? uiText("Connected for rewards, cashback & store offers")
-                    : uiText("Enable notifications to verify this device")}
-                </p>
-              </div>
-            </div>
-
-            <div className="shrink-0">
-              {isPushActive ? (
-                <button
-                  type="button"
-                  onClick={handleCustomerTestPush}
-                  disabled={isTestingPush}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center gap-1.5"
-                >
-                  <Send size={12} />
-                  {isTestingPush ? uiText("Sending…") : uiText("Send Test Push")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleActivatePush}
-                  className="px-4 py-1.5 text-xs font-semibold rounded-full bg-[#087a4b] text-white hover:bg-[#06623c] transition-colors"
-                >
-                  {uiText("Activate & Verify")}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {pushFeedback && (
-            <div
-              className={`p-2.5 rounded-xl text-xs font-medium flex items-center justify-between ${
-                pushFeedback.isError
-                  ? 'bg-red-50 text-red-700 border border-red-100'
-                  : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-              }`}
-            >
-              <span>{pushFeedback.text}</span>
-              <button
-                type="button"
-                onClick={() => setPushFeedback(null)}
-                className="ml-2 text-[11px] opacity-70 hover:opacity-100"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Section 1 */}
         <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
@@ -353,35 +240,17 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
               <button onClick={() => setShowSettings(false)}><X size={22} className="text-gray-500" /></button>
             </div>
             <div className="space-y-3">
-              <div className="p-4 bg-gray-50 rounded-[16px] space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-[14px] text-gray-900">{uiText("Push Notifications")}</p>
-                    <p className="text-[12px] text-gray-500">
-                      {isPushActive ? uiText("🟢 Active & verified on this phone") : uiText("Earn alerts & offers")}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => requestPush()}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${pushEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
-                  >
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pushEnabled ? 'right-1' : 'left-1'}`} />
-                  </button>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
+                <div>
+                  <p className="font-bold text-[14px] text-gray-900">{uiText("Push Notifications")}</p>
+                  <p className="text-[12px] text-gray-500">{uiText("Earn alerts & offers")}</p>
                 </div>
-                {isPushActive && (
-                  <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
-                    <span className="text-[12px] text-gray-500">{uiText("Verify push delivery:")}</span>
-                    <button
-                      type="button"
-                      disabled={isTestingPush}
-                      onClick={handleCustomerTestPush}
-                      className="px-3 py-1 text-[11px] font-bold rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors flex items-center gap-1"
-                    >
-                      <Send size={11} />
-                      {isTestingPush ? uiText("Testing…") : uiText("Send Test Push")}
-                    </button>
-                  </div>
-                )}
+                <button 
+                  onClick={() => requestPush()}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${pushEnabled ? 'bg-[#087a4b]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pushEnabled ? 'right-1' : 'left-1'}`} />
+                </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[16px]">
                 <div>
