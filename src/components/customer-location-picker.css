@@ -7,3 +7,9 @@
 .customer-modern-topbar{flex-wrap:wrap;gap:8px;}
 .customer-modern-topbar .ae-home-language{width:100%;margin:0!important;display:flex;justify-content:flex-end;}
 .customer-modern-topbar .ae-home-language select{width:auto;min-width:48px;min-height:32px;font-size:12px;}
+.ae-location-pill{display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid #d8e8f8;border-radius:9999px;padding:6px 12px;color:#1e3a8a;font-size:13px;font-weight:700;box-shadow:0 1px 4px rgba(16,40,80,0.06);cursor:pointer;max-width:100%;min-width:0;transition:all 0.15s ease;}
+.ae-location-pill:hover{background:#f8fbff;border-color:#0066f4;}
+.ae-location-pill svg:first-child{color:#0066f4;flex-shrink:0;width:18px;height:18px;}
+.ae-location-pill svg:last-child{color:#64748b;flex-shrink:0;width:14px;height:14px;}
+.ae-location-pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:155px;}
+@media (max-width: 360px){.ae-location-pill span{max-width:115px;}}
