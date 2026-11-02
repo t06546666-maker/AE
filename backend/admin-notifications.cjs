@@ -50,7 +50,7 @@ function registerAdminNotifications(app, {
         await db.collection('ae_customer_announcements').add({
           title,
           body,
-          url: url || '',
+          url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
           image_url: imageUrl || '',
           target: 'single_customer',
           customer_id: String(customerId),
@@ -66,7 +66,7 @@ function registerAdminNotifications(app, {
         await db.collection('ae_customer_announcements').add({
           title,
           body,
-          url: url || '',
+          url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
           image_url: imageUrl || '',
           target,
           created_at: FieldValue.serverTimestamp(),
@@ -247,7 +247,7 @@ function registerAdminNotifications(app, {
       },
       data: Object.fromEntries(
         Object.entries({
-          url: url || '/customer/notifications',
+          url: url || (target === 'merchants' ? '/dashboard' : (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications')),
           imageUrl: imageUrl || '',
           type: 'announcement',
         }).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])

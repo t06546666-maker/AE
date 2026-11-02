@@ -1,8 +1,8 @@
 import { uiText } from '../../uiText';
 import { formatDateTime } from '../../utils';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Bell, ExternalLink, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Bell, ExternalLink, Sparkles, Maximize2, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../api';
 import { useCustomerTransactions } from '../../hooks/useCustomerData';
@@ -18,6 +18,8 @@ interface Announcement {
 
 export function CustomerNotifications() {
   const [page, setPage] = useState(1);
+  const [searchParams] = useSearchParams();
+  const [fullViewItem, setFullViewItem] = useState<Announcement | null>(null);
   const { data, isLoading, error, refetch } = useCustomerTransactions(page);
 
   const { data: announcementsData, isLoading: announcementsLoading } = useQuery({
@@ -27,6 +29,32 @@ export function CustomerNotifications() {
   });
 
   const announcements = announcementsData?.announcements || [];
+
+  // Automatically open the full image if opened from a push notification tap (?viewImage=... or ?announcementId=...)
+  useEffect(() => {
+    const viewImageUrl = searchParams.get('viewImage');
+    const announcementId = searchParams.get('announcementId');
+
+    if (viewImageUrl) {
+      const match = announcements.find(a => a.image_url === viewImageUrl);
+      if (match) {
+        setFullViewItem(match);
+      } else {
+        setFullViewItem({
+          id: 'push-image-preview',
+          title: uiText('Notification Image'),
+          body: '',
+          image_url: viewImageUrl,
+          created_at: new Date().toISOString(),
+        });
+      }
+    } else if (announcementId && announcements.length > 0) {
+      const match = announcements.find(a => a.id === announcementId);
+      if (match && match.image_url) {
+        setFullViewItem(match);
+      }
+    }
+  }, [searchParams, announcements]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 text-gray-900">
@@ -54,13 +82,21 @@ export function CustomerNotifications() {
                 return (
                   <div key={item.id} className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/40 p-4 shadow-sm space-y-2.5">
                     {item.image_url && (
-                      <div className="overflow-hidden rounded-xl border border-blue-100/60 bg-white shadow-xs">
+                      <div
+                        className="relative overflow-hidden rounded-xl border border-blue-100/60 bg-slate-900/5 shadow-xs cursor-pointer group"
+                        onClick={() => setFullViewItem(item)}
+                        title={uiText("Tap to view full image")}
+                      >
                         <img
                           src={item.image_url}
                           alt={item.title}
-                          className="w-full max-h-52 object-cover"
+                          className="w-full max-h-72 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.01]"
                           loading="lazy"
                         />
+                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[11px] font-bold shadow-md hover:bg-black/85 transition-colors pointer-events-none">
+                          <Maximize2 size={12} />
+                          <span>{uiText("Full View")}</span>
+                        </div>
                       </div>
                     )}
                     <div className="flex items-start gap-3">
@@ -160,6 +196,85 @@ export function CustomerNotifications() {
           )}
         </section>
       </main>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {fullViewItem && fullViewItem.image_url && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setFullViewItem(null)}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center justify-between gap-3 text-white max-w-xl w-full mx-auto pb-3 border-b border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-base text-white truncate">
+                {fullViewItem.title || uiText("Notification Image")}
+              </h3>
+              <span className="text-xs text-gray-400 block mt-0.5">
+                {formatDateTime(fullViewItem.created_at)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFullViewItem(null)}
+              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              aria-label={uiText("Close")}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Center Image Container - full natural uncropped resolution */}
+          <div
+            className="flex-1 flex items-center justify-center my-4 overflow-hidden w-full max-w-2xl mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={fullViewItem.image_url}
+              alt={fullViewItem.title}
+              className="max-h-[68vh] max-w-full w-auto h-auto object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+
+          {/* Bottom Details Panel */}
+          <div
+            className="max-w-xl w-full mx-auto bg-white/10 backdrop-blur-lg rounded-2xl p-4 text-white border border-white/15 space-y-2.5 mb-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {fullViewItem.body && (
+              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto">
+                {fullViewItem.body}
+              </p>
+            )}
+
+            {fullViewItem.url && (
+              <div className="pt-1">
+                {fullViewItem.url.startsWith('http://') || fullViewItem.url.startsWith('https://') ? (
+                  <a
+                    href={fullViewItem.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md transition-colors"
+                  >
+                    <span>{uiText("Open Link / Guide")}</span>
+                    <ExternalLink size={15} />
+                  </a>
+                ) : (
+                  <Link
+                    to={fullViewItem.url}
+                    onClick={() => setFullViewItem(null)}
+                    className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md transition-colors"
+                  >
+                    <span>{uiText("View in App")}</span>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

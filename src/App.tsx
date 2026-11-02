@@ -244,7 +244,14 @@ export function App() {
         }));
 
         listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          const url = notification.notification.data?.url;
+          let url = notification.notification.data?.url;
+          const imageUrl = notification.notification.data?.imageUrl;
+          if (!url || typeof url !== 'string' || !url.trim()) {
+            url = user.role === 'customer' ? '/customer/notifications' : '/dashboard';
+          }
+          if (imageUrl && (url === '/customer/notifications' || url === '/notifications')) {
+            url = `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}`;
+          }
           if (typeof url === 'string') {
             if (url.startsWith('/') && !url.startsWith('//')) {
               navigate(url);
