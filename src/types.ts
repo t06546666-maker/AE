@@ -59,6 +59,7 @@ export interface Merchant {
   reward_rate_bps?: number;
   subscription_expires_at?: string;
   subscription_mandate_id?: string;
+  hasPushToken?: boolean;
 }
 
 export type OfferStatus = 'pending' | 'approved' | 'rejected';

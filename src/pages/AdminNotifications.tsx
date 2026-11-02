@@ -45,6 +45,27 @@ interface CustomerSearchResult {
   hasPushToken: boolean;
 }
 
+interface MerchantPushStatusItem {
+  id: string;
+  merchant_code: string;
+  name: string;
+  phone: string;
+  email: string;
+  hasPushToken: boolean;
+  status: 'active' | 'pending';
+  updated_at?: string | null;
+}
+
+interface MerchantPushStatusResponse {
+  success: boolean;
+  summary: {
+    total: number;
+    active: number;
+    pending: number;
+  };
+  merchants: MerchantPushStatusItem[];
+}
+
 interface ScheduledNotification {
   id: string;
   title: string;
@@ -138,6 +159,28 @@ export function AdminNotifications() {
     enabled: target === 'single_customer' && !selectedCustomer && customerSearchQuery.trim().length >= 1,
     staleTime: 10_000,
   });
+
+  // Merchant push status modal state & query
+  const [showMerchantModal, setShowMerchantModal] = useState(false);
+  const [merchantSearchQuery, setMerchantSearchQuery] = useState('');
+
+  const { data: merchantStatusData, isFetching: loadingMerchantStatus, refetch: refetchMerchantStatus } = useQuery<MerchantPushStatusResponse>({
+    queryKey: ['admin', 'merchants', 'push-status'],
+    queryFn: () => apiFetch<MerchantPushStatusResponse>('/api/admin/merchants/push-status'),
+    enabled: showMerchantModal,
+    staleTime: 5_000,
+  });
+
+  const filteredMerchants = useMemo(() => {
+    const list = merchantStatusData?.merchants || [];
+    if (!merchantSearchQuery.trim()) return list;
+    const q = merchantSearchQuery.toLowerCase();
+    return list.filter(m =>
+      m.name.toLowerCase().includes(q) ||
+      m.merchant_code.toLowerCase().includes(q) ||
+      m.phone.toLowerCase().includes(q)
+    );
+  }, [merchantStatusData, merchantSearchQuery]);
 
   // Image selection handler
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -281,7 +324,11 @@ export function AdminNotifications() {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               className="button secondary"
-              onClick={() => void refetchHistory()}
+              onClick={() => {
+                void refetchHistory();
+                void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications', 'stats'] });
+                void queryClient.invalidateQueries({ queryKey: ['admin', 'merchants', 'push-status'] });
+              }}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               title={uiText("Refresh stats and history")}
             >
@@ -341,6 +388,26 @@ export function AdminNotifications() {
                 </span>
               ) : null}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowMerchantModal(true)}
+              style={{
+                marginTop: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: '#e0f2fe',
+                color: '#0369a1',
+                border: '1px solid #bae6fd',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <span>{uiText("View Device Status →")}</span>
+            </button>
           </div>
         </div>
 
@@ -1217,6 +1284,140 @@ export function AdminNotifications() {
               ))}
             </div>
           )}
+        </div>
+      )}
+      {/* Merchant Device Push Status Modal */}
+      {showMerchantModal && (
+        <div className="modal-backdrop" onClick={() => setShowMerchantModal(false)}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '640px', width: '92%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '20px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '14px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Store size={20} className="text-blue-600" />
+                  <span>{uiText("Merchant Device Push Status")}</span>
+                </h2>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
+                  {uiText("Live FCM push registration for all onboarded merchant stores")}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => void refetchMerchantStatus()}
+                  disabled={loadingMerchantStatus}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px' }}
+                  title={uiText("Refresh status")}
+                >
+                  <RefreshCw size={13} className={loadingMerchantStatus ? 'animate-spin' : ''} />
+                  <span>{loadingMerchantStatus ? uiText("Refreshing…") : uiText("Refresh")}</span>
+                </button>
+                <button type="button" className="icon-button modal-close" onClick={() => setShowMerchantModal(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Pills */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+              <div style={{ padding: '10px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0', textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#047857' }}>
+                  {merchantStatusData?.summary.active ?? 0}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#065f46' }}>
+                  {uiText("🟢 Active Devices")}
+                </div>
+              </div>
+              <div style={{ padding: '10px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#64748b' }}>
+                  {merchantStatusData?.summary.pending ?? 0}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                  {uiText("⚪ Pending App Open")}
+                </div>
+              </div>
+              <div style={{ padding: '10px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #dbeafe', textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#1d4ed8' }}>
+                  {merchantStatusData?.summary.total ?? 0}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#1e40af' }}>
+                  {uiText("Total Stores")}
+                </div>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div style={{ position: 'relative', marginBottom: '14px' }}>
+              <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                type="text"
+                value={merchantSearchQuery}
+                onChange={(e) => setMerchantSearchQuery(e.target.value)}
+                placeholder={uiText("Search merchant name, phone, or code…")}
+                style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              />
+            </div>
+
+            {/* Merchant List */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px', minHeight: '160px', maxHeight: '380px' }}>
+              {loadingMerchantStatus && !merchantStatusData ? (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>{uiText("Checking merchant devices…")}</div>
+              ) : filteredMerchants.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>{uiText("No matching merchants found.")}</div>
+              ) : (
+                filteredMerchants.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: m.hasPushToken ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                      background: m.hasPushToken ? '#f0fdf4' : '#fff',
+                      gap: '12px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                        {m.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                        {m.merchant_code} · {m.phone} · {m.email}
+                      </div>
+                    </div>
+                    <div>
+                      {m.hasPushToken ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+                          {uiText("🟢 Active")}
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#cbd5e1' }} />
+                          {uiText("⚪ Pending App")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                {uiText("When field manager enables notifications on phone and opens AE app, click Refresh to see it turn Active.")}
+              </span>
+              <button type="button" className="button secondary" onClick={() => setShowMerchantModal(false)}>
+                {uiText("Close")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

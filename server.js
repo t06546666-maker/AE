@@ -2289,8 +2289,25 @@ app.get('/api/admin/usage',requireAuth,requireRole('admin'),async(req,res)=>{
 app.get('/api/admin/merchants/:id/details',requireAuth,requireRole('admin'),async(req,res)=>{
   const {data,error}=await supabaseAdmin.from('active_merchants').select('*,merchant_categories(name)').eq('id',req.params.id).maybeSingle();
   if(error)return res.status(500).json({error:error.message});if(!data)return res.status(404).json({error:'Merchant not found'});
+  let hasPushToken = false;
+  try {
+    const prof = await supabaseAdmin.from('profiles').select('id, push_token, push_enabled').eq('merchant_id', req.params.id).eq('role', 'merchant').maybeSingle();
+    if (prof.data?.push_token && prof.data?.push_enabled !== false) {
+      hasPushToken = true;
+    }
+    if (!hasPushToken && prof.data?.id) {
+      const db = await checkoutBillDatabase();
+      const fireDoc = await db.collection('ae_profile_push_registrations').doc(prof.data.id).get();
+      if (fireDoc.exists) {
+        const fd = fireDoc.data();
+        if (fd && fd.push_token && fd.push_enabled !== false) hasPushToken = true;
+      }
+    }
+  } catch (_) {}
   const allowed=['id','merchant_code','name','email','phone','address','latitude','longitude','category_id','merchant_categories','route_name','opening_time','closing_time','image_url','images','created_at','point_balance','reward_rate_bps','earn_points_per_100','redeem_discount_per_100','redeem_discount_type','redeem_flat_amount','subscription_expires_at'];
-  res.json({merchant:Object.fromEntries(allowed.filter(key=>key in data).map(key=>[key,data[key]]))});
+  const merchantObj = Object.fromEntries(allowed.filter(key=>key in data).map(key=>[key,data[key]]));
+  merchantObj.hasPushToken = hasPushToken;
+  res.json({merchant: merchantObj});
 });
 app.get('/api/admin/merchants/:id/activity',requireAuth,requireRole('admin'),async(req,res)=>{
   const paging=paginationFromRequest(req,25,100);const type=String(req.query.type || 'orders');
@@ -3944,6 +3961,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
   const merchantIds = (data || []).map((row) => row.id);
   const orderCounts = new Map();
   const passwordStates = new Map();
+  const pushStates = new Map();
   if (merchantIds.length) {
     const [{ data: orderRows }, { data: profileRows }] = await Promise.all([
       supabaseAdmin.from('orders')
@@ -3951,7 +3969,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
         .in('merchant_id', merchantIds)
         .limit(10000),
       supabaseAdmin.from('profiles')
-        .select('merchant_id,must_change_password')
+        .select('id,merchant_id,must_change_password,push_token,push_enabled')
         .eq('role', 'merchant')
         .in('merchant_id', merchantIds),
     ]);
@@ -3960,7 +3978,20 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
     });
     (profileRows || []).forEach((row) => {
       passwordStates.set(row.merchant_id, Boolean(row.must_change_password));
+      if (row.push_token && row.push_enabled !== false) {
+        pushStates.set(row.merchant_id, true);
+      }
     });
+    try {
+      const db = await checkoutBillDatabase();
+      const fireSnap = await db.collection('ae_profile_push_registrations').get();
+      fireSnap.forEach((doc) => {
+        const d = doc.data();
+        if (d && d.push_token && d.push_enabled !== false && d.merchant_id) {
+          pushStates.set(d.merchant_id, true);
+        }
+      });
+    } catch (_) {}
   }
   res.json({
     success: true,
@@ -3971,6 +4002,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
       category: row.merchant_categories?.name || undefined,
       orderCount: orderCounts.get(row.id) || 0,
       mustChangePassword: passwordStates.get(row.id) || false,
+      hasPushToken: Boolean(pushStates.get(row.id)),
     })),
     ...(paging.enabled ? { pagination: paginationMeta(paging, count) } : {}),
   });

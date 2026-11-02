@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link,useParams } from 'react-router-dom';
-import { Pencil, X } from 'lucide-react';
+import { Pencil, X, Smartphone } from 'lucide-react';
 import { apiFetch,queryString } from '../api';
 import { uiText } from '../uiText';
 import { ErrorState,LoadingState,PaginationBar } from '../components/Common';
@@ -37,6 +37,28 @@ export function AdminMerchantDetails() {
  const photos=Array.from(new Set([merchant.image_url,...(merchant.images||[])].filter((value):value is string=>typeof value==='string'&&!!value)));
  return <div className="admin-directory-page"><div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}><Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link><button type="button" className="button primary" onClick={()=>{setEditForm({name:merchant.name||'',email:merchant.email||'',phone:merchant.phone||'',address:merchant.address||''});setEditing(true);}}><Pencil size={16}/>{uiText('Edit merchant')}</button></div><header className="admin-detail-heading"><span className="admin-directory-avatar">{String(merchant.name || '').slice(0,1)}</span><div><h1>{merchant.name}</h1><p>{merchant.merchant_code} · {merchant.merchant_categories?.name || uiText('No Category')} · {merchant.route_name || '—'}</p></div></header>
  <section className="panel"><dl style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:18,margin:0}}>{[['Email',merchant.email],['Phone number',merchant.phone],['Address',merchant.address],['Available points',merchant.point_balance]].map(([title,value])=><div key={String(title)}><dt>{uiText(String(title))}</dt><dd style={{margin:0}}>{value==null?'—':String(value)}</dd></div>)}</dl></section>
+ <section className="panel" style={{ borderLeft: merchant.hasPushToken ? '4px solid #10b981' : '4px solid #f59e0b', background: merchant.hasPushToken ? '#f0fdf4' : '#fffbeb', marginBottom: 16 }}>
+   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+       <div style={{ width: 40, height: 40, borderRadius: 10, background: merchant.hasPushToken ? '#10b981' : '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+         <Smartphone size={22} />
+       </div>
+       <div>
+         <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
+           {merchant.hasPushToken ? uiText('Phone Push Notifications: Active') : uiText('Phone Push Notifications: Pending')}
+         </div>
+         <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+           {merchant.hasPushToken
+             ? uiText('This merchant’s phone is registered with FCM. Instant push alerts will arrive even when the AE app is closed or locked.')
+             : uiText('App has not been opened yet with notification permissions enabled on their phone. Once opened, it will turn Active automatically.')}
+         </div>
+       </div>
+     </div>
+     <span className={`tag ${merchant.hasPushToken ? 'success' : 'warning'}`} style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px' }}>
+       {merchant.hasPushToken ? uiText('🟢 Active (Receives FCM Alerts)') : uiText('⚪ Pending App Open')}
+     </span>
+   </div>
+ </section>
  <Link className="button primary" to={`/merchants/${encodeURIComponent(id)}/qr-poster`}>{uiText('QR Poster')}</Link>
  <nav className="admin-detail-tabs" aria-label={uiText('Merchant details sections')}>{sections.map(([key,title])=><button key={key} aria-pressed={section===key} onClick={()=>{setSection(key);setPage(1);setCustomer(null)}}>{uiText(title)}</button>)}</nav>
  {customer&&<section className="panel admin-selected-customer"><div className="panel-heading"><h2>{customer.name}</h2><button className="button secondary" onClick={()=>{setCustomer(null);setPage(1)}}>{uiText('Show all customers')}</button></div><p>{customer.customer_code} · {customer.phone} · {customer.email || '—'}</p><p>{uiText('Showing this customer’s recorded activity at this merchant only.')}</p><div className="form-actions">{['orders','redemptions','payments'].map(type=><button className="button secondary" key={type} onClick={()=>{setSection(type);setPage(1)}}>{uiText(sections.find(([key])=>key===type)![1])}</button>)}<Link className="button primary" to={`/customers/${customer.id}`}>{uiText('Open full customer profile')}</Link></div></section>}

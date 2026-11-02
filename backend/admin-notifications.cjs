@@ -460,6 +460,88 @@ function registerAdminNotifications(app, {
   });
 
   /**
+   * GET /api/admin/merchants/push-status
+   * Returns complete list of onboarded merchants and their live push notification connectivity
+   */
+  app.get('/api/admin/merchants/push-status', auth, adminRole, async (_req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ success: false, error: 'Database is unavailable' });
+      }
+
+      const { data: merchants, error } = await supabase
+        .from('active_merchants')
+        .select('id, merchant_code, name, phone, email, created_at')
+        .order('name');
+
+      if (error) throw error;
+
+      // Profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, merchant_id, email, push_token, push_enabled')
+        .eq('role', 'merchant');
+
+      // Firestore push registrations
+      const { db } = await getFirebaseInstances();
+      const fireTokensByMerchantId = new Map();
+      const fireTokensByProfileId = new Map();
+      try {
+        const pSnap = await db.collection('ae_profile_push_registrations').get();
+        pSnap.forEach((doc) => {
+          const d = doc.data();
+          if (d && d.push_token && d.push_enabled !== false) {
+            if (d.merchant_id) fireTokensByMerchantId.set(d.merchant_id, d);
+            fireTokensByProfileId.set(doc.id, d);
+          }
+        });
+      } catch (fErr) {
+        console.warn('Firestore merchant push status error:', fErr.message);
+      }
+
+      const profileByMerchantId = new Map();
+      (profiles || []).forEach((p) => {
+        if (p.merchant_id) profileByMerchantId.set(p.merchant_id, p);
+      });
+
+      const list = (merchants || []).map((m) => {
+        const prof = profileByMerchantId.get(m.id);
+        const fireDoc = fireTokensByMerchantId.get(m.id) || (prof ? fireTokensByProfileId.get(prof.id) : null);
+        const hasToken = Boolean(
+          (prof && prof.push_token && prof.push_enabled !== false) ||
+          fireDoc
+        );
+
+        return {
+          id: m.id,
+          merchant_code: m.merchant_code || '',
+          name: m.name,
+          phone: m.phone,
+          email: m.email,
+          hasPushToken: hasToken,
+          status: hasToken ? 'active' : 'pending',
+          updated_at: fireDoc?.updated_at || null,
+        };
+      });
+
+      const activeCount = list.filter((m) => m.hasPushToken).length;
+
+      res.json({
+        success: true,
+        summary: {
+          total: list.length,
+          active: activeCount,
+          pending: list.length - activeCount,
+        },
+        merchants: list,
+      });
+    } catch (err) {
+      console.error('[admin-notifications] Merchant push status error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  /**
    * GET /api/admin/notifications/stats
    * Returns active device counts
    */
@@ -517,7 +599,7 @@ function registerAdminNotifications(app, {
         try {
           const [{ count: cCount }, { count: mCount }] = await Promise.all([
             supabase.from('customers').select('id', { count: 'exact', head: true }),
-            supabase.from('merchants').select('id', { count: 'exact', head: true }),
+            supabase.from('active_merchants').select('id', { count: 'exact', head: true }),
           ]);
           totalOnboardedCustomers = cCount || 0;
           totalOnboardedMerchants = mCount || 0;

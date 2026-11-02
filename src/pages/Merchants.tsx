@@ -275,7 +275,29 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
               <tbody>
                 {merchants.data?.merchants.map((merchant) => (
                   <tr key={merchant.id}>
-                    <td><Link className="admin-merchant-name" to={`/merchants/${merchant.id}`}><span className="admin-directory-avatar">{merchant.name.slice(0,1)}</span><span><strong>{merchant.name}</strong><small>{merchant.merchantCode}</small></span></Link>{merchant.mustChangePassword ? <small className="table-note">{uiText('Password change required')}</small> : null}</td>
+                    <td>
+                      <Link className="admin-merchant-name" to={`/merchants/${merchant.id}`}>
+                        <span className="admin-directory-avatar">{merchant.name.slice(0,1)}</span>
+                        <span>
+                          <strong>{merchant.name}</strong>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                            <small>{merchant.merchantCode}</small>
+                            {merchant.hasPushToken ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '10px', fontSize: '10px', fontWeight: 700 }} title={uiText("Phone push notifications active")}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+                                {uiText("Push Active")}
+                              </span>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '10px', fontSize: '10px', fontWeight: 600 }} title={uiText("Pending phone app open with notifications enabled")}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8' }} />
+                                {uiText("Pending App")}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                      </Link>
+                      {merchant.mustChangePassword ? <small className="table-note">{uiText('Password change required')}</small> : null}
+                    </td>
                     <td>{merchant.category || <span className="text-gray-400">{uiText("None")}</span>}</td>
                     <td><span className="admin-contact-stack"><span>{merchant.email}</span><small>{merchant.phone}</small></span></td>
                     <td>{formatDate(merchant.joined)}</td>
