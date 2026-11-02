@@ -126,37 +126,31 @@ export function CustomerExplore() {
   }
 
   return (
-    <div className="customer-modern-page bg-gray-50 min-h-screen text-gray-900 font-sans pb-[100px]">
+    <div className="customer-modern-page bg-[#f4f9fd] min-h-screen text-gray-900 font-sans pb-[100px]">
       {/* Top Header Bar with Back Arrow, Location Dropdown, and Map Toggle */}
-      <header className="flex justify-between items-center px-4 py-3 bg-[#f8fbfe]/95 backdrop-blur-md sticky top-0 z-20 shadow-[0_2px_10px_rgba(0,102,244,0.04)] border-b border-[#d8e8f8]/80 gap-3">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <Link to="/customer/home" className="p-1 text-slate-700 hover:text-[#0066f4] shrink-0 transition-colors" aria-label={uiText("Back to Home")}>
-            <ArrowLeft size={22} />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <CustomerLocationBar compact defaultAll />
-          </div>
+      <header className="ae-explore-header">
+        <Link to="/customer/home" className="ae-explore-back" aria-label={uiText("Back to Home")}>
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="ae-explore-location">
+          <CustomerLocationBar compact defaultAll />
         </div>
         <button
           type="button"
           onClick={() => setShowMap(!showMap)}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 shadow-sm ${
-            showMap
-              ? 'bg-[#0066f4] text-white border-[#0066f4] shadow-blue-500/25'
-              : 'bg-white text-[#0066f4] border-[#d8e8f8] hover:bg-blue-50/80 hover:border-[#0066f4]/40'
-          }`}
+          className={`ae-explore-map-btn ${showMap ? 'active' : ''}`}
           aria-label={uiText("Toggle map view")}
         >
-          <Map size={15} className={showMap ? 'text-white' : 'text-[#0066f4]'} />
+          <Map size={15} />
           <span>{showMap ? uiText("List") : uiText("Map")}</span>
         </button>
       </header>
 
-      {/* Hero Section: Search & Categories with Unified AE Soft Blue Theme */}
-      <div className="bg-gradient-to-b from-[#eef6fc] via-[#f5f9fd] to-[#f8fbfe] px-4 pt-3 pb-3 border-b border-[#dce8f5] shadow-[0_4px_16px_rgba(0,102,244,0.03)] space-y-3">
-        {/* Search Bar - Crisp white floating card on soft blue canvas */}
-        <div className="relative flex items-center">
-          <Search size={18} className="absolute left-3.5 text-[#0066f4] pointer-events-none" />
+      {/* Hero Section: Customer Waves & Blue Theme directly behind Search & Categories */}
+      <div className="ae-explore-hero">
+        {/* Search Bar - Floating white card on blue wave canvas */}
+        <div className="ae-explore-search-wrap">
+          <Search size={18} className="ae-explore-search-icon" />
           <input
             type="text"
             value={inputValue}
@@ -166,7 +160,7 @@ export function CustomerExplore() {
               setPage(1);
             }}
             placeholder={uiText("Search shops near you...")}
-            className="w-full bg-white border border-[#cfe2f7] rounded-[16px] pl-10 pr-9 py-2.5 text-[14px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#0066f4] focus:ring-2 focus:ring-[#0066f4]/20 shadow-[0_2px_8px_rgba(0,102,244,0.06)] transition-all"
+            className="ae-explore-search-input"
           />
           {inputValue ? (
             <button
@@ -176,7 +170,7 @@ export function CustomerExplore() {
                 setSearch('');
                 setPage(1);
               }}
-              className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+              className="ae-explore-search-clear"
               aria-label={uiText("Clear search")}
             >
               <X size={15} />
@@ -185,16 +179,12 @@ export function CustomerExplore() {
         </div>
 
         {/* Horizontal Scrolling Categories - AE Blue Gradient for Active */}
-        <div className="glass-categories flex items-center overflow-x-auto gap-2 pb-0.5 scrollbar-hide -mx-4 px-4">
+        <div className="ae-explore-categories">
           <button
             key="all"
             type="button"
             onClick={() => handleCategoryChange('All')}
-            className={`shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-all ${
-              activeCategory === 'All'
-                ? 'bg-gradient-to-r from-[#0066f4] to-[#009be5] text-white shadow-md shadow-blue-500/25 active'
-                : 'bg-white text-slate-700 border border-[#d8e8f8] hover:bg-blue-50/80 hover:border-[#0066f4]/40 shadow-xs'
-            }`}
+            className={`ae-category-pill ${activeCategory === 'All' ? 'active' : ''}`}
           >
             {uiText("All")}
           </button>
@@ -203,11 +193,7 @@ export function CustomerExplore() {
               key={cat.id}
               type="button"
               onClick={() => handleCategoryChange(cat.id)}
-              className={`shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-[13px] font-bold transition-all ${
-                activeCategory === cat.id
-                  ? 'bg-gradient-to-r from-[#0066f4] to-[#009be5] text-white shadow-md shadow-blue-500/25 active'
-                  : 'bg-white text-slate-700 border border-[#d8e8f8] hover:bg-blue-50/80 hover:border-[#0066f4]/40 shadow-xs'
-              }`}
+              className={`ae-category-pill ${activeCategory === cat.id ? 'active' : ''}`}
             >
               {cat.name}
             </button>
@@ -215,38 +201,26 @@ export function CustomerExplore() {
         </div>
       </div>
 
-      {/* Quick Filter Chips (All, Nearby, Open now) - AE Blue Theme */}
-      <div className="px-4 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+      {/* Quick Filter Chips (All, Nearby, Open now) */}
+      <div className="ae-explore-filters">
         <button
           type="button"
           onClick={() => setQuickFilter('all')}
-          className={`shrink-0 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-all ${
-            quickFilter === 'all'
-              ? 'bg-[#0066f4] text-white shadow-sm shadow-blue-500/25'
-              : 'bg-white text-slate-600 border border-[#d8e8f8] hover:bg-blue-50/80 shadow-xs'
-          }`}
+          className={`ae-filter-pill ${quickFilter === 'all' ? 'active' : ''}`}
         >
           {uiText("All")}
         </button>
         <button
           type="button"
           onClick={() => setQuickFilter('nearby')}
-          className={`shrink-0 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-all ${
-            quickFilter === 'nearby'
-              ? 'bg-[#0066f4] text-white shadow-sm shadow-blue-500/25'
-              : 'bg-white text-slate-600 border border-[#d8e8f8] hover:bg-blue-50/80 shadow-xs'
-          }`}
+          className={`ae-filter-pill ${quickFilter === 'nearby' ? 'active' : ''}`}
         >
           {uiText("Nearby")}
         </button>
         <button
           type="button"
           onClick={() => setQuickFilter('open')}
-          className={`shrink-0 px-3.5 py-1 rounded-full text-[12px] font-semibold transition-all ${
-            quickFilter === 'open'
-              ? 'bg-[#0066f4] text-white shadow-sm shadow-blue-500/25'
-              : 'bg-white text-slate-600 border border-[#d8e8f8] hover:bg-blue-50/80 shadow-xs'
-          }`}
+          className={`ae-filter-pill ${quickFilter === 'open' ? 'active' : ''}`}
         >
           {uiText("Open now")}
         </button>
@@ -254,15 +228,9 @@ export function CustomerExplore() {
 
       {/* GPS Location Prompt Banner if not yet granted */}
       {currentLocation.data?.latitude == null && (
-        <div className="mx-4 mt-2 px-3.5 py-2 rounded-xl bg-blue-50/90 border border-blue-200/80 flex items-center justify-between gap-2 shadow-xs">
-          <p className="text-[11.5px] text-blue-900 font-medium">
-            {uiText("Tap to use live GPS for exact distance from you")}
-          </p>
-          <button
-            type="button"
-            onClick={requestLiveLocation}
-            className="shrink-0 px-2.5 py-1 rounded-lg bg-[#0066f4] text-white text-[11px] font-bold shadow-xs active:scale-95 transition-transform"
-          >
+        <div className="ae-explore-gps-banner">
+          <p>{uiText("Tap to use live GPS for exact distance from you")}</p>
+          <button type="button" onClick={requestLiveLocation}>
             {uiText("Use GPS")}
           </button>
         </div>
