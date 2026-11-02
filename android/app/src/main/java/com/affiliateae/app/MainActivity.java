@@ -49,6 +49,12 @@ public class MainActivity extends BridgeActivity {
         }, 90000);
     }
 
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
+
     private void traceTask(String label, Task<?> task) {
         task.addOnCompleteListener(result -> {
             if (result.isSuccessful()) Log.i("AEPushTrace", label + " succeeded (value withheld)");

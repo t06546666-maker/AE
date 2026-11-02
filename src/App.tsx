@@ -175,6 +175,37 @@ export function App() {
     };
   });
 
+  // Register push notification tap / action handler IMMEDIATELY on native platform
+  // so cold-start and background taps from notification drawer or lockscreen are caught instantly without delay.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let removeListener: (() => void) | undefined;
+    import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+      void PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        let url = notification.notification.data?.url;
+        const imageUrl = notification.notification.data?.imageUrl;
+        if (!url || typeof url !== 'string' || !url.trim()) {
+          url = '/customer/notifications';
+        }
+        if (imageUrl && (url === '/customer/notifications' || url === '/notifications')) {
+          url = `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}`;
+        }
+        if (typeof url === 'string') {
+          if (url.startsWith('/') && !url.startsWith('//')) {
+            navigate(url);
+          } else if (url.startsWith('http://') || url.startsWith('https://')) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        }
+      }).then((handle) => {
+        removeListener = () => { void handle.remove(); };
+      });
+    });
+    return () => {
+      if (removeListener) removeListener();
+    };
+  }, [navigate]);
+
   useEffect(() => {
     let disposed = false;
     const listeners: Array<{ remove: () => Promise<void> }> = [];
