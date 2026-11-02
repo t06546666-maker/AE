@@ -719,6 +719,7 @@ td small, .order-number + small { display: block; margin-top: 3px; color: var(--
 :root[data-theme="dark"] .login-brand-panel{background:#131d37;color:var(--text)}
 :root[data-theme="dark"] .login-form{background:var(--surface);border-color:var(--border);color:var(--text)}
 :root[data-theme="dark"] .login-form :is(h2,p,label){color:var(--text)}
+:root[data-theme="dark"] :is(img.customer-home-logo, .brand img, .login-brand img, .login-mobile-brand img, .boot-brand img, .ae-auth-brand, .scanned-brand img, .ae-shop-brand, .ae-scan-logo, .ae-legal header img, .expense-header img, .accounts-login-top img, .customer-modern-profile-hero header > a){background-color:#ffffff !important;border-radius:12px;padding:4px 8px;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,0.28)}
 @media(max-width:560px){.mobile-theme-toggle span{max-width:72px;overflow:hidden;text-overflow:ellipsis}.mobile-topbar-actions{gap:4px}.auth-theme-toggle{top:max(8px,env(safe-area-inset-top));right:8px}}
 @media(max-width:767px){.customer-glass .main-content{padding-bottom:max(120px, calc(100px + env(safe-area-inset-bottom, 24px)))!important}.customer-glass .customer-bottom-nav{display:flex;padding-bottom:max(24px, calc(12px + env(safe-area-inset-bottom, 20px)));}}
 @media(min-width:768px){.customer-glass .customer-bottom-nav{display:none}}
