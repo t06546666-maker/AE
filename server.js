@@ -2987,7 +2987,7 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
-  let query = supabaseAdmin.from('active_merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, merchant_categories(name)', { count: 'exact' });
+  let query = supabaseAdmin.from('active_merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, opening_time, closing_time, merchant_categories(name)', { count: 'exact' });
   if (routeGroup && routeGroup !== 'all') query = query.in('route_name', customerRouteGroups[routeGroup]);
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
@@ -3029,6 +3029,8 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
       category: merchant.merchant_categories?.name || '',
       address: merchant.address || '',
       route_name: merchant.route_name || null,
+      opening_time: merchant.opening_time || null,
+      closing_time: merchant.closing_time || null,
       latitude: merchant.latitude === null ? null : Number(merchant.latitude),
       longitude: merchant.longitude === null ? null : Number(merchant.longitude),
       created_at: merchant.created_at,

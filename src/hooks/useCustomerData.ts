@@ -34,6 +34,8 @@ export type CustomerMerchant = {
   latitude?: number | null;
   longitude?: number | null;
   route_name?: string | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
   created_at: string;
 };
 
