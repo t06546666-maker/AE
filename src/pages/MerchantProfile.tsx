@@ -5,7 +5,6 @@ import { apiFetch } from '../api';
 import { uiText } from '../uiText';
 import { useTranslation } from 'react-i18next';
 import { ErrorState, LoadingState, PageHeader } from '../components/Common';
-import { MerchantPushSetup } from '../components/MerchantPushSetup';
 import type { UserProfile } from '../types';
 
 type Business = { name: string; merchant_code?: string; email?: string; phone?: string; address?: string; image_url?: string; images?: string[]; opening_time?: string; closing_time?: string; created_at?: string; latitude?: number; longitude?: number; merchant_categories?: { name?: string }; };
@@ -26,7 +25,6 @@ export function MerchantProfile({ user }: { user: UserProfile }) {
   return <div className="merchant-profile" style={{ maxWidth: 850, margin: 'auto', paddingBottom: 90 }}>
     <Link to="/more" className="button secondary"><ArrowLeft size={17} />{uiText('Back to More')}</Link>
     <PageHeader title={uiText('Merchant Profile')} subtitle={uiText('Your business and account details')} />
-    <MerchantPushSetup userId={user.id} />
     <section className="panel">
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}><span className="mobile-transaction-avatar blue"><Store size={28} /></span><div><h2 style={{ margin: 0 }}>{shop.name}</h2><p>{shop.merchant_categories?.name || uiText('Merchant')}</p></div></div>
       <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 18 }}>{details.map(([label, value]) => <div key={label} style={{ padding: 14, background: 'var(--surface-alt)', borderRadius: 12 }}><dt style={{ fontSize: 13, marginBottom: 7 }}>{uiText(label)}</dt><dd style={{ margin: 0, fontWeight: 600, overflowWrap: 'anywhere' }}>{value || uiText('Not provided')}</dd>{label === 'Phone number' && <Link to="/shop-checkout" className="button secondary" style={{marginTop:10}}>{uiText('My QR')}</Link>}</div>)}</dl>
