@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
-import { Bell, BellRing, CheckCircle2, AlertTriangle, Send, RefreshCw, Smartphone } from 'lucide-react';
+import { BellRing, CheckCircle2, AlertTriangle, RefreshCw, Smartphone } from 'lucide-react';
 import { apiFetch } from '../api';
 import { uiText } from '../uiText';
 
@@ -25,19 +25,6 @@ export function MerchantPushSetup({ userId }: { userId: string }) {
     window.addEventListener('ae:push-status', update);
     return () => window.removeEventListener('ae:push-status', update);
   }, [client, userId]);
-
-  const test = useMutation({
-    retry: false,
-    mutationFn: () => apiFetch<{ message: string; accepted?: boolean }>('/api/merchant/push-test', { method: 'POST' }),
-    onSuccess: (result) => {
-      setMessage(result.message || uiText('Test notification sent! Check your phone notification tray.'));
-      setIsError(false);
-    },
-    onError: (err: any) => {
-      setMessage(err.message || uiText('Failed to send test notification'));
-      setIsError(true);
-    },
-  });
 
   const isRegistered = Boolean(status.data?.registered && status.data?.enabled);
   const isNative = Capacitor.isNativePlatform();
@@ -105,9 +92,9 @@ export function MerchantPushSetup({ userId }: { userId: string }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {isNative ? (
-            !isRegistered ? (
+        {!isRegistered && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {isNative ? (
               <button
                 type="button"
                 className="button primary"
@@ -122,33 +109,22 @@ export function MerchantPushSetup({ userId }: { userId: string }) {
                 {uiText('Connect This Phone')}
               </button>
             ) : (
-              <button
-                type="button"
-                className="button secondary"
-                style={{ fontSize: '12px', padding: '6px 12px', height: 'auto', background: '#ffffff' }}
-                disabled={test.isPending || !status.data?.firebaseReady}
-                onClick={() => test.mutate()}
-              >
-                <Send size={13} style={{ marginRight: 4 }} />
-                {uiText(test.isPending ? 'Sending…' : 'Send Test Alert')}
-              </button>
-            )
-          ) : (
-            <span style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>
-              {uiText('Open in Android app to activate push')}
-            </span>
-          )}
+              <span style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>
+                {uiText('Open in Android app to activate push')}
+              </span>
+            )}
 
-          <button
-            type="button"
-            className="button secondary"
-            style={{ fontSize: '12px', padding: '6px 9px', height: 'auto', background: '#ffffff' }}
-            onClick={() => void status.refetch()}
-            title={uiText('Refresh status')}
-          >
-            <RefreshCw size={13} />
-          </button>
-        </div>
+            <button
+              type="button"
+              className="button secondary"
+              style={{ fontSize: '12px', padding: '6px 9px', height: 'auto', background: '#ffffff' }}
+              onClick={() => void status.refetch()}
+              title={uiText('Refresh status')}
+            >
+              <RefreshCw size={13} />
+            </button>
+          </div>
+        )}
       </div>
 
       {message && (
