@@ -45,6 +45,7 @@ function registerAdminNotifications(app, {
     merchantNames = null,
     targetSummary = '',
     scheduledId = null,
+    pushOnly = false,
   }) {
     const { db, messaging, FieldValue } = await getFirebaseInstances();
 
@@ -83,169 +84,171 @@ function registerAdminNotifications(app, {
       customerNameMap = customerNames;
     }
 
-    // 1. Save in customer in-app notifications
-    // If targeted to specific selected customers
-    if (target === 'selected_customers' || target === 'single_customer') {
-      try {
-        await Promise.all(
-          normalizedCustomerIds.map(async (cId) => {
-            try {
-              await db.collection('ae_customer_announcements').add({
-                title,
-                body,
-                url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
-                image_url: imageUrl || '',
-                target: 'selected_customers',
-                customer_id: String(cId),
-                customer_name: (customerNameMap && customerNameMap[cId]) || (cId === customerId ? customerName : '') || '',
-                customer_phone: (cId === customerId ? customerPhone : '') || '',
-                created_at: FieldValue.serverTimestamp(),
-              });
-            } catch (err) {
-              console.warn(`[admin-notifications] Error saving announcement for customer ${cId}:`, err.message);
-            }
-          })
-        );
-      } catch (saveErr) {
-        console.warn('[admin-notifications] Error saving selected customer in-app announcements:', saveErr.message);
-      }
-    } else if (target === 'customers' || target === 'all') {
-      try {
-        await db.collection('ae_customer_announcements').add({
-          title,
-          body,
-          url: url || (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'),
-          image_url: imageUrl || '',
-          target,
-          created_at: FieldValue.serverTimestamp(),
-        });
-      } catch (saveErr) {
-        console.warn('[admin-notifications] Error saving in-app announcement:', saveErr.message);
-      }
-    }
-
-    // 1b. Save in merchant inboxes so onboarded merchants receive it in their notification bell
-    if (target === 'selected_merchants' && normalizedMerchantIds.length > 0) {
-      try {
-        await db.collection('ae_merchant_announcements').add({
-          title,
-          body,
-          url: url || '',
-          image_url: imageUrl || '',
-          target: 'selected_merchants',
-          merchant_ids: normalizedMerchantIds,
-          created_at: FieldValue.serverTimestamp(),
-        });
-      } catch (saveErr) {
-        console.warn('[admin-notifications] Error saving selected merchant announcement:', saveErr.message);
-      }
-
-      try {
-        const targetProfileIds = new Set();
-        normalizedMerchantIds.forEach((mId) => targetProfileIds.add(mId));
-
-        if (supabase) {
-          const { data: mProfiles } = await supabase
-            .from('profiles')
-            .select('id, merchant_id')
-            .eq('role', 'merchant');
-          if (Array.isArray(mProfiles)) {
-            mProfiles.forEach((p) => {
-              if (p.merchant_id && normalizedMerchantIds.includes(String(p.merchant_id))) {
-                targetProfileIds.add(p.id);
+    // 1. Save in customer in-app notifications (skipped if pushOnly mode)
+    if (!pushOnly) {
+      // If targeted to specific selected customers
+      if (target === 'selected_customers' || target === 'single_customer') {
+        try {
+          await Promise.all(
+            normalizedCustomerIds.map(async (cId) => {
+              try {
+                await db.collection('ae_customer_announcements').add({
+                  title,
+                  body,
+                  url: url || '',
+                  image_url: imageUrl || '',
+                  target: 'selected_customers',
+                  customer_id: String(cId),
+                  customer_name: (customerNameMap && customerNameMap[cId]) || (cId === customerId ? customerName : '') || '',
+                  customer_phone: (cId === customerId ? customerPhone : '') || '',
+                  created_at: FieldValue.serverTimestamp(),
+                });
+              } catch (err) {
+                console.warn(`[admin-notifications] Error saving announcement for customer ${cId}:`, err.message);
               }
-            });
-          }
+            })
+          );
+        } catch (saveErr) {
+          console.warn('[admin-notifications] Error saving selected customer in-app announcements:', saveErr.message);
         }
-
-        const profileSnap = await db.collection('ae_profile_push_registrations').get();
-        profileSnap.forEach((doc) => {
-          const data = doc.data();
-          if (data && data.merchant_id && normalizedMerchantIds.includes(String(data.merchant_id))) {
-            targetProfileIds.add(doc.id);
-          }
-        });
-
-        const uniqueProfileIds = Array.from(targetProfileIds);
-        await Promise.all(
-          uniqueProfileIds.map(async (pId) => {
-            try {
-              await db
-                .collection('ae_profile_notification_inboxes')
-                .doc(pId)
-                .collection('items')
-                .add({
-                  title: String(title).slice(0, 160),
-                  body: String(body).slice(0, 1000),
-                  target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
-                  image_url: imageUrl || null,
-                  event_type: 'admin_broadcast',
-                  entity_id: null,
-                  read_at: null,
-                  created_at: new Date().toISOString(),
-                });
-            } catch {
-              // Ignore individual inbox save error
-            }
-          })
-        );
-      } catch (inboxErr) {
-        console.warn('[admin-notifications] Error saving selected merchant inboxes:', inboxErr.message);
-      }
-    } else if (target === 'merchants' || target === 'all') {
-      try {
-        await db.collection('ae_merchant_announcements').add({
-          title,
-          body,
-          url: url || '',
-          image_url: imageUrl || '',
-          target,
-          created_at: FieldValue.serverTimestamp(),
-        });
-      } catch (saveErr) {
-        console.warn('[admin-notifications] Error saving merchant announcement:', saveErr.message);
+      } else if (target === 'customers' || target === 'all') {
+        try {
+          await db.collection('ae_customer_announcements').add({
+            title,
+            body,
+            url: url || '',
+            image_url: imageUrl || '',
+            target,
+            created_at: FieldValue.serverTimestamp(),
+          });
+        } catch (saveErr) {
+          console.warn('[admin-notifications] Error saving in-app announcement:', saveErr.message);
+        }
       }
 
-      try {
-        const merchantProfileIds = new Set();
-        if (supabase) {
-          const { data: mProfiles } = await supabase.from('profiles').select('id').eq('role', 'merchant');
-          if (Array.isArray(mProfiles)) {
-            mProfiles.forEach((p) => merchantProfileIds.add(p.id));
-          }
+      // 1b. Save in merchant inboxes so onboarded merchants receive it in their notification bell
+      if (target === 'selected_merchants' && normalizedMerchantIds.length > 0) {
+        try {
+          await db.collection('ae_merchant_announcements').add({
+            title,
+            body,
+            url: url || '',
+            image_url: imageUrl || '',
+            target: 'selected_merchants',
+            merchant_ids: normalizedMerchantIds,
+            created_at: FieldValue.serverTimestamp(),
+          });
+        } catch (saveErr) {
+          console.warn('[admin-notifications] Error saving selected merchant announcement:', saveErr.message);
         }
-        const profileSnap = await db.collection('ae_profile_push_registrations').get();
-        profileSnap.forEach((doc) => {
-          const data = doc.data();
-          if (data && (data.role === 'merchant' || !data.role)) {
-            merchantProfileIds.add(doc.id);
-          }
-        });
-        const uniqueIds = Array.from(merchantProfileIds);
-        await Promise.all(
-          uniqueIds.map(async (mId) => {
-            try {
-              await db
-                .collection('ae_profile_notification_inboxes')
-                .doc(mId)
-                .collection('items')
-                .add({
-                  title: String(title).slice(0, 160),
-                  body: String(body).slice(0, 1000),
-                  target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
-                  image_url: imageUrl || null,
-                  event_type: 'admin_broadcast',
-                  entity_id: null,
-                  read_at: null,
-                  created_at: new Date().toISOString(),
-                });
-            } catch {
-              // Ignore individual inbox save error
+
+        try {
+          const targetProfileIds = new Set();
+          normalizedMerchantIds.forEach((mId) => targetProfileIds.add(mId));
+
+          if (supabase) {
+            const { data: mProfiles } = await supabase
+              .from('profiles')
+              .select('id, merchant_id')
+              .eq('role', 'merchant');
+            if (Array.isArray(mProfiles)) {
+              mProfiles.forEach((p) => {
+                if (p.merchant_id && normalizedMerchantIds.includes(String(p.merchant_id))) {
+                  targetProfileIds.add(p.id);
+                }
+              });
             }
-          })
-        );
-      } catch (inboxErr) {
-        console.warn('[admin-notifications] Error saving merchant inboxes:', inboxErr.message);
+          }
+
+          const profileSnap = await db.collection('ae_profile_push_registrations').get();
+          profileSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data && data.merchant_id && normalizedMerchantIds.includes(String(data.merchant_id))) {
+              targetProfileIds.add(doc.id);
+            }
+          });
+
+          const uniqueProfileIds = Array.from(targetProfileIds);
+          await Promise.all(
+            uniqueProfileIds.map(async (pId) => {
+              try {
+                await db
+                  .collection('ae_profile_notification_inboxes')
+                  .doc(pId)
+                  .collection('items')
+                  .add({
+                    title: String(title).slice(0, 160),
+                    body: String(body).slice(0, 1000),
+                    target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
+                    image_url: imageUrl || null,
+                    event_type: 'admin_broadcast',
+                    entity_id: null,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                  });
+              } catch {
+                // Ignore individual inbox save error
+              }
+            })
+          );
+        } catch (inboxErr) {
+          console.warn('[admin-notifications] Error saving selected merchant inboxes:', inboxErr.message);
+        }
+      } else if (target === 'merchants' || target === 'all') {
+        try {
+          await db.collection('ae_merchant_announcements').add({
+            title,
+            body,
+            url: url || '',
+            image_url: imageUrl || '',
+            target,
+            created_at: FieldValue.serverTimestamp(),
+          });
+        } catch (saveErr) {
+          console.warn('[admin-notifications] Error saving merchant announcement:', saveErr.message);
+        }
+
+        try {
+          const merchantProfileIds = new Set();
+          if (supabase) {
+            const { data: mProfiles } = await supabase.from('profiles').select('id').eq('role', 'merchant');
+            if (Array.isArray(mProfiles)) {
+              mProfiles.forEach((p) => merchantProfileIds.add(p.id));
+            }
+          }
+          const profileSnap = await db.collection('ae_profile_push_registrations').get();
+          profileSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data && (data.role === 'merchant' || !data.role)) {
+              merchantProfileIds.add(doc.id);
+            }
+          });
+          const uniqueIds = Array.from(merchantProfileIds);
+          await Promise.all(
+            uniqueIds.map(async (mId) => {
+              try {
+                await db
+                  .collection('ae_profile_notification_inboxes')
+                  .doc(mId)
+                  .collection('items')
+                  .add({
+                    title: String(title).slice(0, 160),
+                    body: String(body).slice(0, 1000),
+                    target_url: typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url.slice(0, 500) : null,
+                    image_url: imageUrl || null,
+                    event_type: 'admin_broadcast',
+                    entity_id: null,
+                    read_at: null,
+                    created_at: new Date().toISOString(),
+                  });
+              } catch {
+                // Ignore individual inbox save error
+              }
+            })
+          );
+        } catch (inboxErr) {
+          console.warn('[admin-notifications] Error saving merchant inboxes:', inboxErr.message);
+        }
       }
     }
 
@@ -367,7 +370,7 @@ function registerAdminNotifications(app, {
     const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)));
 
     if (uniqueTokens.length === 0) {
-      // Record history even if 0 push devices found (notification is still saved in in-app inbox)
+      // Record history even if 0 push devices found (notification is still saved in in-app inbox if not push-only)
       try {
         await db.collection('ae_notification_history').add({
           title,
@@ -375,6 +378,7 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
+          push_only: Boolean(pushOnly),
           customer_id: customerId || (normalizedCustomerIds[0] || null),
           customer_name: customerName || '',
           customer_phone: customerPhone || '',
@@ -410,9 +414,10 @@ function registerAdminNotifications(app, {
       },
       data: Object.fromEntries(
         Object.entries({
-          url: url || (target === 'merchants' ? '/dashboard' : (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications')),
+          url: url || (pushOnly ? '' : (target === 'merchants' ? '/dashboard' : (imageUrl ? `/customer/notifications?viewImage=${encodeURIComponent(imageUrl)}` : '/customer/notifications'))),
           imageUrl: imageUrl || '',
           type: 'announcement',
+          push_only: pushOnly ? 'true' : 'false',
         }).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])
       ),
       android: {
@@ -469,6 +474,7 @@ function registerAdminNotifications(app, {
         url: url || '',
         image_url: imageUrl || '',
         target,
+        push_only: Boolean(pushOnly),
         customer_id: customerId || (normalizedCustomerIds[0] || null),
         customer_name: customerName || '',
         customer_phone: customerPhone || '',
@@ -541,6 +547,7 @@ function registerAdminNotifications(app, {
             merchantNames: data.merchant_names || null,
             targetSummary: data.target_summary || '',
             scheduledId: doc.id,
+            pushOnly: Boolean(data.push_only || data.pushOnly),
           });
 
           await doc.ref.update({
@@ -818,6 +825,7 @@ function registerAdminNotifications(app, {
           url: d.url || '',
           image_url: d.image_url || '',
           target: d.target || 'customers',
+          push_only: Boolean(d.push_only || d.pushOnly),
           customer_id: d.customer_id || null,
           customer_name: d.customer_name || '',
           customer_phone: d.customer_phone || '',
@@ -847,6 +855,7 @@ function registerAdminNotifications(app, {
           url: d.url || '',
           image_url: d.image_url || '',
           target: d.target || 'customers',
+          push_only: Boolean(d.push_only || d.pushOnly),
           customer_id: d.customer_id || null,
           customer_name: d.customer_name || '',
           customer_phone: d.customer_phone || '',
@@ -889,6 +898,7 @@ function registerAdminNotifications(app, {
       const customerPhone = (req.body.customerPhone || req.body.customer_phone || '').trim();
       const targetSummary = (req.body.targetSummary || req.body.target_summary || '').trim();
       const scheduledAtRaw = (req.body.scheduled_at || '').trim();
+      const pushOnly = req.body.pushOnly === true || req.body.pushOnly === 'true' || req.body.push_only === true || req.body.push_only === 'true';
 
       // Parse multi-select customer IDs
       let customerIds = [];
@@ -964,6 +974,7 @@ function registerAdminNotifications(app, {
           url: url || '',
           image_url: imageUrl || '',
           target,
+          push_only: pushOnly,
           customer_id: customerId || (customerIds[0] || null),
           customer_name: customerName || '',
           customer_phone: customerPhone || '',
@@ -1005,10 +1016,15 @@ function registerAdminNotifications(app, {
         customerIds,
         merchantIds,
         targetSummary,
+        pushOnly,
       });
 
       let responseMsg = '';
-      if (target === 'selected_customers' || target === 'single_customer') {
+      if (pushOnly) {
+        responseMsg = result.delivered > 0
+          ? `Push notification sent directly to ${result.delivered} device(s) (Phone push only - not saved to in-app feed).`
+          : 'Push notification attempted (0 devices registered at this time). Phone push only mode.';
+      } else if (target === 'selected_customers' || target === 'single_customer') {
         const cCount = customerIds.length || 1;
         responseMsg = result.delivered > 0
           ? `Push notification successfully delivered to ${result.delivered} of ${cCount} selected customer phone(s)!`
@@ -1057,6 +1073,58 @@ function registerAdminNotifications(app, {
       await docRef.delete();
       return res.json({ success: true, message: 'Scheduled notification cancelled successfully.' });
     } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  /**
+   * DELETE /api/admin/notifications/history/:id
+   * Delete a past broadcast from history AND clean up corresponding in-app announcements
+   */
+  app.delete('/api/admin/notifications/history/:id', auth, adminRole, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { db } = await getFirebaseInstances();
+
+      const docRef = db.collection('ae_notification_history').doc(id);
+      const doc = await docRef.get();
+
+      if (!doc.exists) {
+        return res.status(404).json({ success: false, error: 'Broadcast history item not found' });
+      }
+
+      const data = doc.data() || {};
+      const title = data.title || '';
+      const imageUrl = data.image_url || '';
+
+      await docRef.delete();
+
+      let deletedInAppCount = 0;
+      if (title) {
+        const cSnap = await db.collection('ae_customer_announcements').where('title', '==', title).get();
+        for (const d of cSnap.docs) {
+          await d.ref.delete();
+          deletedInAppCount++;
+        }
+        const mSnap = await db.collection('ae_merchant_announcements').where('title', '==', title).get();
+        for (const d of mSnap.docs) {
+          await d.ref.delete();
+          deletedInAppCount++;
+        }
+      } else if (imageUrl) {
+        const cSnap = await db.collection('ae_customer_announcements').where('image_url', '==', imageUrl).get();
+        for (const d of cSnap.docs) {
+          await d.ref.delete();
+          deletedInAppCount++;
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: `Broadcast deleted successfully.${deletedInAppCount > 0 ? ` Also removed ${deletedInAppCount} matching announcement(s) from app inboxes.` : ''}`,
+      });
+    } catch (err) {
+      console.error('[admin-notifications] Delete history error:', err);
       return res.status(500).json({ success: false, error: err.message });
     }
   });

@@ -90,7 +90,7 @@ export function CustomerNotifications() {
                         <img
                           src={item.image_url}
                           alt={item.title}
-                          className="w-full max-h-72 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.01]"
+                          className="w-full max-h-96 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.01]"
                           loading="lazy"
                         />
                         <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[11px] font-bold shadow-md hover:bg-black/85 transition-colors pointer-events-none">
@@ -110,7 +110,7 @@ export function CustomerNotifications() {
                       </div>
                     </div>
 
-                    {item.url && (
+                    {item.url && !item.url.startsWith('/customer/notifications') && !item.url.startsWith('/notifications') && (
                       <div className="pt-1 pl-11">
                         {isExternal ? (
                           <a
@@ -249,7 +249,7 @@ export function CustomerNotifications() {
               </p>
             )}
 
-            {fullViewItem.url && (
+            {fullViewItem.url && !fullViewItem.url.startsWith('/customer/notifications') && !fullViewItem.url.startsWith('/notifications') && (
               <div className="pt-1">
                 {fullViewItem.url.startsWith('http://') || fullViewItem.url.startsWith('https://') ? (
                   <a

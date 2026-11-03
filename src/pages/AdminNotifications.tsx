@@ -86,6 +86,7 @@ interface ScheduledNotification {
   target_count?: number;
   scheduled_at: string;
   status: string;
+  push_only?: boolean;
   created_at?: string;
 }
 
@@ -103,6 +104,7 @@ interface NotificationHistoryItem {
   merchant_ids?: string[];
   target_summary?: string;
   target_count?: number;
+  push_only?: boolean;
   sent_at: string;
   delivered: number;
   failed: number;
@@ -129,8 +131,12 @@ export function AdminNotifications() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
+  const [pushOnly, setPushOnly] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
+  const [imageNaturalRatio, setImageNaturalRatio] = useState<number | null>(null);
+  const [isAutoFitted2x1, setIsAutoFitted2x1] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<'now' | 'schedule'>('now');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
   const [activeTab, setActiveTab] = useState<'create' | 'scheduled' | 'history'>('create');
@@ -252,17 +258,118 @@ export function AdminNotifications() {
     }
 
     setImageFile(file);
+    setOriginalImageFile(file);
+    setIsAutoFitted2x1(false);
     const objectUrl = URL.createObjectURL(file);
     setImagePreview(objectUrl);
+
+    // Detect natural aspect ratio
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalHeight > 0) {
+        setImageNaturalRatio(img.naturalWidth / img.naturalHeight);
+      }
+    };
+    img.src = objectUrl;
   };
 
   const handleRemoveImage = () => {
     setImageFile(null);
+    setOriginalImageFile(null);
+    setImageNaturalRatio(null);
+    setIsAutoFitted2x1(false);
     if (imagePreview.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreview);
     }
     setImagePreview('');
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Auto-fit portrait or irregular images to 2:1 widescreen for Android push notification shade
+  const handleAutoFit2x1 = () => {
+    const sourceFile = originalImageFile || imageFile;
+    if (!sourceFile) return;
+
+    const sourceUrl = URL.createObjectURL(sourceFile);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const targetW = 1200;
+        const targetH = 600; // 2:1 ratio standard for Android BigPicture push
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 1. Draw subtle ambient blurred background from image
+        ctx.save();
+        ctx.filter = 'blur(28px) brightness(0.75)';
+        ctx.drawImage(img, -20, -20, targetW + 40, targetH + 40);
+        ctx.restore();
+
+        // 2. Soft dark gradient vignette overlay for high contrast
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+        ctx.fillRect(0, 0, targetW, targetH);
+
+        // 3. Draw full uncropped image centered inside 2:1 frame
+        const padX = 28;
+        const padY = 20;
+        const maxDrawW = targetW - padX * 2;
+        const maxDrawH = targetH - padY * 2;
+        const scale = Math.min(maxDrawW / img.naturalWidth, maxDrawH / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const drawX = (targetW - drawW) / 2;
+        const drawY = (targetH - drawH) / 2;
+
+        // Subtle drop shadow behind center poster
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 6;
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        ctx.restore();
+
+        // 4. Convert canvas to JPEG blob and update imageFile
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const fittedFile = new File([blob], 'push-banner-2x1.jpg', { type: 'image/jpeg' });
+          setImageFile(fittedFile);
+          if (imagePreview.startsWith('blob:')) {
+            URL.revokeObjectURL(imagePreview);
+          }
+          const fittedUrl = URL.createObjectURL(blob);
+          setImagePreview(fittedUrl);
+          setImageNaturalRatio(2.0);
+          setIsAutoFitted2x1(true);
+          showToast('Image formatted to 2:1 widescreen for Android notification bar!');
+        }, 'image/jpeg', 0.92);
+      } finally {
+        URL.revokeObjectURL(sourceUrl);
+      }
+    };
+    img.src = sourceUrl;
+  };
+
+  const handleRevertToOriginalImage = () => {
+    if (!originalImageFile) return;
+    setImageFile(originalImageFile);
+    if (imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    const objectUrl = URL.createObjectURL(originalImageFile);
+    setImagePreview(objectUrl);
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalHeight > 0) {
+        setImageNaturalRatio(img.naturalWidth / img.naturalHeight);
+      }
+    };
+    img.src = objectUrl;
+    setIsAutoFitted2x1(false);
+    showToast('Reverted to original image.');
   };
 
   // Add/remove customer helpers
@@ -315,6 +422,7 @@ export function AdminNotifications() {
       form.append('body', body.trim());
       if (url.trim()) form.append('url', url.trim());
       form.append('target', target);
+      form.append('pushOnly', String(pushOnly));
 
       if (target === 'selected_customers' || target === 'single_customer') {
         const cIds = selectedCustomers.map((c) => c.id);
@@ -365,6 +473,7 @@ export function AdminNotifications() {
       setTitle('');
       setBody('');
       setUrl('');
+      setPushOnly(false);
       handleRemoveImage();
       setDispatchMode('now');
       setScheduledDateTime('');
@@ -392,6 +501,22 @@ export function AdminNotifications() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to cancel scheduled notification', 'error');
+    },
+  });
+
+  // Delete past broadcast history mutation
+  const deleteHistoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiFetch<{ success: boolean; message: string }>(`/api/admin/notifications/history/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: (data) => {
+      showToast(data.message || 'Broadcast deleted successfully.');
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications', 'history'] });
+    },
+    onError: (err: any) => {
+      showToast(err.message || 'Failed to delete broadcast', 'error');
     },
   });
 
@@ -1238,35 +1363,108 @@ export function AdminNotifications() {
 
             {/* Optional Banner Image */}
             <div style={{ marginBottom: '22px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                {uiText("Banner Image (Optional - Rich Push Notification)")}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                  {uiText("Banner Image (Optional - Rich Push Notification)")}
+                </label>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  {uiText("Recommended: 2:1 Widescreen (1200×600)")}
+                </span>
+              </div>
 
               {imagePreview ? (
-                <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1', maxHeight: '200px' }}>
-                  <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      background: 'rgba(15, 23, 42, 0.75)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    title={uiText("Remove Image")}
-                  >
-                    <X size={16} />
-                  </button>
+                <div style={{ borderRadius: '12px', border: '1px solid #cbd5e1', overflow: 'hidden', background: '#0f172a' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+                    <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '28px',
+                        height: '28px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      }}
+                      title={uiText("Remove Image")}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Ratio badge and 2:1 Auto-Format Bar */}
+                  <div style={{ padding: '10px 14px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                        {imageNaturalRatio ? `Aspect Ratio: ${imageNaturalRatio.toFixed(2)}:1` : 'Aspect Ratio'}
+                      </span>
+                      {isAutoFitted2x1 ? (
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                          ✓ 2:1 Push Optimized
+                        </span>
+                      ) : imageNaturalRatio && (imageNaturalRatio < 1.7 || imageNaturalRatio > 2.3) ? (
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>
+                          ⚠️ Portrait/Non-2:1 (Android will crop)
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600 }}>
+                          Standard 2:1
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {imageNaturalRatio && (imageNaturalRatio < 1.7 || imageNaturalRatio > 2.3) && !isAutoFitted2x1 && (
+                        <button
+                          type="button"
+                          onClick={handleAutoFit2x1}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            background: '#2563eb',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Sparkles size={14} />
+                          <span>{uiText("Auto-Fit to 2:1 for Android Push")}</span>
+                        </button>
+                      )}
+                      {isAutoFitted2x1 && (
+                        <button
+                          type="button"
+                          onClick={handleRevertToOriginalImage}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            background: '#e2e8f0',
+                            color: '#334155',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {uiText("Revert to Original")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div
@@ -1286,7 +1484,7 @@ export function AdminNotifications() {
                     {uiText("Click to upload high-impact banner image")}
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {uiText("JPG, PNG, WebP up to 5MB (Big Picture notification banner)")}
+                    {uiText("JPG, PNG, WebP up to 5MB (Android displays best in 2:1 widescreen, e.g. 1200×600)")}
                   </div>
                 </div>
               )}
@@ -1297,6 +1495,43 @@ export function AdminNotifications() {
                 onChange={handleImageChange}
                 style={{ display: 'none' }}
               />
+            </div>
+
+            {/* In-App Delivery Mode: Push-Only Checkbox */}
+            <div style={{ marginBottom: '22px' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  background: pushOnly ? '#f0fdf4' : '#f8fafc',
+                  border: `1.5px solid ${pushOnly ? '#86efac' : '#e2e8f0'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={pushOnly}
+                  onChange={(e) => setPushOnly(e.target.checked)}
+                  style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#16a34a', cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: pushOnly ? '#15803d' : '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{uiText("Send as Phone Push Only (Do not save to in-app announcement feed)")}</span>
+                    {pushOnly && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
+                        {uiText("Push Only")}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', lineHeight: 1.4 }}>
+                    {uiText("Delivers straight to customer/merchant lockscreen and phone notification bar. When swiped away or cleared, it will not enter the in-app notification center or stay in customer feeds.")}
+                  </div>
+                </div>
+              </label>
             </div>
 
             {/* Timing / Schedule Options */}
@@ -1475,10 +1710,10 @@ export function AdminNotifications() {
                   {body || uiText("Your notification message will appear here on customer phones.")}
                 </div>
 
-                {/* Optional Image */}
+                {/* Optional Image (2:1 Widescreen Phone Notification Standard) */}
                 {imagePreview && (
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', maxHeight: '160px', border: '1px solid #e2e8f0' }}>
-                    <img src={imagePreview} alt="Push banner" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', aspectRatio: '2/1', background: '#0f172a', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={imagePreview} alt="Push banner" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                   </div>
                 )}
 
@@ -1594,6 +1829,11 @@ export function AdminNotifications() {
                             ? uiText("Everyone")
                             : uiText("All Customers")}
                         </span>
+                        {item.push_only && (
+                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}>
+                            {uiText("Push Only")}
+                          </span>
+                        )}
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
                       {item.url && (
@@ -1711,6 +1951,11 @@ export function AdminNotifications() {
                             ? uiText("Everyone")
                             : uiText("All Customers")}
                         </span>
+                        {item.push_only && (
+                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}>
+                            {uiText("Push Only")}
+                          </span>
+                        )}
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
                       {item.url && (
@@ -1727,7 +1972,7 @@ export function AdminNotifications() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
                         {uiText("Sent At")}
@@ -1746,6 +1991,34 @@ export function AdminNotifications() {
                         <span>{item.delivered} / {item.total}</span>
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      disabled={deleteHistoryMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm(uiText("Delete this broadcast? This will remove it from notification history and customer in-app inboxes."))) {
+                          deleteHistoryMutation.mutate(item.id);
+                        }
+                      }}
+                      className="button secondary"
+                      style={{
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        color: '#ef4444',
+                        borderColor: '#fca5a5',
+                        background: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      title={uiText("Delete broadcast from history and app inboxes")}
+                    >
+                      <Trash2 size={14} />
+                      <span>{uiText("Delete")}</span>
+                    </button>
                   </div>
                 </div>
               ))}
