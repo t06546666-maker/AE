@@ -211,12 +211,15 @@ const WA_API_VERSION = process.env.WA_API_VERSION || 'v23.0';
 const WA_URL      = `https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_ID}/messages`;
 const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN;
 const WA_APP_SECRET = process.env.WA_APP_SECRET;
-const WA_REGISTRATION_TEMPLATE = process.env.WA_REGISTRATION_TEMPLATE || 'welcome';
+const customerOnboardingTemplates = require('./backend/customer-onboarding-templates.cjs');
+const WA_REGISTRATION_TEMPLATE = customerOnboardingTemplates.welcomeTemplate(cleanText(process.env.WA_REGISTRATION_TEMPLATE || '',512));
+const WA_CUSTOMER_USAGE_TEMPLATE = cleanText(process.env.WA_CUSTOMER_USAGE_TEMPLATE ?? 'ae_use',512);
+const WA_CUSTOMER_INSTAGRAM_LINK = cleanText(process.env.WA_CUSTOMER_INSTAGRAM_LINK || customerOnboardingTemplates.INSTAGRAM_LINK,1000);
 const WA_CUSTOMER_APP_LINK = cleanText(
   process.env.WA_CUSTOMER_APP_LINK || 'https://play.google.com/store/apps/details?id=com.affiliateae.app',
   1000,
 );
-const WA_TEMPORARY_TEMPLATE = cleanText(process.env.WA_TEMPORARY_TEMPLATE || 'temporary', 512);
+const WA_TEMPORARY_TEMPLATE = customerOnboardingTemplates.temporaryTemplate(cleanText(process.env.WA_TEMPORARY_TEMPLATE || '',512));
 const WA_REWARD_TEMPLATE = process.env.WA_REWARD_TEMPLATE || 'reward_receipt';
 const WA_REDEEM_TEMPLATE = process.env.WA_REDEEM_TEMPLATE || 'redeem_receipt';
 const WA_MERCHANT_CREDENTIALS_TEMPLATE = cleanText(
@@ -1132,6 +1135,7 @@ async function sendWhatsAppTemplate({
   recipient,
   templateName,
   components,
+  languageCode = WA_TEMPLATE_LANGUAGE,
   logId,
 }) {
   if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials'].includes(messageType)) {
@@ -1173,7 +1177,7 @@ async function sendWhatsAppTemplate({
       type: 'template',
       template: {
         name: templateName,
-        language: { code: WA_TEMPLATE_LANGUAGE },
+        language: { code: languageCode },
         components,
       },
     }, {
@@ -1220,7 +1224,10 @@ async function sendRegistrationWhatsApp(purchase, logId) {
   }
   const templateName = WA_REGISTRATION_TEMPLATE;
   const usesCurrentWelcomeTemplate = templateName === 'welcome';
-  const bodyParameters = usesCurrentWelcomeTemplate
+  const isMalayalamWelcome = customerOnboardingTemplates.isMalayalamWelcome(templateName);
+  const bodyParameters = isMalayalamWelcome
+    ? customerOnboardingTemplates.welcomeComponents(templateName,purchase.customer_name,WA_CUSTOMER_APP_LINK,WA_CUSTOMER_INSTAGRAM_LINK)[0].parameters
+    : usesCurrentWelcomeTemplate
     // The current Meta `welcome` template expects the customer's name and app link.
     ? [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: WA_CUSTOMER_APP_LINK }]
     : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.merchant_name }, { type: 'text', text: purchase.customer_code }, { type: 'text', text: `${Number(purchase.reward_percentage)}%` }, { type: 'text', text: formatPoints(purchase.points_earned) }, { type: 'text', text: formatPoints(purchase.total_points) }];
@@ -1232,7 +1239,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     let welcomeResult = { sent: false, error: 'Welcome bonus was not credited; promotional message skipped.' };
     if (!purchase.skip_welcome_message) {
       let welcomeComponents = [bodyComponent];
-      if (!usesCurrentWelcomeTemplate) {
+      if (!usesCurrentWelcomeTemplate && !isMalayalamWelcome) {
         const mediaId = await uploadQrMedia({
           id: purchase.customer_code,
           name: purchase.customer_name,
@@ -1248,6 +1255,7 @@ async function sendRegistrationWhatsApp(purchase, logId) {
         messageType: 'registration',
         logId,
         components: welcomeComponents,
+        ...(isMalayalamWelcome ? {languageCode:'en'} : {}),
       });
     } else if (logId) {
       await supabaseAdmin.from('whatsapp_messages').update({
@@ -1259,13 +1267,13 @@ async function sendRegistrationWhatsApp(purchase, logId) {
     // template can be blocked by Meta policy and must not prevent credentials.
     let passwordResult = null;
     if (WA_TEMPORARY_TEMPLATE && require('./backend/customer-signup-whatsapp.cjs').shouldSendTemporaryPassword(purchase)) {
-      // The current Meta `temporary` template is static (zero body variables):
-      // it explains that the password is the last six digits of the phone.
-      // Custom templates may still use the three-variable format.
-      const passwordParameters = WA_TEMPORARY_TEMPLATE === 'temporary' ? [] : [{ type: 'text', text: purchase.customer_name }, { type: 'text', text: purchase.temporary_password }, { type: 'text', text: purchase.customer_code }];
-      passwordResult = await sendWhatsAppTemplate({ customerId: purchase.customer_id, orderId: purchase.order_id, recipient: purchase.customer_phone, templateName: WA_TEMPORARY_TEMPLATE, messageType: 'registration_password', components: passwordParameters.length ? [{ type: 'body', parameters: passwordParameters }] : [] });
+      try {
+        const components=customerOnboardingTemplates.temporaryComponents(WA_TEMPORARY_TEMPLATE,purchase);
+        passwordResult=await sendWhatsAppTemplate({customerId:purchase.customer_id,orderId:purchase.order_id,recipient:purchase.customer_phone,templateName:WA_TEMPORARY_TEMPLATE,messageType:'registration_password',...(WA_TEMPORARY_TEMPLATE==='temporary_2'?{languageCode:'en'}:{}),components});
+      } catch { passwordResult={sent:false,error:'Temporary-password message does not match the generated credentials.'}; }
     }
-    return { ...welcomeResult, sent: welcomeResult.sent || Boolean(passwordResult?.sent), password: passwordResult };
+    const usageResult = purchase.skip_welcome_message ? {sent:false,skipped:true} : await customerOnboardingTemplates.sendCustomerUsage(purchase,{sendTemplate:sendWhatsAppTemplate,appLink:WA_CUSTOMER_APP_LINK,instagramLink:WA_CUSTOMER_INSTAGRAM_LINK,usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE});
+    return { ...welcomeResult, sent: welcomeResult.sent || Boolean(passwordResult?.sent), password: passwordResult, usage: usageResult };
   } catch (error) {
     {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -2624,9 +2632,10 @@ app.post('/api/auth/customer/signup', async (req, res) => {
     // Only a newly created, phone-verified account triggers this welcome.
     // No password or merchant credential template is involved; login/retries
     // that find an existing customer do not schedule another message.
-    scheduleBackground(async () => {
+    if (!welcomeBonus.error) scheduleBackground(async () => {
       const result = await require('./backend/customer-signup-whatsapp.cjs').sendSelfSignupWelcome(created.data, {
         queue: queueWhatsApp, sendTemplate: sendWhatsAppTemplate, appLink: WA_CUSTOMER_APP_LINK,
+        instagramLink:WA_CUSTOMER_INSTAGRAM_LINK, welcomeTemplate:WA_REGISTRATION_TEMPLATE, usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE,
       });
       if (!result.sent) console.warn('Self-signup welcome WhatsApp was not sent; account remains created.');
     });
