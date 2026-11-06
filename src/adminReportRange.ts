@@ -10,3 +10,10 @@ export function adminReportRange(period:string,month:string,from:string,to:strin
  }
  return ['today','week','month'].includes(period)?rangeForChartPeriod(period as 'today'|'week'|'month'):null;
 }
+
+export function adminReportInitialDates(range?:{from:string;to:string}) {
+ if(!range)return null;
+ const start=Date.parse(range.from),end=Date.parse(range.to);
+ if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start||end-start>366*86400000)return null;
+ return {from:new Date(start+330*60000).toISOString().slice(0,10),to:new Date(end-1+330*60000).toISOString().slice(0,10)};
+}

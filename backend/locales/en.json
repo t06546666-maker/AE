@@ -2370,5 +2370,17 @@
   "ui.Reference": "Reference",
   "ui.Details": "Details",
   "ui.Shop": "Shop",
-  "ui.Source": "Source"
+  "ui.Source": "Source",
+  "ui.Number of discounts": "Number of discounts",
+  "ui.View flat and percentage discounts": "View flat and percentage discounts",
+  "ui.Discount breakdown": "Discount breakdown",
+  "ui.All discounts": "All discounts",
+  "ui.Flat discounts": "Flat discounts",
+  "ui.Percentage discounts": "Percentage discounts",
+  "ui.Type not recorded": "Type not recorded",
+  "ui.Select a type to see its customers and merchants below. Counts use saved transaction settings, not current shop settings.": "Select a type to see its customers and merchants below. Counts use saved transaction settings, not current shop settings.",
+  "ui.Some older records do not include the original discount type.": "Some older records do not include the original discount type.",
+  "ui.Saved discount-type history is unavailable. These records are shown as Type not recorded.": "Saved discount-type history is unavailable. These records are shown as Type not recorded.",
+  "ui.Selected period and area · click for details": "Selected period and area · click for details",
+  "ui.Discount count unavailable. Open the report to retry.": "Discount count unavailable. Open the report to retry."
 }

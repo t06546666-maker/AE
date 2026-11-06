@@ -1,8 +1,8 @@
 const assert = require('node:assert/strict');
 const { registerAdminTransactionReports, summarize } = require('../backend/admin-transaction-reports.cjs');
-function setup(pages) {
+function setup(pages, journals=[]) {
   let route; const calls=[]; const auth=()=>{}, role=()=>{};
-  const db={from(table){const q={}; calls.push(['table',table]); for(const name of ['select','gte','lt','order','eq'])q[name]=(...args)=>{calls.push([name,...args]);return q;};q.range=(from,to)=>{calls.push(['range',from,to]);return q;};q.then=(resolve,reject)=>Promise.resolve(pages.shift() || {data:[]}).then(resolve,reject);return q;}};
+  const db={from(table){const q={}; calls.push(['table',table]); for(const name of ['select','gte','lt','order','eq','in'])q[name]=(...args)=>{calls.push([name,...args]);return q;};q.range=(from,to)=>{calls.push(['range',from,to]);return q;};q.then=(resolve,reject)=>Promise.resolve((table === 'ae_points_requests' ? journals : pages).shift() || {data:[]}).then(resolve,reject);return q;}};
   let exported;
   registerAdminTransactionReports({get(...args){route=args;}},{auth,adminRole:role,db,excel:async(...args)=>{exported=args;}});
   assert.equal(route[0],'/api/admin/transaction-report'); assert.equal(route[1],auth);assert.equal(route[2],role);
@@ -20,5 +20,15 @@ const row=(i)=>({id:String(i),created_at:'2026-11-06T06:00:00Z',transaction_amou
   const ex=setup([{data:[row(1)]}]);await ex.run({format:'xlsx'});assert.equal(ex.exported[1].length,1);assert.equal(ex.exported[1][0]['Net bill (INR)'],95.05);
   const purchases=setup([{data:[{id:'p1',amount:250,reward_points:25,created_at:'2026-11-06T00:00:00Z'}]}]);await purchases.run({kind:'purchases'});assert.equal(purchases.res.body.summary.pointsKind,'issued');assert.equal(purchases.res.body.summary.points,25);assert.ok(purchases.calls.some(c=>c[0]==='table'&&c[1]==='orders'));
   assert.equal(summarize([{amount:null,discount:5,points:100}],'redemptions').netAmount,null);
+  const discounts=[{...row('flat'),merchant_id:'m1',discount_percentage:5},{...row('pct'),merchant_id:'m1',discount_percentage:5},{...row('old'),merchant_id:'m1',discount_percentage:5},{...row('zero'),merchant_id:'m1',discount_amount:0}];
+  const journal=[{merchant_id:'m1',parameters:{discountType:'flat',discountValue:50},result:{redemption:{id:'flat'}}},{merchant_id:'m1',parameters:{discountType:'percentage',discountValue:5},result:{redemption:{id:'pct'}}},{merchant_id:'wrong-shop',parameters:{discountType:'flat',discountValue:10},result:{redemption:{id:'old'}}}];
+  const split=setup([{data:discounts}],[{data:journal}]);await split.run({discountType:'flat'});
+  assert.deepEqual(split.res.body.summary.discountCounts,{total:3,flat:1,percentage:1,unknown:1});assert.equal(split.res.body.records.length,1);assert.equal(split.res.body.records[0].id,'flat');assert.equal(split.res.body.records[0].discountValue,50);
+  const only=setup([{data:discounts}],[{data:journal}]);await only.run({discountsOnly:'1'});assert.equal(only.res.body.records.length,3);
+  const legacy=setup([{data:discounts}],[{error:{code:'42P01'}}]);await legacy.run({discountType:'unknown'});assert.equal(legacy.res.body.records.length,3);assert.equal(legacy.res.body.summary.discountHistoryUnavailable,true);
+  const journalError=setup([{data:discounts}],[{error:{code:'57014'}}]);await journalError.run({});assert.equal(journalError.res.statusCode,503);
+  const invalidType=setup([]);await invalidType.run({discountType:'other'});assert.equal(invalidType.res.statusCode,400);
+  const photo=setup([{data:[{...row('photo'),merchants:{name:'Shop',image_url:'https://example.com/shop.jpg'}}]}]);await photo.run({});assert.equal(photo.res.body.records[0].merchantPhoto,'https://example.com/shop.jpg');
+  const countOnly=setup([{data:[row('a'),{...row('b'),discount_amount:0}]}]);await countOnly.run({summaryOnly:'1'});assert.equal(countOnly.res.body.discountCount,1);assert.ok(!countOnly.calls.some(c=>c[0]==='table'&&c[1]==='ae_points_requests'));
   console.log('PASS: admin middleware, complete pagination totals, decimal money, area/search, validation, exports, purchase/redemption distinction and database errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

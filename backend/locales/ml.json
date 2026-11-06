@@ -804,7 +804,7 @@
   "ui.Discount is calculated from the purchase amount entered at checkout.": "ചെക്ക്ഔട്ടിൽ നൽകിയ വാങ്ങൽ തുകയെ അടിസ്ഥാനമാക്കിയാണ് ഇളവ് കണക്കാക്കുന്നത്.",
   "ui.Discount percentage (%)": "ഇളവിന്റെ ശതമാനം (%)",
   "ui.Discount to apply:": "നൽകേണ്ട ഇളവ്:",
-  "ui.Discount type": "ഇളവിന്റെ തരം",
+  "ui.Discount type": "വിലക്കിഴിവിന്റെ തരം",
   "ui.Discount value": "ഇളവിന്റെ മൂല്യം",
   "ui.Discount:": "ഇളവ്:",
   "ui.Dismiss welcome": "സ്വാഗത സന്ദേശം അടയ്ക്കുക",
@@ -2471,5 +2471,17 @@
   "ui.Record ID": "രേഖയുടെ ഐഡി",
   "ui.Reference": "റഫറൻസ്",
   "ui.Shop": "കട",
-  "ui.Source": "ഉറവിടം"
+  "ui.Source": "ഉറവിടം",
+  "ui.Number of discounts": "വിലക്കിഴിവുകളുടെ എണ്ണം",
+  "ui.View flat and percentage discounts": "ഫ്ലാറ്റ്, ശതമാന വിലക്കിഴിവുകൾ കാണുക",
+  "ui.Discount breakdown": "വിലക്കിഴിവുകളുടെ വിശദാംശങ്ങൾ",
+  "ui.All discounts": "എല്ലാ വിലക്കിഴിവുകളും",
+  "ui.Flat discounts": "ഫ്ലാറ്റ് വിലക്കിഴിവുകൾ",
+  "ui.Percentage discounts": "ശതമാന വിലക്കിഴിവുകൾ",
+  "ui.Type not recorded": "വിലക്കിഴിവിന്റെ തരം രേഖപ്പെടുത്തിയിട്ടില്ല",
+  "ui.Select a type to see its customers and merchants below. Counts use saved transaction settings, not current shop settings.": "ഉപഭോക്താക്കളെയും കടകളെയും കാണാൻ ഒരു തരം തിരഞ്ഞെടുക്കുക. ഇടപാടിൽ സംരക്ഷിച്ച ക്രമീകരണങ്ങളാണ് കണക്കിന് ഉപയോഗിക്കുന്നത്.",
+  "ui.Some older records do not include the original discount type.": "ചില പഴയ രേഖകളിൽ വിലക്കിഴിവിന്റെ യഥാർത്ഥ തരം ലഭ്യമല്ല.",
+  "ui.Saved discount-type history is unavailable. These records are shown as Type not recorded.": "സംരക്ഷിച്ച വിലക്കിഴിവിന്റെ തരം ലഭ്യമല്ല. തരം രേഖപ്പെടുത്തിയിട്ടില്ല എന്ന് കാണിക്കുന്നു.",
+  "ui.Selected period and area · click for details": "തിരഞ്ഞെടുത്ത കാലയളവും പ്രദേശവും · വിശദാംശങ്ങൾക്ക് ക്ലിക്ക് ചെയ്യുക",
+  "ui.Discount count unavailable. Open the report to retry.": "വിലക്കിഴിവുകളുടെ എണ്ണം ലഭ്യമല്ല. വീണ്ടും ശ്രമിക്കാൻ റിപ്പോർട്ട് തുറക്കുക."
 }

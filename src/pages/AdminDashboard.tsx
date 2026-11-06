@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Building2, ChevronRight, Download, Activity, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { apiFetch } from '../api';
+import { apiFetch, queryString } from '../api';
+import { AdminTransactionReports } from './AdminTransactionReports';
 import type { DashboardData, Offer, UserProfile } from '../types';
 import { formatCurrency, formatPoints } from '../utils';
 import { uiText } from '../uiText';
@@ -14,6 +15,10 @@ import { AdminDashboardToolbar } from '../components/AdminDashboardToolbar';
 
 export function AdminDashboard({ user }: { user: UserProfile }) {
  const filters=useAdminReportFilters();
+ const [showDiscountReport,setShowDiscountReport]=useState(false);
+ const discountButton=useRef<HTMLButtonElement>(null),discountHeading=useRef<HTMLHeadingElement>(null);
+ useEffect(()=>{if(showDiscountReport){discountHeading.current?.focus();discountHeading.current?.scrollIntoView({behavior:'smooth',block:'start'});}},[showDiscountReport]);
+ const discounts=useQuery({queryKey:['admin-dashboard-discount-count',filters.range?.from,filters.range?.to,filters.area],enabled:filters.valid,queryFn:({signal})=>apiFetch<{discountCount:number}>('/api/admin/transaction-report?'+queryString({...filters.range,area:filters.area,kind:'redemptions',summaryOnly:'1'}),{signal}),refetchInterval:60000});
  const areas=useQuery({queryKey:['admin-report-areas'],queryFn:()=>apiFetch<{areas:string[]}>('/api/admin/report-areas')});
  const dashboard=useQuery({queryKey:['admin-dashboard',filters.range?.from,filters.range?.to,filters.area],queryFn:()=>apiFetch<DashboardData>(`/api/admin/report-summary?${new URLSearchParams({...filters.range!,area:filters.area})}`),enabled:filters.valid});
  const totals=useQuery({queryKey:['admin-overview-totals'],queryFn:()=>apiFetch<Record<string,number|null>>('/api/admin/overview-totals'),refetchInterval:60000});
@@ -31,11 +36,14 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  <Kpi icon={<Users/>} label="Total customers" value={totalValue('customers')} tone="purple" hint="All customer accounts"/>
  <Kpi icon={<Gift/>} label="Total points issued" value={totalValue('pointsIssued',true)} tone="orange" hint="All-time purchases and loyalty rewards"/>
  <Kpi icon={<ReceiptText/>} label="Total points redeemed" value={totalValue('pointsRedeemed',true)} tone="green" hint="All-time recorded redemptions"/>
+ <button type="button" ref={discountButton} className="admin-kpi green admin-discount-kpi" aria-expanded={showDiscountReport} aria-controls="admin-dashboard-discounts" disabled={!filters.valid} onClick={()=>setShowDiscountReport(!showDiscountReport)}><span className="admin-kpi-icon"><ReceiptText/></span><div><span>{uiText('Number of discounts')}</span><strong>{discounts.isPending?'…':discounts.isError?'—':discounts.data!.discountCount.toLocaleString('en-IN')}</strong><small>{uiText('Selected period and area · click for details')}</small></div><ChevronRight size={18}/></button>
  <Kpi icon={<Download/>} label="App installations" value={totalValue('appInstallations')} tone="blue" hint="Observed Android sign-ins, not Play Store downloads"/>
  <Kpi icon={<Activity/>} label="Active app users" value={totalValue('activeAppUsers')} tone="purple" hint="Android accounts active in the last 5 minutes"/>
  </div>
  {(totals.isError||Object.values(totals.data||{}).some(value=>value==null))&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}
  <section className="admin-reporting-toolbar" aria-label={uiText('Activity & reports')}><h2>{uiText('Activity & reports')}</h2><AdminDashboardToolbar state={filters} areas={areas.data?.areas||[]} areaError={areas.isError}/></section>
+ {showDiscountReport&&filters.valid&&filters.range&&<section id="admin-dashboard-discounts" className="admin-card admin-dashboard-discounts"><div className="admin-card-title"><h2 ref={discountHeading} tabIndex={-1}>{uiText('Discount breakdown')}</h2><button className="button secondary" onClick={()=>{setShowDiscountReport(false);discountButton.current?.focus();}}>{uiText('Close')}</button></div><AdminTransactionReports key={filters.range.from+filters.range.to+filters.area} initialFilters={{...filters.range,area:filters.area}} initialDiscounts/></section>}
+ {discounts.isError&&<p role="alert" className="admin-data-note">{uiText('Discount count unavailable. Open the report to retry.')}</p>}
  <div className="admin-dashboard-grid admin-overview-main"><AdminUsage range={filters.range||undefined} area={filters.area} valid={filters.valid}/><section className="admin-card"><div className="admin-card-title"><div><h2>{uiText('Needs attention')}</h2><p>{uiText('Review requests and manage your network')}</p></div><ListChecks size={20}/></div>
  <Queue icon={<Gift/>} label="Offer approvals" count={offers.isPending?'…':offers.isError?'—':`${pendingOffers}${moreOffers?'+':''}`} href="/offers"/>
  <Queue icon={<ReceiptText/>} label="Product lists" count={count(lists.isPending,lists.isError,pendingLists)} href="/customer-product-lists"/>
