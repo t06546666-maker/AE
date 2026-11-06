@@ -1,5 +1,16 @@
 const templates = require('./customer-onboarding-templates.cjs');
 function registerCustomerGuide(app, {auth, adminRole, db, normalizePhone, sendTemplate, appLink, instagramLink, usageTemplate}) {
+ app.get('/api/admin/customers/usage-recipients', auth, adminRole, async(req,res)=>{
+  try{
+   const after=req.query.after;
+   if(after && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(after))return res.status(400).json({error:'Invalid customer cursor.'});
+   let query=db.from('customers').select('id,name,phone,whatsapp_enabled').order('id').limit(500);
+   if(after)query=query.gt('id',after);
+   const result=await query;if(result.error)throw result.error;
+   const rows=result.data||[];
+   res.json({records:rows.map(c=>({id:c.id,name:c.name,phone:normalizePhone(c.phone),eligible:c.whatsapp_enabled!==false && Boolean(normalizePhone(c.phone))})),nextCursor:rows.length===500?rows[rows.length-1].id:null});
+  }catch{return res.status(503).json({error:'Unable to load message recipients. No messages have been sent.'});}
+ });
  app.post('/api/admin/customers/:id/usage-message', auth, adminRole, async (req,res) => {
   try {
    const requestId=req.body?.requestId;
