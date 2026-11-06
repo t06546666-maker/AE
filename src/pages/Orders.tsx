@@ -1,3 +1,4 @@
+import { AdminTransactionReports } from './AdminTransactionReports';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,10 @@ import type { Order, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPoints, formatTime, initials } from '../utils';
 
 export function Orders({ user }: { user: UserProfile }) {
+  return user.role === 'admin' ? <AdminTransactionReports/> : <PurchaseOrders user={user}/>;
+}
+
+function PurchaseOrders({ user }: { user: UserProfile }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1); const [search, setSearch] = useState('');
   const [exportFormat, setExportFormat] = useState<'xlsx' | 'pdf' | null>(null);

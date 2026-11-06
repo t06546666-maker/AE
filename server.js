@@ -2107,6 +2107,7 @@ app.patch('/api/admin/customers/:id', requireAuth, requireRole('admin'), async (
   if (error) return res.status(400).json({ success: false, error: error.message });
   return res.json({ success: true, customer: data });
 });
+require('./backend/admin-transaction-reports.cjs').registerAdminTransactionReports(app, { auth: requireAuth, adminRole: requireRole('admin'), db: supabaseAdmin, excel: adminExcel });
 app.get('/api/admin/customers/:id/activity', requireAuth, requireRole('admin'), async(req,res)=>{
   const selections={orders:['orders','id,order_no,merchant_id,amount,reward_points,source,created_at,merchants(name,merchant_code)'],redemptions:['point_redemptions','id,merchant_id,transaction_amount,points_redeemed,discount_amount,created_at,merchants(name,merchant_code)'],payments:['payment_transactions','id,merchant_id,amount,status,created_at,merchants(name,merchant_code)']};
   const selection=selections[req.query.type||'orders'];

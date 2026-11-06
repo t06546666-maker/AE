@@ -2459,5 +2459,17 @@
   "ui.Merchant product catalogues.": "മർച്ചന്റ് ഉൽപ്പന്ന കാറ്റലോഗുകൾ.",
   "ui.Active products are available in your catalogue.": "സജീവ ഉൽപ്പന്നങ്ങൾ നിങ്ങളുടെ കാറ്റലോഗിൽ ലഭ്യമാണ്.",
   "ui.Show this product in catalogue": "ഈ ഉൽപ്പന്നം കാറ്റലോഗിൽ കാണിക്കുക",
-  "ui.The customer must change this temporary password on their first login.": "ആദ്യ ലോഗിനിൽ ഉപഭോക്താവ് ഈ താൽക്കാലിക പാസ്‌വേഡ് മാറ്റണം."
+  "ui.The customer must change this temporary password on their first login.": "ആദ്യ ലോഗിനിൽ ഉപഭോക്താവ് ഈ താൽക്കാലിക പാസ്‌വേഡ് മാറ്റണം.",
+  "ui.Transaction reports": "ഇടപാട് റിപ്പോർട്ടുകൾ",
+  "ui.Review purchases, redeemed points and discounts across your shops.": "കടകളിലെ വാങ്ങലുകൾ, റിഡീം ചെയ്ത പോയിന്റുകൾ, വിലക്കിഴിവുകൾ എന്നിവ പരിശോധിക്കുക.",
+  "ui.Search customer, shop or reference": "ഉപഭോക്താവ്, കട, റഫറൻസ് എന്നിവ തിരയുക",
+  "ui.Bill amount": "ബിൽ തുക",
+  "ui.Discount given": "നൽകിയ വിലക്കിഴിവ്",
+  "ui.Net bill": "അന്തിമ ബിൽ തുക",
+  "ui.Totals cover all matching records, not only this page. Net bill does not verify payment receipt.": "ആകെ കണക്കിൽ ഫിൽറ്ററിന് യോജിക്കുന്ന എല്ലാ രേഖകളും ഉൾപ്പെടുന്നു. അന്തിമ ബിൽ തുക പണം ലഭിച്ചതിന്റെ സ്ഥിരീകരണമല്ല.",
+  "ui.No matching transactions for this period.": "ഈ കാലയളവിൽ യോജിക്കുന്ന ഇടപാടുകൾ ഇല്ല.",
+  "ui.Record ID": "രേഖയുടെ ഐഡി",
+  "ui.Reference": "റഫറൻസ്",
+  "ui.Shop": "കട",
+  "ui.Source": "ഉറവിടം"
 }

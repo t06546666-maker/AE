@@ -2356,5 +2356,19 @@
   "ui.Merchant product catalogues.": "Merchant product catalogues.",
   "ui.Active products are available in your catalogue.": "Active products are available in your catalogue.",
   "ui.Show this product in catalogue": "Show this product in catalogue",
-  "ui.The customer must change this temporary password on their first login.": "The customer must change this temporary password on their first login."
+  "ui.The customer must change this temporary password on their first login.": "The customer must change this temporary password on their first login.",
+  "ui.Transaction reports": "Transaction reports",
+  "ui.Review purchases, redeemed points and discounts across your shops.": "Review purchases, redeemed points and discounts across your shops.",
+  "ui.Search customer, shop or reference": "Search customer, shop or reference",
+  "ui.Bill amount": "Bill amount",
+  "ui.Discount given": "Discount given",
+  "ui.Net bill": "Net bill",
+  "ui.Totals cover all matching records, not only this page. Net bill does not verify payment receipt.": "Totals cover all matching records, not only this page. Net bill does not verify payment receipt.",
+  "ui.No matching transactions for this period.": "No matching transactions for this period.",
+  "ui.Record ID": "Record ID",
+  "ui.View details": "View details",
+  "ui.Reference": "Reference",
+  "ui.Details": "Details",
+  "ui.Shop": "Shop",
+  "ui.Source": "Source"
 }
