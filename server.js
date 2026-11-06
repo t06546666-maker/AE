@@ -2063,6 +2063,7 @@ app.post('/api/admin/customers/award-points', requireAuth, requireRole('admin'),
   })();
   return res.json({ success: true, awardedCount: Number(data?.awardedCount || 0), pointsPerCustomer: points, awardedCustomerIds });
 });
+require('./backend/admin-customer-guide.cjs').registerCustomerGuide(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,normalizePhone,sendTemplate:sendWhatsAppTemplate,appLink:WA_CUSTOMER_APP_LINK,instagramLink:WA_CUSTOMER_INSTAGRAM_LINK,usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE});
 app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), async(req,res)=>{
   const result=await supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id').eq('id',req.params.id).maybeSingle();
   if(result.error)return res.status(500).json({error:result.error.message});
