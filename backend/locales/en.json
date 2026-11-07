@@ -3029,5 +3029,11 @@
   "ui.No eligible phones": "No eligible phones",
   "ui.Not scheduled": "Not scheduled",
   "ui.Checkout confirmed": "Checkout confirmed",
-  "ui.Photos": "Photos"
+  "ui.Photos": "Photos",
+  "ui.Product list photo": "Product list photo",
+  "ui.Reset zoom": "Reset zoom",
+  "ui.Close photo preview": "Close photo preview",
+  "ui.Loading photo…": "Loading photo…",
+  "ui.Unable to load this photo. Please try again.": "Unable to load this photo. Please try again.",
+  "ui.Reload photo": "Reload photo"
 }

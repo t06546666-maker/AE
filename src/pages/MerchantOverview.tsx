@@ -11,7 +11,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarDays, ChevronRight, Crown, Download, Gift, Heart, IndianRupee, Lightbulb, Mail, Plus, RefreshCw, Search, TrendingUp, Users, UserPlus, X } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, CalendarClock, CalendarDays, ChevronRight, Crown, Download, Gift, Heart, IndianRupee, Lightbulb, Mail, Plus, RefreshCw, Search, TrendingUp, Users, UserPlus, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import { maskedPhone } from '../maskedPhone';
 import { ErrorState } from '../components/Common';
@@ -260,7 +260,39 @@ export function MerchantOverview({ user }: { user: UserProfile }) {
         { title: 'Loyalty', value: current.loyal.length, before: previous.loyal.length, text: uiText('{{count}} customers with 5+ recorded visits', { count: current.loyal.length }), icon: Heart, color: 'pink' },
       ].map(({ title, value, before, text, icon: Icon, color }) => <div className={`mo-health-row ${color}`} key={title}><span className={`mo-icon ${color}`}><Icon size={22} /></span><div><h3>{uiText(title)}</h3><p>{text}</p><Change value={value} previous={before} label={model.comparisonLabel} /></div></div>)}</div></section>
       </div>
-      <section className="mo-panel mo-tools"><div><h2>{uiText("Keep your business moving")}</h2><p>{uiText("All your everyday tools, one tap away.")}</p></div><div className="mo-tool-grid">{[{ to: '/offers?create=1', title: 'Create offers', icon: Gift, color: 'pink' }, { to: href('customers'), title: 'Know customers', icon: Users, color: 'violet' }, { to: href('insights'), title: 'Track growth', icon: TrendingUp, color: 'amber' }, { to: href('reports'), title: 'Get reports', icon: BarChart3, color: 'blue' }].map(({ to, title, icon: Icon, color }) => <Link to={to} key={title}><span className={`mo-icon ${color}`}><Icon size={24} /></span><strong>{uiText(title)}</strong><ChevronRight size={16} /></Link>)}</div></section>
+      {/* Expiry & Renewal Reminders Banner (For Fixed Government Tariff & Pollution Centers) */}
+      <section className="mo-panel" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '1.5px solid #a7f3d0', borderRadius: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#059669', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CalendarClock size={26} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#064e3b' }}>
+                  {uiText("Vehicle Pollution & Service Expiry Reminders")}
+                </h3>
+                <span style={{ background: '#d1fae5', color: '#047857', fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
+                  FIXED TARIFF
+                </span>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#065f46' }}>
+                {uiText("Fixed-rate services cannot redeem coins. Track customer vehicle certificates, filter by month of expiry, export Excel sheets, and send instant WhatsApp renewal reminders.")}
+              </p>
+            </div>
+          </div>
+          <Link 
+            to="/expiry-reminders" 
+            className="button primary" 
+            style={{ background: '#059669', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 800 }}
+          >
+            <span>{uiText("Open Expiry Register")}</span>
+            <ChevronRight size={16} />
+          </Link>
+        </div>
+      </section>
+
+      <section className="mo-panel mo-tools"><div><h2>{uiText("Keep your business moving")}</h2><p>{uiText("All your everyday tools, one tap away.")}</p></div><div className="mo-tool-grid">{[{ to: '/offers?create=1', title: 'Create offers', icon: Gift, color: 'pink' }, { to: href('customers'), title: 'Know customers', icon: Users, color: 'violet' }, { to: '/expiry-reminders', title: 'Renewal & Expiry', icon: CalendarClock, color: 'emerald' }, { to: href('reports'), title: 'Get reports', icon: BarChart3, color: 'blue' }].map(({ to, title, icon: Icon, color }) => <Link to={to} key={title}><span className={`mo-icon ${color}`}><Icon size={24} /></span><strong>{uiText(title)}</strong><ChevronRight size={16} /></Link>)}</div></section>
     </>}
     {view === 'customers' && <CustomerFrequency key={month} model={model} month={month} />}
     {(view === 'customers' || view === 'purchase-group') && <PurchaseAmountGroups key={`${month}-${params.get('group') || 'graph'}`} model={model} month={month} />}

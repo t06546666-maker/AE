@@ -3127,5 +3127,11 @@
   "ui.No eligible phones": "അർഹമായ ഫോണുകൾ ഇല്ല",
   "ui.Not scheduled": "ഷെഡ്യൂൾ ചെയ്തിട്ടില്ല",
   "ui.Checkout confirmed": "ചെക്കൗട്ട് സ്ഥിരീകരിച്ചു",
-  "ui.Photos": "ചിത്രങ്ങൾ"
+  "ui.Photos": "ചിത്രങ്ങൾ",
+  "ui.Product list photo": "സാധനങ്ങളുടെ പട്ടികയുടെ ചിത്രം",
+  "ui.Reset zoom": "വലുപ്പം പുനഃക്രമീകരിക്കുക",
+  "ui.Close photo preview": "ചിത്രത്തിന്റെ മുൻകാഴ്ച അടയ്ക്കുക",
+  "ui.Loading photo…": "ചിത്രം തുറക്കുന്നു…",
+  "ui.Unable to load this photo. Please try again.": "ഈ ചിത്രം തുറക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
+  "ui.Reload photo": "ചിത്രം വീണ്ടും തുറക്കുക"
 }
