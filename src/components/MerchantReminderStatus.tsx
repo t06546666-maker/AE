@@ -1,0 +1,17 @@
+import {useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {apiFetch} from '../api';
+import './MerchantReminderStatus.css';
+type Slot={slot:string;title:string;scheduledAt:string;status:string;accepted:number;failed:number;pending:number;missingToken:number;disabled:number;firstSentAt:string|null;lastSentAt:string|null;lastActivityAt:string|null;messages:string[];messageRecorded:boolean};
+const labels:Record<string,string>={scheduled:'Scheduled',waiting:'Waiting for scheduler',no_record:'No send recorded',sent:'Sent',partial:'Partly sent',processing:'Processing',unconfirmed:'Send unconfirmed',failed:'Failed or unconfirmed',no_eligible:'No eligible phones',not_scheduled:'Not scheduled'};
+const today=()=>new Date(Date.now()+330*60000).toISOString().slice(0,10);
+const time=(value:string)=>new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}).format(new Date(value));
+export function MerchantReminderStatus(){
+ const [date,setDate]=useState(today);
+ const query=useQuery({queryKey:['admin','merchant-reminder-status',date],queryFn:({signal})=>apiFetch<{date:string;checkedAt:string;slots:Slot[]}>(`/api/admin/merchant-reminder-status?date=${date}`,{signal}),enabled:!!date,refetchInterval:60000});
+ return <section className="panel merchant-reminder-status" aria-label="Daily merchant reminder status">
+  <div className="merchant-reminder-status-heading"><div><h2>Daily merchant reminders</h2><p>Active merchants only · All times are India time (IST)</p></div><div className="merchant-reminder-status-controls"><label>Date<input type="date" value={date} max={today()} onChange={event=>setDate(event.target.value)}/></label><button type="button" className="button secondary" disabled={query.isFetching||!date} onClick={()=>void query.refetch()}>Refresh status</button></div></div>
+  <p className="merchant-reminder-status-note">Sent means Firebase accepted the notification. Delivery to the phone is not confirmed. Scheduled times can run late; no record is not proof of a send.</p>
+  {query.isPending?<p role="status">Loading reminder records…</p>:query.isError?<p role="alert">{query.error.message}</p>:<><div className="merchant-reminder-status-grid">{query.data.slots.map(slot=><article key={slot.slot} className="merchant-reminder-status-card"><div className="merchant-reminder-status-card-heading"><strong>{time(slot.scheduledAt).replace(':00 ',' ')}</strong><span className={`merchant-reminder-badge ${slot.status}`}>{labels[slot.status]||'Unconfirmed'}</span></div><h3>{slot.title}</h3><dl><div><dt>Sent</dt><dd>{slot.accepted}</dd></div><div><dt>Failed / unconfirmed</dt><dd>{slot.failed}</dd></div><div><dt>Processing / unconfirmed</dt><dd>{slot.pending}</dd></div><div><dt>No phone token</dt><dd>{slot.missingToken}</dd></div><div><dt>Notifications off</dt><dd>{slot.disabled}</dd></div></dl>{slot.lastSentAt?<p>Last sent: <strong>{time(slot.lastSentAt)} IST</strong></p>:<p>No successful send recorded for this time.</p>}{slot.lastActivityAt&&<small>Last activity: {time(slot.lastActivityAt)} IST</small>}<details><summary>{slot.messageRecorded?'Recorded message':'Scheduled message preview'}</summary>{slot.messages.map((message,index)=><p lang="ml" key={index}>{message}</p>)}</details></article>)}</div><small>Last checked: {time(query.data.checkedAt)} IST · Updates every minute</small></>}
+ </section>;
+}

@@ -51,7 +51,7 @@ function registerMerchantReminders(app,{supabase,firestore,getTarget,send,verify
     if(seen.has(key)){counts.duplicate++;continue;}seen.add(key);counts.eligible++;
     if(dryRun)continue;
     const ref=db.collection('ae_merchant_daily_reminder_deliveries').doc(current.date+'-'+current.slot+'-'+key);
-    try{await ref.create({date:current.date,slot:current.slot,profile_id:profile.id,merchant_id:profile.merchant_id,status:'sending',created_at:now().toISOString()});}
+    try{await ref.create({date:current.date,slot:current.slot,profile_id:profile.id,merchant_id:profile.merchant_id,status:'sending',title:current.title,body:current.body,created_at:now().toISOString()});}
     catch(error){if(error.code===6||error.code==='already-exists'){counts.duplicate++;continue;}throw error;}
     let accepted=false;
     try{accepted=await send(target.push_token,current.title,current.body,{url:current.url,type:'merchant_daily_reminder',slot:current.slot,date:current.date});}

@@ -12,3 +12,6 @@ Firestore audit: ae_merchant_daily_reminder_deliveries and ae_merchant_daily_rem
 
 ## Approved weekly copy
 The message bank contains the exact 21 messages reviewed and approved in chat on 7 November 2026. Day 1 is 7 November; day 8 repeats day 1. Each day selects the matching morning, afternoon and evening entry. The original three first-day messages are retained. English titles remain fixed. The 14-day test validates each message, time, title, destination and week wrap. Updating copy does not reset delivery locks or trigger immediate notifications. Future extra messages can be added by editing the per-slot arrays; rotation uses each array length.
+
+## Admin status
+Admin → Push Notifications & Broadcasts → Daily merchant reminders shows three slots for the selected India date, refreshes every minute, and supports previous dates. Status is derived from actual per-device audit records and completed pagination, never the clock alone. Sent means accepted by Firebase, not confirmed phone delivery. Failed/unconfirmed, no recorded send, waiting, no eligible phones and partial runs remain distinct. Counts exclude dry runs. New audit records preserve the sent body; older records show a clearly marked current-copy preview. Failed audit reads return an error, never a false Sent status. This read-only view is Admin-only and does not send or resend notifications.

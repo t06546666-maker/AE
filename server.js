@@ -3394,6 +3394,7 @@ app.put('/api/customer/preferences', requireCustomerAuth, async (req, res) => {
 
 require('./backend/merchant-push-sync.cjs').registerMerchantPushSync(app,{auth:requireAuth,adminRole:requireRole('admin'),supabase:supabaseAdmin,registry:profilePushRegistry});
 
+require('./backend/admin-merchant-reminder-status.cjs').registerAdminReminderStatus(app,{auth:requireAuth,adminRole:requireRole('admin'),firestore:async()=>{await firebaseInitializationPromise;if(!firebaseInitialized)throw Error('Firebase unavailable');const {getFirestore}=await import('firebase-admin/firestore');return getFirestore();}});
 require('./backend/merchant-daily-reminders.cjs').registerMerchantReminders(app,{supabase:supabaseAdmin,firestore:async()=>{await firebaseInitializationPromise;if(!firebaseInitialized)throw Error('Firebase unavailable');const {getFirestore}=await import('firebase-admin/firestore');return getFirestore();},getTarget:(id,legacy)=>profilePushRegistry.get(id,legacy),send:sendPushNotification});
 require('./backend/merchant-push-diagnostics.cjs').registerMerchantPushDiagnostics(app, {auth:requireAuth,merchantRole:requireRole('merchant'),supabase:supabaseAdmin,ready:async()=>{await firebaseInitializationPromise;return firebaseInitialized;},send:sendPushNotification,getTarget:(id,legacy)=>profilePushRegistry.get(id,legacy)});
 

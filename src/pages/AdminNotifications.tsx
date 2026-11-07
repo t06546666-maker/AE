@@ -1,3 +1,4 @@
+import {MerchantReminderStatus} from '../components/MerchantReminderStatus';
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -584,6 +585,8 @@ export function AdminNotifications() {
           </div>
         }
       />
+
+      <MerchantReminderStatus/>
 
       {/* Audience Stats Bar */}
       <div
