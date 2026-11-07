@@ -23,7 +23,7 @@ function registerCustomerGuide(app, {auth, adminRole, db, normalizePhone, sendTe
    if(!phone || !/^\d{10,15}$/.test(phone))return res.status(400).json({error:'This customer needs a valid phone number.'});
    if(!usageTemplate)return res.status(503).json({error:'The How to use AE template is not configured.'});
    // Reserve before contacting Meta. A retry never sends the same request twice.
-   const reservation=await db.from('whatsapp_messages').insert({id:requestId,customer_id:customer.data.id,recipient:phone,template_name:usageTemplate,message_type:'registration',status:'queued'});
+   const reservation=await db.from('whatsapp_messages').insert({id:requestId,customer_id:customer.data.id,recipient:phone,template_name:usageTemplate,message_type:'qr',status:'queued'});
    if(reservation.error){
     if(reservation.error.code!=='23505')throw reservation.error;
     const existing=await db.from('whatsapp_messages').select('customer_id,template_name,status').eq('id',requestId).maybeSingle();

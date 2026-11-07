@@ -4,3 +4,6 @@ Admin → Customers → open a customer → Send How to use AE. Confirm the reci
 
 ## Multiple recipients
 Admin Customers has Send to selected and Send to all customers. Selection uses the existing row/page checkboxes; selected IDs remain across pages. All customers ignores filters and reads every customer page. The preview excludes invalid, opted-out and duplicate phone numbers and confirms the eligible count before sending. Keep the page open: sends run sequentially in the browser, each protected by its own logged UUID. Closing/reloading stops remaining work. Results distinguish Meta acceptance from delivery and show failed/unconfirmed sends; check delivery logs before starting another send.
+
+## Legacy database compatibility
+Customer onboarding and manual usage-guide messages use the existing qr log category, matching queueWhatsAppMessage and the deployed WhatsApp check constraint. This is only an audit category: the outbound template remains ae_use and no QR image or temporary-password message is sent. No database migration is needed.
