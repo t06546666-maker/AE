@@ -17,11 +17,12 @@ async function verifyScheduler(token,fetcher=fetch){
 }
 function reminder(now=new Date(),preview=false){
  const ist=new Date(now.getTime()+330*60000),hour=ist.getUTCHours(),date=ist.toISOString().slice(0,10);
- const slot=Object.keys(messages).find(key=>messages[key]?.hour===hour)||(preview?'morning':null);
- if(!slot)return null;
+ const slot=hour>=21?null:['evening','afternoon','morning'].find(key=>hour>=messages[key].hour);
+ const selected=slot||(preview?'morning':null);
+ if(!selected||(!preview&&date<messages.rotationStart))return null;
  const day=Math.floor((Date.parse(date+'T00:00:00Z')-Date.parse(messages.rotationStart+'T00:00:00Z'))/86400000);
- const config=messages[slot],index=((day%config.messages.length)+config.messages.length)%config.messages.length;
- return {date,slot,title:config.title,body:config.messages[index],url:config.url};
+ const config=messages[selected],index=((day%config.messages.length)+config.messages.length)%config.messages.length;
+ return {date,slot:selected,title:config.title,body:config.messages[index],url:config.url};
 }
 function registerMerchantReminders(app,{supabase,firestore,getTarget,send,verify=verifyScheduler,now=()=>new Date()}){
  app.post('/api/internal/merchant-daily-reminders',async(req,res)=>{
@@ -35,14 +36,16 @@ function registerMerchantReminders(app,{supabase,firestore,getTarget,send,verify
   const after=req.body?.after;
   if(after&&!/^[0-9a-f-]{36}$/i.test(after))return res.status(400).json({error:'Invalid page cursor.'});
   try{
+   const db=await firestore(),run=db.collection('ae_merchant_daily_reminder_runs').doc(current.date+'-'+current.slot);
+   if(!dryRun){const previous=await run.get();if(previous.exists&&previous.data().completed===true)return res.json({...current,alreadyCompleted:true,nextCursor:null,counts:{accepted:0,failed:0,disabled:0,missingToken:0,duplicate:0,eligible:0}});}
    let query=supabase.from('active_merchants').select('id').order('id').limit(20);if(after)query=query.gt('id',after);
    const shops=await query;if(shops.error)throw shops.error;
    const ids=(shops.data||[]).map(shop=>shop.id);
    const counts={accepted:0,failed:0,disabled:0,missingToken:0,duplicate:0,eligible:0};
-   if(!ids.length)return res.json({dryRun,...current,counts,nextCursor:null});
+   if(!ids.length){if(!dryRun){await run.collection('pages').doc(after||'start').set({...counts,updated_at:now().toISOString(),nextCursor:null});await run.set({completed:true,finished_at:now().toISOString()},{merge:true});}return res.json({dryRun,...current,counts,nextCursor:null});}
    const profiles=await supabase.from('profiles').select('id,merchant_id,push_token,push_enabled').eq('role','merchant').in('merchant_id',ids);
    if(profiles.error)throw profiles.error;
-   const db=await firestore(),seen=new Set();
+   const seen=new Set();
    for(const profile of profiles.data||[]){
     const target=await getTarget(profile.id,profile);
     if(target.push_enabled===false){counts.disabled++;continue;}
@@ -60,7 +63,7 @@ function registerMerchantReminders(app,{supabase,firestore,getTarget,send,verify
     await ref.set({status:accepted?'accepted':'failed_or_unconfirmed',updated_at:now().toISOString()},{merge:true});
    }
    const nextCursor=ids.length===20?ids[ids.length-1]:null;
-   if(!dryRun)await db.collection('ae_merchant_daily_reminder_runs').doc(current.date+'-'+current.slot).collection('pages').doc(after||'start').set({...counts,updated_at:now().toISOString(),nextCursor});
+   if(!dryRun){await run.collection('pages').doc(after||'start').set({...counts,updated_at:now().toISOString(),nextCursor});if(!nextCursor)await run.set({completed:true,finished_at:now().toISOString()},{merge:true});}
    return res.json({dryRun,...current,counts,nextCursor});
   }catch(error){console.warn('Merchant daily reminder run failed:',error.code||'unavailable');return res.status(503).json({error:'Merchant reminder run failed. Inspect the server delivery log before retrying.'});}
  });

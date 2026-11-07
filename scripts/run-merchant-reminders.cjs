@@ -10,7 +10,8 @@ async function run(){
  do{
   const response=await fetch('https://www.affiliateae.co.in/api/internal/merchant-daily-reminders',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({dryRun,after}),signal:AbortSignal.timeout(65000)});
   if(!response.ok)throw Error('Reminder endpoint returned '+response.status);
-  const data=await response.json();if(data.outsideWindow){console.log('Outside the scheduled India-time hour; no reminders sent.');return;}
+  const data=await response.json();if(data.outsideWindow){console.log('Outside the 09:00–21:00 India-time greeting windows; no reminders sent.');return;}
+  if(data.alreadyCompleted){console.log('This India-time greeting slot is already complete; no duplicate reminders sent.');return;}
   message=data;for(const key of Object.keys(total))total[key]+=data.counts[key]||0;after=data.nextCursor;pages++;
   if(pages>=500&&after)throw Error('Reminder page limit reached');
  }while(after);

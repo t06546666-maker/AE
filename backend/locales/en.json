@@ -3035,5 +3035,9 @@
   "ui.Close photo preview": "Close photo preview",
   "ui.Loading photo…": "Loading photo…",
   "ui.Unable to load this photo. Please try again.": "Unable to load this photo. Please try again.",
-  "ui.Reload photo": "Reload photo"
+  "ui.Reload photo": "Reload photo",
+  "ui.Delayed — retry pending": "Delayed — retry pending",
+  "ui.Missed schedule": "Missed schedule",
+  "ui.No send was recorded before this greeting window closed.": "No send was recorded before this greeting window closed.",
+  "ui.No send record yet. Automatic retries remain active for this greeting.": "No send record yet. Automatic retries remain active for this greeting."
 }

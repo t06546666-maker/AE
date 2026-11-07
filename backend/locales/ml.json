@@ -3133,5 +3133,9 @@
   "ui.Close photo preview": "ചിത്രത്തിന്റെ മുൻകാഴ്ച അടയ്ക്കുക",
   "ui.Loading photo…": "ചിത്രം തുറക്കുന്നു…",
   "ui.Unable to load this photo. Please try again.": "ഈ ചിത്രം തുറക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
-  "ui.Reload photo": "ചിത്രം വീണ്ടും തുറക്കുക"
+  "ui.Reload photo": "ചിത്രം വീണ്ടും തുറക്കുക",
+  "ui.Delayed — retry pending": "വൈകിയിരിക്കുന്നു — വീണ്ടും ശ്രമിക്കാൻ കാത്തിരിക്കുന്നു",
+  "ui.Missed schedule": "നിശ്ചയിച്ച സമയം നഷ്ടപ്പെട്ടു",
+  "ui.No send was recorded before this greeting window closed.": "ഈ അഭിവാദ്യം അയയ്ക്കാനുള്ള സമയം അവസാനിക്കുന്നതിന് മുൻപ് അയച്ചതിന്റെ രേഖയില്ല.",
+  "ui.No send record yet. Automatic retries remain active for this greeting.": "അയച്ചതിന്റെ രേഖ ഇതുവരെ ഇല്ല. ഈ അഭിവാദ്യത്തിനുള്ള സ്വയമേവയുള്ള പുനഃശ്രമങ്ങൾ തുടരും."
 }

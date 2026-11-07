@@ -1,8 +1,10 @@
 name: Merchant daily reminders
 on:
   schedule:
-    # 09:00, 13:00, 18:00 IST; two backup triggers share the same delivery locks.
-    - cron: '30,40,50 3,7,12 * * *'
+    # Primary 09:00, 13:00, 18:00 IST triggers plus retries away from the busy hour boundary.
+    # The server accepts only the current greeting window and skips completed slots.
+    - cron: '30 3,7,12 * * *'
+    - cron: '7,17,27,37,47,57 3-15 * * *'
   workflow_dispatch:
 permissions: {}
 concurrency:

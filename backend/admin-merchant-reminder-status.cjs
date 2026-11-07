@@ -9,12 +9,14 @@ function summarizeSlot(date,slot,deliveries,pages,now){
  const pending=rows.filter(row=>!['accepted','failed_or_unconfirmed'].includes(row.status)).length;
  const complete=scanComplete(pages),ran=rows.length>0||pages.length>0;
  const age=now.getTime()-Date.parse(scheduledAt);
- let status=date<messages.rotationStart?'not_scheduled':age<0?'scheduled':age<3600000?'waiting':'no_record';
+ const endHour=slot==='morning'?13:slot==='afternoon'?18:21;
+ const windowEnd=Date.parse(date+'T00:00:00Z')+(endHour*60-330)*60000;
+ let status=date<messages.rotationStart?'not_scheduled':age<0?'scheduled':now.getTime()>=windowEnd?'missed':age<3600000?'waiting':'delayed';
  if(ran){if(accepted>0)status=complete&&!failed&&!pending?'sent':'partial';else if(pending)status=age>=3600000?'unconfirmed':'processing';else if(failed)status='failed';else status=complete?'no_eligible':'processing';}
  const times=rows.flatMap(row=>[row.created_at,row.updated_at]).concat(pages.map(p=>p.updated_at)).filter(t=>typeof t==='string'&&Number.isFinite(Date.parse(t))).sort();
  const acceptedTimes=acceptedRows.map(row=>row.updated_at||row.created_at).filter(Boolean).sort();
  const variants=[...new Set(rows.map(row=>row.body).filter(body=>typeof body==='string'&&body))];
- return {slot,title:config.title,scheduledAt,status,accepted,failed,pending,complete,
+ return {slot,title:config.title,scheduledAt,status,recorded:ran,accepted,failed,pending,complete,
   missingToken:pages.reduce((sum,p)=>sum+Number(p.missingToken||0),0),disabled:pages.reduce((sum,p)=>sum+Number(p.disabled||0),0),
   firstSentAt:acceptedTimes[0]||null,lastSentAt:acceptedTimes.at(-1)||null,lastActivityAt:times.at(-1)||null,
   messages:variants.length?variants:[reminder(new Date(scheduledAt)).body],messageRecorded:variants.length>0};
