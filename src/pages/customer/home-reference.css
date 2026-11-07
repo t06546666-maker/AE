@@ -9,3 +9,41 @@
 .ae-reference-home .customer-modern-greeting h2 { font-size:27px; }.ae-reference-home .customer-modern-greeting p { font-size:13px; line-height:1.5; }
 .ae-reference-home .customer-home-points { min-height:160px; }.ae-home-language { display:flex; justify-content:flex-end; }
 @media(min-width:480px){.ae-home-shortcuts a{font-size:13px}.ae-reference-home [aria-roledescription="carousel"] > div:first-child > a{height:260px}}
+
+/* Realistic Top Ad Banner Shimmer & Ambient Glow */
+@keyframes heroAdShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.hero-ad-realistic {
+  background: linear-gradient(135deg, #071739 0%, #0c2b64 45%, #051433 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 16px 36px -10px rgba(12, 43, 100, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.hero-ad-realistic::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.18), transparent);
+  background-size: 200% 100%;
+  animation: heroAdShimmer 5s infinite;
+  pointer-events: none;
+}
+
+/* Stitch Vertical Ads Marquee Animations */
+@keyframes verticalScrollAds {
+  0% { transform: translateY(0%); }
+  100% { transform: translateY(-50%); }
+}
+.animate-vertical-ads {
+  animation: verticalScrollAds 18s linear infinite;
+  display: flex;
+  flex-direction: column;
+}
+.animate-vertical-ads.paused,
+.vertical-ads-container:hover .animate-vertical-ads {
+  animation-play-state: paused;
+}

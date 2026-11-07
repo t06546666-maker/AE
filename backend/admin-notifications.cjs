@@ -10,6 +10,9 @@ function registerAdminNotifications(app, {
   supabase,
   firebaseReady,
   uploadMiddleware,
+  sendWhatsAppTemplate,
+  sendWhatsAppText,
+  waMilestoneTemplate,
 }) {
 
   // Helper to ensure Firebase is ready and return db & messaging instances
@@ -46,6 +49,7 @@ function registerAdminNotifications(app, {
     targetSummary = '',
     scheduledId = null,
     pushOnly = false,
+    sendWhatsApp = false,
   }) {
     const { db, messaging, FieldValue } = await getFirebaseInstances();
 
@@ -466,9 +470,86 @@ function registerAdminNotifications(app, {
       }
     }
 
+    // 4b. Optional WhatsApp Dispatch (Meta Cloud API / Text fallback)
+    let whatsappDispatched = 0;
+    if (sendWhatsApp) {
+      try {
+        const recipientsToSend = [];
+        if (normalizedCustomerIds.length > 0 && supabase) {
+          const { data: custRows } = await supabase
+            .from('customers')
+            .select('id, name, phone')
+            .in('id', normalizedCustomerIds);
+          (custRows || []).forEach((c) => {
+            if (c.phone) recipientsToSend.push({ id: c.id, name: c.name || 'Customer', phone: c.phone, type: 'customer' });
+          });
+        } else if (customerPhone) {
+          recipientsToSend.push({ id: customerId, name: customerName || 'Customer', phone: customerPhone, type: 'customer' });
+        }
+
+        if (normalizedMerchantIds.length > 0 && supabase) {
+          const { data: merchRows } = await supabase
+            .from('merchants')
+            .select('id, name, phone')
+            .in('id', normalizedMerchantIds);
+          (merchRows || []).forEach((m) => {
+            if (m.phone) recipientsToSend.push({ id: m.id, name: m.name || 'Merchant', phone: m.phone, type: 'merchant' });
+          });
+        }
+
+        for (const r of recipientsToSend) {
+          const digits = String(r.phone).replace(/\D/g, '');
+          const recipientPhone = digits.length === 10 ? `91${digits}` : digits;
+          if (!recipientPhone) continue;
+
+          let sent = false;
+          if (typeof sendWhatsAppTemplate === 'function') {
+            try {
+              const res = await sendWhatsAppTemplate({
+                customerId: r.type === 'customer' ? r.id : undefined,
+                merchantId: r.type === 'merchant' ? r.id : undefined,
+                messageType: 'milestone',
+                recipient: recipientPhone,
+                templateName: waMilestoneTemplate || 'ae_milestone_reward_v1',
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: r.name },
+                      { type: 'text', text: body },
+                      { type: 'text', text: '30 Nov 2026' },
+                    ],
+                  },
+                ],
+              });
+              sent = Boolean(res?.sent);
+            } catch (tErr) {
+              console.warn(`[admin-notifications] WhatsApp template send error for ${recipientPhone}:`, tErr.message);
+            }
+          }
+
+          if (!sent && typeof sendWhatsAppText === 'function') {
+            try {
+              const fullMsg = `${title ? `*${title}*\n\n` : ''}${body}${url ? `\n\n${url}` : ''}`;
+              const res = await sendWhatsAppText(recipientPhone, fullMsg);
+              sent = Boolean(res?.sent);
+            } catch (txtErr) {
+              console.warn(`[admin-notifications] WhatsApp text fallback error for ${recipientPhone}:`, txtErr.message);
+            }
+          }
+
+          if (sent) whatsappDispatched++;
+        }
+      } catch (waErr) {
+        console.warn('[admin-notifications] WhatsApp dispatch error:', waErr.message);
+      }
+    }
+
     // 5. Save broadcast record into history
     try {
       await db.collection('ae_notification_history').add({
+        whatsapp_dispatched: whatsappDispatched,
+        whatsapp_enabled: Boolean(sendWhatsApp),
         title,
         body,
         url: url || '',
@@ -497,6 +578,7 @@ function registerAdminNotifications(app, {
       delivered: successCount,
       failed: failureCount,
       total: uniqueTokens.length,
+      whatsappDispatched,
     };
   }
 
@@ -899,6 +981,7 @@ function registerAdminNotifications(app, {
       const targetSummary = (req.body.targetSummary || req.body.target_summary || '').trim();
       const scheduledAtRaw = (req.body.scheduled_at || '').trim();
       const pushOnly = req.body.pushOnly === true || req.body.pushOnly === 'true' || req.body.push_only === true || req.body.push_only === 'true';
+      const sendWhatsApp = req.body.sendWhatsApp === true || req.body.sendWhatsApp === 'true' || req.body.send_whatsapp === true || req.body.send_whatsapp === 'true';
 
       // Parse multi-select customer IDs
       let customerIds = [];
@@ -1017,6 +1100,7 @@ function registerAdminNotifications(app, {
         merchantIds,
         targetSummary,
         pushOnly,
+        sendWhatsApp,
       });
 
       let responseMsg = '';
@@ -1040,12 +1124,19 @@ function registerAdminNotifications(app, {
           : 'Notification saved to in-app inbox. (No active push devices were registered at this time)';
       }
 
+      if (result.whatsappDispatched > 0) {
+        responseMsg += ` ✓ WhatsApp message dispatched to ${result.whatsappDispatched} recipient(s)!`;
+      } else if (sendWhatsApp) {
+        responseMsg += ' (WhatsApp Cloud API not active or recipients lacked verified phone numbers).';
+      }
+
       return res.json({
         success: true,
         scheduled: false,
         delivered: result.delivered,
         failed: result.failed,
         total: result.total,
+        whatsappDispatched: result.whatsappDispatched || 0,
         message: responseMsg,
       });
     } catch (err) {

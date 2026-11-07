@@ -16,11 +16,14 @@ import './customer-scanner.css';
 import QrScanner from './QrScanner';
 
 type Request = {id:string;customerCode:string;merchantName:string;action:'earn'|'combined';status:string;expiresAt:number;counterFlow?:boolean;amount?:number;revision?:number;reason?:string;quote?:{discountAmount:number;payable:number;pointsToEarn:number;pointsToRedeem:number}};
+// Foreground fallback for web users or delayed FCM. React Query pauses it in
+// background tabs; push still invalidates this query immediately on phones.
+const REQUEST_POLL_MS = 1500;
 export function MerchantShopCheckout() {
   useTranslation();
   const [params]=useSearchParams();const id=params.get('request');const scan=params.get('scan')==='1';const [qr,setQr]=useState('');const [assetError,setAssetError]=useState('');
   const profile=useQuery({queryKey:['shop-qr-profile'],queryFn:()=>apiFetch<{data:{name:string}}>('/api/merchant-profile')});
-  const requests=useQuery({queryKey:['shop-requests'],queryFn:()=>apiFetch<{requests:Request[]}>('/api/merchant/shop-requests'),refetchInterval:5000});
+  const requests=useQuery({queryKey:id?['shop-requests',id]:['shop-requests'],queryFn:({signal})=>apiFetch<{requests:Request[]}>('/api/merchant/shop-requests'+(id?'?requestId='+encodeURIComponent(id):''),{signal}),refetchInterval:REQUEST_POLL_MS});
   const settings=useQuery({queryKey:['reward-settings'],queryFn:()=>apiFetch<RewardSettings>('/api/settings/reward')});
   const token=useQuery({queryKey:['shop-qr'],queryFn:()=>apiFetch<{payload:string}>('/api/merchant/shop-qr')});
   useEffect(()=>{let active=true;if(token.data)void QRCode.toDataURL(token.data.payload,{width:600,margin:3,errorCorrectionLevel:'H'}).then(value=>{if(active)setQr(value);}).catch(()=>{if(active)setAssetError('Unable to generate shop QR. Please retry.');});return()=>{active=false;};},[token.data]);
@@ -39,7 +42,7 @@ export function MerchantShopCheckout() {
 }
 export function ShopRequestAlert() {
   const [hidden,setHidden]=useState<string[]>([]);
-  const query=useQuery({queryKey:['shop-requests'],queryFn:()=>apiFetch<{requests:Request[]}>('/api/merchant/shop-requests'),refetchInterval:5000});
+  const query=useQuery({queryKey:['shop-requests'],queryFn:({signal})=>apiFetch<{requests:Request[]}>('/api/merchant/shop-requests',{signal}),refetchInterval:REQUEST_POLL_MS});
   const row=query.data?.requests.find(item=>!hidden.includes(item.id));
   return <>{row&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label={uiText('Customer checkout request')}><h2>{uiText('Customer checkout request')}</h2><p>{uiText(row.action==='combined'?'Redeem + Earn':'Issue points')}</p><Link className="button primary" to={'/shop-checkout?request='+row.id} onClick={()=>setHidden(items=>[...items,row.id])}>{uiText('Open checkout')}</Link><button className="button secondary" onClick={()=>setHidden(items=>[...items,row.id])}>{uiText('Later')}</button></section></div>}</>;
 }

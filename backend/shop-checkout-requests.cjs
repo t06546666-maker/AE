@@ -74,6 +74,18 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
     try{const db=await database(), doc=await db.collection('ae_shop_requests').doc(req.params.id).get();if(!doc.exists||doc.data().customerId!==req.customer.id)return res.status(404).json({error:'Request not found'});const row=doc.data();res.set('Cache-Control','no-store');res.json({request:{id:doc.id,...row,status:row.status==='pending'&&row.expiresAt<=Date.now()?'expired':row.status}});}catch{return unavailable(res);}
   });
   app.get('/api/merchant/shop-requests',auth,merchantRole,async(req,res)=>{
+    if(req.query.requestId!==undefined){
+      const id=req.query.requestId;
+      if(typeof id!=='string'||!/^[a-zA-Z0-9]{20}$/.test(id))return res.status(400).json({error:'Invalid request'});
+      try{
+        const db=await database(),doc=await db.collection('ae_shop_requests').doc(id).get();
+        const row=doc.exists?doc.data():null;
+        res.set('Cache-Control','no-store');
+        if(!row||row.merchantId!==req.auth.profile.merchant_id)return res.status(404).json({error:'Request not found'});
+        const {customerId,...request}=row;
+        return res.json({requests:row.status==='pending'&&row.expiresAt>Date.now()?[{id:doc.id,...request}]:[]});
+      }catch{return unavailable(res);}
+    }
     try{const db=await database(), snapshot=await db.collection('ae_shop_requests').where('merchantId','==',req.auth.profile.merchant_id).where('status','==','pending').get();res.set('Cache-Control','no-store');res.json({requests:snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).filter(row=>row.expiresAt>Date.now()).map(({customerId,...row})=>row).sort((a,b)=>a.createdAt-b.createdAt)});}catch{return unavailable(res);}
   });
   // Claim once before invoking the existing checkout. A failed/uncertain checkout

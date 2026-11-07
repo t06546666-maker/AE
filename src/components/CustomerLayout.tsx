@@ -66,9 +66,6 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
               <ListPlus size={18} /><span>{uiText("Products list")}</span>
             </NavLink>
-            <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
-              <Gift size={18} /><span>{uiText("Offers")}</span>
-            </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>{uiText("Profile")}</span>
             </NavLink>
@@ -93,9 +90,6 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
         </NavLink>
         <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <ListPlus size={21} /><span>{uiText("Products list")}</span>
-        </NavLink>
-        <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
-          <Gift size={21} /><span>{uiText("Offers")}</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <User size={21} /><span>{uiText("Profile")}</span>

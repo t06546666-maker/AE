@@ -25,6 +25,7 @@ import {
   Search,
   Check,
   Plus,
+  MessageCircle,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
@@ -117,6 +118,32 @@ interface HistoryResponse {
   history: NotificationHistoryItem[];
 }
 
+function renderWhatsAppFormattedText(text: string) {
+  if (!text) return null;
+  const parts = text.split('\n');
+  return parts.map((line, lineIdx) => {
+    const boldRegex = /\*([^\*]+)\*/g;
+    const elements: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = boldRegex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(line.slice(lastIndex, match.index));
+      }
+      elements.push(<strong key={match.index} style={{ fontWeight: 800, color: '#111b21' }}>{match[1]}</strong>);
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < line.length) {
+      elements.push(line.slice(lastIndex));
+    }
+    return (
+      <span key={lineIdx} style={{ display: 'block', minHeight: line.trim() ? 'auto' : '8px' }}>
+        {elements.length > 0 ? elements : line}
+      </span>
+    );
+  });
+}
+
 export function AdminNotifications() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -133,6 +160,8 @@ export function AdminNotifications() {
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
   const [pushOnly, setPushOnly] = useState(false);
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
+  const [previewTab, setPreviewTab] = useState<'whatsapp' | 'push'>('whatsapp');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
@@ -424,6 +453,7 @@ export function AdminNotifications() {
       if (url.trim()) form.append('url', url.trim());
       form.append('target', target);
       form.append('pushOnly', String(pushOnly));
+      form.append('sendWhatsApp', String(sendWhatsApp));
 
       if (target === 'selected_customers' || target === 'single_customer') {
         const cIds = selectedCustomers.map((c) => c.id);
@@ -475,6 +505,7 @@ export function AdminNotifications() {
       setBody('');
       setUrl('');
       setPushOnly(false);
+      setSendWhatsApp(false);
       handleRemoveImage();
       setDispatchMode('now');
       setScheduledDateTime('');
@@ -971,6 +1002,32 @@ export function AdminNotifications() {
                             In-App
                           </span>
                         )}
+                        {c.phone && (
+                          <a
+                            href={`https://wa.me/${c.phone.replace(/\D/g, '').length === 10 ? '91' + c.phone.replace(/\D/g, '') : c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                              (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: '#25D366',
+                              color: '#fff',
+                              borderRadius: '12px',
+                              padding: '2px 8px',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              textDecoration: 'none',
+                              cursor: 'pointer',
+                            }}
+                            title={uiText("Send via WhatsApp")}
+                          >
+                            <MessageCircle size={11} />
+                            WhatsApp
+                          </a>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleRemoveCustomer(c.id)}
@@ -1190,6 +1247,32 @@ export function AdminNotifications() {
                             Pending
                           </span>
                         )}
+                        {m.phone && (
+                          <a
+                            href={`https://wa.me/${m.phone.replace(/\D/g, '').length === 10 ? '91' + m.phone.replace(/\D/g, '') : m.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                              (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: '#25D366',
+                              color: '#fff',
+                              borderRadius: '12px',
+                              padding: '2px 8px',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              textDecoration: 'none',
+                              cursor: 'pointer',
+                            }}
+                            title={uiText("Send via WhatsApp")}
+                          >
+                            <MessageCircle size={11} />
+                            WhatsApp
+                          </a>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleRemoveMerchant(m.id)}
@@ -1300,6 +1383,81 @@ export function AdminNotifications() {
                 )}
               </div>
             )}
+
+            {/* Quick Templates / Milestone Presets Bar */}
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} /> {uiText("Quick Milestone & Reward Presets")}
+                </span>
+                <span style={{ fontSize: '11px', color: '#15803d' }}>{uiText("Click to auto-fill Malayalam text")}</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const recipientName = selectedCustomers[0]?.name || 'Rasheed';
+                    setTitle('offers');
+                    setPreviewTab('whatsapp');
+                    setSendWhatsApp(true);
+                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യുടെ ചരിത്രത്തിലെ ആദ്യ ഇടപാട് നടത്തിയതിന് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്.\n🎁 നിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
+                  }}
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#166534',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🎁 {uiText("1st Transaction Gift (ആദ്യ ഇടപാട്)")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const recipientName = selectedCustomers[0]?.name || 'Rasheed';
+                    setTitle('offers');
+                    setPreviewTab('whatsapp');
+                    setSendWhatsApp(true);
+                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യിൽ 10 ഇടപാടുകൾ പൂർത്തിയാക്കിയതിന് പ്രത്യേക സമ്മാനം! 🎁\nതുടർച്ചയായ പിന്തുണയ്ക്ക് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്.\n🎁 നിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
+                  }}
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#166534',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🌟 {uiText("10th Transaction Milestone (10-ാം ഇടപാട്)")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTitle('✨ AE പ്രത്യേക ഓഫറുകൾ എത്തിക്കഴിഞ്ഞു!');
+                    setBody('നിങ്ങളുടെ പ്രിയപ്പെട്ട കടകളിൽ നിന്നുള്ള പുതിയ ഓഫറുകളും ക്യാഷ്ബാക്ക് പോയിന്റുകളും ഇപ്പോൾ AE ആപ്പിൽ ലഭ്യമാണ്. ഉടൻ ആപ്പ് തുറന്ന് ഷോപ്പ് ചെയ്യൂ!');
+                  }}
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#166534',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📢 {uiText("General Offer Announcement")}
+                </button>
+              </div>
+            </div>
 
             {/* Title */}
             <div style={{ marginBottom: '16px' }}>
@@ -1501,7 +1659,7 @@ export function AdminNotifications() {
             </div>
 
             {/* In-App Delivery Mode: Push-Only Checkbox */}
-            <div style={{ marginBottom: '22px' }}>
+            <div style={{ marginBottom: '16px' }}>
               <label
                 style={{
                   display: 'flex',
@@ -1532,6 +1690,44 @@ export function AdminNotifications() {
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', lineHeight: 1.4 }}>
                     {uiText("Delivers straight to customer/merchant lockscreen and phone notification bar. When swiped away or cleared, it will not enter the in-app notification center or stay in customer feeds.")}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Also Dispatch via WhatsApp Toggle */}
+            <div style={{ marginBottom: '22px' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  background: sendWhatsApp ? '#f0fdf4' : '#f8fafc',
+                  border: `1.5px solid ${sendWhatsApp ? '#25D366' : '#e2e8f0'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sendWhatsApp}
+                  onChange={(e) => setSendWhatsApp(e.target.checked)}
+                  style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#25D366', cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: sendWhatsApp ? '#166534' : '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageCircle size={16} style={{ color: '#25D366' }} />
+                    <span>{uiText("Also Dispatch via WhatsApp (Cloud API & Direct)")}</span>
+                    {sendWhatsApp && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
+                        {uiText("WhatsApp Enabled")}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', lineHeight: 1.4 }}>
+                    {uiText("Dispatches this announcement or milestone reward directly to the verified phone numbers of the selected customer(s) or merchant(s).")}
                   </div>
                 </div>
               </label>
@@ -1632,126 +1828,477 @@ export function AdminNotifications() {
                 </>
               )}
             </button>
+
+            {((target === 'selected_customers' || target === 'single_customer') && selectedCustomers.length > 0 && selectedCustomers[0].phone) && (
+              <div style={{ marginTop: '10px' }}>
+                <a
+                  href={`https://wa.me/${selectedCustomers[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedCustomers[0].phone.replace(/\D/g, '') : selectedCustomers[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="button"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    background: '#25D366',
+                    color: '#fff',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <MessageCircle size={18} />
+                  <span>{uiText("Open & Send in WhatsApp to {{name}}", { name: selectedCustomers[0].name })}</span>
+                </a>
+              </div>
+            )}
+
+            {target === 'selected_merchants' && selectedMerchants.length > 0 && selectedMerchants[0].phone && (
+              <div style={{ marginTop: '10px' }}>
+                <a
+                  href={`https://wa.me/${selectedMerchants[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedMerchants[0].phone.replace(/\D/g, '') : selectedMerchants[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="button"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    background: '#25D366',
+                    color: '#fff',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <MessageCircle size={18} />
+                  <span>{uiText("Open & Send in WhatsApp to {{name}}", { name: selectedMerchants[0].name })}</span>
+                </a>
+              </div>
+            )}
           </form>
 
-          {/* Right Column: Live Mobile Preview */}
+          {/* Right Column: Live Mobile & WhatsApp Preview */}
           <div>
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Smartphone size={18} className="text-slate-600" />
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-                {target === 'selected_customers' || target === 'single_customer'
-                  ? (selectedCustomers.length > 0
-                      ? uiText("Live Preview for {{count}} Customer(s) ({{names}})", {
-                          count: selectedCustomers.length,
-                          names: selectedCustomers.slice(0, 2).map((c) => c.name).join(', ') + (selectedCustomers.length > 2 ? '...' : ''),
-                        })
-                      : uiText("Live Preview (No customers selected)"))
-                  : target === 'selected_merchants'
-                  ? (selectedMerchants.length > 0
-                      ? uiText("Live Preview for {{count}} Store(s) ({{names}})", {
-                          count: selectedMerchants.length,
-                          names: selectedMerchants.slice(0, 2).map((m) => m.name).join(', ') + (selectedMerchants.length > 2 ? '...' : ''),
-                        })
-                      : uiText("Live Preview (No stores selected)"))
-                  : target === 'merchants'
-                  ? uiText("Live Phone Preview (All Merchants)")
-                  : target === 'all'
-                  ? uiText("Live Phone Preview (Everyone)")
-                  : uiText("Live Phone Preview (All Customers)")}
-              </h3>
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Smartphone size={18} className="text-slate-600" />
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
+                  {uiText("Live Message Preview")}
+                </h3>
+              </div>
             </div>
 
-            <div
-              style={{
-                background: '#0f172a',
-                borderRadius: '32px',
-                padding: '16px',
-                border: '8px solid #334155',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                minHeight: '480px',
-                color: '#fff',
-                position: 'sticky',
-                top: '20px',
-              }}
-            >
-              {/* Phone Status Bar Mockup */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', padding: '0 8px 14px' }}>
-                <span>10:30 AM</span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <span>5G</span>
-                  <span>100%</span>
-                </div>
-              </div>
-
-              {/* Notification Banner Mockup */}
-              <div
+            {/* Preview Mode Selector Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+              <button
+                type="button"
+                onClick={() => setPreviewTab('whatsapp')}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  color: '#0f172a',
-                  borderRadius: '20px',
-                  padding: '14px',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: previewTab === 'whatsapp' ? '2px solid #25D366' : '1px solid #cbd5e1',
+                  background: previewTab === 'whatsapp' ? '#f0fdf4' : '#fff',
+                  color: previewTab === 'whatsapp' ? '#166534' : '#475569',
+                  boxShadow: previewTab === 'whatsapp' ? '0 2px 6px rgba(37,211,102,0.18)' : 'none',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: 6, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '11px' }}>
-                      AE
+                <MessageCircle size={15} style={{ color: '#25D366' }} />
+                <span>{uiText("WhatsApp Message Preview")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('push')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: previewTab === 'push' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                  background: previewTab === 'push' ? '#eff6ff' : '#fff',
+                  color: previewTab === 'push' ? '#1d4ed8' : '#475569',
+                  boxShadow: previewTab === 'push' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Smartphone size={15} style={{ color: '#2563eb' }} />
+                <span>{uiText("Phone Push Preview")}</span>
+              </button>
+            </div>
+
+            {/* PREVIEW CONTAINER */}
+            <div style={{ position: 'sticky', top: '20px' }}>
+
+              {/* OPTION 1: WHATSAPP BUBBLE PREVIEW (Matching real WhatsApp app) */}
+              {previewTab === 'whatsapp' && (
+                <div
+                  style={{
+                    background: '#efeae2',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    boxShadow: '0 16px 36px rgba(0,0,0,0.22)',
+                    border: '1px solid #d1d7db',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '480px',
+                  }}
+                >
+                  {/* WhatsApp Chat Header */}
+                  <div
+                    style={{
+                      background: '#008069',
+                      padding: '12px 16px',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '16px', fontWeight: 700 }}>←</span>
+                      <div
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '50%',
+                          background: '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                          fontSize: '13px',
+                          color: '#008069',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                        }}
+                      >
+                        AE
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700 }}>Affiliate AE</span>
+                          <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>
+                            ✓ Verified
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '11px', opacity: 0.85, display: 'block' }}>Official Business Account</span>
+                      </div>
                     </div>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Affiliate AE</span>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>• Just now</span>
+                    <div style={{ fontSize: '18px', opacity: 0.85 }}>⋮</div>
                   </div>
-                </div>
 
-                {/* Content */}
-                <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '4px', lineHeight: 1.3 }}>
-                  {title || uiText("Notification Title")}
-                </div>
-                <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap', marginBottom: imagePreview ? '10px' : '6px' }}>
-                  {body || uiText("Your notification message will appear here on customer phones.")}
-                </div>
+                  {/* Chat Wallpaper Background */}
+                  <div
+                    style={{
+                      padding: '16px 14px',
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      backgroundImage: 'radial-gradient(#d6cdc0 1.2px, transparent 1.2px)',
+                      backgroundSize: '18px 18px',
+                      backgroundColor: '#efeae2',
+                    }}
+                  >
+                    {/* Date Tag */}
+                    <div style={{ alignSelf: 'center', marginBottom: '12px' }}>
+                      <span
+                        style={{
+                          background: '#ffffff',
+                          padding: '3px 12px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#54656f',
+                          boxShadow: '0 1px 1px rgba(11,20,26,0.1)',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Today
+                      </span>
+                    </div>
 
-                {/* Optional Image (2:1 Widescreen Phone Notification Standard) */}
-                {imagePreview && (
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', aspectRatio: '2/1', background: '#0f172a', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={imagePreview} alt="Push banner" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
-                )}
-
-                {/* Optional Link Button */}
-                {url && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
-                    <span
+                    {/* WhatsApp Incoming White Message Bubble */}
+                    <div
                       style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: '#2563eb',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        background: '#eff6ff',
+                        background: '#ffffff',
+                        borderRadius: '10px 10px 10px 2px',
+                        padding: '12px 14px',
+                        maxWidth: '94%',
+                        alignSelf: 'flex-start',
+                        boxShadow: '0 1px 2px rgba(11,20,26,0.15)',
+                        position: 'relative',
+                        border: '1px solid #e9edef',
                       }}
                     >
-                      <span>{uiText("Open Post / Link")}</span>
-                      <ExternalLink size={11} />
-                    </span>
-                  </div>
-                )}
-              </div>
+                      {/* Bold Header / Title (like "offers" in screenshot) */}
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: '14px',
+                          color: '#111b21',
+                          marginBottom: '8px',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {title || 'offers'}
+                      </div>
 
-              {/* Helper text below mockup */}
-              <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
-                <p>
-                  <strong>{uiText("Big Picture Rich Push:")}</strong> {uiText("When an image is included, Android and iOS expand the notification to show the full image banner.")}
-                </p>
-                <p style={{ marginTop: '6px' }}>
-                  <strong>{uiText("In-App Bell Inbox:")}</strong> {uiText("The notification and image are permanently saved in the customer app's notification bell.")}
-                </p>
-              </div>
+                      {/* Recipient Salutation (only if body does not already include greeting) */}
+                      {!body.trim().startsWith('പ്രിയപ്പെട്ട') && !body.trim().startsWith('Dear') && (
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#111b21', marginBottom: '8px' }}>
+                          പ്രിയപ്പെട്ട {selectedCustomers[0]?.name || selectedMerchants[0]?.name || 'Rasheed'},
+                        </div>
+                      )}
+
+                      {/* Message Body with Markdown formatting & Emojis */}
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          color: '#111b21',
+                          lineHeight: 1.55,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {body ? renderWhatsAppFormattedText(body) : (
+                          <span style={{ color: '#8696a0', fontStyle: 'italic' }}>
+                            {uiText("Your WhatsApp message content will appear here...")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Optional Media Image */}
+                      {imagePreview && (
+                        <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e9edef' }}>
+                          <img src={imagePreview} alt="WhatsApp media" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                        </div>
+                      )}
+
+                      {/* Timestamp & Double Blue Ticks */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: '4px',
+                          fontSize: '10px',
+                          color: '#667781',
+                          marginTop: '8px',
+                        }}
+                      >
+                        <span>10:30 AM</span>
+                        <span style={{ color: '#53bdeb', fontWeight: 900, fontSize: '13px', letterSpacing: '-2px' }}>✓✓</span>
+                      </div>
+                    </div>
+
+                    {/* Quick Link Card below bubble if URL provided */}
+                    {url && (
+                      <div
+                        style={{
+                          alignSelf: 'flex-start',
+                          marginTop: '6px',
+                          background: '#ffffff',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          maxWidth: '94%',
+                          boxShadow: '0 1px 1px rgba(11,20,26,0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '11px',
+                          color: '#008069',
+                          fontWeight: 700,
+                        }}
+                      >
+                        <ExternalLink size={13} />
+                        <span style={{ textDecoration: 'underline' }}>{url}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chat Bottom Bar Mockup */}
+                  <div
+                    style={{
+                      background: '#f0f2f5',
+                      padding: '8px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      borderTop: '1px solid #e9edef',
+                    }}
+                  >
+                    <span style={{ fontSize: '18px', color: '#54656f' }}>😊</span>
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        flex: 1,
+                        padding: '7px 14px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        color: '#8696a0',
+                      }}
+                    >
+                      Type a message
+                    </div>
+                    <span style={{ fontSize: '16px', color: '#54656f' }}>🎤</span>
+                  </div>
+                </div>
+              )}
+
+              {/* OPTION 2: PHONE PUSH NOTIFICATION PREVIEW */}
+              {previewTab === 'push' && (
+                <div
+                  style={{
+                    background: '#0f172a',
+                    borderRadius: '32px',
+                    padding: '16px',
+                    border: '8px solid #334155',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    minHeight: '480px',
+                    color: '#fff',
+                  }}
+                >
+                  {/* Phone Status Bar Mockup */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', padding: '0 8px 14px' }}>
+                    <span>10:30 AM</span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span>5G</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Notification Banner Mockup */}
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      color: '#0f172a',
+                      borderRadius: '20px',
+                      padding: '14px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '11px' }}>
+                          AE
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Affiliate AE</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>• Just now</span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '4px', lineHeight: 1.3 }}>
+                      {title || uiText("Notification Title")}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap', marginBottom: imagePreview ? '10px' : '6px' }}>
+                      {body || uiText("Your notification message will appear here on customer phones.")}
+                    </div>
+
+                    {/* Optional Image */}
+                    {imagePreview && (
+                      <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', aspectRatio: '2/1', background: '#0f172a', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={imagePreview} alt="Push banner" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )}
+
+                    {/* Optional Link Button */}
+                    {url && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#2563eb',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            background: '#eff6ff',
+                          }}
+                        >
+                          <span>{uiText("Open Post / Link")}</span>
+                          <ExternalLink size={11} />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Helper text below mockup */}
+                  <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
+                    <p>
+                      <strong>{uiText("Big Picture Rich Push:")}</strong> {uiText("When an image is included, Android and iOS expand the notification to show the full image banner.")}
+                    </p>
+                    <p style={{ marginTop: '6px' }}>
+                      <strong>{uiText("In-App Bell Inbox:")}</strong> {uiText("The notification and image are permanently saved in the customer app's notification bell.")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick WhatsApp Link Action below preview */}
+              {selectedCustomers[0]?.phone && (
+                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                  <a
+                    href={`https://wa.me/${selectedCustomers[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedCustomers[0].phone.replace(/\D/g, '') : selectedCustomers[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#008069',
+                      background: '#fff',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #bbf7d0',
+                      textDecoration: 'none',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <MessageCircle size={14} style={{ color: '#25D366' }} />
+                    <span>{uiText("Test Send this Preview to {{name}} on WhatsApp", { name: selectedCustomers[0].name })} →</span>
+                  </a>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

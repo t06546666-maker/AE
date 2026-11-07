@@ -241,6 +241,7 @@ const WA_CUSTOMER_ORDER_STATUS_TEMPLATE = cleanText(
   512,
 );
 const WA_OTP_TEMPLATE = cleanText(process.env.WA_OTP_TEMPLATE || 'customer_login_otp', 512);
+const WA_MILESTONE_TEMPLATE = cleanText(process.env.WA_MILESTONE_TEMPLATE || 'ae_milestone_reward_v1', 512);
 // Keep WhatsApp limited to onboarding when the app uses Firebase push notifications
 // for ongoing events. Set WA_REGISTRATION_ONLY=false only if additional WhatsApp
 // templates are intentionally enabled later.
@@ -1138,7 +1139,7 @@ async function sendWhatsAppTemplate({
   languageCode = WA_TEMPLATE_LANGUAGE,
   logId,
 }) {
-  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials'].includes(messageType)) {
+  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials', 'milestone', 'announcement'].includes(messageType)) {
     return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
   }
   if (!WA_TOKEN || !WA_PHONE_ID) {
@@ -3118,37 +3119,99 @@ app.get('/api/feedback', requireAuth, async (req, res) => {
 app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageMiddleware, async (req, res) => {
   const merchantId = cleanText(req.body.merchant_id, 100);
   const productList = cleanText(req.body.product_list, 5000);
+  const pickupTime = cleanText(req.body.pickup_time, 100);
   if (!merchantId || (!productList && !req.file)) return res.status(400).json({ success: false, error: 'Select a merchant and add a product list or image' });
   const { data: merchant } = await supabaseAdmin.from('active_merchants').select('id').eq('id', merchantId).maybeSingle();
   if (!merchant) return res.status(404).json({ success: false, error: 'Merchant not found' });
   let imagePath = null;
   if (req.file) imagePath = await uploadOfferImage(merchantId, req.file);
-  const { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
+  let insertPayload = { customer_id: req.customer.id, merchant_id: merchantId, product_list: productList || null, image_path: imagePath, status: 'pending', pickup_time: pickupTime || null };
+  let { data, error } = await supabaseAdmin.from('customer_product_list_requests').insert(insertPayload).select('id,status,created_at,pickup_time').single();
+  if (error && (error.code === '42703' || String(error.message).includes('pickup_time'))) {
+    const combinedList = pickupTime ? `[Pickup Time: ${pickupTime}]\n${productList || ''}`.trim() : (productList || null);
+    const fallback = await supabaseAdmin.from('customer_product_list_requests').insert({ customer_id: req.customer.id, merchant_id: merchantId, product_list: combinedList, image_path: imagePath, status: 'pending' }).select('id,status,created_at').single();
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
-  await pushToRole('admin', 'New product list request', 'A customer sent a product list for admin review.', { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
-  await pushToCustomer(req.customer.id, 'Product list submitted', 'Your product list was received and is awaiting review.', { url: '/customer/home?productList=1', requestId: data.id });
-  res.status(201).json({ success: true, request: data });
+  const pickupNotice = pickupTime ? ` (Pickup: ${pickupTime})` : '';
+  await pushToRole('admin', 'New product list request', `A customer sent a product list${pickupNotice} for admin review.`, { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
+  await pushToCustomer(req.customer.id, 'Product list submitted', `Your product list was received${pickupNotice} and is awaiting review.`, { url: '/customer/home?productList=1', requestId: data.id });
+  res.status(201).json({ success: true, request: { ...data, pickup_time: data.pickup_time || pickupTime || null } });
 });
 
 app.get('/api/customer/product-list-requests', requireCustomerAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from('customer_product_list_requests')
-    .select('id,merchant_id,product_list,image_path,status,merchant_status,created_at,merchants(name)')
+    .select('id,merchant_id,product_list,image_path,status,merchant_status,created_at,merchants(name),pickup_time')
     .eq('customer_id', req.customer.id)
     .order('created_at', { ascending: false })
     .limit(100);
+  if (error && (error.code === '42703' || String(error.message).includes('pickup_time'))) {
+    const fallback = await supabaseAdmin
+      .from('customer_product_list_requests')
+      .select('id,merchant_id,product_list,image_path,status,merchant_status,created_at,merchants(name)')
+      .eq('customer_id', req.customer.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product list history' });
-  const requests = await Promise.all((data || []).map(async (request) => ({ ...request, status: request.merchant_status || request.status, image_url: request.image_path ? await signedOfferImageUrl(request.image_path) : '' })));
+  const requests = await Promise.all((data || []).map(async (request) => {
+    let pTime = request.pickup_time || null;
+    let cleanList = request.product_list;
+    if (!pTime && cleanList && cleanList.startsWith('[Pickup Time: ')) {
+      const match = cleanList.match(/^\[Pickup Time: ([^\]]+)\]\n?/);
+      if (match) {
+        pTime = match[1];
+        cleanList = cleanList.slice(match[0].length);
+      }
+    }
+    return {
+      ...request,
+      product_list: cleanList,
+      pickup_time: pTime,
+      status: request.merchant_status || request.status,
+      image_url: request.image_path ? await signedOfferImageUrl(request.image_path) : ''
+    };
+  }));
   res.json({ success: true, requests });
 });
 
 app.get('/api/product-list-requests', requireAuth, async (req, res) => {
-  let query = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,merchant_status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
+  let selectFields = 'id,merchant_id,product_list,image_path,status,merchant_status,rejection_reason,created_at,customers(name,phone),merchants(name),pickup_time';
+  let query = supabaseAdmin.from('customer_product_list_requests').select(selectFields).order('created_at', { ascending: false }).limit(200);
   if (req.auth.profile.role === 'merchant') query = query.eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'approved');
   else if (req.auth.profile.role !== 'admin') return res.status(403).json({ success: false, error: 'Not authorized' });
-  const { data, error } = await query;
+  let { data, error } = await query;
+  if (error && (error.code === '42703' || String(error.message).includes('pickup_time'))) {
+    let fallbackQuery = supabaseAdmin.from('customer_product_list_requests').select('id,merchant_id,product_list,image_path,status,merchant_status,rejection_reason,created_at,customers(name,phone),merchants(name)').order('created_at', { ascending: false }).limit(200);
+    if (req.auth.profile.role === 'merchant') fallbackQuery = fallbackQuery.eq('merchant_id', req.auth.profile.merchant_id).eq('status', 'approved');
+    const fallback = await fallbackQuery;
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) return res.status(500).json({ success: false, error: 'Unable to load product lists' });
-  const requests = await Promise.all((data || []).map(async row => ({ ...row, ...(req.auth.profile.role === 'merchant' ? { customers: { name: row.customers?.name || 'Customer' } } : {}), status: req.auth.profile.role === 'merchant' ? row.merchant_status || row.status : row.status, image_url: row.image_path ? await signedOfferImageUrl(row.image_path) : '' })));
+  const requests = await Promise.all((data || []).map(async row => {
+    let pTime = row.pickup_time || null;
+    let cleanList = row.product_list;
+    if (!pTime && cleanList && cleanList.startsWith('[Pickup Time: ')) {
+      const match = cleanList.match(/^\[Pickup Time: ([^\]]+)\]\n?/);
+      if (match) {
+        pTime = match[1];
+        cleanList = cleanList.slice(match[0].length);
+      }
+    }
+    return {
+      ...row,
+      product_list: cleanList,
+      pickup_time: pTime,
+      ...(req.auth.profile.role === 'merchant' ? { customers: { name: row.customers?.name || 'Customer' } } : {}),
+      status: req.auth.profile.role === 'merchant' ? row.merchant_status || row.status : row.status,
+      image_url: row.image_path ? await signedOfferImageUrl(row.image_path) : ''
+    };
+  }));
   res.json({ success: true, requests });
 });
 
@@ -3419,6 +3482,9 @@ require('./backend/admin-notifications.cjs').registerAdminNotifications(app, {
     return firebaseInitialized;
   },
   uploadMiddleware: offerImageMiddleware,
+  sendWhatsAppTemplate,
+  sendWhatsAppText,
+  waMilestoneTemplate: WA_MILESTONE_TEMPLATE,
 });
 
 app.put('/api/profile/preferences', requireAuth, async (req, res) => {
