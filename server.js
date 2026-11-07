@@ -5717,9 +5717,11 @@ app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async 
   } catch { return res.status(404).json({ error: 'Could not close bill' }); }
 });
 
+require('./backend/counter-staff.cjs').registerCounterStaff(app,{database:checkoutBillDatabase,supabase:supabaseAdmin,auth:requireAuth,merchantRole:requireRole('merchant'),customerAuth:requireCustomerAuth,normalizePhone,signingSecret:()=>process.env.COUNTER_STAFF_JWT_SECRET||process.env.CUSTOMER_JWT_SECRET,discount:redemptionDiscount,points:calculateFixedPurchasePoints,pushCustomer:pushToCustomer,sendPush:sendPushNotification,background:scheduleBackground,checkout:async args=>{let status=200,body;await runMerchantCheckout({auth:{profile:{merchant_id:args.merchantId}},body:{customerCode:args.customerCode,amount:args.amount,rewardPercentage:args.quote.pointsPer100,pointsToRedeem:args.quote.pointsToRedeem,discountType:args.quote.discountType,discountValue:args.quote.discountValue,paymentMode:'pilot_app_only',location:'Counter Staff: '+args.staffName},get:name=>name.toLowerCase()==='idempotency-key'?'counter-'+args.requestId:undefined},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
+
 require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), adminRole: requireRole('admin'), push: pushToMerchant, background: scheduleBackground });
 
-app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res) => {
+async function runMerchantCheckout(req, res) {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
   const requestedRate = Number(req.body.rewardPercentage || 10);
@@ -5819,7 +5821,8 @@ app.post('/api/checkouts', requireAuth, requireRole('merchant'), async (req, res
   // Purchases use native push notifications only. WhatsApp is reserved for
   // onboarding (welcome and temporary-password messages).
   res.status(201).json({ success: true, purchase, redemption, discountAmount: redemptionContext?.discountAmount || 0, paymentMode: req.body.paymentMode || 'pilot_app_only', cashPaymentRecorded, whatsapp: { skipped: true, reason: 'push_only' } });
-});
+}
+app.post('/api/checkouts', requireAuth, requireRole('merchant'), runMerchantCheckout);
 
 app.get('/api/orders', requireAuth, (req, res, next) => {
   if (!['admin', 'merchant'].includes(req.auth.profile.role)) return res.status(403).json({ error: 'Order data is restricted to Admin and Merchant roles' });

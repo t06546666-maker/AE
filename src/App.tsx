@@ -1,3 +1,4 @@
+import {counterToken} from './counterApi';
 import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +16,8 @@ import type { Role, UserProfile } from './types';
 
 // Keep the startup bundle small. Route pages load only when needed, then the
 // common next screens can be warmed after the first screen has appeared.
+const CounterStaff = lazy(() => import('./pages/CounterStaff').then(m => ({default:m.CounterStaff})));
+const CounterStaffManager = lazy(() => import('./pages/CounterStaffManager').then(m => ({default:m.CounterStaffManager})));
 const AddCustomer = lazy(() => import('./pages/AddCustomer').then(m => ({ default: m.AddCustomer })));
 const Administrators = lazy(() => import('./pages/Administrators').then(m => ({ default: m.Administrators })));
 const ChangePassword = lazy(() => import('./pages/ChangePassword').then(m => ({ default: m.ChangePassword })));
@@ -344,6 +347,8 @@ export function App() {
     return () => { active = false; };
   }, [restoreAttempt]);
 
+  if (counterToken() && !getAccessToken() && ['/', '/customer/login', '/customer/home'].includes(location.pathname)) return <Navigate to="/counter" replace/>;
+  if (location.pathname === '/counter' || location.pathname === '/counter/login') return <Suspense fallback={<StartupFallback/>}><CounterStaff/></Suspense>;
   if (location.pathname === '/delete-account') return <Suspense fallback={<StartupFallback />}><AccountDeletion /></Suspense>;
   if (import.meta.env.DEV && location.pathname === '/consent-preview') {
     const role = new URLSearchParams(location.search).get('role') === 'merchant' ? 'merchant' : 'customer';
@@ -423,6 +428,7 @@ export function App() {
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />
+          <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
           <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />

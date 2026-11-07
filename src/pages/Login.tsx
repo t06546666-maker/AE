@@ -39,6 +39,7 @@ export function Login({ onLogin, field = false }: { onLogin: (user: UserProfile)
       {error && <div role="alert" className="form-error">{error}</div>}
       <button className="ae-auth-primary" disabled={busy}>{busy ? uiText("Signing in…") : uiText("Login")}<ArrowRight/></button>
     </form>
+    {!field && <p className="ae-auth-bottom"><Link to="/counter/login">{uiText("Counter Staff Login")}</Link></p>}
     {field && <p className="ae-auth-bottom">{uiText("Ask your admin to create your field manager account.")}</p>}
   </AuthShell>;
 }

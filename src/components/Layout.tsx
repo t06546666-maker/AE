@@ -31,6 +31,7 @@ const adminNav = [
 ] as const;
 
 const merchantNav = [
+  ['/counter-staff', 'Counter Staff', UserCog],
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/add-customer', 'nav.addBuyer', Plus],
   ['/orders', 'nav.orders', ReceiptText],
