@@ -19,7 +19,7 @@ function summarizeSlot(date,slot,deliveries,pages,now){
  return {slot,title:config.title,scheduledAt,status,recorded:ran,accepted,failed,pending,complete,
   missingToken:pages.reduce((sum,p)=>sum+Number(p.missingToken||0),0),disabled:pages.reduce((sum,p)=>sum+Number(p.disabled||0),0),
   firstSentAt:acceptedTimes[0]||null,lastSentAt:acceptedTimes.at(-1)||null,lastActivityAt:times.at(-1)||null,
-  messages:variants.length?variants:[reminder(new Date(scheduledAt)).body],messageRecorded:variants.length>0};
+  messages:variants.length?variants:[reminder(new Date(scheduledAt),true).body],messageRecorded:variants.length>0};
 }
 function registerAdminReminderStatus(app,{auth,adminRole,firestore,now=()=>new Date()}){
  app.get('/api/admin/merchant-reminder-status',auth,adminRole,async(req,res)=>{

@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const {registerAdminReminderStatus,summarizeSlot,validDate,scanComplete}=require('../backend/admin-merchant-reminder-status.cjs');
 async function run(){
  const date='2026-11-07',now=new Date('2026-11-07T05:00:00Z');
+ assert.equal(summarizeSlot('2026-11-06','morning',[],[],now).status,'not_scheduled');
  assert.equal(validDate('2026-02-30'),false);assert.equal(validDate(date),true);assert.equal(validDate('not-a-date'),false);
  assert.equal(summarizeSlot(date,'afternoon',[],[],now).status,'scheduled');
  assert.equal(summarizeSlot(date,'morning',[],[],new Date('2026-11-07T03:45:00Z')).status,'waiting');
