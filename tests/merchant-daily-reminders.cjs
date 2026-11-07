@@ -9,6 +9,17 @@ async function run(){
  assert.equal(reminder(new Date('2026-11-07T04:30:00Z')),null);
  assert.notEqual(reminder(new Date('2026-11-07T03:30:00Z')).body,reminder(new Date('2026-11-08T03:30:00Z')).body);
  assert.equal(reminder(new Date('2026-11-07T03:30:00Z')).body,reminder(new Date('2026-11-14T03:30:00Z')).body);
+ const copy=require('../backend/merchant-reminder-messages.json');
+ let total=0;
+ for(const slot of ['morning','afternoon','evening']){
+  assert.equal(copy[slot].messages.length,7);assert.equal(new Set(copy[slot].messages).size,7);
+  for(let day=0;day<14;day++){
+   const time=new Date(Date.parse(copy.rotationStart+'T00:00:00Z')+day*86400000+(copy[slot].hour*60-330)*60000);
+   const value=reminder(time);assert.equal(value.slot,slot);assert.equal(value.title,copy[slot].title);assert.equal(value.body,copy[slot].messages[day%7]);assert.equal(value.url,copy[slot].url);
+  }
+  total+=copy[slot].messages.length;
+ }
+ assert.equal(total,21);
  const {privateKey,publicKey}=crypto.generateKeyPairSync('rsa',{modulusLength:2048});const jwk={...publicKey.export({format:'jwk'}),kid:'test'};
  const claims={repository:'t06546666-maker/AE',repository_id:'1287086199',ref:'refs/heads/main',workflow_ref:'t06546666-maker/AE/.github/workflows/merchant-daily-reminders.yml@refs/heads/main',event_name:'schedule'};
  const sign=extra=>jwt.sign({...claims,...extra},privateKey,{algorithm:'RS256',keyid:'test',issuer:'https://token.actions.githubusercontent.com',audience:'ae-merchant-daily-reminders',subject:'repo:t06546666-maker/AE:ref:refs/heads/main',expiresIn:'5m'});
