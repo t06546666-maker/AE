@@ -53,7 +53,7 @@ export function MerchantCategories() {
 
   return (
     <>
-      <PageHeader title={uiText("Merchant Categories")} subtitle="Manage categories for shops and merchants to help customers find them." />
+      <PageHeader title={uiText("Merchant Categories")} subtitle={uiText("Manage categories for shops and merchants to help customers find them.")} />
       
       <form className="panel" onSubmit={submit}>
         <div className="panel-heading">

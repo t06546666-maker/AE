@@ -627,7 +627,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   <option value="">{uiText("-- Choose an approved offer (or leave empty) --")}</option>
                   {availableOffers.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.title} — ({o.merchant || 'Merchant'})
+                      {o.title} — ({o.merchant || uiText("Merchant")})
                     </option>
                   ))}
                 </select>
@@ -698,7 +698,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   )}
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <p style={{ fontSize: '11px', fontWeight: 700, color: '#087a4b', textTransform: 'uppercase' }}>
-                      {selectedOffer.merchant || 'Store'}
+                      {selectedOffer.merchant || uiText("Store")}
                     </p>
                     <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', margin: '2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {selectedOffer.title}

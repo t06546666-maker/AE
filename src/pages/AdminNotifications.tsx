@@ -994,13 +994,9 @@ export function AdminNotifications() {
                           </span>
                         </div>
                         {c.hasPushToken ? (
-                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
-                            ● Push
-                          </span>
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>{uiText(" ● Push ")}</span>
                         ) : (
-                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
-                            In-App
-                          </span>
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{uiText(" In-App ")}</span>
                         )}
                         {c.phone && (
                           <a
@@ -1239,13 +1235,9 @@ export function AdminNotifications() {
                           </span>
                         </div>
                         {m.hasPushToken ? (
-                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
-                            ● Push
-                          </span>
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>{uiText(" ● Push ")}</span>
                         ) : (
-                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
-                            Pending
-                          </span>
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{uiText(" Pending ")}</span>
                         )}
                         {m.phone && (
                           <a
@@ -1470,7 +1462,7 @@ export function AdminNotifications() {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. How to use AE 🚀 or Weekend Bonus Deals!"
+                placeholder={uiText("e.g. How to use AE 🚀 or Weekend Bonus Deals!")}
                 maxLength={90}
                 style={{ width: '100%', fontSize: '14px', padding: '10px 14px' }}
               />
@@ -1491,7 +1483,7 @@ export function AdminNotifications() {
                 rows={3}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="e.g. Tap to watch our step-by-step video on how to earn cashback points, redeem gifts, and place instant grocery orders on WhatsApp!"
+                placeholder={uiText("e.g. Tap to watch our step-by-step video on how to earn cashback points, redeem gifts, and place instant grocery orders on WhatsApp!")}
                 maxLength={400}
                 style={{ width: '100%', fontSize: '14px', padding: '10px 14px', resize: 'vertical' }}
               />
@@ -1566,20 +1558,14 @@ export function AdminNotifications() {
                   <div style={{ padding: '10px 14px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
-                        {imageNaturalRatio ? `Aspect Ratio: ${imageNaturalRatio.toFixed(2)}:1` : 'Aspect Ratio'}
+                        {imageNaturalRatio ? `Aspect Ratio: ${imageNaturalRatio.toFixed(2)}:1` : uiText("Aspect Ratio")}
                       </span>
                       {isAutoFitted2x1 ? (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                          ✓ 2:1 Push Optimized
-                        </span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>{uiText(" ✓ 2:1 Push Optimized ")}</span>
                       ) : imageNaturalRatio && (imageNaturalRatio < 1.7 || imageNaturalRatio > 2.3) ? (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>
-                          ⚠️ Portrait/Non-2:1 (Android will crop)
-                        </span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>{uiText(" ⚠️ Portrait/Non-2:1 (Android will crop) ")}</span>
                       ) : (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600 }}>
-                          Standard 2:1
-                        </span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600 }}>{uiText(" Standard 2:1 ")}</span>
                       )}
                     </div>
 
@@ -2006,12 +1992,10 @@ export function AdminNotifications() {
                       </div>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 700 }}>Affiliate AE</span>
-                          <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>
-                            ✓ Verified
-                          </span>
+                          <span style={{ fontSize: '14px', fontWeight: 700 }}>{uiText("Affiliate AE")}</span>
+                          <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>{uiText(" ✓ Verified ")}</span>
                         </div>
-                        <span style={{ fontSize: '11px', opacity: 0.85, display: 'block' }}>Official Business Account</span>
+                        <span style={{ fontSize: '11px', opacity: 0.85, display: 'block' }}>{uiText("Official Business Account")}</span>
                       </div>
                     </div>
                     <div style={{ fontSize: '18px', opacity: 0.85 }}>⋮</div>
@@ -2042,9 +2026,7 @@ export function AdminNotifications() {
                           boxShadow: '0 1px 1px rgba(11,20,26,0.1)',
                           textTransform: 'uppercase',
                         }}
-                      >
-                        Today
-                      </span>
+                      >{uiText(" Today ")}</span>
                     </div>
 
                     {/* WhatsApp Incoming White Message Bubble */}
@@ -2070,13 +2052,13 @@ export function AdminNotifications() {
                           lineHeight: 1.3,
                         }}
                       >
-                        {title || 'offers'}
+                        {title || uiText("offers")}
                       </div>
 
                       {/* Recipient Salutation (only if body does not already include greeting) */}
                       {!body.trim().startsWith('പ്രിയപ്പെട്ട') && !body.trim().startsWith('Dear') && (
                         <div style={{ fontWeight: 700, fontSize: '13px', color: '#111b21', marginBottom: '8px' }}>
-                          പ്രിയപ്പെട്ട {selectedCustomers[0]?.name || selectedMerchants[0]?.name || 'Rasheed'},
+                          പ്രിയപ്പെട്ട {selectedCustomers[0]?.name || selectedMerchants[0]?.name || "Rasheed"},
                         </div>
                       )}
 
@@ -2167,9 +2149,7 @@ export function AdminNotifications() {
                         fontSize: '12px',
                         color: '#8696a0',
                       }}
-                    >
-                      Type a message
-                    </div>
+                    >{uiText(" Type a message ")}</div>
                     <span style={{ fontSize: '16px', color: '#54656f' }}>🎤</span>
                   </div>
                 </div>
@@ -2214,8 +2194,8 @@ export function AdminNotifications() {
                         <div style={{ width: 22, height: 22, borderRadius: 6, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '11px' }}>
                           AE
                         </div>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Affiliate AE</span>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>• Just now</span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>{uiText("Affiliate AE")}</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>{uiText("• Just now")}</span>
                       </div>
                     </div>
 

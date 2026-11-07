@@ -171,7 +171,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
         <CustomerLocationBar compact />
-        <Link to="/customer/profile" aria-label="Profile"><User size={24} /></Link>
+        <Link to="/customer/profile" aria-label={uiText("Profile")}><User size={24} /></Link>
         <Link to="/customer/notifications" className="relative text-gray-800">
           <Bell size={24} />
           <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-[1.5px] border-white"></span>
@@ -184,7 +184,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
         <div className="customer-modern-greeting flex items-center justify-between gap-2 pt-1">
           <div className="min-w-0">
             <h2 className="text-[20px] font-bold text-gray-900 flex items-center gap-1.5 leading-tight">
-              {uiText("Hi, ")}{user.name?.split(' ')[0] || user.phone || 'User'}! <span className="text-[20px]">👋</span>
+              {uiText("Hi, ")}{user.name?.split(' ')[0] || user.phone || uiText("User")}! <span className="text-[20px]">👋</span>
             </h2>
             <button
               type="button"
@@ -256,7 +256,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
               <div>
                 <span className="text-xs font-bold text-sky-300 block">
-                  {offers[activeAdSlide]?.merchant_name || 'AE Partner Store'}
+                  {offers[activeAdSlide]?.merchant_name || uiText("AE Partner Store")}
                 </span>
                 <h3 className="text-sm font-black tracking-tight text-white line-clamp-1 mt-0.5">
                   {offers[activeAdSlide]?.title || uiText("Special Offers & Deals")}
@@ -388,14 +388,12 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-xs">
-                      {tag}
+                      {uiText(tag)}
                     </span>
-                    <span className="absolute bottom-1.5 left-2 text-[10px] text-cyan-300 font-bold">
-                      📍 Nearby
-                    </span>
+                    <span className="absolute bottom-1.5 left-2 text-[10px] text-cyan-300 font-bold">{uiText(" 📍 Nearby ")}</span>
                   </div>
                   <div className="p-2.5 space-y-1">
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight line-clamp-1">{offer.merchant_name || 'AE Partner Store'}</h4>
+                    <h4 className="font-bold text-xs text-slate-900 leading-tight line-clamp-1">{offer.merchant_name || uiText("AE Partner Store")}</h4>
                     <p className="text-[11px] text-gray-500 line-clamp-1 font-medium">{offer.title}</p>
                     <div className="flex items-center justify-between text-[10px] pt-1 border-t border-gray-100 text-blue-600 font-bold">
                       <span>{uiText("View Deal")}</span>
@@ -451,17 +449,17 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-xs">
-                      {tag}
+                      {uiText(tag)}
                     </span>
                     <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-cyan-300 px-1.5 py-0.5 rounded-md text-[9px] font-bold">
-                      📍 {offer.distance ? `${offer.distance.toFixed(1)} km` : 'Chittur'}
+                      📍 {offer.distance ? `${offer.distance.toFixed(1)} km` : uiText("Chittur")}
                     </span>
                     <div className="absolute bottom-1.5 left-2 right-2">
-                      <h4 className="font-bold text-xs text-white leading-tight line-clamp-1">{offer.merchant_name || 'AE Partner Store'}</h4>
+                      <h4 className="font-bold text-xs text-white leading-tight line-clamp-1">{offer.merchant_name || uiText("AE Partner Store")}</h4>
                     </div>
                   </div>
                   <div className="p-2.5 flex items-center justify-between text-[10px] bg-white border-t border-gray-50">
-                    <span className="text-gray-500 truncate max-w-[95px]">{offer.merchant_address || 'Main Road'}</span>
+                    <span className="text-gray-500 truncate max-w-[95px]">{offer.merchant_address || "Main Road"}</span>
                     <span className="text-blue-600 font-bold">{uiText("View →")}</span>
                   </div>
                 </div>
@@ -557,7 +555,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                       <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
                       <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                        {tag}
+                        {uiText(tag)}
                       </span>
                     </div>
                     <div className="p-2.5 flex-1 flex flex-col justify-between">
@@ -566,12 +564,12 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                           {offer.title}
                         </h4>
                         <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-blue-600">
-                          {offer.merchant_name || 'AE Partner Store'}
+                          {offer.merchant_name || uiText("AE Partner Store")}
                         </p>
                       </div>
                       <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
                         <span className="text-gray-500 truncate max-w-[90px]">
-                          {offer.merchant_address || 'Chittur'}
+                          {offer.merchant_address || uiText("Chittur")}
                         </span>
                         <span className="text-blue-600 font-bold group-hover:translate-x-0.5 transition-transform">
                           {uiText("View →")}
@@ -636,16 +634,16 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                      {tag}
+                      {uiText(tag)}
                     </span>
                   </div>
                   <div className="p-2.5 flex-1 flex flex-col justify-between">
                     <div>
                       <h4 className="line-clamp-1 text-xs font-bold text-gray-900">{offer.title}</h4>
-                      <p className="line-clamp-1 text-[11px] font-semibold text-blue-600 mt-0.5">{offer.merchant_name || 'AE Partner Store'}</p>
+                      <p className="line-clamp-1 text-[11px] font-semibold text-blue-600 mt-0.5">{offer.merchant_name || uiText("AE Partner Store")}</p>
                     </div>
                     <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
-                      <span className="text-gray-500 truncate max-w-[110px]">{offer.merchant_address || 'Main Road'}</span>
+                      <span className="text-gray-500 truncate max-w-[110px]">{offer.merchant_address || "Main Road"}</span>
                       <span className="text-blue-600 font-bold">{uiText("View →")}</span>
                     </div>
                   </div>
@@ -699,7 +697,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                      {tag}
+                      {uiText(tag)}
                     </span>
                     <button
                       type="button"
@@ -717,12 +715,12 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                         {offer.title}
                       </h4>
                       <p className="mt-0.5 line-clamp-1 text-[10px] text-gray-500 font-medium">
-                        {offer.merchant_name || 'AE Partner Store'}
+                        {offer.merchant_name || uiText("AE Partner Store")}
                       </p>
                     </div>
                     <div className="mt-2 pt-1 border-t border-rose-50 flex items-center justify-between text-[10px]">
                       <span className="text-blue-600 font-bold">
-                        {tag}
+                        {uiText(tag)}
                       </span>
                       <span className="text-rose-600 font-bold group-hover:translate-x-0.5 transition-transform">
                         {uiText("View →")}
@@ -752,7 +750,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <div className="min-w-0">
               <div className="flex items-baseline gap-1 leading-none">
                 <span className="text-sm font-black text-white tracking-tight">{isLoading ? '...' : formattedPoints}</span>
-                <span className="text-[9px] font-black text-cyan-300 uppercase tracking-wide">PTS</span>
+                <span className="text-[9px] font-black text-cyan-300 uppercase tracking-wide">{uiText("PTS")}</span>
               </div>
               <span className="text-[9px] text-sky-200/80 font-medium block mt-0.5">
                 {uiText("Available Balance")}
@@ -814,7 +812,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 {uiText("Earn Points On Purchase")}
               </span>
               <h3 className="text-lg font-black text-gray-900">{uiText("My Claim QR Code")}</h3>
-              <p className="text-xs text-gray-500 font-medium">{user.full_name || user.phone || 'AE Customer'}</p>
+              <p className="text-xs text-gray-500 font-medium">{user.full_name || user.phone || uiText("AE Customer")}</p>
             </div>
 
             {/* QR Code Container */}
@@ -879,7 +877,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 type="button"
                 onClick={() => setHowToUseOpen(false)}
                 className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors cursor-pointer"
-                aria-label="Close"
+                aria-label={uiText("Close")}
               >
                 <X size={16} />
               </button>

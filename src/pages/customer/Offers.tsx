@@ -290,7 +290,7 @@ export function CustomerOffers() {
 
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <p className="font-semibold text-[13px] text-gray-700 leading-tight">
-                      {uiText("at ")}{offer.merchant_raw_name || offer.merchant_name || 'Store'}
+                      {uiText("at ")}{offer.merchant_raw_name || offer.merchant_name || uiText("Store")}
                     </p>
                     {dist != null && Number.isFinite(dist) && dist < 100 && (
                       <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">

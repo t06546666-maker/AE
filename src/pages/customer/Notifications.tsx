@@ -170,7 +170,7 @@ export function CustomerNotifications() {
                   </p>
                   <p className="text-xs text-gray-600 mt-0.5">
                     {Number(item.points).toLocaleString('en-IN')}{uiText(" points ")}
-                    {item.type !== 'redeem' ? uiText("earned") : uiText("redeemed")} · {item.merchant_name || 'AE Merchant'}
+                    {item.type !== 'redeem' ? uiText("earned") : uiText("redeemed")} · {item.merchant_name || uiText("AE Merchant")}
                   </p>
                   {item.reason && <p className="text-xs text-gray-500 mt-0.5">{uiText('Reason')}: {item.reason}</p>}
                   {item.type === 'bonus' && (

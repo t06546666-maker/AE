@@ -273,7 +273,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
               <Link to={`/orders?search=${order.orderNo}`} key={order.id} className="mobile-transaction-item" style={{ textDecoration: 'none' }}>
                 <div className="mobile-transaction-avatar blue">{initials(order.customer || '?')}</div>
                 <div className="mobile-transaction-info">
-                  <h4>{order.customer || 'Walk-in Customer'}</h4>
+                  <h4>{order.customer || uiText("Walk-in Customer")}</h4>
                   <p>{formatDate(order.timestamp)} • {formatTime(order.timestamp)}</p>
                 </div>
                 <div className="mobile-transaction-amount">
@@ -336,7 +336,7 @@ export function Dashboard({ user }: { user: UserProfile }) {
               <div className="mobile-transaction-item" key={customer.id}>
                 <div className={`mobile-transaction-avatar ${index === 0 ? 'green' : index === 1 ? 'pink' : 'blue'}`}>{index + 1}</div>
                 <div className="mobile-transaction-info">
-                  <h4>{customer.name || 'Walk-in Customer'}</h4>
+                  <h4>{customer.name || uiText("Walk-in Customer")}</h4>
                   <p>{customer.orderCount || 1} {t('dashboard.orders', 'orders')} • ₹{formatCurrency(customer.totalSpend || 0)}</p>
                 </div>
                 <div className="mobile-transaction-amount">

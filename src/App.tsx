@@ -1,3 +1,4 @@
+import {uiText} from "./uiText";
 import {counterToken} from './counterApi';
 import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
@@ -91,9 +92,9 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
     if (!this.state.error) return this.props.children;
     return (
       <div className="state-panel error-state page-crash-state">
-        <strong>This page could not load.</strong>
-        <span>{this.state.error.message || 'An unexpected display error occurred.'}</span>
-        <button className="button primary" onClick={() => window.location.reload()}>Reload page</button>
+        <strong>{uiText("This page could not load.")}</strong>
+        <span>{this.state.error.message || uiText("An unexpected display error occurred.")}</span>
+        <button className="button primary" onClick={() => window.location.reload()}>{uiText("Reload page")}</button>
       </div>
     );
   }
@@ -108,7 +109,7 @@ function StartupFallback({ message = 'Opening AE…' }: { message?: string }) {
 }
 
 function RouteFallback() {
-  return <div className="state-panel" role="status"><span>Loading this screen…</span></div>;
+  return <div className="state-panel" role="status"><span>{uiText("Loading this screen…")}</span></div>;
 }
 
 export function App() {
@@ -357,7 +358,7 @@ export function App() {
   }
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Suspense fallback={<StartupFallback />}><LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation></Suspense>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
-  if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
+  if (restoreError && !user) return <div className="state-panel error-state"><strong>{uiText("Your saved session has been kept.")}</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>{uiText("Retry connection")}</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>{uiText("Sign out")}</button></div>;
   if (!user) {
     if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={null} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
     return (
@@ -388,7 +389,7 @@ export function App() {
   if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={user} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
   if (user.role === 'staff' || user.role === 'account_head') return <Navigate to={user.role==='account_head'?'/accounts':'/expenses'} replace/>;
   if (location.pathname === '/field' && user.role !== 'field_manager') {
-    return <div className="state-panel"><h1>Field Manager portal</h1><p>You are signed in as {user.role}. Sign out here to use a field manager account, or open /field in a separate browser profile.</p><button className="button primary" onClick={logout}>Sign out to Field Manager Login</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>Back to my dashboard</button></div>;
+    return <div className="state-panel"><h1>{uiText("Field Manager portal")}</h1><p>{uiText("You are signed in as ")}{user.role}{uiText(". Sign out here to use a field manager account, or open /field in a separate browser profile.")}</p><button className="button primary" onClick={logout}>{uiText("Sign out to Field Manager Login")}</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>{uiText("Back to my dashboard")}</button></div>;
   }
 
   if (user.role === 'customer') {

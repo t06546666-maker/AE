@@ -47,8 +47,8 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
               <option value="ml">മ</option>
             </select>
           </label>
-          <span className="role-pill merchant">{t('layout.customer') || 'Customer'}</span>
-          <span className="topbar-user">{user.full_name || user.phone || 'Customer'}</span>
+          <span className="role-pill merchant">{t('layout.customer') || uiText("Customer")}</span>
+          <span className="topbar-user">{user.full_name || user.phone || uiText("Customer")}</span>
           <button className="button secondary signout" onClick={onLogout}><LogOut size={15} />{t('layout.signOut')}</button>
         </div>
       </header>

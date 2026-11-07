@@ -289,7 +289,7 @@ export function CustomerExplore() {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2>
-                <p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p>
+                <p className="text-sm text-gray-500">{detailMerchant.category || uiText("AE Merchant")}</p>
                 <p className="mt-1 text-sm font-bold text-[#3158f5]">
                   {distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'}{uiText(" km away")}
                 </p>

@@ -1,3 +1,4 @@
+import {uiText} from "../uiText";
 import { useDeferredValue, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -363,8 +364,8 @@ export function QrCommon() {
           <label>
             {t('Boldness', 'അക്ഷരങ്ങളുടെ കനം')}
             <select disabled={busy} value={weight} onChange={e => setWeight(Number(e.target.value))}>
-              <option value={700}>Bold</option>
-              <option value={900}>Extra bold</option>
+              <option value={700}>{uiText("Bold")}</option>
+              <option value={900}>{uiText("Extra bold")}</option>
             </select>
           </label>
 

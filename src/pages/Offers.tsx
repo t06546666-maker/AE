@@ -359,9 +359,9 @@ export function Offers({ user }: { user: UserProfile }) {
                             try { await downloadExport(`/api/offers/${encodeURIComponent(offer.id)}/image`); }
                             catch (error) { showToast(error instanceof Error ? error.message : 'Could not download the submitted image.', 'error'); }
                             finally { setDownloadingOfferId(null); }
-                          }}><Download size={16} />{downloadingOfferId === offer.id ? 'Downloading…' : 'Download submitted image'}</button>
+                          }}><Download size={16} />{downloadingOfferId === offer.id ? uiText("Downloading…") : uiText("Download submitted image")}</button>
                           <label className="button secondary" style={{ cursor: 'pointer' }}>
-                            <Upload size={16} />{replaceOfferImage.isPending ? 'Uploading…' : 'Upload enhanced image'}
+                            <Upload size={16} />{replaceOfferImage.isPending ? uiText("Uploading…") : uiText("Upload enhanced image")}
                             <input type="file" accept="image/jpeg,image/png,image/webp" disabled={replaceOfferImage.isPending} style={{ display: 'none' }} onChange={async (event) => {
                               const file = event.target.files?.[0];
                               if (file) { const opt = await optimizeImageForUpload(file, 1600, 0.85); replaceOfferImage.mutate({ offer, file: opt }); }

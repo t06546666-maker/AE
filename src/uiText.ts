@@ -7,6 +7,8 @@ export function uiText(value: string | number | undefined, values: Record<string
   const key=`ui.${normalized}`;
   // Variable chart labels must use stable translation keys, not English-only
   // keys containing a different number for every week/reporting period.
+  const minimumBill = /^This shop requires a bill of at least ₹([\d,.]+) for redemption\.$/.exec(normalized);
+  if (minimumBill) return uiText('This shop requires a bill of at least ₹{{amount}} for redemption.', { amount: minimumBill[1] });
   const week = /^Week (\d+)$/.exec(normalized);
   if (week) return uiText('Week {{count}}', { count: week[1] });
   const comparison = /^vs first (\d+) days of last month$/.exec(normalized);
