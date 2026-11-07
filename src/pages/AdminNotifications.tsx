@@ -32,6 +32,7 @@ import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/
 import { useToast } from '../toast';
 import { uiText } from '../uiText';
 import { formatDateTime } from '../utils';
+import { MilestoneVoucherCard } from '../components/MilestoneVoucherCard';
 
 interface NotificationStats {
   customerTokens: number;
@@ -161,7 +162,7 @@ export function AdminNotifications() {
   const [url, setUrl] = useState('');
   const [pushOnly, setPushOnly] = useState(false);
   const [sendWhatsApp, setSendWhatsApp] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'whatsapp' | 'push'>('whatsapp');
+  const [previewTab, setPreviewTab] = useState<'whatsapp' | 'better_ui' | 'push'>('whatsapp');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
@@ -1392,7 +1393,7 @@ export function AdminNotifications() {
                     setTitle('offers');
                     setPreviewTab('whatsapp');
                     setSendWhatsApp(true);
-                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യുടെ ചരിത്രത്തിലെ ആദ്യ ഇടപാട് നടത്തിയതിന് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്.\n🎁 നിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
+                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യുടെ ചരിത്രത്തിലെ ആദ്യ ഇടപാട് നടത്തിയതിന് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്. 🎁\nനിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
                   }}
                   style={{
                     background: '#fff',
@@ -1414,7 +1415,7 @@ export function AdminNotifications() {
                     setTitle('offers');
                     setPreviewTab('whatsapp');
                     setSendWhatsApp(true);
-                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യിൽ 10 ഇടപാടുകൾ പൂർത്തിയാക്കിയതിന് പ്രത്യേക സമ്മാനം! 🎁\nതുടർച്ചയായ പിന്തുണയ്ക്ക് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്.\n🎁 നിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
+                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യിൽ 10 ഇടപാടുകൾ പൂർത്തിയാക്കിയതിന് പ്രത്യേക സമ്മാനം! 🎁\nതുടർച്ചയായ പിന്തുണയ്ക്ക് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്. 🎁\nനിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
                   }}
                   style={{
                     background: '#fff',
@@ -1890,19 +1891,18 @@ export function AdminNotifications() {
             </div>
 
             {/* Preview Mode Selector Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
               <button
                 type="button"
                 onClick={() => setPreviewTab('whatsapp')}
                 style={{
-                  flex: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  padding: '9px 12px',
+                  gap: '5px',
+                  padding: '8px 6px',
                   borderRadius: '10px',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   border: previewTab === 'whatsapp' ? '2px solid #25D366' : '1px solid #cbd5e1',
@@ -1912,22 +1912,45 @@ export function AdminNotifications() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <MessageCircle size={15} style={{ color: '#25D366' }} />
-                <span>{uiText("WhatsApp Message Preview")}</span>
+                <MessageCircle size={14} style={{ color: '#25D366' }} />
+                <span>{uiText("WhatsApp View")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('better_ui')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  padding: '8px 6px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: previewTab === 'better_ui' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                  background: previewTab === 'better_ui' ? '#f0f9ff' : '#fff',
+                  color: previewTab === 'better_ui' ? '#0369a1' : '#475569',
+                  boxShadow: previewTab === 'better_ui' ? '0 2px 6px rgba(2,132,199,0.18)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Sparkles size={14} style={{ color: '#0284c7' }} />
+                <span>{uiText("Better In-App UI")}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPreviewTab('push')}
                 style={{
-                  flex: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  padding: '9px 12px',
+                  gap: '5px',
+                  padding: '8px 6px',
                   borderRadius: '10px',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   border: previewTab === 'push' ? '2px solid #2563eb' : '1px solid #cbd5e1',
@@ -1937,8 +1960,8 @@ export function AdminNotifications() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <Smartphone size={15} style={{ color: '#2563eb' }} />
-                <span>{uiText("Phone Push Preview")}</span>
+                <Smartphone size={14} style={{ color: '#2563eb' }} />
+                <span>{uiText("Push Preview")}</span>
               </button>
             </div>
 
@@ -2155,7 +2178,64 @@ export function AdminNotifications() {
                 </div>
               )}
 
-              {/* OPTION 2: PHONE PUSH NOTIFICATION PREVIEW */}
+              {/* OPTION 2: IN-APP BETTER UI VIEW (Milestone Voucher Cards) */}
+              {previewTab === 'better_ui' && (
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    borderRadius: '24px',
+                    padding: '16px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 16px 36px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '8px',
+                      borderBottom: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#0369a1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Sparkles size={14} /> {uiText("Better In-App Voucher UI")}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        background: '#e0f2fe',
+                        color: '#0369a1',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {uiText("Native App View")}
+                    </span>
+                  </div>
+
+                  <MilestoneVoucherCard
+                    customerName={selectedCustomers[0]?.name || selectedMerchants[0]?.name || "Rasheed"}
+                    milestoneTitle={title || "offers"}
+                    compact
+                  />
+                </div>
+              )}
+
+              {/* OPTION 3: PHONE PUSH NOTIFICATION PREVIEW */}
               {previewTab === 'push' && (
                 <div
                   style={{

@@ -16,6 +16,7 @@ import { CustomerAds } from '../../components/CustomerAds';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
+import { MilestoneVoucherCard } from '../../components/MilestoneVoucherCard';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const customerLocation = useCustomerLocation(true, true);
@@ -343,6 +344,14 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               </Link>
             </div>
           </div>
+        </section>
+
+        {/* 3B. Milestone Gift Vouchers Card (Better UI for 1st Transaction Gift) */}
+        <section className="pt-0.5">
+          <MilestoneVoucherCard
+            customerName={user.name?.split(' ')[0] || user.phone || 'Customer'}
+            compact
+          />
         </section>
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
