@@ -1,96 +1,125 @@
-/* Merchant Expiry & Renewal Manager Styles */
+/* Merchant Expiry & Renewal Manager Styles - Modernized UI */
 
 .expiry-manager-wrapper {
   max-width: 1200px;
   margin: 0 auto;
   padding: 16px 20px 80px;
+  box-sizing: border-box;
 }
 
+/* 1. KERALA MVD STATUTORY TARIFF NOTICE */
 .expiry-category-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1px solid #a7f3d0;
-  border-radius: 16px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%);
+  border: 1.5px solid #a7f3d0;
+  border-radius: 18px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
 }
 
 .expiry-category-notice-content {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.expiry-category-badge {
-  background: #059669;
-  color: white;
+@media (min-width: 768px) {
+  .expiry-category-notice-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+.expiry-gov-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #065f46;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 5px 12px;
+  border-radius: 10px;
   white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(6, 95, 70, 0.25);
+  align-self: flex-start;
 }
 
-.expiry-category-notice p {
+.expiry-gov-badge .gov-seal {
+  font-size: 14px;
+}
+
+.expiry-gov-text strong {
+  display: block;
+  font-size: 13px;
+  color: #064e3b;
+  margin-bottom: 2px;
+}
+
+.expiry-gov-text p {
   margin: 0;
   font-size: 12px;
-  color: #065f46;
-  font-weight: 600;
-  line-height: 1.4;
+  color: #047857;
+  line-height: 1.45;
+  font-weight: 500;
 }
 
-/* Stats Cards */
+/* 2. STATS SUMMARY CARDS */
 .expiry-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
 
 .expiry-stat-card {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 16px 18px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .expiry-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
 .expiry-stat-info h4 {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .expiry-stat-info .stat-value {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
   color: #0f172a;
-  margin-top: 4px;
+  margin: 4px 0 2px;
   line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.expiry-stat-info .stat-subtext {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
 }
 
 .expiry-stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -98,21 +127,22 @@
 
 .expiry-stat-icon.blue { background: #eff6ff; color: #2563eb; }
 .expiry-stat-icon.amber { background: #fffbeb; color: #d97706; }
-.expiry-stat-icon.rose { background: #fff1f2; color: #e11d48; }
-.expiry-stat-icon.emerald { background: #ecfdf5; color: #059669; }
+.expiry-stat-icon.orange { background: #fff7ed; color: #ea580c; }
+.expiry-stat-icon.rose { background: #fef2f2; color: #dc2626; }
 
-/* Filter Toolbar */
+/* 3. TOOLBAR & FILTERS */
 .expiry-toolbar {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   margin-bottom: 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .expiry-toolbar-left {
@@ -128,12 +158,18 @@
   align-items: center;
   gap: 8px;
   background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
   padding: 8px 12px;
   min-width: 240px;
   flex: 1;
-  max-width: 320px;
+  max-width: 360px;
+  transition: border-color 0.15s;
+}
+
+.expiry-search-box:focus-within {
+  border-color: #2563eb;
+  background: #ffffff;
 }
 
 .expiry-search-box input {
@@ -143,34 +179,33 @@
   font-size: 13px;
   color: #0f172a;
   width: 100%;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .expiry-select-filter {
   background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 700;
-  color: #1e293b;
+  color: #334155;
   outline: none;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
-.expiry-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.expiry-select-filter:focus {
+  border-color: #2563eb;
 }
 
-/* Table Container */
+/* 4. TABLE & NUMBER PLATES */
 .expiry-table-card {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .expiry-table {
@@ -181,56 +216,96 @@
 
 .expiry-table th {
   background: #f8fafc;
-  padding: 12px 16px;
+  padding: 12px 18px;
   font-size: 11px;
   font-weight: 800;
-  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  border-bottom: 1.5px solid #e2e8f0;
 }
 
 .expiry-table td {
-  padding: 14px 16px;
-  font-size: 13px;
-  color: #1e293b;
+  padding: 14px 18px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
 
-.expiry-table tr:hover td {
-  background: #fbfcfe;
+.expiry-table tbody tr:hover {
+  background: #fafafa;
 }
 
-.reg-number-pill {
+/* Authentic Kerala IND Number Plates */
+.kerala-plate-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #f1f5f9;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 3px 8px;
-  font-family: monospace;
-  font-size: 12px;
-  font-weight: 800;
+  align-items: stretch;
+  border: 1.5px solid #0f172a;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: 'Arial Black', -apple-system, BlinkMacSystemFont, sans-serif;
+  user-select: none;
+}
+
+.kerala-plate-badge.private {
+  background: #ffffff;
   color: #0f172a;
+}
+
+.kerala-plate-badge.commercial {
+  background: #fde047;
+  color: #0f172a;
+}
+
+.plate-ind {
+  background: #1e3a8a;
+  color: #ffffff;
+  padding: 3px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plate-ind-text {
+  font-size: 8px;
+  font-weight: 900;
   letter-spacing: 0.5px;
 }
 
+.plate-num {
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.govt-tariff-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-top: 3px;
+}
+
+/* Status Pills */
 .expiry-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 9999px;
+  gap: 5px;
   font-size: 11px;
   font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
   white-space: nowrap;
 }
 
 .expiry-status-pill.valid {
   background: #ecfdf5;
-  color: #047857;
+  color: #059669;
   border: 1px solid #a7f3d0;
 }
 
@@ -243,40 +318,47 @@
 .expiry-status-pill.urgent {
   background: #fff7ed;
   color: #c2410c;
-  border: 1px solid #ffedd5;
-  animation: pulseWarning 2s infinite;
+  border: 1px solid #fed7aa;
+  animation: pulseUrgent 2s infinite ease-in-out;
 }
 
 .expiry-status-pill.expired {
   background: #fef2f2;
-  color: #b91c1c;
+  color: #dc2626;
   border: 1px solid #fecaca;
+  font-weight: 900;
 }
 
-@keyframes pulseWarning {
+@keyframes pulseUrgent {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.75; }
 }
 
+/* Remind Action Button */
 .wa-remind-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: #25D366;
-  color: white;
-  border: 0;
-  border-radius: 10px;
-  padding: 6px 12px;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.28);
+  transition: all 0.15s ease;
 }
 
 .wa-remind-btn:hover {
   background: #1eb956;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.38);
+}
+
+.wa-remind-btn:active {
+  transform: scale(0.97);
 }
 
 .wa-remind-btn.reminded {
@@ -286,11 +368,11 @@
   border: 1px solid #cbd5e1;
 }
 
-/* Modals */
+/* 5. MODAL OVERLAY & FORMS */
 .expiry-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -300,42 +382,38 @@
 }
 
 .expiry-modal-box {
-  background: white;
+  background: #ffffff;
   border-radius: 24px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
   padding: 24px;
+  box-sizing: border-box;
+}
+
+.expiry-modal-box.wa-dialog-box {
+  max-width: 440px;
+  padding: 20px;
 }
 
 .expiry-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 20px;
-}
-
-.expiry-modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
 }
 
 .expiry-form-group {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .expiry-form-group label {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   color: #475569;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -356,13 +434,13 @@
 .expiry-form-group input:focus,
 .expiry-form-group select:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .expiry-chip-group {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .expiry-quick-chip {
@@ -377,23 +455,159 @@
   transition: all 0.15s ease;
 }
 
-.expiry-quick-chip.active {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  color: #1d4ed8;
+.expiry-quick-chip:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
 }
 
-/* WhatsApp Message Bubble in Modal */
-.wa-preview-bubble {
-  background: #e7ffdb;
-  border-radius: 12px 12px 2px 12px;
+/* 6. WHATSAPP CHAT PHONE CONTAINER ("OUR VIEW") */
+.wa-lang-switch {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 2px;
+  border: 1px solid #e2e8f0;
+}
+
+.wa-lang-btn {
+  background: none;
+  border: none;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.wa-lang-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.wa-phone-container {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #d1d7db;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-topbar {
+  background: #008069;
+  color: #ffffff;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wa-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #008069;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wa-verified-badge {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.wa-wallpaper {
+  background-color: #efeae2;
+  background-image: radial-gradient(#d6cdc0 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
   padding: 14px;
-  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-today-pill {
+  align-self: center;
+  background: #ffffff;
+  color: #54656f;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 1px rgba(11, 20, 26, 0.1);
+  margin-bottom: 10px;
+}
+
+/* Message Bubble matching user's screenshot */
+.wa-chat-bubble {
+  background: #ffffff;
+  border-radius: 12px 12px 12px 2px;
+  padding: 12px 14px;
+  max-width: 95%;
+  align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(11, 20, 26, 0.15);
+  border: 1px solid #e9edef;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: #111b21;
-  border: 1px solid #d0f0c0;
-  white-space: pre-line;
+}
+
+.wa-bubble-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: #111b21;
+  margin-bottom: 6px;
+}
+
+.wa-bubble-content {
+  font-size: 13px;
+  color: #111b21;
+  line-height: 1.5;
   word-break: break-word;
 }
 
+.wa-bubble-time {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 10px;
+  color: #667781;
+  margin-top: 6px;
+}
+
+.wa-bubble-time .ticks {
+  color: #53bdeb;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: -2px;
+}
+
+/* Toast */
+.expiry-toast-pill {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #38bdf8;
+  padding: 10px 22px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

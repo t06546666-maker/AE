@@ -26,6 +26,7 @@ import {
   Check,
   Plus,
   MessageCircle,
+  CalendarClock,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
@@ -617,6 +618,64 @@ export function AdminNotifications() {
           </div>
         }
       />
+
+      {/* Shortcut Card to Vehicle Pollution & Expiry Manager */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #091e3a 0%, #0d3266 100%)',
+          color: '#ffffff',
+          borderRadius: '18px',
+          padding: '14px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '14px',
+          boxShadow: '0 6px 18px rgba(9, 30, 58, 0.25)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '12px', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <CalendarClock size={24} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#f8fafc' }}>
+                {uiText("Vehicle Pollution & Expiry Manager")}
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: 800, background: '#059669', color: '#ecfdf5', padding: '2px 8px', borderRadius: '6px' }}>
+                {uiText("MVD Kerala Statutory Mode")}
+              </span>
+            </div>
+            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#bae6fd', lineHeight: 1.4 }}>
+              {uiText("Manage vehicle testing logs (2W ₹100, 4W ₹120, Diesel ₹150), filter by expiry month, export/import Excel, and send automated WhatsApp reminders.")}
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="/expiry-reminders"
+          style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: 800,
+            padding: '10px 18px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
+            transition: 'transform 0.15s ease',
+          }}
+        >
+          <span>🚗 {uiText("Open Pollution Manager")}</span>
+          <span style={{ fontSize: '14px' }}>→</span>
+        </a>
+      </div>
 
       <MerchantReminderStatus/>
 

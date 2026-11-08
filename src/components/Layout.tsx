@@ -18,6 +18,7 @@ import '../merchant-shell-fixes.css';
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
+  ['/expiry-reminders', 'Pollution & Expiry', CalendarClock],
   ['/admin/banners', 'Ad Banners', ImagePlus],
   ['/admin/notifications', 'Push Notifications', Bell],
   ['/qr-common', 'QR Common', QrCode],

@@ -399,14 +399,14 @@ export function App() {
         <PageErrorBoundary key={location.pathname}>
           <Suspense fallback={<RouteFallback />}><Routes>
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
-            <Route path="/customer/explore" element={<CustomerExplore />} />
+            <Route path="/customer/explore" element={<CustomerExplore userId={user.id} />} />
             <Route path="/customer/scan" element={<Navigate to="/customer/shop-scan" replace />} />
             <Route path="/customer/shop-scan" element={<CustomerShopScan key={location.search} user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="/customer/favorites" element={<CustomerFavorites />} />
             <Route path="/customer/transactions" element={<CustomerTransactions user={user} />} />
-            <Route path="/customer/offers" element={<CustomerOffers />} />
+            <Route path="/customer/offers" element={<CustomerOffers userId={user.id} />} />
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
             <Route path="/customer/referral" element={<CustomerReferral user={user} />} />
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
@@ -433,7 +433,8 @@ export function App() {
           <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
           <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
-          <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager user={user} /></RoleRoute>} />
+          <Route path="/expiry-reminders" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/admin/pollution-expiry" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
