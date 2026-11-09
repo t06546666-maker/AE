@@ -20,8 +20,11 @@ async function run(){
   assert.equal((await call('/api/merchant/counter-staff')).status,401);assert.equal((await call('/api/merchant/counter-staff','GET',undefined,{...owner,'x-role':'admin'})).status,403);
   assert.equal((await call('/api/customer/shop-requests','POST',{merchantId:shopA},customer)).data.legacy,true);
   await db.collection('ae_shop_qr').doc(shopA).set({token:'qr-token'});
-  let response=await call('/api/merchant/counter-staff','POST',{name:'Counter One',phone:'9999999999',temporaryPassword:'Temporary1'},owner);assert.equal(response.status,201);const staffId=response.data.staff.id;assert.equal('hash' in response.data.staff,false);assert.equal((await call('/api/merchant/counter-staff/settings','PUT',{enabled:true},owner)).status,400);
+  let response=await call('/api/merchant/counter-staff','POST',{name:'Counter One',phone:'9999999999',temporaryPassword:'Temporary1'},owner);assert.equal(response.status,201);const staffId=response.data.staff.id;assert.equal(response.data.staff.enabled,false);assert.equal('hash' in response.data.staff,false);assert.equal((await call('/api/merchant/counter-staff/settings','PUT',{enabled:true},owner)).status,400);
   assert.equal((await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:false},{'x-owner':shopB})).status,400);
+  response=await call('/api/counter/login','POST',{phone:'9999999999',password:'Temporary1'});assert.equal(response.status,403);assert.match(response.data.error,/not activated/);
+  assert.equal((await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:true},{'x-owner':shopB})).status,400);
+  assert.equal((await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:true},owner)).status,200);const activeVersion=db.rows.get('ae_counter_staff/'+staffId).version;assert.equal((await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:true},owner)).status,200);assert.equal(db.rows.get('ae_counter_staff/'+staffId).version,activeVersion);
   response=await call('/api/counter/login','POST',{phone:'9999999999',password:'Temporary1'});assert.equal(response.status,200);let token=response.data.token;let staffHeaders={Authorization:'Bearer '+token};
   assert.equal((await call('/api/counter/requests','GET',undefined,staffHeaders)).status,403);
   response=await call('/api/counter/password','POST',{currentPassword:'Temporary1',password:'ChangedPassword1'},staffHeaders);assert.equal(response.status,200);token=response.data.token;staffHeaders={Authorization:'Bearer '+token};
@@ -49,7 +52,7 @@ async function run(){
   await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:true},owner);assert.equal((await call('/api/counter/me','GET',undefined,staffHeaders)).status,401);
   await call('/api/merchant/counter-staff/'+staffId,'PATCH',{temporaryPassword:'ResetPassword1'},owner);assert.equal((await call('/api/counter/login','POST',{phone:'9999999999',password:'ChangedPassword1'})).status,401);assert.equal((await call('/api/counter/login','POST',{phone:'9999999999',password:'ResetPassword1'})).status,200);
   assert.throws(()=>assertDecision({merchantId:shopA,counterFlow:true,status:'pending',expiresAt:Date.now()-1,revision:1},shopA,1,Date.now()));
-  console.log('PASS: account isolation, password hashing/change/reset, immediate revoke, owner-only rules, customer corrections, stale revision, duplicate and concurrent confirmation, cancellation without points, immutable merchant activity and pending payment semantics');
+  console.log('PASS: inactive-by-default staff, merchant-only activation, idempotent activation, account isolation, password hashing/change/reset, immediate revoke, owner-only rules, customer corrections, stale revision, duplicate and concurrent confirmation, cancellation without points, immutable merchant activity and pending payment semantics');
  }finally{await new Promise(resolve=>server.close(resolve));}
 }
 run().catch(error=>{console.error(error);process.exitCode=1});
