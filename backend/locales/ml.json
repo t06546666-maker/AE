@@ -3221,5 +3221,6 @@
   "ui.Sample bill amount (₹)": "ഉദാഹരണ ബിൽ തുക (₹)",
   "ui.Enter the sample amount and complete the rules to preview.": "പ്രിവ്യൂ കാണാൻ ഉദാഹരണ തുകയും നിയമങ്ങളും നൽകുക.",
   "ui.Updating preview…": "പ്രിവ്യൂ പുതുക്കുന്നു…",
-  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "ഇത് ഉദാഹരണം മാത്രമാണ്. ഇടപാട് സേവ് ചെയ്യുകയോ പോയിന്റുകൾ മാറ്റുകയോ ഇല്ല. യഥാർത്ഥ റിഡംപ്ഷന് ഉപഭോക്താവിന് 100 പോയിന്റുകൾ ഉണ്ടായിരിക്കണം."
+  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "ഇത് ഉദാഹരണം മാത്രമാണ്. ഇടപാട് സേവ് ചെയ്യുകയോ പോയിന്റുകൾ മാറ്റുകയോ ഇല്ല. യഥാർത്ഥ റിഡംപ്ഷന് ഉപഭോക്താവിന് 100 പോയിന്റുകൾ ഉണ്ടായിരിക്കണം.",
+  "ui.Transaction details": "ഇടപാട് വിശദാംശങ്ങൾ"
 }
