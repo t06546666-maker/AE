@@ -3124,5 +3124,6 @@
   "ui.Sample bill amount (₹)": "Sample bill amount (₹)",
   "ui.Enter the sample amount and complete the rules to preview.": "Enter the sample amount and complete the rules to preview.",
   "ui.Updating preview…": "Updating preview…",
-  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points."
+  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.",
+  "ui.Transaction details": "Transaction details"
 }
