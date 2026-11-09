@@ -3098,5 +3098,17 @@
   "ui.The smallest bill allowed for point redemption. For example, ₹100 allows redemption on bills of ₹100 or more. This minimum does not apply to earning points only.": "The smallest bill allowed for point redemption. For example, ₹100 allows redemption on bills of ₹100 or more. This minimum does not apply to earning points only.",
   "ui.Example: ₹500 bill, 10 points per ₹100 and 5% discount. Redeeming 100 points gives ₹25 off, leaving ₹475 to pay, and earns 50 new points.": "Example: ₹500 bill, 10 points per ₹100 and 5% discount. Redeeming 100 points gives ₹25 off, leaving ₹475 to pay, and earns 50 new points.",
   "ui.Staff confirms the bill amount, not whether payment was received. Staff cannot change your points or discount rules.": "Staff confirms the bill amount, not whether payment was received. Staff cannot change your points or discount rules.",
-  "ui.Example calculation": "Example calculation"
+  "ui.Example calculation": "Example calculation",
+  "ui.Transaction history": "Transaction history",
+  "ui.View transaction history": "View transaction history",
+  "ui.No staff transactions yet.": "No staff transactions yet.",
+  "ui.Load older transactions": "Load older transactions",
+  "ui.No matching records on this page. Load older activity.": "No matching records on this page. Load older activity.",
+  "ui.Earn only — no redemption discount": "Earn only — no redemption discount",
+  "ui.Redeem 100 points + earn": "Redeem 100 points + earn",
+  "ui.Purchase reference": "Purchase reference",
+  "ui.Checkout choice": "Checkout choice",
+  "ui.Review checkout": "Review checkout",
+  "ui.You need 100 available points to redeem. Choose Earn only to continue.": "You need 100 available points to redeem. Choose Earn only to continue.",
+  "ui.Checkout rules changed. Review the checkout again.": "Checkout rules changed. Review the checkout again."
 }
