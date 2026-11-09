@@ -434,8 +434,7 @@ export function App() {
           <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
           <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
-          <Route path="/expiry-reminders" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
-          <Route path="/admin/pollution-expiry" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager user={user} /></RoleRoute>} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
