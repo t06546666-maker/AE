@@ -3178,12 +3178,5 @@
   "ui.No product lists yet.": "ഇതുവരെ ഉൽപ്പന്ന പട്ടികകളില്ല.",
   "ui.Approved customer product lists for your shop appear here.": "നിങ്ങളുടെ കടയിലേക്കുള്ള അംഗീകരിച്ച ഉൽപ്പന്ന പട്ടികകൾ ഇവിടെ കാണാം.",
   "ui.Product list update started": "ഉൽപ്പന്ന പട്ടിക പുതുക്കൽ ആരംഭിച്ചു",
-  "ui.Product list updated": "ഉൽപ്പന്ന പട്ടിക പുതുക്കി",
-  "ui.Activate": "സജീവമാക്കുക",
-  "ui.Deactivate": "നിഷ്‌ക്രിയമാക്കുക",
-  "ui.Your merchant has not activated your staff access. Ask the merchant to activate it.": "നിങ്ങളുടെ സ്റ്റാഫ് പ്രവേശനം കടയുടമ സജീവമാക്കിയിട്ടില്ല. സജീവമാക്കാൻ കടയുടമയോട് ആവശ്യപ്പെടുക.",
-  "ui.Staff account created as inactive. Select Activate below to allow sign-in.": "സ്റ്റാഫ് അക്കൗണ്ട് നിഷ്‌ക്രിയമായി സൃഷ്ടിച്ചു. പ്രവേശനം അനുവദിക്കാൻ താഴെയുള്ള സജീവമാക്കുക തിരഞ്ഞെടുക്കുക.",
-  "ui.You control staff access. Activate a staff account to allow sign-in; deactivate it to revoke access immediately.": "സ്റ്റാഫ് പ്രവേശനം നിയന്ത്രിക്കുന്നത് നിങ്ങളാണ്. പ്രവേശനം അനുവദിക്കാൻ അക്കൗണ്ട് സജീവമാക്കുക; പ്രവേശനം ഉടൻ പിൻവലിക്കാൻ നിഷ്‌ക്രിയമാക്കുക.",
-  "ui.Staff deactivated. Their access has been revoked.": "സ്റ്റാഫ് അക്കൗണ്ട് നിഷ്‌ക്രിയമാക്കി. പ്രവേശനം പിൻവലിച്ചു.",
-  "ui.Staff activated. They can now sign in using their mobile number and password.": "സ്റ്റാഫ് അക്കൗണ്ട് സജീവമാക്കി. ഇനി മൊബൈൽ നമ്പറും പാസ്‌വേഡും ഉപയോഗിച്ച് പ്രവേശിക്കാം."
+  "ui.Product list updated": "ഉൽപ്പന്ന പട്ടിക പുതുക്കി"
 }
