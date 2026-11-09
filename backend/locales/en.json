@@ -3080,5 +3080,12 @@
   "ui.No product lists yet.": "No product lists yet.",
   "ui.Approved customer product lists for your shop appear here.": "Approved customer product lists for your shop appear here.",
   "ui.Product list update started": "Product list update started",
-  "ui.Product list updated": "Product list updated"
+  "ui.Product list updated": "Product list updated",
+  "ui.Activate": "Activate",
+  "ui.Deactivate": "Deactivate",
+  "ui.Your merchant has not activated your staff access. Ask the merchant to activate it.": "Your merchant has not activated your staff access. Ask the merchant to activate it.",
+  "ui.Staff account created as inactive. Select Activate below to allow sign-in.": "Staff account created as inactive. Select Activate below to allow sign-in.",
+  "ui.You control staff access. Activate a staff account to allow sign-in; deactivate it to revoke access immediately.": "You control staff access. Activate a staff account to allow sign-in; deactivate it to revoke access immediately.",
+  "ui.Staff deactivated. Their access has been revoked.": "Staff deactivated. Their access has been revoked.",
+  "ui.Staff activated. They can now sign in using their mobile number and password.": "Staff activated. They can now sign in using their mobile number and password."
 }
