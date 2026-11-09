@@ -13,3 +13,5 @@ assert.deepEqual(summarizeAndroidAccounts([
 ]),{merchantAppUsers:1,customerAppUsers:1});
 assert.deepEqual(summarizeAndroidAccounts([]),{merchantAppUsers:0,customerAppUsers:0});
 console.log('PASS: distinct Android customers/stores; repeated sessions and profiles deduplicated; web-only, other roles and missing identities excluded');
+assert.deepEqual(summarizeAndroidAccounts([{role:'merchant',merchantId:'removed',platforms:{android:true}},{role:'merchant',merchantId:'active',platforms:{android:true}},{role:'customer',actorKey:'customer:deleted',platforms:{android:true}},{role:'customer',actorKey:'customer:current',platforms:{android:true}}],{merchantIds:new Set(['active']),customerIds:new Set(['current'])}),{merchantAppUsers:1,customerAppUsers:1});
+console.log('PASS: removed merchants and deleted customer accounts excluded when registry supplied');

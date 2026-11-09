@@ -2245,7 +2245,8 @@ app.get('/api/admin/report-areas',requireAuth,requireRole('admin'),async(req,res
 });
 app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,res)=>{
  async function sum(table,column){let total=0;for(let offset=0;;offset+=500){const result=await supabaseAdmin.from(table).select(`id,${column}`).order('id').range(offset,offset+499);if(result.error)throw result.error;total+=result.data.reduce((n,row)=>n+Number(row[column]||0),0);if(result.data.length<500)return total;}}
- const androidAccounts=checkoutBillDatabase().then(database=>database.collection('ae_usage_users').where('platforms.android','==',true).get()).then(result=>require('./backend/android-account-counts.cjs').summarizeAndroidAccounts(result.docs.map(doc=>doc.data())));
+ async function accountIds(table){const ids=new Set();for(let offset=0;;offset+=500){const result=await supabaseAdmin.from(table).select('id').order('id').range(offset,offset+499);if(result.error)throw result.error;result.data.forEach(row=>ids.add(row.id));if(result.data.length<500)return ids;}}
+ const androidAccounts=Promise.all([checkoutBillDatabase().then(database=>database.collection('ae_usage_users').where('platforms.android','==',true).get()),accountIds('active_merchants'),accountIds('customers')]).then(([result,merchantIds,customerIds])=>require('./backend/android-account-counts.cjs').summarizeAndroidAccounts(result.docs.map(doc=>doc.data()),{merchantIds,customerIds}));
  const totals=await Promise.allSettled([
   supabaseAdmin.from('customers').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
   supabaseAdmin.from('active_merchants').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
