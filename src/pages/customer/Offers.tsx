@@ -1,3 +1,4 @@
+import {useMerchantFavorites} from '../../customerFavorites';
 import { uiText } from '../../uiText';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { visitDistance } from '../../visitLocation';
 const CATEGORIES = ['All', 'Nearby', 'Trending', 'Favorites'] as const;
 type CategoryType = (typeof CATEGORIES)[number];
 
-export function CustomerOffers() {
+export function CustomerOffers({userId}:{userId:string}) {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('All');
   const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
 
@@ -22,27 +23,7 @@ export function CustomerOffers() {
   const { data, isLoading } = useCustomerOffers(true, coords);
   const offers = data?.offers ?? [];
 
-  // Customer favorite store IDs from localStorage
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  const toggleFavorite = (merchantId?: string) => {
-    if (!merchantId) return;
-    setFavorites((current) => {
-      const next = current.includes(merchantId)
-        ? current.filter((id) => id !== merchantId)
-        : [...current, merchantId];
-      try {
-        localStorage.setItem('ae_favorite_merchants', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  };
+  const {favorites,toggleFavorite}=useMerchantFavorites(userId);
 
   const getOfferDistance = (offer: CustomerOffer): number | null => {
     if (offer.distance != null && Number.isFinite(offer.distance)) {

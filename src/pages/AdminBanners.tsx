@@ -29,6 +29,9 @@ interface AdBannerItem {
   merchantPhone?: string;
   merchantAddress?: string;
   title: string;
+  titleMl?:string;
+  subtitleMl?:string;
+  displayOrder?:number;
   subtitle?: string;
   category?: string;
   expiresAt?: string;
@@ -53,6 +56,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [selectedOfferId, setSelectedOfferId] = useState('');
   const [bannerTitle, setBannerTitle] = useState('');
+  const [titleMl,setTitleMl]=useState(''),[subtitle,setSubtitle]=useState(''),[subtitleMl,setSubtitleMl]=useState(''),[displayOrder,setDisplayOrder]=useState(0);
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState('');
   const [optimizingImage, setOptimizingImage] = useState(false);
@@ -109,7 +113,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(null);
     setSelectedMerchantId('');
     setSelectedOfferId('');
-    setBannerTitle('');
+    setBannerTitle('');setTitleMl('');setSubtitle('');setSubtitleMl('');setDisplayOrder(0);
     setBannerImageFile(null);
     setBannerImagePreview('');
     setActive(true);
@@ -121,7 +125,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(b);
     setSelectedMerchantId(b.merchantId || '');
     setSelectedOfferId(b.offerId || '');
-    setBannerTitle(b.title || '');
+    setBannerTitle(b.title || '');setTitleMl(b.titleMl||'');setSubtitle(b.subtitle||'');setSubtitleMl(b.subtitleMl||'');setDisplayOrder(b.displayOrder||0);
     setBannerImageFile(null);
     setBannerImagePreview(b.bannerImageUrl || b.imageUrl || '');
     setActive(Boolean(b.active));
@@ -181,6 +185,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
         }
       }
 
+      form.set('subtitle',subtitle);form.set('titleMl',titleMl);form.set('subtitleMl',subtitleMl);form.set('displayOrder',String(displayOrder));
       form.append('active', String(active));
       form.append('placement', 'top');
 
@@ -266,7 +271,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     <div className="admin-banners-page" style={{ paddingBottom: '60px' }}>
       <PageHeader
         title={uiText("Ad Banners")}
-        subtitle={uiText("Select approved merchant offers and set optional wide banner photos for the customer app home screen.")}
+        subtitle={uiText('Edit the top customer-home banners: image, English and Malayalam text, order and visibility. Link an offer only if needed.')}
         actions={
           <button
             className="button primary"
@@ -541,7 +546,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   {editingBanner ? uiText("Edit Ad Banner") : uiText("Add Ad Banner")}
                 </h2>
                 <p style={{ fontSize: '12px', color: '#64748b' }}>
-                  {uiText("Select a merchant and offer. All details are linked automatically.")}
+                  {uiText('Upload a banner and edit its text, or optionally link a merchant offer.')}
                 </p>
               </div>
               <button
@@ -609,7 +614,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                       if (!selectedMerchantId && found.merchantId) {
                         setSelectedMerchantId(found.merchantId);
                       }
-                      setBannerTitle(found.title);
+                      setBannerTitle(found.title);setSubtitle(found.description||'');
                       if (!bannerImageFile && !editingBanner) {
                         setBannerImagePreview(found.bannerImageUrl || found.imageUrl || '');
                       }
@@ -654,6 +659,11 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 />
               </div>
 
+              <label>{uiText('Banner title (Malayalam)')}<input lang="ml" value={titleMl} maxLength={300} onChange={event=>setTitleMl(event.target.value)} className="input"/></label>
+              <label>{uiText('Banner description (English)')}<textarea value={subtitle} maxLength={2000} rows={3} onChange={event=>setSubtitle(event.target.value)}/></label>
+              <label>{uiText('Banner description (Malayalam)')}<textarea lang="ml" value={subtitleMl} maxLength={2000} rows={3} onChange={event=>setSubtitleMl(event.target.value)}/></label>
+              <label>{uiText('Display order')}<input type="number" min={0} max={9999} step={1} value={displayOrder} onChange={event=>setDisplayOrder(Number(event.target.value))}/></label>
+              <p className="text-sm text-slate-500">{uiText('Lower numbers appear first. Malayalam text falls back to English when empty. Text inside uploaded images stays as uploaded; use bilingual artwork.')}</p>
               {/* Selected Offer Preview Card */}
               {selectedOffer && (
                 <div

@@ -1,3 +1,4 @@
+import {useMerchantFavorites} from '../../customerFavorites';
 import { uiText } from '../../uiText';
 import { CustomerShopCard, checkMerchantOpen } from '../../components/CustomerShopCard';
 import { Link, useLocation } from 'react-router-dom';
@@ -9,7 +10,7 @@ import { useCustomerLocation } from '../../hooks/useCustomerLocation';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { apiFetch } from '../../api';
 
-export function CustomerExplore() {
+export function CustomerExplore({userId}:{userId:string}) {
   const routeLocation = useLocation();
   const [reviewError, setReviewError] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
@@ -21,7 +22,7 @@ export function CustomerExplore() {
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'nearby' | 'open'>('all');
-  const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
+  const {favorites,toggleFavorite}=useMerchantFavorites(userId);
   const currentLocation = useCustomerLocation(true, true);
   const userLocation = currentLocation.data?.routeGroup ? currentLocation.data : { ...currentLocation.data, area: 'All', routeGroup: 'all' as const };
   const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
@@ -62,11 +63,6 @@ export function CustomerExplore() {
     setPage(1);
   };
 
-  const toggleFavorite = (id: string) => setFavorites(current => {
-    const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id];
-    localStorage.setItem('ae_favorite_merchants', JSON.stringify(next));
-    return next;
-  });
 
   const openMerchant = async (merchant: typeof merchants[number]) => {
     setReviewMessage('');

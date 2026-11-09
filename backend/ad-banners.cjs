@@ -47,28 +47,30 @@ async function syncToSupabase(supabase, banners) {
   if (!supabase) return;
   try {
     const payload = Buffer.from(JSON.stringify(banners, null, 2));
-    await supabase.storage.from(CONFIG_BUCKET).upload(CONFIG_FILE, payload, {
+    const result=await supabase.storage.from(CONFIG_BUCKET).upload(CONFIG_FILE, payload, {
       upsert: true,
       contentType: 'application/json',
     });
+    if(result.error)throw result.error;
   } catch (err) {
-    console.warn('[ad-banners] Storage sync skipped:', err.message);
+    throw new Error('Unable to save banners to persistent storage. Please retry.');
   }
 }
 
-async function loadBannersFromStorage(supabase) {
+async function loadBannersFromStorage(supabase, strict=false) {
   if (supabase) {
     try {
       const { data, error } = await supabase.storage.from(CONFIG_BUCKET).download(CONFIG_FILE);
+      if(error){if(Number(error.statusCode||error.status)===404)return strict?[]:loadLocalBanners();throw error;}
       if (data && !error) {
         const text = await data.text();
         const parsed = JSON.parse(text || '[]');
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           saveLocalBanners(parsed);
           return parsed;
         }
       }
-    } catch (_) {}
+    } catch (error) {if(strict)throw new Error('Unable to read saved banners. Please retry.');}
   }
   return loadLocalBanners();
 }
@@ -119,6 +121,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           merchantPhone: b.merchantPhone,
           merchantAddress: b.merchantAddress,
           title: b.title,
+          titleMl:b.titleMl||'',
+          subtitleMl:b.subtitleMl||'',
           subtitle: b.subtitle || '',
           placement: 'top',
           linkType: 'offer',
@@ -135,7 +139,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       }));
 
       if (nearby) {
-        resolved.sort((a, b) => a.distance - b.distance);
+        resolved.sort((a, b) => (a.displayOrder-b.displayOrder)||(a.distance-b.distance));
       } else {
         resolved.sort((a, b) => (a.displayOrder - b.displayOrder) || (new Date(b.createdAt) - new Date(a.createdAt)));
       }
@@ -164,6 +168,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           merchantPhone: b.merchantPhone || '',
           merchantAddress: b.merchantAddress || '',
           title: b.title,
+          titleMl:b.titleMl||'',
+          subtitleMl:b.subtitleMl||'',
           subtitle: b.subtitle || '',
           category: b.category || '',
           expiresAt: b.expiresAt || '',
@@ -218,6 +224,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       const offerId = (req.body.offerId || req.body.linkValue || '').trim();
       let title = (req.body.title || '').trim();
       let subtitle = (req.body.subtitle || '').trim();
+      const titleMl=String(req.body.titleMl||'').trim().slice(0,300),subtitleMl=String(req.body.subtitleMl||'').trim().slice(0,2000);
       let merchantId = (req.body.merchantId || '').trim();
       let merchantName = (req.body.merchantName || '').trim();
       let merchantPhone = (req.body.merchantPhone || '').trim();
@@ -334,6 +341,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 
       const active = req.body.active !== 'false' && req.body.active !== false;
       const displayOrder = Number(req.body.displayOrder || 0);
+      if(!Number.isInteger(displayOrder)||displayOrder<0||displayOrder>9999)return res.status(400).json({error:'Enter a display order from 0 to 9999.'});
 
       const newBanner = {
         id: crypto.randomUUID(),
@@ -346,6 +354,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         longitude,
         title,
         subtitle,
+        titleMl,subtitleMl,
         category,
         expiresAt,
         placement: 'top',
@@ -361,10 +370,10 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         updatedAt: new Date().toISOString(),
       };
 
-      const banners = await loadBannersFromStorage(supabase);
+      const banners = await loadBannersFromStorage(supabase,true);
       banners.unshift(newBanner);
-      saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+      saveLocalBanners(banners);
 
       if (offerId && req.file && typeof setOfferBannerPathHelper === 'function') {
         try { await setOfferBannerPathHelper(offerId, imagePath); } catch (_) {}
@@ -383,7 +392,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
   app.put('/api/admin/banners/:id', auth, adminRole, uploadMiddleware, async (req, res) => {
     try {
       const bannerId = req.params.id;
-      const banners = await loadBannersFromStorage(supabase);
+      const banners = await loadBannersFromStorage(supabase,true);
       const index = banners.findIndex(b => b.id === bannerId);
 
       if (index === -1) {
@@ -414,8 +423,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
             .maybeSingle();
 
           if (offer) {
-            title = offer.title;
-            subtitle = offer.description;
+            title = req.body.title!==undefined?String(req.body.title).trim():offer.title;
+            subtitle = req.body.subtitle!==undefined?String(req.body.subtitle).trim():offer.description;
             merchantId = offer.merchant_id || offer.merchants?.id;
             merchantName = offer.merchants?.name || '';
             merchantPhone = offer.merchants?.phone || '';
@@ -466,8 +475,14 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
         ? (req.body.active !== 'false' && req.body.active !== false)
         : existing.active;
 
+      const titleMl=req.body.titleMl!==undefined?String(req.body.titleMl).trim().slice(0,300):(existing.titleMl||'');
+      const subtitleMl=req.body.subtitleMl!==undefined?String(req.body.subtitleMl).trim().slice(0,2000):(existing.subtitleMl||'');
+      const displayOrder=req.body.displayOrder!==undefined?Number(req.body.displayOrder):Number(existing.displayOrder||0);
+      if(!Number.isInteger(displayOrder)||displayOrder<0||displayOrder>9999)return res.status(400).json({error:'Enter a display order from 0 to 9999.'});
       const updated = {
         ...existing,
+        titleMl,subtitleMl,
+        displayOrder,
         offerId,
         merchantId,
         merchantName,
@@ -491,8 +506,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       };
 
       banners[index] = updated;
-      saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+      saveLocalBanners(banners);
 
       if (offerId && req.file && typeof setOfferBannerPathHelper === 'function') {
         try { await setOfferBannerPathHelper(offerId, imagePath); } catch (_) {}
@@ -511,7 +526,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
   app.patch('/api/admin/banners/:id/toggle-active', auth, adminRole, async (req, res) => {
     try {
       const bannerId = req.params.id;
-      const banners = await loadBannersFromStorage(supabase);
+      const banners = await loadBannersFromStorage(supabase,true);
       const banner = banners.find(b => b.id === bannerId);
 
       if (!banner) {
@@ -521,8 +536,8 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
       banner.active = !banner.active;
       banner.updatedAt = new Date().toISOString();
 
-      saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+      saveLocalBanners(banners);
 
       banner.imageUrl = await resolveBannerImageUrl(banner, supabase, bucket, signedUrlHelper);
       res.json({ success: true, banner });
@@ -536,7 +551,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
   app.delete('/api/admin/banners/:id', auth, adminRole, async (req, res) => {
     try {
       const bannerId = req.params.id;
-      const banners = await loadBannersFromStorage(supabase);
+      const banners = await loadBannersFromStorage(supabase,true);
       const index = banners.findIndex(b => b.id === bannerId);
 
       if (index === -1) {
@@ -545,16 +560,10 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 
       const removed = banners[index];
       banners.splice(index, 1);
-      saveLocalBanners(banners);
       await syncToSupabase(supabase, banners);
+      saveLocalBanners(banners);
 
-      if (removed.imagePath) {
-        if (isCloudStorageUrl(removed.imagePath)) {
-          await deleteFileFromCloudStorage(removed.imagePath);
-        } else if (removed.imagePath.includes('/') && supabase && bucket) {
-          await supabase.storage.from(bucket).remove([removed.imagePath]).catch(() => {});
-        }
-      }
+      // Banner artwork may also be used by a linked offer; remove only the banner record.
 
       res.json({ success: true, message: 'Banner deleted successfully.' });
     } catch (err) {
@@ -567,7 +576,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 // Helper for server.js to get active banners for /api/customer/ads
 async function getActiveBannersForAds(supabase, bucket, signedUrlHelper, userCoords) {
   try {
-    const all = await loadBannersFromStorage(supabase);
+    const all = await loadBannersFromStorage(supabase,true);
     const topActive = all.filter(b => b.active);
     const nearby = userCoords && Number.isFinite(userCoords.latitude) && Number.isFinite(userCoords.longitude);
 
@@ -584,6 +593,8 @@ async function getActiveBannersForAds(supabase, bucket, signedUrlHelper, userCoo
         bannerId: b.id,
         offerId: b.offerId || b.linkValue,
         title: b.title,
+          titleMl:b.titleMl||'',
+          subtitleMl:b.subtitleMl||'',
         description: b.subtitle || '',
         rawDescription: b.subtitle || '',
         theme: 'blue',

@@ -1,8 +1,9 @@
+import {useMerchantFavorites,importLegacyOfferFavorites} from '../../customerFavorites';
+import {HomeBanners} from '../../components/HomeBanners';
 import { uiText } from '../../uiText';
 import { formatDateTime } from '../../utils';
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import QRCode from 'qrcode';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User, Sparkles, History, TrendingUp, Wallet, ArrowUpRight, Heart, HelpCircle, ArrowRight } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +13,6 @@ import { useCustomerLocation } from '../../hooks/useCustomerLocation';
 import { apiFetch } from '../../api';
 import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
-import { CustomerAds } from '../../components/CustomerAds';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
@@ -27,10 +27,8 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   const rewardPoints = data?.reward_points ?? 0;
   const formattedPoints = rewardPoints.toLocaleString('en-IN');
   const activity = data?.activity ?? [];
-  const [qrSrc, setQrSrc] = useState('');
-  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const navigate=useNavigate();
   const [howToUseOpen, setHowToUseOpen] = useState(false);
-  const [activeAdSlide, setActiveAdSlide] = useState(0);
   const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
   const [productListOpen, setProductListOpen] = useState(false);
   const [productRequestId, setProductRequestId] = useState('');
@@ -54,32 +52,11 @@ export function CustomerHome({ user }: { user: UserProfile }) {
   });
   const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent, customerLocation.data);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
-  const offers = (offersData?.offers || []).slice(0, 16);
+  const offers = useMemo(()=>(offersData?.offers || []).slice(0,16),[offersData]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('ae_favorite_offers');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const toggleFavorite = (offerId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFavorites((prev) => {
-      const next = prev.includes(offerId)
-        ? prev.filter((id) => id !== offerId)
-        : [...prev, offerId];
-      try {
-        localStorage.setItem('ae_favorite_offers', JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  };
-
+  const {favorites,toggleFavorite}=useMerchantFavorites(user.id);
+  useEffect(()=>{importLegacyOfferFavorites(user.id,offersData?.offers||[]);},[user.id,offersData]);
+  const favoriteOffers=(offersData?.offers||[]).filter(offer=>offer.merchant_id&&favorites.includes(offer.merchant_id));
   const filteredOffers = useMemo(() => {
     if (selectedCategory === 'all') return offers;
     return offers.filter((o) => (o.category || '').toLowerCase().includes(selectedCategory.toLowerCase()));
@@ -108,18 +85,8 @@ export function CustomerHome({ user }: { user: UserProfile }) {
     return urls[idx % urls.length];
   };
 
-  const getOfferDiscountTag = (idx = 0): string => {
-    const tags = ['20% OFF', '10% OFF', '15% OFF', '25% OFF', 'SPECIAL DEAL'];
-    return tags[idx % tags.length];
-  };
+  const getOfferDiscountTag = (_idx = 0): string => 'Offer';
 
-  useEffect(() => {
-    if (offers.length <= 1) return;
-    const interval = setInterval(() => {
-      setActiveAdSlide((prev) => (prev + 1) % Math.min(offers.length, 5));
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [offers.length]);
   const merchants = merchantDirectory.data?.pages.flatMap(page => page.merchants) || [];
   const location = useLocation();
   useEffect(() => { if (new URLSearchParams(location.search).get('productList') === '1') { setProductRequestId(new URLSearchParams(location.search).get('requestId') || ''); setProductListOpen(true); window.history.replaceState({}, '', '/customer/home'); } }, [location.search]);
@@ -146,13 +113,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    QRCode.toDataURL(JSON.stringify({ id: user.customer_code || user.id, transactionMode: 'earn' }), { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
-      .then((src) => { if (active) setQrSrc(src); })
-      .catch(() => { if (active) setQrSrc(''); });
-    return () => { active = false; };
-  }, [user.id, user.customer_code]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -198,92 +158,22 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             </button>
           </div>
           <div className="ae-home-language shrink-0">
-            <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700 shadow-2xs cursor-pointer hover:bg-gray-50 transition-colors" title={t('language.malayalam')}>
+            <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700 shadow-2xs cursor-pointer hover:bg-gray-50 transition-colors" title={uiText('Language')}>
               <Languages size={11} className="text-blue-600" />
               <select
                 className="border-0 bg-transparent p-0 text-[10px] font-bold outline-none cursor-pointer text-gray-800"
                 value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
                 onChange={(event) => void i18n.changeLanguage(event.target.value)}
-                aria-label={t('language.malayalam')}
+                aria-label={uiText('Language')}
               >
-                <option value="en">EN</option>
-                <option value="ml">മല</option>
+                <option value="en">English</option>
+                <option value="ml">മലയാളം</option>
               </select>
             </label>
           </div>
         </div>
 
-        {/* 2. One Sliding Offer Banner (Visual Photo Ad, Auto-sliding) */}
-        <section className="pt-0.5">
-          <div
-            onClick={() => {
-              const current = offers[activeAdSlide] || offers[0];
-              if (current) {
-                setSelectedOffer({
-                  id: current.id,
-                  title: current.title,
-                  description: current.description,
-                  imageUrl: getOfferPhoto(current, activeAdSlide),
-                  merchantName: current.merchant_raw_name || current.merchant_name,
-                  merchantPhone: current.merchant_phone,
-                  merchantAddress: current.merchant_address,
-                  category: current.category,
-                  expiresAt: current.expires_at,
-                });
-              }
-            }}
-            className="hero-ad-realistic rounded-2xl text-white shadow-xl cursor-pointer group active:scale-[0.99] transition-all relative overflow-hidden min-h-[120px]"
-          >
-            {/* Visual Photo Background */}
-            <div className="absolute inset-0 z-0">
-              <img
-                src={getOfferPhoto(offers[activeAdSlide], activeAdSlide)}
-                alt={offers[activeAdSlide]?.title || 'Featured Offer'}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.4]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
-            </div>
-
-            <div className="relative z-10 p-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping"></span>
-                  <span>{uiText(getOfferDiscountTag(activeAdSlide))}</span>
-                </span>
-                <span className="text-[11px] font-bold text-cyan-200 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full">
-                  {offers[activeAdSlide]?.category || uiText("Partner Stores")}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-sky-300 block">
-                  {offers[activeAdSlide]?.merchant_name || uiText("AE Partner Store")}
-                </span>
-                <h3 className="text-sm font-black tracking-tight text-white line-clamp-1 mt-0.5">
-                  {offers[activeAdSlide]?.title || uiText("Special Offers & Deals")}
-                </h3>
-                <p className="text-[11px] text-sky-100/90 line-clamp-1 mt-0.5 font-medium">
-                  {offers[activeAdSlide]?.description || uiText("Shop with AE QR & earn points on every purchase")}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 border-t border-white/10 text-xs">
-                <span className="text-amber-300 font-bold flex items-center gap-1 text-[11px]">
-                  <span>{uiText("Tap to View Offer")}</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </span>
-                <div className="flex items-center gap-1">
-                  {offers.slice(0, 5).map((_, i) => (
-                    <span
-                      key={i}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${activeAdSlide === i ? 'w-5 bg-amber-400' : 'w-1.5 bg-white/40'}`}
-                    ></span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <HomeBanners/>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
         <section ref={heroPointsRef}>
@@ -321,7 +211,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               {/* Button 1: Claim Points */}
               <button
                 type="button"
-                onClick={() => setClaimModalOpen(true)}
+                onClick={() => navigate('/customer/shop-scan?mode=earn')}
                 className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 active:scale-[0.98] text-white font-bold text-xs py-2 px-2.5 rounded-xl transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5 group"
               >
                 <QrCode size={15} className="group-hover:scale-110 transition-transform text-white shrink-0" />
@@ -394,7 +284,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                   className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div className="relative h-[95px] overflow-hidden bg-slate-100">
-                    <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />{offer.merchant_id&&<button type="button" className="absolute top-2 right-2 z-10 rounded-full bg-white p-2 text-rose-600" aria-pressed={favorites.includes(offer.merchant_id)} aria-label={uiText(favorites.includes(offer.merchant_id)?'Remove favorite':'Add favorite')} onClick={event=>{event.stopPropagation();toggleFavorite(offer.merchant_id);}}><Heart size={16} fill={favorites.includes(offer.merchant_id)?'currentColor':'none'}/></button>}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-xs">
                       {uiText(tag)}
@@ -671,7 +561,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 <span>{uiText("Favourite Offers")}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
-                {uiText("Your saved & top customer-loved local deals")}
+                {uiText('Offers from your saved shops')}
               </p>
             </div>
             <Link to="/customer/offers" className="text-xs font-bold text-blue-600 hover:underline">
@@ -679,11 +569,12 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             </Link>
           </div>
 
+          {!favoriteOffers.length&&<p className="text-sm text-slate-500">{uiText('Save a shop using the heart in Offers or Explore. Its offers will appear here.')}</p>}
           <div className="grid grid-cols-2 gap-2.5">
-            {offers.slice(0, 4).map((offer, idx) => {
+            {favoriteOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 1);
               const tag = getOfferDiscountTag(idx);
-              const isFav = favorites.includes(offer.id) || idx === 0 || idx === 2;
+              const isFav = !!offer.merchant_id&&favorites.includes(offer.merchant_id);
               return (
                 <div
                   key={`fav-${offer.id}-${idx}`}
@@ -710,10 +601,10 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => toggleFavorite(offer.id, e)}
+                      onClick={(e) => {e.stopPropagation();toggleFavorite(offer.merchant_id);}}
                       className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-xs transition-transform active:scale-90 ${isFav ? 'bg-white text-rose-500' : 'bg-black/30 text-white hover:bg-black/50'
                         }`}
-                      aria-label={uiText("Favorite")}
+                      aria-pressed={isFav} aria-label={uiText(isFav?'Remove favorite':'Add favorite')}
                     >
                       <Heart size={14} className={isFav ? 'fill-rose-500 text-rose-500' : ''} />
                     </button>
@@ -772,7 +663,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             {/* Quick Claim Button */}
             <button
               type="button"
-              onClick={() => setClaimModalOpen(true)}
+              onClick={() => navigate('/customer/shop-scan?mode=earn')}
               className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 active:scale-95 text-white text-xs font-black px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm shadow-blue-500/25"
               title={uiText("Claim Points on purchase")}
             >
@@ -803,65 +694,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       </aside>
       {/* END: StickyFloatingPointsBar */}
 
-      {/* BEGIN: Claim Points QR Modal */}
-      {claimModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white p-6 shadow-2xl text-center space-y-4">
-            <button
-              type="button"
-              onClick={() => setClaimModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-              aria-label={uiText("Close")}
-            >
-              <X size={18} />
-            </button>
 
-            <div className="space-y-1 pt-1">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-black uppercase tracking-wider">
-                {uiText("Earn Points On Purchase")}
-              </span>
-              <h3 className="text-lg font-black text-gray-900">{uiText("My Claim QR Code")}</h3>
-              <p className="text-xs text-gray-500 font-medium">{user.full_name || user.phone || uiText("AE Customer")}</p>
-            </div>
-
-            {/* QR Code Container */}
-            <div className="mx-auto w-[220px] h-[220px] bg-slate-50 border-2 border-blue-500/30 rounded-2xl p-2.5 shadow-inner flex items-center justify-center">
-              {qrSrc ? (
-                <img src={qrSrc} alt={uiText("Customer Claim QR")} className="w-full h-full object-contain rounded-xl" />
-              ) : (
-                <div className="animate-pulse bg-gray-200 w-full h-full rounded-xl"></div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <span className="inline-block bg-slate-100 text-slate-800 font-mono font-bold text-xs px-3 py-1 rounded-lg">
-                ID: {user.customer_code || user.id}
-              </span>
-              <p className="text-xs text-gray-600 font-medium px-2 leading-relaxed">
-                {uiText("Show this QR to any AE partner store cashier at billing to claim points for your purchase!")}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-              <Link
-                to="/customer/shop-scan?mode=earn"
-                className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all"
-              >
-                <QrCode size={15} />
-                <span>{uiText("Or Scan Merchant Shop QR")}</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setClaimModalOpen(false)}
-                className="w-full py-2 text-xs font-bold text-gray-500 hover:text-gray-800"
-              >
-                {uiText("Done")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* END: Claim Points QR Modal */}
 
       {/* START: How To Use AE Modal */}
       {howToUseOpen && (
@@ -946,12 +779,12 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                 type="button"
                 onClick={() => {
                   setHowToUseOpen(false);
-                  setClaimModalOpen(true);
+                  navigate('/customer/shop-scan?mode=earn');
                 }}
                 className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <QrCode size={15} />
-                <span>{uiText("View My Claim QR Code")}</span>
+                <span>{uiText("Scan Merchant Shop QR")}</span>
               </button>
               <button
                 type="button"
