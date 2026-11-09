@@ -3196,5 +3196,17 @@
   "ui.The smallest bill allowed for point redemption. For example, ₹100 allows redemption on bills of ₹100 or more. This minimum does not apply to earning points only.": "പോയിന്റുകൾ ഉപയോഗിച്ച് ഇളവ് നേടാൻ ആവശ്യമായ ഏറ്റവും കുറഞ്ഞ ബിൽ തുക. ഉദാഹരണത്തിന്, ₹100 നൽകിയാൽ ₹100 അല്ലെങ്കിൽ അതിൽ കൂടുതലുള്ള ബില്ലുകളിൽ പോയിന്റുകൾ ഉപയോഗിക്കാം. പോയിന്റുകൾ നേടാൻ മാത്രമുള്ള വാങ്ങലിന് ഈ കുറഞ്ഞ പരിധി ബാധകമല്ല.",
   "ui.Example: ₹500 bill, 10 points per ₹100 and 5% discount. Redeeming 100 points gives ₹25 off, leaving ₹475 to pay, and earns 50 new points.": "ഉദാഹരണം: ₹500 ബിൽ, ഓരോ ₹100-നും 10 പോയിന്റുകൾ, 5% ഇളവ്. 100 പോയിന്റുകൾ ഉപയോഗിക്കുമ്പോൾ ₹25 ഇളവ് ലഭിച്ച് ₹475 അടയ്ക്കണം. കൂടാതെ 50 പുതിയ പോയിന്റുകളും ലഭിക്കും.",
   "ui.Staff confirms the bill amount, not whether payment was received. Staff cannot change your points or discount rules.": "സ്റ്റാഫ് സ്ഥിരീകരിക്കുന്നത് ബിൽ തുകയാണ്, പണം ലഭിച്ചോ എന്നതല്ല. നിങ്ങൾ നിശ്ചയിച്ച പോയിന്റ് നിരക്കോ ഇളവ് നിയമങ്ങളോ സ്റ്റാഫിന് മാറ്റാനാകില്ല.",
-  "ui.Example calculation": "കണക്കുകൂട്ടൽ ഉദാഹരണം"
+  "ui.Example calculation": "കണക്കുകൂട്ടൽ ഉദാഹരണം",
+  "ui.Transaction history": "ഇടപാട് ചരിത്രം",
+  "ui.View transaction history": "ഇടപാട് ചരിത്രം കാണുക",
+  "ui.No staff transactions yet.": "ജീവനക്കാരുടെ ഇടപാടുകൾ ഇതുവരെ ഇല്ല.",
+  "ui.Load older transactions": "പഴയ ഇടപാടുകൾ കാണുക",
+  "ui.No matching records on this page. Load older activity.": "ഈ പേജിൽ രേഖകളില്ല. പഴയ ഇടപാടുകൾ കാണുക.",
+  "ui.Earn only — no redemption discount": "പോയിന്റുകൾ നേടുക മാത്രം — റിഡംപ്ഷൻ ഇളവില്ല",
+  "ui.Redeem 100 points + earn": "100 പോയിന്റുകൾ ഉപയോഗിച്ച് ഇളവും പുതിയ പോയിന്റുകളും നേടുക",
+  "ui.Purchase reference": "വാങ്ങലിന്റെ റഫറൻസ്",
+  "ui.Checkout choice": "ചെക്കൗട്ട് തിരഞ്ഞെടുക്കുക",
+  "ui.Review checkout": "ചെക്കൗട്ട് പരിശോധിക്കുക",
+  "ui.You need 100 available points to redeem. Choose Earn only to continue.": "ഇളവ് ലഭിക്കാൻ 100 പോയിന്റുകൾ വേണം. തുടരാൻ പോയിന്റുകൾ നേടുക മാത്രം തിരഞ്ഞെടുക്കുക.",
+  "ui.Checkout rules changed. Review the checkout again.": "ചെക്കൗട്ട് നിയമങ്ങൾ മാറി. വീണ്ടും പരിശോധിക്കുക."
 }
