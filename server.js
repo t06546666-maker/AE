@@ -3140,8 +3140,10 @@ app.post('/api/customer/product-list-requests', requireCustomerAuth, offerImageM
   }
   if (error) return res.status(500).json({ success: false, error: 'Unable to submit product list' });
   const pickupNotice = pickupTime ? ` (Pickup: ${pickupTime})` : '';
-  await pushToRole('admin', 'New product list request', `A customer sent a product list${pickupNotice} for admin review.`, { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
-  await pushToCustomer(req.customer.id, 'Product list submitted', `Your product list was received${pickupNotice} and is awaiting review.`, { url: '/customer/home?productList=1', requestId: data.id });
+  scheduleBackground(()=>Promise.allSettled([
+    pushToMerchant(merchantId,'New product list received','A customer sent a product list'+pickupNotice+'. It is awaiting admin review.',{url:'/customer-orders?view=product-lists&requestId='+encodeURIComponent(data.id),requestId:data.id,type:'product_list'}),
+    pushToRole('admin', 'New product list request', `A customer sent a product list${pickupNotice} for admin review.`, { url: `/customer-product-lists?requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' }),
+    pushToCustomer(req.customer.id, 'Product list submitted', `Your product list was received${pickupNotice} and is awaiting review.`, { url: '/customer/home?productList=1', requestId: data.id })]));
   res.status(201).json({ success: true, request: { ...data, pickup_time: data.pickup_time || pickupTime || null } });
 });
 
@@ -3232,7 +3234,7 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
   if (error) return res.status(500).json({ success: false, error: 'Unable to review product list' });
   if (!data) return res.status(404).json({ success: false, error: 'Product list not found' });
   if (existing && status !== 'pending' && existing.status !== status) {
-    if (status === 'approved') await pushToMerchant(existing.merchant_id, 'New product list to review', 'Admin approved a customer product list. Review it in Customer orders.', { url: `/customer-orders?view=product-lists&requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' });
+    if (status === 'approved') await Promise.allSettled([require('./backend/counter-product-lists.cjs').notifyCounterProductList({database:checkoutBillDatabase,sendPush:sendPushNotification},existing.merchant_id,data.id),pushToMerchant(existing.merchant_id, 'New product list to review', 'Admin approved a customer product list. Review it in Customer orders.', { url: `/customer-orders?view=product-lists&requestId=${encodeURIComponent(data.id)}`, requestId: data.id, type: 'product_list' })]);
     await pushToCustomer(existing.customer_id, `Product list ${status}`, `Your product list request was ${status}.`, { url: '/customer/home?productList=1', requestId: data.id, type: 'product_list' });
   }
   res.json({ success: true, request: data });
@@ -5803,8 +5805,9 @@ app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async 
   } catch { return res.status(404).json({ error: 'Could not close bill' }); }
 });
 
-require('./backend/counter-staff.cjs').registerCounterStaff(app,{database:checkoutBillDatabase,supabase:supabaseAdmin,auth:requireAuth,merchantRole:requireRole('merchant'),customerAuth:requireCustomerAuth,normalizePhone,signingSecret:()=>process.env.COUNTER_STAFF_JWT_SECRET||process.env.CUSTOMER_JWT_SECRET,discount:redemptionDiscount,points:calculateFixedPurchasePoints,pushCustomer:pushToCustomer,sendPush:sendPushNotification,background:scheduleBackground,checkout:async args=>{let status=200,body;await runMerchantCheckout({auth:{profile:{merchant_id:args.merchantId}},body:{customerCode:args.customerCode,amount:args.amount,rewardPercentage:args.quote.pointsPer100,pointsToRedeem:args.quote.pointsToRedeem,discountType:args.quote.discountType,discountValue:args.quote.discountValue,paymentMode:'pilot_app_only',location:'Counter Staff: '+args.staffName},get:name=>name.toLowerCase()==='idempotency-key'?'counter-'+args.requestId:undefined},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
+const counterStaffAccess=require('./backend/counter-staff.cjs').registerCounterStaff(app,{database:checkoutBillDatabase,supabase:supabaseAdmin,auth:requireAuth,merchantRole:requireRole('merchant'),customerAuth:requireCustomerAuth,normalizePhone,signingSecret:()=>process.env.COUNTER_STAFF_JWT_SECRET||process.env.CUSTOMER_JWT_SECRET,discount:redemptionDiscount,points:calculateFixedPurchasePoints,pushCustomer:pushToCustomer,merchantPush:pushToMerchant,sendPush:sendPushNotification,background:scheduleBackground,checkout:async args=>{let status=200,body;await runMerchantCheckout({auth:{profile:{merchant_id:args.merchantId}},body:{customerCode:args.customerCode,amount:args.amount,rewardPercentage:args.quote.pointsPer100,pointsToRedeem:args.quote.pointsToRedeem,discountType:args.quote.discountType,discountValue:args.quote.discountValue,paymentMode:'pilot_app_only',location:'Counter Staff: '+args.staffName},get:name=>name.toLowerCase()==='idempotency-key'?'counter-'+args.requestId:undefined},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
 
+require('./backend/counter-product-lists.cjs').registerCounterProductLists(app,{...counterStaffAccess,db:supabaseAdmin,database:checkoutBillDatabase,imageUrl:signedOfferImageUrl,pushToCustomer,pushToMerchant,pushToRole});
 require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), adminRole: requireRole('admin'), push: pushToMerchant, background: scheduleBackground });
 
 async function runMerchantCheckout(req, res) {

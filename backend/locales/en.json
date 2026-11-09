@@ -3074,5 +3074,11 @@
   "ui.Report date": "Report date",
   "ui.No Google Play install report has been imported yet.": "No Google Play install report has been imported yet.",
   "ui.Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.": "Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.",
-  "ui.Automatic refresh needs read-only Google Play report access.": "Automatic refresh needs read-only Google Play report access."
+  "ui.Automatic refresh needs read-only Google Play report access.": "Automatic refresh needs read-only Google Play report access.",
+  "ui.Counter workspace": "Counter workspace",
+  "ui.Checkout requests": "Checkout requests",
+  "ui.No product lists yet.": "No product lists yet.",
+  "ui.Approved customer product lists for your shop appear here.": "Approved customer product lists for your shop appear here.",
+  "ui.Product list update started": "Product list update started",
+  "ui.Product list updated": "Product list updated"
 }
