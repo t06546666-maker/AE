@@ -86,7 +86,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
         return res.json({requests:row.status==='pending'&&row.expiresAt>Date.now()?[{id:doc.id,...request}]:[]});
       }catch{return unavailable(res);}
     }
-    try{const db=await database(), snapshot=await db.collection('ae_shop_requests').where('merchantId','==',req.auth.profile.merchant_id).where('status','==','pending').get();res.set('Cache-Control','no-store');res.json({requests:snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).filter(row=>row.expiresAt>Date.now()).map(({customerId,...row})=>row).sort((a,b)=>a.createdAt-b.createdAt)});}catch{return unavailable(res);}
+    try{const db=await database(), settings=await db.collection('ae_counter_settings').doc(req.auth.profile.merchant_id).get(),counterActive=settings.exists&&settings.data().enabled===true,snapshot=await db.collection('ae_shop_requests').where('merchantId','==',req.auth.profile.merchant_id).where('status','==','pending').get();res.set('Cache-Control','no-store');res.json({requests:snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).filter(row=>row.expiresAt>Date.now()&&!(counterActive&&row.counterFlow)).map(({customerId,...row})=>row).sort((a,b)=>a.createdAt-b.createdAt)});}catch{return unavailable(res);}
   });
   // Claim once before invoking the existing checkout. A failed/uncertain checkout
   // stays locked so a retry cannot deduct points again; staff must reconcile it.

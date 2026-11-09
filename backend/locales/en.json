@@ -3080,5 +3080,15 @@
   "ui.No product lists yet.": "No product lists yet.",
   "ui.Approved customer product lists for your shop appear here.": "Approved customer product lists for your shop appear here.",
   "ui.Product list update started": "Product list update started",
-  "ui.Product list updated": "Product list updated"
+  "ui.Product list updated": "Product list updated",
+  "ui.Who is handling checkout?": "Who is handling checkout?",
+  "ui.Counter Staff is handling checkout": "Counter Staff is handling checkout",
+  "ui.Merchant is handling checkout": "Merchant is handling checkout",
+  "ui.Turn on when you leave the shop. Turn off when you return. Checkout-request alerts go to the selected handler.": "Turn on when you leave the shop. Turn off when you return. Checkout-request alerts go to the selected handler.",
+  "ui.I am back — switch to Merchant": "I am back — switch to Merchant",
+  "ui.I am away — activate Counter Staff": "I am away — activate Counter Staff",
+  "ui.Counter Staff mode is on. New checkout requests go to your staff.": "Counter Staff mode is on. New checkout requests go to your staff.",
+  "ui.Counter Staff mode is off. New checkout requests come to you.": "Counter Staff mode is off. New checkout requests come to you.",
+  "ui.Merchant is handling checkout. Counter Staff mode is off.": "Merchant is handling checkout. Counter Staff mode is off.",
+  "ui.Checkout handler changed": "Checkout handler changed"
 }
