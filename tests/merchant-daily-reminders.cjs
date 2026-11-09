@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');const jwt=require('jsonwebtoken');
-const {reminder,verifyScheduler,registerMerchantReminders}=require('../backend/merchant-daily-reminders.cjs');
+const {reminder,verifyScheduler,registerMerchantReminders,runFullReminderQueue}=require('../backend/merchant-daily-reminders.cjs');
 async function run(){
  assert.equal(reminder(new Date('2026-11-07T03:29:59Z')),null);
  assert.equal(reminder(new Date('2026-11-07T03:30:00Z')).title,'Good morning! ☀️');
@@ -51,6 +51,14 @@ async function run(){
  instant=new Date('2026-11-07T15:30:00Z');assert.equal((await call()).data.outsideWindow,true);assert.equal(sends,2);
  instant=new Date('2026-11-08T03:30:00Z');await call();assert.equal(sends,3);
  instant=new Date('2026-11-08T07:30:00Z');profiles.length=0;await call();assert.equal(records.get('ae_merchant_daily_reminder_runs/2026-11-08-afternoon').completed,true);assert.equal(sends,3);
+ instant=new Date('2026-11-09T03:30:00Z');profiles.length=1;profiles[0]={id:'p5',push_token:'token5'};
+ const fullRun=await runFullReminderQueue({supabase,firestore:async()=>db,getTarget:async(id,p)=>p,send:async()=>{sends++;return true},now:()=>instant});
+ assert.equal(fullRun.slot,'morning');assert.equal(fullRun.counts.accepted,1);assert.equal(sends,4);
+ const cronCall=await call({fullRun:true},'bad');
+ assert.equal(cronCall.code,401);
+ let cronKeyData;
+ await handler({body:{fullRun:true},headers:{'x-cron-key':'ae-merchant-reminder-cron-2026'}},{status(c){return this},json(d){cronKeyData=d;return this}});
+ assert.equal(cronKeyData.alreadyCompleted,true);
  console.log('PASS: IST schedule boundaries, weekly rotation, signed identity and branch/workflow restrictions, dry-run isolation, opt-outs and concurrent duplicate prevention');
 }
 run().catch(error=>{console.error(error);process.exitCode=1});
