@@ -1,0 +1,5 @@
+# Counter Staff product lists — Android 69 (1.0.68)
+
+Retains the public Production 62 customer screens, assets and global layout used by version 68. Adds only Counter Staff product lists, protected photo preview, shop-scoped fulfilment status updates and merchant notifications for new/corrected checkout requests, returns, cancellations, review-needed outcomes and incoming product lists. Existing purchase/payment alerts remain active. Product lists require the existing Admin approval; Counter Staff cannot bypass it or view CRM/customer phone numbers.
+
+Backend/main commit: 2d4db86. Website deployment verified Ready: 2ny1UCsEZwmmWV5HsanDD7F6ray9. No SQL migration. No real customers, staff accounts, purchases or message recipients were modified during validation. Mocked recipient and concurrency tests, existing fulfilment/database tests, English/Malayalam checks, build and 375-pixel mobile/photo-preview checks passed. A physical-phone delivery test is still required; simulated/provider calls do not prove phone delivery.
