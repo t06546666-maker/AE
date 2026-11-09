@@ -3178,5 +3178,15 @@
   "ui.No product lists yet.": "ഇതുവരെ ഉൽപ്പന്ന പട്ടികകളില്ല.",
   "ui.Approved customer product lists for your shop appear here.": "നിങ്ങളുടെ കടയിലേക്കുള്ള അംഗീകരിച്ച ഉൽപ്പന്ന പട്ടികകൾ ഇവിടെ കാണാം.",
   "ui.Product list update started": "ഉൽപ്പന്ന പട്ടിക പുതുക്കൽ ആരംഭിച്ചു",
-  "ui.Product list updated": "ഉൽപ്പന്ന പട്ടിക പുതുക്കി"
+  "ui.Product list updated": "ഉൽപ്പന്ന പട്ടിക പുതുക്കി",
+  "ui.Who is handling checkout?": "ചെക്കൗട്ട് കൈകാര്യം ചെയ്യുന്നത് ആര്?",
+  "ui.Counter Staff is handling checkout": "കൗണ്ടർ സ്റ്റാഫാണ് ചെക്കൗട്ട് കൈകാര്യം ചെയ്യുന്നത്",
+  "ui.Merchant is handling checkout": "കടയുടമയാണ് ചെക്കൗട്ട് കൈകാര്യം ചെയ്യുന്നത്",
+  "ui.Turn on when you leave the shop. Turn off when you return. Checkout-request alerts go to the selected handler.": "കടയിൽ നിന്ന് പോകുമ്പോൾ ഓൺ ചെയ്യുക. തിരികെ വരുമ്പോൾ ഓഫ് ചെയ്യുക. തിരഞ്ഞെടുത്ത ആളിനാണ് ചെക്കൗട്ട് അഭ്യർത്ഥനകളുടെ അറിയിപ്പ് ലഭിക്കുക.",
+  "ui.I am back — switch to Merchant": "ഞാൻ തിരിച്ചെത്തി — കടയുടമയിലേക്ക് മാറ്റുക",
+  "ui.I am away — activate Counter Staff": "ഞാൻ പുറത്താണ് — കൗണ്ടർ സ്റ്റാഫിനെ സജീവമാക്കുക",
+  "ui.Counter Staff mode is on. New checkout requests go to your staff.": "കൗണ്ടർ സ്റ്റാഫ് മോഡ് ഓണാണ്. പുതിയ ചെക്കൗട്ട് അഭ്യർത്ഥനകൾ സ്റ്റാഫിന് ലഭിക്കും.",
+  "ui.Counter Staff mode is off. New checkout requests come to you.": "കൗണ്ടർ സ്റ്റാഫ് മോഡ് ഓഫാണ്. പുതിയ ചെക്കൗട്ട് അഭ്യർത്ഥനകൾ നിങ്ങൾക്ക് ലഭിക്കും.",
+  "ui.Merchant is handling checkout. Counter Staff mode is off.": "കടയുടമ ചെക്കൗട്ട് കൈകാര്യം ചെയ്യുന്നു. കൗണ്ടർ സ്റ്റാഫ് മോഡ് ഓഫാണ്.",
+  "ui.Checkout handler changed": "ചെക്കൗട്ട് കൈകാര്യം ചെയ്യുന്ന ആളിനെ മാറ്റി"
 }
