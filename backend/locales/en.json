@@ -3090,5 +3090,13 @@
   "ui.Counter Staff mode is on. New checkout requests go to your staff.": "Counter Staff mode is on. New checkout requests go to your staff.",
   "ui.Counter Staff mode is off. New checkout requests come to you.": "Counter Staff mode is off. New checkout requests come to you.",
   "ui.Merchant is handling checkout. Counter Staff mode is off.": "Merchant is handling checkout. Counter Staff mode is off.",
-  "ui.Checkout handler changed": "Checkout handler changed"
+  "ui.Checkout handler changed": "Checkout handler changed",
+  "ui.These rules are used for Counter Staff checkout. The customer enters the bill amount, staff checks it, and AE calculates the points, discount and final amount to pay.": "These rules are used for Counter Staff checkout. The customer enters the bill amount, staff checks it, and AE calculates the points, discount and final amount to pay.",
+  "ui.For bills of ₹100 or more, this is the number of points earned per ₹100. For example, 10 gives 50 points on a ₹500 bill. Smaller bills use fixed point tiers; each purchase earns at most 100 points.": "For bills of ₹100 or more, this is the number of points earned per ₹100. For example, 10 gives 50 points on a ₹500 bill. Smaller bills use fixed point tiers; each purchase earns at most 100 points.",
+  "ui.Percentage takes a percentage off the bill. Flat amount takes a fixed rupee amount off the bill.": "Percentage takes a percentage off the bill. Flat amount takes a fixed rupee amount off the bill.",
+  "ui.For Percentage, 5 means 5% off. For Flat amount, ₹5 means ₹5 off. This discount applies when the customer redeems 100 points.": "For Percentage, 5 means 5% off. For Flat amount, ₹5 means ₹5 off. This discount applies when the customer redeems 100 points.",
+  "ui.The smallest bill allowed for point redemption. For example, ₹100 allows redemption on bills of ₹100 or more. This minimum does not apply to earning points only.": "The smallest bill allowed for point redemption. For example, ₹100 allows redemption on bills of ₹100 or more. This minimum does not apply to earning points only.",
+  "ui.Example: ₹500 bill, 10 points per ₹100 and 5% discount. Redeeming 100 points gives ₹25 off, leaving ₹475 to pay, and earns 50 new points.": "Example: ₹500 bill, 10 points per ₹100 and 5% discount. Redeeming 100 points gives ₹25 off, leaving ₹475 to pay, and earns 50 new points.",
+  "ui.Staff confirms the bill amount, not whether payment was received. Staff cannot change your points or discount rules.": "Staff confirms the bill amount, not whether payment was received. Staff cannot change your points or discount rules.",
+  "ui.Example calculation": "Example calculation"
 }
