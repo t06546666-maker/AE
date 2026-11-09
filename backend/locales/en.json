@@ -3110,5 +3110,12 @@
   "ui.Checkout choice": "Checkout choice",
   "ui.Review checkout": "Review checkout",
   "ui.You need 100 available points to redeem. Choose Earn only to continue.": "You need 100 available points to redeem. Choose Earn only to continue.",
-  "ui.Checkout rules changed. Review the checkout again.": "Checkout rules changed. Review the checkout again."
+  "ui.Checkout rules changed. Review the checkout again.": "Checkout rules changed. Review the checkout again.",
+  "ui.Period": "Period",
+  "ui.Apply dates": "Apply dates",
+  "ui.Dates use India time (IST). This week starts on Monday.": "Dates use India time (IST). This week starts on Monday.",
+  "ui.Choose a valid date range.": "Choose a valid date range.",
+  "ui.Current saved value": "Current saved value",
+  "ui.No transactions in this period.": "No transactions in this period.",
+  "ui.Showing {{from}} to {{to}}": "Showing {{from}} to {{to}}"
 }
