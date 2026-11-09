@@ -3172,5 +3172,11 @@
   "ui.Report date": "റിപ്പോർട്ട് തീയതി",
   "ui.No Google Play install report has been imported yet.": "Google Play ഇൻസ്റ്റാൾ റിപ്പോർട്ട് ഇതുവരെ ചേർത്തിട്ടില്ല.",
   "ui.Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.": "Google Play റിപ്പോർട്ടുകൾക്ക് 3–7 ദിവസത്തെ കാലതാമസം ഉണ്ടാകാം. ഈ കണക്ക് വ്യാപാരികളായും ഉപഭോക്താക്കളായും വേർതിരിക്കാനാവില്ല.",
-  "ui.Automatic refresh needs read-only Google Play report access.": "സ്വയമേവ പുതുക്കാൻ Google Play റിപ്പോർട്ടുകൾ വായിക്കാനുള്ള അനുമതി വേണം."
+  "ui.Automatic refresh needs read-only Google Play report access.": "സ്വയമേവ പുതുക്കാൻ Google Play റിപ്പോർട്ടുകൾ വായിക്കാനുള്ള അനുമതി വേണം.",
+  "ui.Counter workspace": "കൗണ്ടർ വിഭാഗങ്ങൾ",
+  "ui.Checkout requests": "ചെക്കൗട്ട് അഭ്യർത്ഥനകൾ",
+  "ui.No product lists yet.": "ഇതുവരെ ഉൽപ്പന്ന പട്ടികകളില്ല.",
+  "ui.Approved customer product lists for your shop appear here.": "നിങ്ങളുടെ കടയിലേക്കുള്ള അംഗീകരിച്ച ഉൽപ്പന്ന പട്ടികകൾ ഇവിടെ കാണാം.",
+  "ui.Product list update started": "ഉൽപ്പന്ന പട്ടിക പുതുക്കൽ ആരംഭിച്ചു",
+  "ui.Product list updated": "ഉൽപ്പന്ന പട്ടിക പുതുക്കി"
 }

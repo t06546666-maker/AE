@@ -41,3 +41,5 @@ html[lang="ml"] .ae-counter-page :is(button,input,select,textarea),html[lang="ml
 .ae-counter-auth .ae-auth-sheet form{display:grid;gap:14px}
 html[lang="ml"] .ae-counter-auth .ae-auth-sheet h1{font-size:22px;line-height:1.65}
 html[lang="ml"] .ae-counter-auth .ae-auth-sheet :is(p,a,label,input,button){font-size:13px;line-height:1.75}
+
+.ae-counter-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}.ae-counter-tabs [aria-pressed="true"]{background:#0066ff;color:white}.ae-counter-products .ae-counter-list-text{white-space:pre-wrap;overflow-wrap:anywhere}.ae-counter-product-photo{display:block;max-width:100%;max-height:180px;object-fit:contain}.ae-counter-product-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.ae-counter-products h2{font-size:18px}.ae-counter-products select{margin-top:8px}
