@@ -38,6 +38,8 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  <Kpi icon={<ReceiptText/>} label="Total points redeemed" value={totalValue('pointsRedeemed',true)} tone="green" hint="All-time recorded redemptions"/>
  <button type="button" ref={discountButton} className="admin-kpi green admin-discount-kpi" aria-expanded={showDiscountReport} aria-controls="admin-dashboard-discounts" disabled={!filters.valid} onClick={()=>setShowDiscountReport(!showDiscountReport)}><span className="admin-kpi-icon"><ReceiptText/></span><div><span>{uiText('Number of discounts')}</span><strong>{discounts.isPending?'…':discounts.isError?'—':discounts.data!.discountCount.toLocaleString('en-IN')}</strong><small>{uiText('Selected period and area · click for details')}</small></div><ChevronRight size={18}/></button>
  <Kpi icon={<Download/>} label="App installations" value={totalValue('appInstallations')} tone="blue" hint="Observed Android sign-ins, not Play Store downloads"/>
+ <Kpi icon={<Building2/>} label="Merchants using the app" value={totalValue('merchantAppUsers')} tone="blue" hint="Unique stores signed in on Android; not download counts"/>
+ <Kpi icon={<Users/>} label="Customers using the app" value={totalValue('customerAppUsers')} tone="purple" hint="Unique customers signed in on Android; not download counts"/>
  <Kpi icon={<Activity/>} label="Active app users" value={totalValue('activeAppUsers')} tone="purple" hint="Android accounts active in the last 5 minutes"/>
  </div>
  {(totals.isError||Object.values(totals.data||{}).some(value=>value==null))&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}

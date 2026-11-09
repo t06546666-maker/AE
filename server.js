@@ -2245,6 +2245,7 @@ app.get('/api/admin/report-areas',requireAuth,requireRole('admin'),async(req,res
 });
 app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,res)=>{
  async function sum(table,column){let total=0;for(let offset=0;;offset+=500){const result=await supabaseAdmin.from(table).select(`id,${column}`).order('id').range(offset,offset+499);if(result.error)throw result.error;total+=result.data.reduce((n,row)=>n+Number(row[column]||0),0);if(result.data.length<500)return total;}}
+ const androidAccounts=checkoutBillDatabase().then(database=>database.collection('ae_usage_users').where('platforms.android','==',true).get()).then(result=>require('./backend/android-account-counts.cjs').summarizeAndroidAccounts(result.docs.map(doc=>doc.data())));
  const totals=await Promise.allSettled([
   supabaseAdmin.from('customers').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
   supabaseAdmin.from('active_merchants').select('id',{count:'exact',head:true}).then(result=>{if(result.error)throw result.error;return result.count;}),
@@ -2252,8 +2253,10 @@ app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,
   sum('point_redemptions','points_redeemed'),
   checkoutBillDatabase().then(database=>database.collection('ae_android_installations').count().get()).then(result=>result.data().count),
   checkoutBillDatabase().then(database=>database.collection('ae_usage_users').where('lastAndroidSeen','>=',new Date(Date.now()-5*60000).toISOString()).get()).then(result=>new Set(result.docs.map(doc=>doc.data().actorKey)).size),
+  androidAccounts.then(result=>result.merchantAppUsers),
+  androidAccounts.then(result=>result.customerAppUsers),
  ]);
- const keys=['customers','merchants','pointsIssued','pointsRedeemed','appInstallations','activeAppUsers'];
+ const keys=['customers','merchants','pointsIssued','pointsRedeemed','appInstallations','activeAppUsers','merchantAppUsers','customerAppUsers'];
  res.json(Object.fromEntries(totals.map((result,i)=>[keys[i],result.status==='fulfilled'?result.value:null])));
 });
 app.get('/api/admin/report-summary',requireAuth,requireRole('admin'),async(req,res)=>{

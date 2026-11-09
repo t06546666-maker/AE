@@ -3156,5 +3156,9 @@
   "ui.Offers from your saved shops": "നിങ്ങൾ സംരക്ഷിച്ച കടകളിലെ ഓഫറുകൾ",
   "ui.Scan Merchant Shop QR": "വ്യാപാരിയുടെ കടയിലെ QR സ്കാൻ ചെയ്യുക",
   "ui.The merchant’s saved discount and points rules apply. This does not confirm payment receipt.": "വ്യാപാരി നിശ്ചയിച്ച കിഴിവും പോയിന്റ് നിയമങ്ങളും ബാധകമാകും. ഇത് പണം ലഭിച്ചതിന്റെ സ്ഥിരീകരണമല്ല.",
-  "ui.Go back": "തിരികെ പോകുക"
+  "ui.Go back": "തിരികെ പോകുക",
+  "ui.Merchants using the app": "ആപ്പ് ഉപയോഗിക്കുന്ന വ്യാപാരികൾ",
+  "ui.Customers using the app": "ആപ്പ് ഉപയോഗിക്കുന്ന ഉപഭോക്താക്കൾ",
+  "ui.Unique stores signed in on Android; not download counts": "ആൻഡ്രോയിഡിൽ ലോഗിൻ ചെയ്ത വ്യത്യസ്ത കടകൾ; ഡൗൺലോഡ് കണക്കല്ല",
+  "ui.Unique customers signed in on Android; not download counts": "ആൻഡ്രോയിഡിൽ ലോഗിൻ ചെയ്ത വ്യത്യസ്ത ഉപഭോക്താക്കൾ; ഡൗൺലോഡ് കണക്കല്ല"
 }

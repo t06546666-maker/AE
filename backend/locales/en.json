@@ -3058,5 +3058,9 @@
   "ui.Offers from your saved shops": "Offers from your saved shops",
   "ui.Scan Merchant Shop QR": "Scan Merchant Shop QR",
   "ui.The merchant’s saved discount and points rules apply. This does not confirm payment receipt.": "The merchant’s saved discount and points rules apply. This does not confirm payment receipt.",
-  "ui.Go back": "Go back"
+  "ui.Go back": "Go back",
+  "ui.Merchants using the app": "Merchants using the app",
+  "ui.Customers using the app": "Customers using the app",
+  "ui.Unique stores signed in on Android; not download counts": "Unique stores signed in on Android; not download counts",
+  "ui.Unique customers signed in on Android; not download counts": "Unique customers signed in on Android; not download counts"
 }
