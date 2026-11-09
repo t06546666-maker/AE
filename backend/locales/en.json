@@ -3117,5 +3117,12 @@
   "ui.Choose a valid date range.": "Choose a valid date range.",
   "ui.Current saved value": "Current saved value",
   "ui.No transactions in this period.": "No transactions in this period.",
-  "ui.Showing {{from}} to {{to}}": "Showing {{from}} to {{to}}"
+  "ui.Showing {{from}} to {{to}}": "Showing {{from}} to {{to}}",
+  "ui.Live checkout preview": "Live checkout preview",
+  "ui.Preview of unsaved rules. Save rules to use them for checkout.": "Preview of unsaved rules. Save rules to use them for checkout.",
+  "ui.Preview of your saved checkout rules.": "Preview of your saved checkout rules.",
+  "ui.Sample bill amount (₹)": "Sample bill amount (₹)",
+  "ui.Enter the sample amount and complete the rules to preview.": "Enter the sample amount and complete the rules to preview.",
+  "ui.Updating preview…": "Updating preview…",
+  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points."
 }

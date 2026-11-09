@@ -3214,5 +3214,12 @@
   "ui.Dates use India time (IST). This week starts on Monday.": "തീയതികൾ ഇന്ത്യൻ സമയത്തിലാണ് (IST). ആഴ്ച തിങ്കളാഴ്ച ആരംഭിക്കുന്നു.",
   "ui.Current saved value": "നിലവിൽ സേവ് ചെയ്ത മൂല്യം",
   "ui.No transactions in this period.": "ഈ കാലയളവിൽ ഇടപാടുകളില്ല.",
-  "ui.Showing {{from}} to {{to}}": "{{from}} മുതൽ {{to}} വരെ കാണിക്കുന്നു"
+  "ui.Showing {{from}} to {{to}}": "{{from}} മുതൽ {{to}} വരെ കാണിക്കുന്നു",
+  "ui.Live checkout preview": "ചെക്കൗട്ട് തത്സമയ പ്രിവ്യൂ",
+  "ui.Preview of unsaved rules. Save rules to use them for checkout.": "സേവ് ചെയ്യാത്ത നിയമങ്ങളുടെ പ്രിവ്യൂ. ചെക്കൗട്ടിൽ ഉപയോഗിക്കാൻ നിയമങ്ങൾ സേവ് ചെയ്യുക.",
+  "ui.Preview of your saved checkout rules.": "സേവ് ചെയ്ത ചെക്കൗട്ട് നിയമങ്ങളുടെ പ്രിവ്യൂ.",
+  "ui.Sample bill amount (₹)": "ഉദാഹരണ ബിൽ തുക (₹)",
+  "ui.Enter the sample amount and complete the rules to preview.": "പ്രിവ്യൂ കാണാൻ ഉദാഹരണ തുകയും നിയമങ്ങളും നൽകുക.",
+  "ui.Updating preview…": "പ്രിവ്യൂ പുതുക്കുന്നു…",
+  "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "ഇത് ഉദാഹരണം മാത്രമാണ്. ഇടപാട് സേവ് ചെയ്യുകയോ പോയിന്റുകൾ മാറ്റുകയോ ഇല്ല. യഥാർത്ഥ റിഡംപ്ഷന് ഉപഭോക്താവിന് 100 പോയിന്റുകൾ ഉണ്ടായിരിക്കണം."
 }
