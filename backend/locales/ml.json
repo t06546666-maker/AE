@@ -3160,5 +3160,17 @@
   "ui.Merchants using the app": "ആപ്പ് ഉപയോഗിക്കുന്ന വ്യാപാരികൾ",
   "ui.Customers using the app": "ആപ്പ് ഉപയോഗിക്കുന്ന ഉപഭോക്താക്കൾ",
   "ui.Unique stores signed in on Android; not download counts": "ആൻഡ്രോയിഡിൽ ലോഗിൻ ചെയ്ത വ്യത്യസ്ത കടകൾ; ഡൗൺലോഡ് കണക്കല്ല",
-  "ui.Unique customers signed in on Android; not download counts": "ആൻഡ്രോയിഡിൽ ലോഗിൻ ചെയ്ത വ്യത്യസ്ത ഉപഭോക്താക്കൾ; ഡൗൺലോഡ് കണക്കല്ല"
+  "ui.Unique customers signed in on Android; not download counts": "ആൻഡ്രോയിഡിൽ ലോഗിൻ ചെയ്ത വ്യത്യസ്ത ഉപഭോക്താക്കൾ; ഡൗൺലോഡ് കണക്കല്ല",
+  "ui.View merchant dashboard": "വ്യാപാരിയുടെ ഡാഷ്ബോർഡ് കാണുക",
+  "ui.Back to merchant details": "വ്യാപാരിയുടെ വിവരങ്ങളിലേക്ക് മടങ്ങുക",
+  "ui.Merchant dashboard · read-only Admin view": "വ്യാപാരിയുടെ ഡാഷ്ബോർഡ് · അഡ്മിന് കാണാൻ മാത്രം",
+  "ui.Google Play installs": "Google Play ഇൻസ്റ്റാളുകൾ",
+  "ui.Official Google Play report · separate from signed-in app accounts": "ഔദ്യോഗിക Google Play റിപ്പോർട്ട് · ആപ്പിൽ ലോഗിൻ ചെയ്ത അക്കൗണ്ടുകളുടെ കണക്കിൽ നിന്ന് വ്യത്യസ്തം",
+  "ui.Google Play statistics are unavailable.": "Google Play കണക്കുകൾ ഇപ്പോൾ ലഭ്യമല്ല.",
+  "ui.Installs on active devices": "സജീവ ഉപകരണങ്ങളിലെ ഇൻസ്റ്റാളുകൾ",
+  "ui.New device installs on report date": "റിപ്പോർട്ട് തീയതിയിലെ പുതിയ ഉപകരണ ഇൻസ്റ്റാളുകൾ",
+  "ui.Report date": "റിപ്പോർട്ട് തീയതി",
+  "ui.No Google Play install report has been imported yet.": "Google Play ഇൻസ്റ്റാൾ റിപ്പോർട്ട് ഇതുവരെ ചേർത്തിട്ടില്ല.",
+  "ui.Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.": "Google Play റിപ്പോർട്ടുകൾക്ക് 3–7 ദിവസത്തെ കാലതാമസം ഉണ്ടാകാം. ഈ കണക്ക് വ്യാപാരികളായും ഉപഭോക്താക്കളായും വേർതിരിക്കാനാവില്ല.",
+  "ui.Automatic refresh needs read-only Google Play report access.": "സ്വയമേവ പുതുക്കാൻ Google Play റിപ്പോർട്ടുകൾ വായിക്കാനുള്ള അനുമതി വേണം."
 }

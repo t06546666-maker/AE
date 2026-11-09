@@ -1,3 +1,4 @@
+import {GooglePlayStats} from '../components/GooglePlayStats';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Building2, ChevronRight, Download, Activity, Gift, ListChecks, ReceiptText, UserCog, Users } from 'lucide-react';
@@ -43,6 +44,7 @@ export function AdminDashboard({ user }: { user: UserProfile }) {
  <Kpi icon={<Activity/>} label="Active app users" value={totalValue('activeAppUsers')} tone="purple" hint="Android accounts active in the last 5 minutes"/>
  </div>
  {(totals.isError||Object.values(totals.data||{}).some(value=>value==null))&&<p role="alert" className="admin-data-note">{uiText('Some account totals could not be loaded. Refresh to retry.')}</p>}
+ <GooglePlayStats/>
  <section className="admin-reporting-toolbar" aria-label={uiText('Activity & reports')}><h2>{uiText('Activity & reports')}</h2><AdminDashboardToolbar state={filters} areas={areas.data?.areas||[]} areaError={areas.isError}/></section>
  {showDiscountReport&&filters.valid&&filters.range&&<section id="admin-dashboard-discounts" className="admin-card admin-dashboard-discounts"><div className="admin-card-title"><h2 ref={discountHeading} tabIndex={-1}>{uiText('Discount breakdown')}</h2><button className="button secondary" onClick={()=>{setShowDiscountReport(false);discountButton.current?.focus();}}>{uiText('Close')}</button></div><AdminTransactionReports key={filters.range.from+filters.range.to+filters.area} initialFilters={{...filters.range,area:filters.area}} initialDiscounts/></section>}
  {discounts.isError&&<p role="alert" className="admin-data-note">{uiText('Discount count unavailable. Open the report to retry.')}</p>}

@@ -304,7 +304,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
                     <td>{merchant.orderCount ?? 0}</td>
                     <td>
                       <div className="table-actions">
-                        <button className="button secondary" onClick={() => setAllocation(merchant)}>{uiText("Allocate points")}</button>
+                        <Link className="button secondary" to={`/merchants/${merchant.id}/dashboard`}>{uiText("Dashboard")}</Link><button className="button secondary" onClick={() => setAllocation(merchant)}>{uiText("Allocate points")}</button>
                         <Link className="icon-button" title={uiText("View merchant")} to={`/merchants/${merchant.id}`}><Eye /></Link>
                         <button className="icon-button" title={t('merchants.reset')} disabled={reset.isPending} onClick={() => resetMerchant(merchant)}><KeyRound /></button>
                         <button className="icon-button danger-icon" title={uiText("Delete merchant")} disabled={remove.isPending} onClick={() => deleteMerchant(merchant)}><Trash2 /></button>

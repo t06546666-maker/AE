@@ -27,6 +27,7 @@ const AccountDeletion = lazy(() => import('./pages/AccountDeletion').then(m => (
 const ReadOnlyProfiles = lazy(() => import('./pages/ReadOnlyProfiles').then(m => ({ default: m.ReadOnlyProfiles })));
 const Customers = lazy(() => import('./pages/Customers').then(m => ({ default: m.Customers })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const AdminMerchantDashboard=lazy(()=>import('./pages/AdminMerchantDashboard').then(m=>({default:m.AdminMerchantDashboard})));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminBanners = lazy(() => import('./pages/AdminBanners').then(m => ({ default: m.AdminBanners })));
 const AdminNotifications = lazy(() => import('./pages/AdminNotifications').then(m => ({ default: m.AdminNotifications })));
@@ -448,6 +449,7 @@ export function App() {
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/add-merchant" element={<RoleRoute user={user} role="admin"><Merchants onboardingOnly /></RoleRoute>} />
           <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
+          <Route path="/merchants/:id/dashboard" element={<RoleRoute user={user} role="admin"><AdminMerchantDashboard user={user}/></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><AdminMerchantDetails /></RoleRoute>} />
           <Route path="/merchants/:id/qr-poster" element={<RoleRoute user={user} role="admin"><MerchantQrPoster /></RoleRoute>} />
           <Route path="/qr-common" element={<RoleRoute user={user} role="admin"><QrCommon /></RoleRoute>} />

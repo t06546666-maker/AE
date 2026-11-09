@@ -2260,6 +2260,7 @@ app.get('/api/admin/overview-totals',requireAuth,requireRole('admin'),async(req,
  const keys=['customers','merchants','pointsIssued','pointsRedeemed','appInstallations','activeAppUsers','merchantAppUsers','customerAppUsers'];
  res.json(Object.fromEntries(totals.map((result,i)=>[keys[i],result.status==='fulfilled'?result.value:null])));
 });
+require('./backend/play-install-stats.cjs').registerPlayInstallStats(app,{auth:requireAuth,adminRole:requireRole('admin'),database:checkoutBillDatabase,download:async name=>{await checkoutBillDatabase();const{getStorage}=await import('firebase-admin/storage');const[bytes]=await getStorage().bucket('pubsite_prod_5402304545091282522').file(name).download();return bytes;}});
 app.get('/api/admin/report-summary',requireAuth,requireRole('admin'),async(req,res)=>{
  const from=Date.parse(req.query.from),to=Date.parse(req.query.to),area=cleanText(req.query.area,80);
  if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>366*86400000)return res.status(400).json({error:'Choose a valid range up to one year.'});

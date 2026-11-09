@@ -3062,5 +3062,17 @@
   "ui.Merchants using the app": "Merchants using the app",
   "ui.Customers using the app": "Customers using the app",
   "ui.Unique stores signed in on Android; not download counts": "Unique stores signed in on Android; not download counts",
-  "ui.Unique customers signed in on Android; not download counts": "Unique customers signed in on Android; not download counts"
+  "ui.Unique customers signed in on Android; not download counts": "Unique customers signed in on Android; not download counts",
+  "ui.View merchant dashboard": "View merchant dashboard",
+  "ui.Back to merchant details": "Back to merchant details",
+  "ui.Merchant dashboard · read-only Admin view": "Merchant dashboard · read-only Admin view",
+  "ui.Google Play installs": "Google Play installs",
+  "ui.Official Google Play report · separate from signed-in app accounts": "Official Google Play report · separate from signed-in app accounts",
+  "ui.Google Play statistics are unavailable.": "Google Play statistics are unavailable.",
+  "ui.Installs on active devices": "Installs on active devices",
+  "ui.New device installs on report date": "New device installs on report date",
+  "ui.Report date": "Report date",
+  "ui.No Google Play install report has been imported yet.": "No Google Play install report has been imported yet.",
+  "ui.Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.": "Google Play exports can lag by 3–7 days. These totals cannot be split into merchants and customers.",
+  "ui.Automatic refresh needs read-only Google Play report access.": "Automatic refresh needs read-only Google Play report access."
 }
