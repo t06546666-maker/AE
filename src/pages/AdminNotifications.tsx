@@ -1,4 +1,3 @@
-import {MerchantReminderStatus} from '../components/MerchantReminderStatus';
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -25,15 +24,12 @@ import {
   Search,
   Check,
   Plus,
-  MessageCircle,
-  CalendarClock,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, ErrorState, EmptyState } from '../components/Common';
 import { useToast } from '../toast';
 import { uiText } from '../uiText';
 import { formatDateTime } from '../utils';
-import { MilestoneVoucherCard } from '../components/MilestoneVoucherCard';
 
 interface NotificationStats {
   customerTokens: number;
@@ -90,7 +86,6 @@ interface ScheduledNotification {
   target_count?: number;
   scheduled_at: string;
   status: string;
-  push_only?: boolean;
   created_at?: string;
 }
 
@@ -108,7 +103,6 @@ interface NotificationHistoryItem {
   merchant_ids?: string[];
   target_summary?: string;
   target_count?: number;
-  push_only?: boolean;
   sent_at: string;
   delivered: number;
   failed: number;
@@ -118,32 +112,6 @@ interface NotificationHistoryItem {
 interface HistoryResponse {
   scheduled: ScheduledNotification[];
   history: NotificationHistoryItem[];
-}
-
-function renderWhatsAppFormattedText(text: string) {
-  if (!text) return null;
-  const parts = text.split('\n');
-  return parts.map((line, lineIdx) => {
-    const boldRegex = /\*([^\*]+)\*/g;
-    const elements: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match;
-    while ((match = boldRegex.exec(line)) !== null) {
-      if (match.index > lastIndex) {
-        elements.push(line.slice(lastIndex, match.index));
-      }
-      elements.push(<strong key={match.index} style={{ fontWeight: 800, color: '#111b21' }}>{match[1]}</strong>);
-      lastIndex = match.index + match[0].length;
-    }
-    if (lastIndex < line.length) {
-      elements.push(line.slice(lastIndex));
-    }
-    return (
-      <span key={lineIdx} style={{ display: 'block', minHeight: line.trim() ? 'auto' : '8px' }}>
-        {elements.length > 0 ? elements : line}
-      </span>
-    );
-  });
 }
 
 export function AdminNotifications() {
@@ -161,14 +129,8 @@ export function AdminNotifications() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
-  const [pushOnly, setPushOnly] = useState(false);
-  const [sendWhatsApp, setSendWhatsApp] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'whatsapp' | 'better_ui' | 'push'>('whatsapp');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
-  const [imageNaturalRatio, setImageNaturalRatio] = useState<number | null>(null);
-  const [isAutoFitted2x1, setIsAutoFitted2x1] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<'now' | 'schedule'>('now');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
   const [activeTab, setActiveTab] = useState<'create' | 'scheduled' | 'history'>('create');
@@ -290,118 +252,17 @@ export function AdminNotifications() {
     }
 
     setImageFile(file);
-    setOriginalImageFile(file);
-    setIsAutoFitted2x1(false);
     const objectUrl = URL.createObjectURL(file);
     setImagePreview(objectUrl);
-
-    // Detect natural aspect ratio
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalHeight > 0) {
-        setImageNaturalRatio(img.naturalWidth / img.naturalHeight);
-      }
-    };
-    img.src = objectUrl;
   };
 
   const handleRemoveImage = () => {
     setImageFile(null);
-    setOriginalImageFile(null);
-    setImageNaturalRatio(null);
-    setIsAutoFitted2x1(false);
     if (imagePreview.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreview);
     }
     setImagePreview('');
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  // Auto-fit portrait or irregular images to 2:1 widescreen for Android push notification shade
-  const handleAutoFit2x1 = () => {
-    const sourceFile = originalImageFile || imageFile;
-    if (!sourceFile) return;
-
-    const sourceUrl = URL.createObjectURL(sourceFile);
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const targetW = 1200;
-        const targetH = 600; // 2:1 ratio standard for Android BigPicture push
-        const canvas = document.createElement('canvas');
-        canvas.width = targetW;
-        canvas.height = targetH;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // 1. Draw subtle ambient blurred background from image
-        ctx.save();
-        ctx.filter = 'blur(28px) brightness(0.75)';
-        ctx.drawImage(img, -20, -20, targetW + 40, targetH + 40);
-        ctx.restore();
-
-        // 2. Soft dark gradient vignette overlay for high contrast
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
-        ctx.fillRect(0, 0, targetW, targetH);
-
-        // 3. Draw full uncropped image centered inside 2:1 frame
-        const padX = 28;
-        const padY = 20;
-        const maxDrawW = targetW - padX * 2;
-        const maxDrawH = targetH - padY * 2;
-        const scale = Math.min(maxDrawW / img.naturalWidth, maxDrawH / img.naturalHeight);
-        const drawW = img.naturalWidth * scale;
-        const drawH = img.naturalHeight * scale;
-        const drawX = (targetW - drawW) / 2;
-        const drawY = (targetH - drawH) / 2;
-
-        // Subtle drop shadow behind center poster
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 20;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 6;
-        ctx.drawImage(img, drawX, drawY, drawW, drawH);
-        ctx.restore();
-
-        // 4. Convert canvas to JPEG blob and update imageFile
-        canvas.toBlob((blob) => {
-          if (!blob) return;
-          const fittedFile = new File([blob], 'push-banner-2x1.jpg', { type: 'image/jpeg' });
-          setImageFile(fittedFile);
-          if (imagePreview.startsWith('blob:')) {
-            URL.revokeObjectURL(imagePreview);
-          }
-          const fittedUrl = URL.createObjectURL(blob);
-          setImagePreview(fittedUrl);
-          setImageNaturalRatio(2.0);
-          setIsAutoFitted2x1(true);
-          showToast('Image formatted to 2:1 widescreen for Android notification bar!');
-        }, 'image/jpeg', 0.92);
-      } finally {
-        URL.revokeObjectURL(sourceUrl);
-      }
-    };
-    img.src = sourceUrl;
-  };
-
-  const handleRevertToOriginalImage = () => {
-    if (!originalImageFile) return;
-    setImageFile(originalImageFile);
-    if (imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    const objectUrl = URL.createObjectURL(originalImageFile);
-    setImagePreview(objectUrl);
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalHeight > 0) {
-        setImageNaturalRatio(img.naturalWidth / img.naturalHeight);
-      }
-    };
-    img.src = objectUrl;
-    setIsAutoFitted2x1(false);
-    showToast('Reverted to original image.');
   };
 
   // Add/remove customer helpers
@@ -454,8 +315,6 @@ export function AdminNotifications() {
       form.append('body', body.trim());
       if (url.trim()) form.append('url', url.trim());
       form.append('target', target);
-      form.append('pushOnly', String(pushOnly));
-      form.append('sendWhatsApp', String(sendWhatsApp));
 
       if (target === 'selected_customers' || target === 'single_customer') {
         const cIds = selectedCustomers.map((c) => c.id);
@@ -506,8 +365,6 @@ export function AdminNotifications() {
       setTitle('');
       setBody('');
       setUrl('');
-      setPushOnly(false);
-      setSendWhatsApp(false);
       handleRemoveImage();
       setDispatchMode('now');
       setScheduledDateTime('');
@@ -535,22 +392,6 @@ export function AdminNotifications() {
     },
     onError: (err: any) => {
       showToast(err.message || 'Failed to cancel scheduled notification', 'error');
-    },
-  });
-
-  // Delete past broadcast history mutation
-  const deleteHistoryMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return apiFetch<{ success: boolean; message: string }>(`/api/admin/notifications/history/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: (data) => {
-      showToast(data.message || 'Broadcast deleted successfully.');
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'notifications', 'history'] });
-    },
-    onError: (err: any) => {
-      showToast(err.message || 'Failed to delete broadcast', 'error');
     },
   });
 
@@ -618,66 +459,6 @@ export function AdminNotifications() {
           </div>
         }
       />
-
-      {/* Shortcut Card to Vehicle Pollution & Expiry Manager */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #091e3a 0%, #0d3266 100%)',
-          color: '#ffffff',
-          borderRadius: '18px',
-          padding: '14px 20px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '14px',
-          boxShadow: '0 6px 18px rgba(9, 30, 58, 0.25)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: 44, height: 44, borderRadius: '12px', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <CalendarClock size={24} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#f8fafc' }}>
-                {uiText("Vehicle Pollution & Expiry Manager")}
-              </span>
-              <span style={{ fontSize: '10px', fontWeight: 800, background: '#059669', color: '#ecfdf5', padding: '2px 8px', borderRadius: '6px' }}>
-                {uiText("MVD Kerala Statutory Mode")}
-              </span>
-            </div>
-            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#bae6fd', lineHeight: 1.4 }}>
-              {uiText("Manage vehicle testing logs (2W ₹100, 4W ₹120, Diesel ₹150), filter by expiry month, export/import Excel, and send automated WhatsApp reminders.")}
-            </p>
-          </div>
-        </div>
-
-        <a
-          href="/expiry-reminders"
-          style={{
-            background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-            color: '#ffffff',
-            fontSize: '12px',
-            fontWeight: 800,
-            padding: '10px 18px',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
-            transition: 'transform 0.15s ease',
-          }}
-        >
-          <span>🚗 {uiText("Open Pollution Manager")}</span>
-          <span style={{ fontSize: '14px' }}>→</span>
-        </a>
-      </div>
-
-      <MerchantReminderStatus/>
 
       {/* Audience Stats Bar */}
       <div
@@ -1054,35 +835,13 @@ export function AdminNotifications() {
                           </span>
                         </div>
                         {c.hasPushToken ? (
-                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>{uiText(" ● Push ")}</span>
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
+                            ● Push
+                          </span>
                         ) : (
-                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{uiText(" In-App ")}</span>
-                        )}
-                        {c.phone && (
-                          <a
-                            href={`https://wa.me/${c.phone.replace(/\D/g, '').length === 10 ? '91' + c.phone.replace(/\D/g, '') : c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                              (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              background: '#25D366',
-                              color: '#fff',
-                              borderRadius: '12px',
-                              padding: '2px 8px',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              textDecoration: 'none',
-                              cursor: 'pointer',
-                            }}
-                            title={uiText("Send via WhatsApp")}
-                          >
-                            <MessageCircle size={11} />
-                            WhatsApp
-                          </a>
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                            In-App
+                          </span>
                         )}
                         <button
                           type="button"
@@ -1295,35 +1054,13 @@ export function AdminNotifications() {
                           </span>
                         </div>
                         {m.hasPushToken ? (
-                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>{uiText(" ● Push ")}</span>
+                          <span title={uiText("Phone push active")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
+                            ● Push
+                          </span>
                         ) : (
-                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{uiText(" Pending ")}</span>
-                        )}
-                        {m.phone && (
-                          <a
-                            href={`https://wa.me/${m.phone.replace(/\D/g, '').length === 10 ? '91' + m.phone.replace(/\D/g, '') : m.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                              (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              background: '#25D366',
-                              color: '#fff',
-                              borderRadius: '12px',
-                              padding: '2px 8px',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              textDecoration: 'none',
-                              cursor: 'pointer',
-                            }}
-                            title={uiText("Send via WhatsApp")}
-                          >
-                            <MessageCircle size={11} />
-                            WhatsApp
-                          </a>
+                          <span title={uiText("In-app inbox only")} style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                            Pending
+                          </span>
                         )}
                         <button
                           type="button"
@@ -1436,81 +1173,6 @@ export function AdminNotifications() {
               </div>
             )}
 
-            {/* Quick Templates / Milestone Presets Bar */}
-            <div style={{ marginBottom: '16px', padding: '12px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={14} /> {uiText("Quick Milestone & Reward Presets")}
-                </span>
-                <span style={{ fontSize: '11px', color: '#15803d' }}>{uiText("Click to auto-fill Malayalam text")}</span>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const recipientName = selectedCustomers[0]?.name || 'Rasheed';
-                    setTitle('offers');
-                    setPreviewTab('whatsapp');
-                    setSendWhatsApp(true);
-                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യുടെ ചരിത്രത്തിലെ ആദ്യ ഇടപാട് നടത്തിയതിന് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്. 🎁\nനിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
-                  }}
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #86efac',
-                    borderRadius: '8px',
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#166534',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🎁 {uiText("1st Transaction Gift (ആദ്യ ഇടപാട്)")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const recipientName = selectedCustomers[0]?.name || 'Rasheed';
-                    setTitle('offers');
-                    setPreviewTab('whatsapp');
-                    setSendWhatsApp(true);
-                    setBody(`പ്രിയപ്പെട്ട ${recipientName},\n\nAE-യിൽ 10 ഇടപാടുകൾ പൂർത്തിയാക്കിയതിന് പ്രത്യേക സമ്മാനം! 🎁\nതുടർച്ചയായ പിന്തുണയ്ക്ക് ഹൃദയം നിറഞ്ഞ നന്ദി! ❤️\nനിങ്ങൾക്കായി ₹1000 സമ്മാനം നൽകുന്നതിൽ സന്തോഷമുണ്ട്. 🎁\nനിങ്ങളുടെ സമ്മാന വിവരങ്ങൾ: • Al-Madeena Hypermarket — ₹250 • Royal Bakers & Sweets — ₹250 • City Trendz Apparels — ₹250 • Care Medicals — ₹250 🎀 സ്ഥാപനങ്ങൾ സന്ദർശിച്ച് AE സമ്മാനം ഉപയോഗിക്കാം.\n\n🗓️ സാധുത: 30 Nov 2026\nAE — Where customers meet businesses and beyond.\n📲 Instagram: @ae.kerala\n\nനിബന്ധനകൾ ബാധകം.`);
-                  }}
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #86efac',
-                    borderRadius: '8px',
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#166534',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🌟 {uiText("10th Transaction Milestone (10-ാം ഇടപാട്)")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTitle('✨ AE പ്രത്യേക ഓഫറുകൾ എത്തിക്കഴിഞ്ഞു!');
-                    setBody('നിങ്ങളുടെ പ്രിയപ്പെട്ട കടകളിൽ നിന്നുള്ള പുതിയ ഓഫറുകളും ക്യാഷ്ബാക്ക് പോയിന്റുകളും ഇപ്പോൾ AE ആപ്പിൽ ലഭ്യമാണ്. ഉടൻ ആപ്പ് തുറന്ന് ഷോപ്പ് ചെയ്യൂ!');
-                  }}
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #86efac',
-                    borderRadius: '8px',
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#166534',
-                    cursor: 'pointer',
-                  }}
-                >
-                  📢 {uiText("General Offer Announcement")}
-                </button>
-              </div>
-            </div>
-
             {/* Title */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
@@ -1522,7 +1184,7 @@ export function AdminNotifications() {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={uiText("e.g. How to use AE 🚀 or Weekend Bonus Deals!")}
+                placeholder="e.g. How to use AE 🚀 or Weekend Bonus Deals!"
                 maxLength={90}
                 style={{ width: '100%', fontSize: '14px', padding: '10px 14px' }}
               />
@@ -1543,7 +1205,7 @@ export function AdminNotifications() {
                 rows={3}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder={uiText("e.g. Tap to watch our step-by-step video on how to earn cashback points, redeem gifts, and place instant grocery orders on WhatsApp!")}
+                placeholder="e.g. Tap to watch our step-by-step video on how to earn cashback points, redeem gifts, and place instant grocery orders on WhatsApp!"
                 maxLength={400}
                 style={{ width: '100%', fontSize: '14px', padding: '10px 14px', resize: 'vertical' }}
               />
@@ -1576,102 +1238,35 @@ export function AdminNotifications() {
 
             {/* Optional Banner Image */}
             <div style={{ marginBottom: '22px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  {uiText("Banner Image (Optional - Rich Push Notification)")}
-                </label>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  {uiText("Recommended: 2:1 Widescreen (1200×600)")}
-                </span>
-              </div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                {uiText("Banner Image (Optional - Rich Push Notification)")}
+              </label>
 
               {imagePreview ? (
-                <div style={{ borderRadius: '12px', border: '1px solid #cbd5e1', overflow: 'hidden', background: '#0f172a' }}>
-                  <div style={{ position: 'relative', width: '100%', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
-                    <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        background: 'rgba(15, 23, 42, 0.85)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '28px',
-                        height: '28px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                      }}
-                      title={uiText("Remove Image")}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  {/* Ratio badge and 2:1 Auto-Format Bar */}
-                  <div style={{ padding: '10px 14px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
-                        {imageNaturalRatio ? `Aspect Ratio: ${imageNaturalRatio.toFixed(2)}:1` : uiText("Aspect Ratio")}
-                      </span>
-                      {isAutoFitted2x1 ? (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>{uiText(" ✓ 2:1 Push Optimized ")}</span>
-                      ) : imageNaturalRatio && (imageNaturalRatio < 1.7 || imageNaturalRatio > 2.3) ? (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>{uiText(" ⚠️ Portrait/Non-2:1 (Android will crop) ")}</span>
-                      ) : (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600 }}>{uiText(" Standard 2:1 ")}</span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {imageNaturalRatio && (imageNaturalRatio < 1.7 || imageNaturalRatio > 2.3) && !isAutoFitted2x1 && (
-                        <button
-                          type="button"
-                          onClick={handleAutoFit2x1}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            background: '#2563eb',
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            border: 'none',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <Sparkles size={14} />
-                          <span>{uiText("Auto-Fit to 2:1 for Android Push")}</span>
-                        </button>
-                      )}
-                      {isAutoFitted2x1 && (
-                        <button
-                          type="button"
-                          onClick={handleRevertToOriginalImage}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            background: '#e2e8f0',
-                            color: '#334155',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            border: 'none',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {uiText("Revert to Original")}
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid #cbd5e1', maxHeight: '200px' }}>
+                  <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title={uiText("Remove Image")}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               ) : (
                 <div
@@ -1691,7 +1286,7 @@ export function AdminNotifications() {
                     {uiText("Click to upload high-impact banner image")}
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {uiText("JPG, PNG, WebP up to 5MB (Android displays best in 2:1 widescreen, e.g. 1200×600)")}
+                    {uiText("JPG, PNG, WebP up to 5MB (Big Picture notification banner)")}
                   </div>
                 </div>
               )}
@@ -1702,81 +1297,6 @@ export function AdminNotifications() {
                 onChange={handleImageChange}
                 style={{ display: 'none' }}
               />
-            </div>
-
-            {/* In-App Delivery Mode: Push-Only Checkbox */}
-            <div style={{ marginBottom: '16px' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  background: pushOnly ? '#f0fdf4' : '#f8fafc',
-                  border: `1.5px solid ${pushOnly ? '#86efac' : '#e2e8f0'}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={pushOnly}
-                  onChange={(e) => setPushOnly(e.target.checked)}
-                  style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#16a34a', cursor: 'pointer' }}
-                />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: pushOnly ? '#15803d' : '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{uiText("Send as Phone Push Only (Do not save to in-app announcement feed)")}</span>
-                    {pushOnly && (
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                        {uiText("Push Only")}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', lineHeight: 1.4 }}>
-                    {uiText("Delivers straight to customer/merchant lockscreen and phone notification bar. When swiped away or cleared, it will not enter the in-app notification center or stay in customer feeds.")}
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            {/* Also Dispatch via WhatsApp Toggle */}
-            <div style={{ marginBottom: '22px' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  background: sendWhatsApp ? '#f0fdf4' : '#f8fafc',
-                  border: `1.5px solid ${sendWhatsApp ? '#25D366' : '#e2e8f0'}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={sendWhatsApp}
-                  onChange={(e) => setSendWhatsApp(e.target.checked)}
-                  style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#25D366', cursor: 'pointer' }}
-                />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: sendWhatsApp ? '#166534' : '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MessageCircle size={16} style={{ color: '#25D366' }} />
-                    <span>{uiText("Also Dispatch via WhatsApp (Cloud API & Direct)")}</span>
-                    {sendWhatsApp && (
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
-                        {uiText("WhatsApp Enabled")}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', lineHeight: 1.4 }}>
-                    {uiText("Dispatches this announcement or milestone reward directly to the verified phone numbers of the selected customer(s) or merchant(s).")}
-                  </div>
-                </div>
-              </label>
             </div>
 
             {/* Timing / Schedule Options */}
@@ -1874,550 +1394,126 @@ export function AdminNotifications() {
                 </>
               )}
             </button>
-
-            {((target === 'selected_customers' || target === 'single_customer') && selectedCustomers.length > 0 && selectedCustomers[0].phone) && (
-              <div style={{ marginTop: '10px' }}>
-                <a
-                  href={`https://wa.me/${selectedCustomers[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedCustomers[0].phone.replace(/\D/g, '') : selectedCustomers[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="button"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    background: '#25D366',
-                    color: '#fff',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <MessageCircle size={18} />
-                  <span>{uiText("Open & Send in WhatsApp to {{name}}", { name: selectedCustomers[0].name })}</span>
-                </a>
-              </div>
-            )}
-
-            {target === 'selected_merchants' && selectedMerchants.length > 0 && selectedMerchants[0].phone && (
-              <div style={{ marginTop: '10px' }}>
-                <a
-                  href={`https://wa.me/${selectedMerchants[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedMerchants[0].phone.replace(/\D/g, '') : selectedMerchants[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="button"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    background: '#25D366',
-                    color: '#fff',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <MessageCircle size={18} />
-                  <span>{uiText("Open & Send in WhatsApp to {{name}}", { name: selectedMerchants[0].name })}</span>
-                </a>
-              </div>
-            )}
           </form>
 
-          {/* Right Column: Live Mobile & WhatsApp Preview */}
+          {/* Right Column: Live Mobile Preview */}
           <div>
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Smartphone size={18} className="text-slate-600" />
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-                  {uiText("Live Message Preview")}
-                </h3>
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Smartphone size={18} className="text-slate-600" />
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
+                {target === 'selected_customers' || target === 'single_customer'
+                  ? (selectedCustomers.length > 0
+                      ? uiText("Live Preview for {{count}} Customer(s) ({{names}})", {
+                          count: selectedCustomers.length,
+                          names: selectedCustomers.slice(0, 2).map((c) => c.name).join(', ') + (selectedCustomers.length > 2 ? '...' : ''),
+                        })
+                      : uiText("Live Preview (No customers selected)"))
+                  : target === 'selected_merchants'
+                  ? (selectedMerchants.length > 0
+                      ? uiText("Live Preview for {{count}} Store(s) ({{names}})", {
+                          count: selectedMerchants.length,
+                          names: selectedMerchants.slice(0, 2).map((m) => m.name).join(', ') + (selectedMerchants.length > 2 ? '...' : ''),
+                        })
+                      : uiText("Live Preview (No stores selected)"))
+                  : target === 'merchants'
+                  ? uiText("Live Phone Preview (All Merchants)")
+                  : target === 'all'
+                  ? uiText("Live Phone Preview (Everyone)")
+                  : uiText("Live Phone Preview (All Customers)")}
+              </h3>
+            </div>
+
+            <div
+              style={{
+                background: '#0f172a',
+                borderRadius: '32px',
+                padding: '16px',
+                border: '8px solid #334155',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                minHeight: '480px',
+                color: '#fff',
+                position: 'sticky',
+                top: '20px',
+              }}
+            >
+              {/* Phone Status Bar Mockup */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', padding: '0 8px 14px' }}>
+                <span>10:30 AM</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <span>5G</span>
+                  <span>100%</span>
+                </div>
               </div>
-            </div>
 
-            {/* Preview Mode Selector Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
-              <button
-                type="button"
-                onClick={() => setPreviewTab('whatsapp')}
+              {/* Notification Banner Mockup */}
+              <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px',
-                  padding: '8px 6px',
-                  borderRadius: '10px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: previewTab === 'whatsapp' ? '2px solid #25D366' : '1px solid #cbd5e1',
-                  background: previewTab === 'whatsapp' ? '#f0fdf4' : '#fff',
-                  color: previewTab === 'whatsapp' ? '#166534' : '#475569',
-                  boxShadow: previewTab === 'whatsapp' ? '0 2px 6px rgba(37,211,102,0.18)' : 'none',
-                  transition: 'all 0.2s ease',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(10px)',
+                  color: '#0f172a',
+                  borderRadius: '20px',
+                  padding: '14px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
                 }}
               >
-                <MessageCircle size={14} style={{ color: '#25D366' }} />
-                <span>{uiText("WhatsApp View")}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewTab('better_ui')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px',
-                  padding: '8px 6px',
-                  borderRadius: '10px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: previewTab === 'better_ui' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                  background: previewTab === 'better_ui' ? '#f0f9ff' : '#fff',
-                  color: previewTab === 'better_ui' ? '#0369a1' : '#475569',
-                  boxShadow: previewTab === 'better_ui' ? '0 2px 6px rgba(2,132,199,0.18)' : 'none',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <Sparkles size={14} style={{ color: '#0284c7' }} />
-                <span>{uiText("Better In-App UI")}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewTab('push')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px',
-                  padding: '8px 6px',
-                  borderRadius: '10px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: previewTab === 'push' ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                  background: previewTab === 'push' ? '#eff6ff' : '#fff',
-                  color: previewTab === 'push' ? '#1d4ed8' : '#475569',
-                  boxShadow: previewTab === 'push' ? '0 2px 6px rgba(37,99,235,0.18)' : 'none',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <Smartphone size={14} style={{ color: '#2563eb' }} />
-                <span>{uiText("Push Preview")}</span>
-              </button>
-            </div>
-
-            {/* PREVIEW CONTAINER */}
-            <div style={{ position: 'sticky', top: '20px' }}>
-
-              {/* OPTION 1: WHATSAPP BUBBLE PREVIEW (Matching real WhatsApp app) */}
-              {previewTab === 'whatsapp' && (
-                <div
-                  style={{
-                    background: '#efeae2',
-                    borderRadius: '24px',
-                    overflow: 'hidden',
-                    boxShadow: '0 16px 36px rgba(0,0,0,0.22)',
-                    border: '1px solid #d1d7db',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: '480px',
-                  }}
-                >
-                  {/* WhatsApp Chat Header */}
-                  <div
-                    style={{
-                      background: '#008069',
-                      padding: '12px 16px',
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: 700 }}>←</span>
-                      <div
-                        style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '50%',
-                          background: '#fff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 900,
-                          fontSize: '13px',
-                          color: '#008069',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                        }}
-                      >
-                        AE
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 700 }}>{uiText("Affiliate AE")}</span>
-                          <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>{uiText(" ✓ Verified ")}</span>
-                        </div>
-                        <span style={{ fontSize: '11px', opacity: 0.85, display: 'block' }}>{uiText("Official Business Account")}</span>
-                      </div>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '11px' }}>
+                      AE
                     </div>
-                    <div style={{ fontSize: '18px', opacity: 0.85 }}>⋮</div>
-                  </div>
-
-                  {/* Chat Wallpaper Background */}
-                  <div
-                    style={{
-                      padding: '16px 14px',
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      backgroundImage: 'radial-gradient(#d6cdc0 1.2px, transparent 1.2px)',
-                      backgroundSize: '18px 18px',
-                      backgroundColor: '#efeae2',
-                    }}
-                  >
-                    {/* Date Tag */}
-                    <div style={{ alignSelf: 'center', marginBottom: '12px' }}>
-                      <span
-                        style={{
-                          background: '#ffffff',
-                          padding: '3px 12px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#54656f',
-                          boxShadow: '0 1px 1px rgba(11,20,26,0.1)',
-                          textTransform: 'uppercase',
-                        }}
-                      >{uiText(" Today ")}</span>
-                    </div>
-
-                    {/* WhatsApp Incoming White Message Bubble */}
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        borderRadius: '10px 10px 10px 2px',
-                        padding: '12px 14px',
-                        maxWidth: '94%',
-                        alignSelf: 'flex-start',
-                        boxShadow: '0 1px 2px rgba(11,20,26,0.15)',
-                        position: 'relative',
-                        border: '1px solid #e9edef',
-                      }}
-                    >
-                      {/* Bold Header / Title (like "offers" in screenshot) */}
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          fontSize: '14px',
-                          color: '#111b21',
-                          marginBottom: '8px',
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {title || uiText("offers")}
-                      </div>
-
-                      {/* Recipient Salutation (only if body does not already include greeting) */}
-                      {!body.trim().startsWith('പ്രിയപ്പെട്ട') && !body.trim().startsWith('Dear') && (
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#111b21', marginBottom: '8px' }}>
-                          പ്രിയപ്പെട്ട {selectedCustomers[0]?.name || selectedMerchants[0]?.name || "Rasheed"},
-                        </div>
-                      )}
-
-                      {/* Message Body with Markdown formatting & Emojis */}
-                      <div
-                        style={{
-                          fontSize: '13px',
-                          color: '#111b21',
-                          lineHeight: 1.55,
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {body ? renderWhatsAppFormattedText(body) : (
-                          <span style={{ color: '#8696a0', fontStyle: 'italic' }}>
-                            {uiText("Your WhatsApp message content will appear here...")}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Optional Media Image */}
-                      {imagePreview && (
-                        <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e9edef' }}>
-                          <img src={imagePreview} alt="WhatsApp media" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
-                        </div>
-                      )}
-
-                      {/* Timestamp & Double Blue Ticks */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: '4px',
-                          fontSize: '10px',
-                          color: '#667781',
-                          marginTop: '8px',
-                        }}
-                      >
-                        <span>10:30 AM</span>
-                        <span style={{ color: '#53bdeb', fontWeight: 900, fontSize: '13px', letterSpacing: '-2px' }}>✓✓</span>
-                      </div>
-                    </div>
-
-                    {/* Quick Link Card below bubble if URL provided */}
-                    {url && (
-                      <div
-                        style={{
-                          alignSelf: 'flex-start',
-                          marginTop: '6px',
-                          background: '#ffffff',
-                          borderRadius: '8px',
-                          padding: '8px 12px',
-                          maxWidth: '94%',
-                          boxShadow: '0 1px 1px rgba(11,20,26,0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '11px',
-                          color: '#008069',
-                          fontWeight: 700,
-                        }}
-                      >
-                        <ExternalLink size={13} />
-                        <span style={{ textDecoration: 'underline' }}>{url}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chat Bottom Bar Mockup */}
-                  <div
-                    style={{
-                      background: '#f0f2f5',
-                      padding: '8px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      borderTop: '1px solid #e9edef',
-                    }}
-                  >
-                    <span style={{ fontSize: '18px', color: '#54656f' }}>😊</span>
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        flex: 1,
-                        padding: '7px 14px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        color: '#8696a0',
-                      }}
-                    >{uiText(" Type a message ")}</div>
-                    <span style={{ fontSize: '16px', color: '#54656f' }}>🎤</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Affiliate AE</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>• Just now</span>
                   </div>
                 </div>
-              )}
 
-              {/* OPTION 2: IN-APP BETTER UI VIEW (Milestone Voucher Cards) */}
-              {previewTab === 'better_ui' && (
-                <div
-                  style={{
-                    background: '#f8fafc',
-                    borderRadius: '24px',
-                    padding: '16px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 16px 36px rgba(0,0,0,0.12)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingBottom: '8px',
-                      borderBottom: '1px solid #e2e8f0',
-                    }}
-                  >
+                {/* Content */}
+                <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '4px', lineHeight: 1.3 }}>
+                  {title || uiText("Notification Title")}
+                </div>
+                <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap', marginBottom: imagePreview ? '10px' : '6px' }}>
+                  {body || uiText("Your notification message will appear here on customer phones.")}
+                </div>
+
+                {/* Optional Image */}
+                {imagePreview && (
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', maxHeight: '160px', border: '1px solid #e2e8f0' }}>
+                    <img src={imagePreview} alt="Push banner" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  </div>
+                )}
+
+                {/* Optional Link Button */}
+                {url && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
                     <span
                       style={{
-                        fontSize: '12px',
-                        fontWeight: 800,
-                        color: '#0369a1',
-                        display: 'flex',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#2563eb',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        gap: '4px',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: '#eff6ff',
                       }}
                     >
-                      <Sparkles size={14} /> {uiText("Better In-App Voucher UI")}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        background: '#e0f2fe',
-                        color: '#0369a1',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                      }}
-                    >
-                      {uiText("Native App View")}
+                      <span>{uiText("Open Post / Link")}</span>
+                      <ExternalLink size={11} />
                     </span>
                   </div>
+                )}
+              </div>
 
-                  <MilestoneVoucherCard
-                    customerName={selectedCustomers[0]?.name || selectedMerchants[0]?.name || "Rasheed"}
-                    milestoneTitle={title || "offers"}
-                    compact
-                  />
-                </div>
-              )}
-
-              {/* OPTION 3: PHONE PUSH NOTIFICATION PREVIEW */}
-              {previewTab === 'push' && (
-                <div
-                  style={{
-                    background: '#0f172a',
-                    borderRadius: '32px',
-                    padding: '16px',
-                    border: '8px solid #334155',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                    minHeight: '480px',
-                    color: '#fff',
-                  }}
-                >
-                  {/* Phone Status Bar Mockup */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', padding: '0 8px 14px' }}>
-                    <span>10:30 AM</span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <span>5G</span>
-                      <span>100%</span>
-                    </div>
-                  </div>
-
-                  {/* Notification Banner Mockup */}
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(10px)',
-                      color: '#0f172a',
-                      borderRadius: '20px',
-                      padding: '14px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: 22, height: 22, borderRadius: 6, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '11px' }}>
-                          AE
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>{uiText("Affiliate AE")}</span>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>{uiText("• Just now")}</span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', marginBottom: '4px', lineHeight: 1.3 }}>
-                      {title || uiText("Notification Title")}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap', marginBottom: imagePreview ? '10px' : '6px' }}>
-                      {body || uiText("Your notification message will appear here on customer phones.")}
-                    </div>
-
-                    {/* Optional Image */}
-                    {imagePreview && (
-                      <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', aspectRatio: '2/1', background: '#0f172a', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={imagePreview} alt="Push banner" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                      </div>
-                    )}
-
-                    {/* Optional Link Button */}
-                    {url && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            color: '#2563eb',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            background: '#eff6ff',
-                          }}
-                        >
-                          <span>{uiText("Open Post / Link")}</span>
-                          <ExternalLink size={11} />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Helper text below mockup */}
-                  <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
-                    <p>
-                      <strong>{uiText("Big Picture Rich Push:")}</strong> {uiText("When an image is included, Android and iOS expand the notification to show the full image banner.")}
-                    </p>
-                    <p style={{ marginTop: '6px' }}>
-                      <strong>{uiText("In-App Bell Inbox:")}</strong> {uiText("The notification and image are permanently saved in the customer app's notification bell.")}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick WhatsApp Link Action below preview */}
-              {selectedCustomers[0]?.phone && (
-                <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                  <a
-                    href={`https://wa.me/${selectedCustomers[0].phone.replace(/\D/g, '').length === 10 ? '91' + selectedCustomers[0].phone.replace(/\D/g, '') : selectedCustomers[0].phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                      (title ? `*${title}*\n\n` : '') + body + (url ? `\n\n${url}` : '')
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: '#008069',
-                      background: '#fff',
-                      padding: '8px 14px',
-                      borderRadius: '10px',
-                      border: '1px solid #bbf7d0',
-                      textDecoration: 'none',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                    }}
-                  >
-                    <MessageCircle size={14} style={{ color: '#25D366' }} />
-                    <span>{uiText("Test Send this Preview to {{name}} on WhatsApp", { name: selectedCustomers[0].name })} →</span>
-                  </a>
-                </div>
-              )}
-
+              {/* Helper text below mockup */}
+              <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
+                <p>
+                  <strong>{uiText("Big Picture Rich Push:")}</strong> {uiText("When an image is included, Android and iOS expand the notification to show the full image banner.")}
+                </p>
+                <p style={{ marginTop: '6px' }}>
+                  <strong>{uiText("In-App Bell Inbox:")}</strong> {uiText("The notification and image are permanently saved in the customer app's notification bell.")}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -2498,11 +1594,6 @@ export function AdminNotifications() {
                             ? uiText("Everyone")
                             : uiText("All Customers")}
                         </span>
-                        {item.push_only && (
-                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}>
-                            {uiText("Push Only")}
-                          </span>
-                        )}
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
                       {item.url && (
@@ -2620,11 +1711,6 @@ export function AdminNotifications() {
                             ? uiText("Everyone")
                             : uiText("All Customers")}
                         </span>
-                        {item.push_only && (
-                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}>
-                            {uiText("Push Only")}
-                          </span>
-                        )}
                       </div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '4px', maxWidth: '480px' }}>{item.body}</p>
                       {item.url && (
@@ -2641,7 +1727,7 @@ export function AdminNotifications() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
                         {uiText("Sent At")}
@@ -2660,34 +1746,6 @@ export function AdminNotifications() {
                         <span>{item.delivered} / {item.total}</span>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      disabled={deleteHistoryMutation.isPending}
-                      onClick={() => {
-                        if (window.confirm(uiText("Delete this broadcast? This will remove it from notification history and customer in-app inboxes."))) {
-                          deleteHistoryMutation.mutate(item.id);
-                        }
-                      }}
-                      className="button secondary"
-                      style={{
-                        padding: '7px 10px',
-                        borderRadius: '8px',
-                        color: '#ef4444',
-                        borderColor: '#fca5a5',
-                        background: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      title={uiText("Delete broadcast from history and app inboxes")}
-                    >
-                      <Trash2 size={14} />
-                      <span>{uiText("Delete")}</span>
-                    </button>
                   </div>
                 </div>
               ))}

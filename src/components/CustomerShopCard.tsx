@@ -67,7 +67,7 @@ export function CustomerShopCard({
         <ShopPhoto merchant={merchant} />
         <div className="ae-shop-card-content">
           <h3>{merchant.merchant_name}</h3>
-          <p className="ae-shop-category">{merchant.category || uiText("AE Merchant")}</p>
+          <p className="ae-shop-category">{merchant.category || 'AE Merchant'}</p>
 
           <div className="ae-shop-location">
             <MapPin size={12} className="ae-loc-icon" />

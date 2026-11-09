@@ -1,4 +1,3 @@
-import {uiText} from "./uiText";
 import {counterToken} from './counterApi';
 import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
@@ -27,7 +26,6 @@ const AccountDeletion = lazy(() => import('./pages/AccountDeletion').then(m => (
 const ReadOnlyProfiles = lazy(() => import('./pages/ReadOnlyProfiles').then(m => ({ default: m.ReadOnlyProfiles })));
 const Customers = lazy(() => import('./pages/Customers').then(m => ({ default: m.Customers })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
-const AdminMerchantDashboard=lazy(()=>import('./pages/AdminMerchantDashboard').then(m=>({default:m.AdminMerchantDashboard})));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminBanners = lazy(() => import('./pages/AdminBanners').then(m => ({ default: m.AdminBanners })));
 const AdminNotifications = lazy(() => import('./pages/AdminNotifications').then(m => ({ default: m.AdminNotifications })));
@@ -49,7 +47,6 @@ const AdminCustomerDetails = lazy(() => import('./pages/AdminCustomers').then(m 
 const LegalNavigation = lazy(() => import('./components/LegalNavigation').then(m => ({ default: m.LegalNavigation })));
 const CustomerShopScan = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.CustomerShopScan })));
 const MerchantShopCheckout = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.MerchantShopCheckout })));
-const MerchantExpiryManager = lazy(() => import('./pages/MerchantExpiryManager').then(m => ({ default: m.MerchantExpiryManager })));
 const ShopRequestAlert = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.ShopRequestAlert })));
 const Merchants = lazy(() => import('./pages/Merchants').then(m => ({ default: m.Merchants })));
 const MerchantCategories = lazy(() => import('./pages/MerchantCategories').then(m => ({ default: m.MerchantCategories })));
@@ -94,9 +91,9 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
     if (!this.state.error) return this.props.children;
     return (
       <div className="state-panel error-state page-crash-state">
-        <strong>{uiText("This page could not load.")}</strong>
-        <span>{this.state.error.message || uiText("An unexpected display error occurred.")}</span>
-        <button className="button primary" onClick={() => window.location.reload()}>{uiText("Reload page")}</button>
+        <strong>This page could not load.</strong>
+        <span>{this.state.error.message || 'An unexpected display error occurred.'}</span>
+        <button className="button primary" onClick={() => window.location.reload()}>Reload page</button>
       </div>
     );
   }
@@ -111,7 +108,7 @@ function StartupFallback({ message = 'Opening AE…' }: { message?: string }) {
 }
 
 function RouteFallback() {
-  return <div className="state-panel" role="status"><span>{uiText("Loading this screen…")}</span></div>;
+  return <div className="state-panel" role="status"><span>Loading this screen…</span></div>;
 }
 
 export function App() {
@@ -360,7 +357,7 @@ export function App() {
   }
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Suspense fallback={<StartupFallback />}><LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation></Suspense>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
-  if (restoreError && !user) return <div className="state-panel error-state"><strong>{uiText("Your saved session has been kept.")}</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>{uiText("Retry connection")}</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>{uiText("Sign out")}</button></div>;
+  if (restoreError && !user) return <div className="state-panel error-state"><strong>Your saved session has been kept.</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>Retry connection</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>Sign out</button></div>;
   if (!user) {
     if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={null} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
     return (
@@ -391,7 +388,7 @@ export function App() {
   if (location.pathname === '/expenses' || location.pathname === '/accounts') return <Suspense fallback={<StartupFallback />}><Expenses user={user} onLogin={setUser} onLogout={logout} accounts={location.pathname==='/accounts'}/></Suspense>;
   if (user.role === 'staff' || user.role === 'account_head') return <Navigate to={user.role==='account_head'?'/accounts':'/expenses'} replace/>;
   if (location.pathname === '/field' && user.role !== 'field_manager') {
-    return <div className="state-panel"><h1>{uiText("Field Manager portal")}</h1><p>{uiText("You are signed in as ")}{user.role}{uiText(". Sign out here to use a field manager account, or open /field in a separate browser profile.")}</p><button className="button primary" onClick={logout}>{uiText("Sign out to Field Manager Login")}</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>{uiText("Back to my dashboard")}</button></div>;
+    return <div className="state-panel"><h1>Field Manager portal</h1><p>You are signed in as {user.role}. Sign out here to use a field manager account, or open /field in a separate browser profile.</p><button className="button primary" onClick={logout}>Sign out to Field Manager Login</button><button className="button secondary" onClick={() => navigate(user.role === 'customer' ? '/customer/home' : '/dashboard')}>Back to my dashboard</button></div>;
   }
 
   if (user.role === 'customer') {
@@ -400,14 +397,14 @@ export function App() {
         <PageErrorBoundary key={location.pathname}>
           <Suspense fallback={<RouteFallback />}><Routes>
             <Route path="/customer/home" element={<CustomerHome user={user} />} />
-            <Route path="/customer/explore" element={<CustomerExplore userId={user.id} />} />
+            <Route path="/customer/explore" element={<CustomerExplore />} />
             <Route path="/customer/scan" element={<Navigate to="/customer/shop-scan" replace />} />
             <Route path="/customer/shop-scan" element={<CustomerShopScan key={location.search} user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="/customer/favorites" element={<CustomerFavorites />} />
             <Route path="/customer/transactions" element={<CustomerTransactions user={user} />} />
-            <Route path="/customer/offers" element={<CustomerOffers userId={user.id} />} />
+            <Route path="/customer/offers" element={<CustomerOffers />} />
             <Route path="/customer/notifications" element={<CustomerNotifications />} />
             <Route path="/customer/referral" element={<CustomerReferral user={user} />} />
             <Route path="*" element={<Navigate to="/customer/home" replace />} />
@@ -434,8 +431,6 @@ export function App() {
           <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
           <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
-          <Route path="/expiry-reminders" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
-          <Route path="/admin/pollution-expiry" element={user.role === 'admin' || user.role === 'merchant' ? <MerchantExpiryManager user={user} /> : <Navigate to="/dashboard" replace />} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
@@ -449,7 +444,6 @@ export function App() {
           <Route path="/merchants" element={<RoleRoute user={user} role="admin"><Merchants /></RoleRoute>} />
           <Route path="/add-merchant" element={<RoleRoute user={user} role="admin"><Merchants onboardingOnly /></RoleRoute>} />
           <Route path="/merchant-categories" element={<RoleRoute user={user} role="admin"><MerchantCategories /></RoleRoute>} />
-          <Route path="/merchants/:id/dashboard" element={<RoleRoute user={user} role="admin"><AdminMerchantDashboard user={user}/></RoleRoute>} />
           <Route path="/merchants/:id" element={<RoleRoute user={user} role="admin"><AdminMerchantDetails /></RoleRoute>} />
           <Route path="/merchants/:id/qr-poster" element={<RoleRoute user={user} role="admin"><MerchantQrPoster /></RoleRoute>} />
           <Route path="/qr-common" element={<RoleRoute user={user} role="admin"><QrCommon /></RoleRoute>} />

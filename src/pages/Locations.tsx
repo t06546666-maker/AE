@@ -72,7 +72,7 @@ export function Locations() {
 
   return (
     <>
-      <PageHeader title={uiText("Locations")} subtitle={uiText("Manage network locations and codes.")} />
+      <PageHeader title={uiText("Locations")} subtitle="Manage network locations and codes." />
       
       <form className="panel" onSubmit={submit}>
         <div className="panel-heading">

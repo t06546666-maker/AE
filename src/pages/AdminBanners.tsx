@@ -29,9 +29,6 @@ interface AdBannerItem {
   merchantPhone?: string;
   merchantAddress?: string;
   title: string;
-  titleMl?:string;
-  subtitleMl?:string;
-  displayOrder?:number;
   subtitle?: string;
   category?: string;
   expiresAt?: string;
@@ -56,7 +53,6 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [selectedOfferId, setSelectedOfferId] = useState('');
   const [bannerTitle, setBannerTitle] = useState('');
-  const [titleMl,setTitleMl]=useState(''),[subtitle,setSubtitle]=useState(''),[subtitleMl,setSubtitleMl]=useState(''),[displayOrder,setDisplayOrder]=useState(0);
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState('');
   const [optimizingImage, setOptimizingImage] = useState(false);
@@ -113,7 +109,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(null);
     setSelectedMerchantId('');
     setSelectedOfferId('');
-    setBannerTitle('');setTitleMl('');setSubtitle('');setSubtitleMl('');setDisplayOrder(0);
+    setBannerTitle('');
     setBannerImageFile(null);
     setBannerImagePreview('');
     setActive(true);
@@ -125,7 +121,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setEditingBanner(b);
     setSelectedMerchantId(b.merchantId || '');
     setSelectedOfferId(b.offerId || '');
-    setBannerTitle(b.title || '');setTitleMl(b.titleMl||'');setSubtitle(b.subtitle||'');setSubtitleMl(b.subtitleMl||'');setDisplayOrder(b.displayOrder||0);
+    setBannerTitle(b.title || '');
     setBannerImageFile(null);
     setBannerImagePreview(b.bannerImageUrl || b.imageUrl || '');
     setActive(Boolean(b.active));
@@ -185,7 +181,6 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
         }
       }
 
-      form.set('subtitle',subtitle);form.set('titleMl',titleMl);form.set('subtitleMl',subtitleMl);form.set('displayOrder',String(displayOrder));
       form.append('active', String(active));
       form.append('placement', 'top');
 
@@ -271,7 +266,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     <div className="admin-banners-page" style={{ paddingBottom: '60px' }}>
       <PageHeader
         title={uiText("Ad Banners")}
-        subtitle={uiText('Edit the top customer-home banners: image, English and Malayalam text, order and visibility. Link an offer only if needed.')}
+        subtitle={uiText("Select approved merchant offers and set optional wide banner photos for the customer app home screen.")}
         actions={
           <button
             className="button primary"
@@ -546,7 +541,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   {editingBanner ? uiText("Edit Ad Banner") : uiText("Add Ad Banner")}
                 </h2>
                 <p style={{ fontSize: '12px', color: '#64748b' }}>
-                  {uiText('Upload a banner and edit its text, or optionally link a merchant offer.')}
+                  {uiText("Select a merchant and offer. All details are linked automatically.")}
                 </p>
               </div>
               <button
@@ -614,7 +609,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                       if (!selectedMerchantId && found.merchantId) {
                         setSelectedMerchantId(found.merchantId);
                       }
-                      setBannerTitle(found.title);setSubtitle(found.description||'');
+                      setBannerTitle(found.title);
                       if (!bannerImageFile && !editingBanner) {
                         setBannerImagePreview(found.bannerImageUrl || found.imageUrl || '');
                       }
@@ -632,7 +627,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   <option value="">{uiText("-- Choose an approved offer (or leave empty) --")}</option>
                   {availableOffers.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.title} — ({o.merchant || uiText("Merchant")})
+                      {o.title} — ({o.merchant || 'Merchant'})
                     </option>
                   ))}
                 </select>
@@ -659,11 +654,6 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 />
               </div>
 
-              <label>{uiText('Banner title (Malayalam)')}<input lang="ml" value={titleMl} maxLength={300} onChange={event=>setTitleMl(event.target.value)} className="input"/></label>
-              <label>{uiText('Banner description (English)')}<textarea value={subtitle} maxLength={2000} rows={3} onChange={event=>setSubtitle(event.target.value)}/></label>
-              <label>{uiText('Banner description (Malayalam)')}<textarea lang="ml" value={subtitleMl} maxLength={2000} rows={3} onChange={event=>setSubtitleMl(event.target.value)}/></label>
-              <label>{uiText('Display order')}<input type="number" min={0} max={9999} step={1} value={displayOrder} onChange={event=>setDisplayOrder(Number(event.target.value))}/></label>
-              <p className="text-sm text-slate-500">{uiText('Lower numbers appear first. Malayalam text falls back to English when empty. Text inside uploaded images stays as uploaded; use bilingual artwork.')}</p>
               {/* Selected Offer Preview Card */}
               {selectedOffer && (
                 <div
@@ -708,7 +698,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   )}
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <p style={{ fontSize: '11px', fontWeight: 700, color: '#087a4b', textTransform: 'uppercase' }}>
-                      {selectedOffer.merchant || uiText("Store")}
+                      {selectedOffer.merchant || 'Store'}
                     </p>
                     <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', margin: '2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {selectedOffer.title}

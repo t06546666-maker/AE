@@ -47,8 +47,8 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
               <option value="ml">മ</option>
             </select>
           </label>
-          <span className="role-pill merchant">{t('layout.customer') || uiText("Customer")}</span>
-          <span className="topbar-user">{user.full_name || user.phone || uiText("Customer")}</span>
+          <span className="role-pill merchant">{t('layout.customer') || 'Customer'}</span>
+          <span className="topbar-user">{user.full_name || user.phone || 'Customer'}</span>
           <button className="button secondary signout" onClick={onLogout}><LogOut size={15} />{t('layout.signOut')}</button>
         </div>
       </header>
@@ -65,6 +65,9 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
             </NavLink>
             <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'active' : ''}>
               <ListPlus size={18} /><span>{uiText("Products list")}</span>
+            </NavLink>
+            <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Gift size={18} /><span>{uiText("Offers")}</span>
             </NavLink>
             <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'active' : ''}>
               <User size={18} /><span>{uiText("Profile")}</span>
@@ -90,6 +93,9 @@ export function CustomerLayout({ user, onLogout, children }: { user: UserProfile
         </NavLink>
         <NavLink to="/customer/home?productList=1" className={() => location.search.includes('productList=1') ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <ListPlus size={21} /><span>{uiText("Products list")}</span>
+        </NavLink>
+        <NavLink to="/customer/offers" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
+          <Gift size={21} /><span>{uiText("Offers")}</span>
         </NavLink>
         <NavLink to="/customer/profile" className={({ isActive }) => isActive ? 'mobile-bottom-nav-item active' : 'mobile-bottom-nav-item'}>
           <User size={21} /><span>{uiText("Profile")}</span>

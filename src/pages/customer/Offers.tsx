@@ -1,4 +1,3 @@
-import {useMerchantFavorites} from '../../customerFavorites';
 import { uiText } from '../../uiText';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,7 +10,7 @@ import { visitDistance } from '../../visitLocation';
 const CATEGORIES = ['All', 'Nearby', 'Trending', 'Favorites'] as const;
 type CategoryType = (typeof CATEGORIES)[number];
 
-export function CustomerOffers({userId}:{userId:string}) {
+export function CustomerOffers() {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('All');
   const [selectedOffer, setSelectedOffer] = useState<PreviewOfferData | null>(null);
 
@@ -23,7 +22,27 @@ export function CustomerOffers({userId}:{userId:string}) {
   const { data, isLoading } = useCustomerOffers(true, coords);
   const offers = data?.offers ?? [];
 
-  const {favorites,toggleFavorite}=useMerchantFavorites(userId);
+  // Customer favorite store IDs from localStorage
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleFavorite = (merchantId?: string) => {
+    if (!merchantId) return;
+    setFavorites((current) => {
+      const next = current.includes(merchantId)
+        ? current.filter((id) => id !== merchantId)
+        : [...current, merchantId];
+      try {
+        localStorage.setItem('ae_favorite_merchants', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const getOfferDistance = (offer: CustomerOffer): number | null => {
     if (offer.distance != null && Number.isFinite(offer.distance)) {
@@ -271,7 +290,7 @@ export function CustomerOffers({userId}:{userId:string}) {
 
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <p className="font-semibold text-[13px] text-gray-700 leading-tight">
-                      {uiText("at ")}{offer.merchant_raw_name || offer.merchant_name || uiText("Store")}
+                      {uiText("at ")}{offer.merchant_raw_name || offer.merchant_name || 'Store'}
                     </p>
                     {dist != null && Number.isFinite(dist) && dist < 100 && (
                       <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">

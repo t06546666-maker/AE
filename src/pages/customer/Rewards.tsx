@@ -26,7 +26,7 @@ export function CustomerRewards({ user }: { user: UserProfile }) {
       <h2 className="text-xl font-bold">{uiText("Redeem + Receive")}</h2>
       <p className="mt-2 text-sm text-gray-500">{uiText("Show this QR to your merchant to redeem 100 points and earn points on your purchase.")}</p>
       {redeemQr ? <img src={redeemQr} alt={uiText("Customer QR for Redeem + Issue")} className="mx-auto mt-4 h-60 w-60 max-w-full"/> : <p className="py-12 text-sm text-gray-500" role="status">{qrError ? uiText("Unable to create QR. Please reload this page.") : uiText("Loading QR…")}</p>}
-      <p className="mt-2 font-bold">{user.name || uiText("Customer")}</p><p className="mt-1 text-xs text-gray-500">{user.customer_code || user.id}</p>
+      <p className="mt-2 font-bold">{user.name || 'Customer'}</p><p className="mt-1 text-xs text-gray-500">{user.customer_code || user.id}</p>
     </section>
   </div>;
 }

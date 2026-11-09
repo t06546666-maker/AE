@@ -6,7 +6,6 @@ import { ArrowLeft, Bell, ExternalLink, Sparkles, Maximize2, X } from 'lucide-re
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../api';
 import { useCustomerTransactions } from '../../hooks/useCustomerData';
-import { MilestoneVoucherCard } from '../../components/MilestoneVoucherCard';
 
 interface Announcement {
   id: string;
@@ -91,7 +90,7 @@ export function CustomerNotifications() {
                         <img
                           src={item.image_url}
                           alt={item.title}
-                          className="w-full max-h-96 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.01]"
+                          className="w-full max-h-72 object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.01]"
                           loading="lazy"
                         />
                         <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[11px] font-bold shadow-md hover:bg-black/85 transition-colors pointer-events-none">
@@ -106,18 +105,12 @@ export function CustomerNotifications() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{item.title}</h3>
-                        {((item.title || '').toLowerCase().includes('offer') || (item.body || '').includes('Al-Madeena') || (item.body || '').includes('സമ്മാനം')) ? (
-                          <div className="mt-2.5">
-                            <MilestoneVoucherCard compact />
-                          </div>
-                        ) : (
-                          <p className="mt-1 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{item.body}</p>
-                        )}
+                        <p className="mt-1 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{item.body}</p>
                         <time className="mt-2 block text-[11px] font-medium text-gray-400">{formatDateTime(item.created_at)}</time>
                       </div>
                     </div>
 
-                    {item.url && !item.url.startsWith('/customer/notifications') && !item.url.startsWith('/notifications') && (
+                    {item.url && (
                       <div className="pt-1 pl-11">
                         {isExternal ? (
                           <a
@@ -177,7 +170,7 @@ export function CustomerNotifications() {
                   </p>
                   <p className="text-xs text-gray-600 mt-0.5">
                     {Number(item.points).toLocaleString('en-IN')}{uiText(" points ")}
-                    {item.type !== 'redeem' ? uiText("earned") : uiText("redeemed")} · {item.merchant_name || uiText("AE Merchant")}
+                    {item.type !== 'redeem' ? uiText("earned") : uiText("redeemed")} · {item.merchant_name || 'AE Merchant'}
                   </p>
                   {item.reason && <p className="text-xs text-gray-500 mt-0.5">{uiText('Reason')}: {item.reason}</p>}
                   {item.type === 'bonus' && (
@@ -256,7 +249,7 @@ export function CustomerNotifications() {
               </p>
             )}
 
-            {fullViewItem.url && !fullViewItem.url.startsWith('/customer/notifications') && !fullViewItem.url.startsWith('/notifications') && (
+            {fullViewItem.url && (
               <div className="pt-1">
                 {fullViewItem.url.startsWith('http://') || fullViewItem.url.startsWith('https://') ? (
                   <a

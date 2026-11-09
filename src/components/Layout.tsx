@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, CalendarClock, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
+  BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
   PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search, QrCode, ImagePlus,
 } from 'lucide-react';
 import { apiFetch } from '../api';
@@ -18,7 +18,6 @@ import '../merchant-shell-fixes.css';
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
-  ['/expiry-reminders', 'Pollution & Expiry', CalendarClock],
   ['/admin/banners', 'Ad Banners', ImagePlus],
   ['/admin/notifications', 'Push Notifications', Bell],
   ['/qr-common', 'QR Common', QrCode],
@@ -33,7 +32,6 @@ const adminNav = [
 
 const merchantNav = [
   ['/counter-staff', 'Counter Staff', UserCog],
-  ['/expiry-reminders', 'Renewal & Expiry', CalendarClock],
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/add-customer', 'nav.addBuyer', Plus],
   ['/orders', 'nav.orders', ReceiptText],

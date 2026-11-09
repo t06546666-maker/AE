@@ -3,7 +3,7 @@ import { SIX_HOUR_LABELS } from '../utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { CalendarClock, ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Headset, LogOut, FileText, Settings, ShieldCheck, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiFetch, queryString } from '../api';
 import { CustomDates, ExportModal, PageHeader, PeriodControl } from '../components/Common';
@@ -70,7 +70,6 @@ export function More({ user, onLogout }: { user: UserProfile; onLogout: () => vo
         <div className="mobile-transactions" style={{ boxShadow: 'none', padding: 0 }}>
           {user.role === 'merchant' && <Link to="/counter-staff" className="mobile-transaction-item" style={{padding:'16px 0'}}><div className="mobile-transaction-avatar blue"><ShieldCheck size={20}/></div><div className="mobile-transaction-info"><h4>{uiText('Counter Staff')}</h4><p>{uiText('Manage staff access and checkout activity')}</p></div><ChevronRight/></Link>}
           {user.role === 'merchant' && <Link to="/merchant-profile" className="mobile-transaction-item" style={{ padding: '16px 0' }}><div className="mobile-transaction-avatar blue"><Settings size={20} /></div><div className="mobile-transaction-info"><h4>{uiText('Merchant Profile')}</h4><p>{uiText('Your business and account details')}</p></div><ChevronRight /></Link>}
-          {user.role === 'merchant' && <Link to="/expiry-reminders" className="mobile-transaction-item" style={{ padding: '16px 0' }}><div className="mobile-transaction-avatar emerald" style={{ background: '#ecfdf5', color: '#059669' }}><CalendarClock size={20} /></div><div className="mobile-transaction-info"><h4>{uiText('Renewal & Expiry Manager')}</h4><p>{uiText('Vehicle pollution & fixed tariff expiry reminders')}</p></div><ChevronRight /></Link>}
           <button className="mobile-transaction-item" style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '16px 0', borderBottom: '1px solid var(--border)' }} onClick={() => setExportFormat('xlsx')}>
             <div className="mobile-transaction-avatar green" style={{ width: 40, height: 40 }}><FileSpreadsheet size={20} /></div>
             <div className="mobile-transaction-info" style={{ textAlign: 'left' }}>

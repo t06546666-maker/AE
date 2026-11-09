@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { dateInput } from '../utils';
+import { rangeForChartPeriod, dateInput } from '../utils';
 import { uiText } from '../uiText';
-import { adminReportRange, adminReportInitialDates } from '../adminReportRange';
-export function useAdminReportFilters(initial?:{from:string;to:string;area?:string}){
- const today=dateInput();const dates=adminReportInitialDates(initial);const [period,setPeriod]=useState(dates?'custom':'today'),[month,setMonth]=useState(today.slice(0,7)),[from,setFrom]=useState(dates?.from||today),[to,setTo]=useState(dates?.to||today),[area,setArea]=useState(initial?.area||'');
+import { adminReportRange } from '../adminReportRange';
+export function useAdminReportFilters(){
+ const today=dateInput();const [period,setPeriod]=useState('today'),[month,setMonth]=useState(today.slice(0,7)),[from,setFrom]=useState(today),[to,setTo]=useState(today),[area,setArea]=useState('');
  const range=adminReportRange(period,month,from,to);
  const valid=Boolean(range&&Number.isFinite(Date.parse(range.from))&&Number.isFinite(Date.parse(range.to))&&Date.parse(range.to)>Date.parse(range.from)&&Date.parse(range.to)-Date.parse(range.from)<=366*86400000);
  return {period,setPeriod,month,setMonth,from,setFrom,to,setTo,area,setArea,range,valid};

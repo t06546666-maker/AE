@@ -1,4 +1,3 @@
-import {uiText} from "../uiText";
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {Users,Code2,Building2,Megaphone,Ellipsis,ShieldCheck,Search,X,Plus,KeyRound,ChevronRight} from 'lucide-react';
@@ -30,7 +29,7 @@ export function ExpenseStaff(){
  function reset(e:FormEvent){e.preventDefault();if(!selected)return;void run(async()=>{await apiFetch('/api/admin/expense-staff/'+selected.profile_id+'/password',{method:'POST',body:JSON.stringify({password})});setPassword('');setResetOpen(false);setMessage(t('Temporary password updated. Share it securely.'));});}
  return <section className={'staff-page'+(creating||selected?' staff-panel-open':'')}>
  <header className="staff-heading"><div><h1>{t('Staffs')}</h1><p>{t('Manage your team, departments and account access.')}</p></div><button className="staff-primary" disabled={busy} onClick={()=>{close();setForm(blank(group));setCreating(true);setMessage('')}}><Plus size={17}/>{t('Add staff')}</button></header>
- {new URLSearchParams(window.location.search).get('emailTest')==='1'&&<div className="staff-security-note"><div><strong>{t("Titan email diagnostic")}</strong><p>Send one test only to safar@affiliateinnovations.co.in. No claim or payment is changed.</p><button disabled={emailBusy} onClick={()=>void testEmail()}>{emailBusy?uiText("Testing…"):uiText("Send Titan test email")}</button>{emailTest&&<p role="status">{emailTest}</p>}</div></div>}
+ {new URLSearchParams(window.location.search).get('emailTest')==='1'&&<div className="staff-security-note"><div><strong>Titan email diagnostic</strong><p>Send one test only to safar@affiliateinnovations.co.in. No claim or payment is changed.</p><button disabled={emailBusy} onClick={()=>void testEmail()}>{emailBusy?'Testing…':'Send Titan test email'}</button>{emailTest&&<p role="status">{emailTest}</p>}</div></div>}
  <div className="staff-groups">{groups.map((name,index)=>{const Icon=icons[index],count=members.filter(e=>belongs(e,name)).length;return <button disabled={busy} aria-pressed={group===name} className={group===name?'selected':''} key={name} onClick={()=>choose(name)}><span className="staff-group-icon"><Icon size={23}/></span><span><strong>{t(name)}</strong><small>{q.isPending?'—':count} {t(count===1?'member':'members')}</small></span></button>})}</div>
  {message&&<p className="staff-message" role="status">{message}</p>}{error&&<p className="staff-error" role="alert">{error}</p>}
  <div className="staff-workspace"><div className="staff-main"><section className="staff-list-card">

@@ -157,8 +157,8 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
             <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm">
               <p className="text-[13px] font-bold text-gray-500 uppercase tracking-wider mb-4">{uiText("Points Breakdown")}</p>
               <div className="space-y-4">
-                {!!summary?.welcome_bonus_points && <div className="glass-points-summary-row flex justify-between items-center"><div className="flex items-center gap-3"><Gift size={22}/><div><p className="font-bold text-[14px]">{uiText('Welcome bonus')}</p><p className="text-[12px] text-gray-500">{uiText('System bonus')}</p></div></div><p className="font-bold text-[18px] text-[#087a4b]">+{summary.welcome_bonus_points}</p></div>}
-                <div className="glass-points-summary-row flex justify-between items-center">
+                {!!summary?.welcome_bonus_points && <div className="flex justify-between items-center"><div className="flex items-center gap-3"><Gift size={22}/><div><p className="font-bold text-[14px]">{uiText('Welcome bonus')}</p><p className="text-[12px] text-gray-500">{uiText('System bonus')}</p></div></div><p className="font-bold text-[18px] text-[#087a4b]">+{summary.welcome_bonus_points}</p></div>}
+                <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-[#087a4b] font-bold text-[13px]">+</div>
                     <div>
@@ -168,7 +168,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   </div>
                   <p className="font-bold text-[18px] text-[#087a4b]">+{allEarned}</p>
                 </div>
-                <div className="glass-points-summary-row flex justify-between items-center">
+                <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center text-red-500 font-bold text-[13px]">-</div>
                     <div>
@@ -178,7 +178,7 @@ export function CustomerTransactions({ user }: { user: UserProfile }) {
                   </div>
                   <p className="font-bold text-[18px] text-red-500">-{allRedeemed}</p>
                 </div>
-                <div className="glass-points-summary-row border-t border-gray-100 pt-4 flex justify-between items-center">
+                <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-[#f59e0b] rounded-full flex items-center justify-center text-white font-bold text-[13px]">★</div>
                     <div>

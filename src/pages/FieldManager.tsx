@@ -824,7 +824,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
                           <Link to={`/field/merchants/${m.id}`}><strong>{m.name}</strong></Link>
                         </div>
                       </td>
-                      <td>{m.merchant_categories?.name || uiText("General")}</td>
+                      <td>{m.merchant_categories?.name || 'General'}</td>
                       <td>{m.email}</td>
                       <td>{m.phone}</td>
                       <td>{m.address || '—'}</td>

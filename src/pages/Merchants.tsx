@@ -254,7 +254,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
           </div><button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}>{uiText("Select location on map")}</button></fieldset><fieldset disabled={onboardStep !== 2} hidden={onboardStep !== 2} style={{ border: 0 }}><div className="four-column-form"><label>{uiText("Upload Photo (required)")}<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>{uiText("JPG or PNG, maximum 5 MB.")}</small></label><LiveCamera facing="environment" disabled={uploadingPhoto || create.isPending} label="Take Photo" onCapture={file => void uploadShopPhoto(file)} />
         </div>
         {shopImages.map((url, index) => <div key={url}><img src={url} alt={`Shop photo ${index + 1}`} style={{ width: 120, height: 80, objectFit: 'cover' }} /><button type="button" className="button secondary" onClick={() => setShopImages(images => images.filter((_, position) => position !== index))}>{uiText("Remove photo")}</button></div>)}
-        </fieldset>{onboardStep === 3 && <div className="field-review"><h3>{uiText("Review merchant details")}</h3>{[['Shop name',name],['Email',email],['Phone',phone],['Category',categoryId === '__other__' ? customCategory : categoriesQuery.data?.categories.find(c => c.id === categoryId)?.name],['Address',address],['Route',routeLabel(merchantRoute)],['Opening time',formatClockTime(openingTime)],['Closing time',formatClockTime(closingTime)],['Location',`${latitude}, ${longitude}`]].map(([label,value]) => <p key={label}><strong>{uiText(label)}:</strong> {value || uiText("Not provided")}</p>)}{shopImages.map(url => <img key={url} src={url} alt={uiText("Shop photo review")} style={{ width: 120, borderRadius: 12 }} />)}</div>}{onboardStep === 0 && <button type="button" className="button secondary" onClick={generateCredentials}>{uiText("Generate login email & password")}</button>}{onboardStep > 0 && <button type="button" className="button secondary" onClick={() => setOnboardStep(onboardStep - 1)}>{uiText("Back")}</button>}
+        </fieldset>{onboardStep === 3 && <div className="field-review"><h3>{uiText("Review merchant details")}</h3>{[['Shop name',name],['Email',email],['Phone',phone],['Category',categoryId === '__other__' ? customCategory : categoriesQuery.data?.categories.find(c => c.id === categoryId)?.name],['Address',address],['Route',routeLabel(merchantRoute)],['Opening time',formatClockTime(openingTime)],['Closing time',formatClockTime(closingTime)],['Location',`${latitude}, ${longitude}`]].map(([label,value]) => <p key={label}><strong>{uiText(label)}:</strong> {value || 'Not provided'}</p>)}{shopImages.map(url => <img key={url} src={url} alt={uiText("Shop photo review")} style={{ width: 120, borderRadius: 12 }} />)}</div>}{onboardStep === 0 && <button type="button" className="button secondary" onClick={generateCredentials}>{uiText("Generate login email & password")}</button>}{onboardStep > 0 && <button type="button" className="button secondary" onClick={() => setOnboardStep(onboardStep - 1)}>{uiText("Back")}</button>}
         <button className="button primary" disabled={create.isPending || uploadingPhoto}>
           <Plus size={16} />{create.isPending ? t('merchants.creating') : onboardStep < 3 ? uiText("Next") : t('merchants.add')}
         </button>
@@ -304,7 +304,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
                     <td>{merchant.orderCount ?? 0}</td>
                     <td>
                       <div className="table-actions">
-                        <Link className="button secondary" to={`/merchants/${merchant.id}/dashboard`}>{uiText("Dashboard")}</Link><button className="button secondary" onClick={() => setAllocation(merchant)}>{uiText("Allocate points")}</button>
+                        <button className="button secondary" onClick={() => setAllocation(merchant)}>{uiText("Allocate points")}</button>
                         <Link className="icon-button" title={uiText("View merchant")} to={`/merchants/${merchant.id}`}><Eye /></Link>
                         <button className="icon-button" title={t('merchants.reset')} disabled={reset.isPending} onClick={() => resetMerchant(merchant)}><KeyRound /></button>
                         <button className="icon-button danger-icon" title={uiText("Delete merchant")} disabled={remove.isPending} onClick={() => deleteMerchant(merchant)}><Trash2 /></button>
@@ -368,10 +368,10 @@ export function MerchantProfile() {
             <button className="button secondary" onClick={() => {
               if (window.confirm(t('merchants.resetConfirm'))) reset.mutate();
             }}><KeyRound size={16} />{t('merchants.reset')}</button>
-            <button className="button primary" onClick={() => { setEditForm({ name: data.merchant.name || '', email: data.merchant.email || '', phone: data.merchant.phone || '', address: data.merchant.address || '', latitude: data.merchant.latitude?.toString() || '', longitude: data.merchant.longitude?.toString() || '' }); setEditing(true); }}><Pencil size={16} />{uiText("Edit merchant")}</button>
-            <button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{uiText("Excel")}</button>
-            <button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{uiText("PDF")}</button>
-            <button className="button secondary" onClick={() => navigate('/merchants')}><ArrowLeft size={16} />{uiText("Back")}</button>
+            <button className="button primary" onClick={() => { setEditForm({ name: data.merchant.name || '', email: data.merchant.email || '', phone: data.merchant.phone || '', address: data.merchant.address || '', latitude: data.merchant.latitude?.toString() || '', longitude: data.merchant.longitude?.toString() || '' }); setEditing(true); }}><Pencil size={16} />Edit merchant</button>
+            <button className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />Excel</button>
+            <button className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />PDF</button>
+            <button className="button secondary" onClick={() => navigate('/merchants')}><ArrowLeft size={16} />Back</button>
           </>
         )}
       />

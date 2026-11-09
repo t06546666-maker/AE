@@ -569,28 +569,3 @@
         font-size: 20px
     }
 }
-/* Points history: keep labels and values together on narrow phone screens. */
-.glass-points .glass-transaction-row>div { min-width:0; }
-.glass-points .glass-transaction-row>div:first-child>div:last-child { min-width:0; overflow-wrap:anywhere; }
-.glass-points .glass-transaction-row :is(p,small) { overflow-wrap:anywhere; line-height:1.55; }
-.glass-points .glass-stats strong { font-variant-numeric:tabular-nums; }
-@media(max-width:600px) {
- .glass-points .glass-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
- .glass-points .glass-stats>div { display:flex; flex-direction:column; align-items:flex-start; }
- .glass-points .glass-stats span { line-height:1.6; overflow-wrap:anywhere; }
- .glass-points .glass-transaction-row { grid-template-columns:repeat(2,minmax(0,1fr))!important; align-items:start; gap:12px; }
- .glass-points .glass-transaction-row>div:first-child { grid-column:1 / -1; align-items:flex-start; }
- .glass-points .glass-transaction-row>div:nth-child(2) { text-align:left; }
- .glass-points .glass-transaction-row .glass-money { text-align:right; }
- .glass-points .glass-transaction-row .text-\[16px\] { font-size:14px; }
- .glass-points .glass-transaction-row .text-\[12px\] { font-size:11px; }
- .glass-points .glass-transaction-row small { font-size:11px; }
- .glass-points .glass-transaction-row .glass-money { font-size:14px; }
-}
-@media(max-width:600px) {
- .glass-points .glass-points-summary-row { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
- .glass-points .glass-points-summary-row>div { min-width:0; }
- .glass-points .glass-points-summary-row>div>div:first-child { flex-shrink:0; }
- .glass-points .glass-points-summary-row>div>div:last-child { min-width:0; overflow-wrap:anywhere; }
- .glass-points .glass-points-summary-row>p { text-align:right; font-variant-numeric:tabular-nums; }
-}
