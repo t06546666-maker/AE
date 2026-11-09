@@ -10,6 +10,7 @@ import './styles.css';
 import './customer-glass.css';
 import './customer-home-polish.css';
 import './malayalam-layout.css';
+import './compact-interface.css';
 
 if (import.meta.env.VITE_AE_ENV === 'staging') {
   const notice = document.createElement('div');

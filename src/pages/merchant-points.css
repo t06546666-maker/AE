@@ -11,3 +11,17 @@
   .merchant-points .mo-bar-item > div { gap: 3px !important; }
   .merchant-points .mo-bar-item span { width: 12px !important; }
 }
+
+/* Charts keep a readable column width; scrolling belongs to the chart, not page. */
+.merchant-points .mo-panel { min-width:0; }
+.merchant-points .mo-bars { overflow-x:auto; justify-content:flex-start; align-items:flex-end; padding-bottom:8px; height:230px; }
+.merchant-points .mo-bar-item { flex:1 0 64px; min-width:64px; }
+.merchant-points .mo-bar-item strong { min-height:2.8em; line-height:1.4; font-variant-numeric:tabular-nums; }
+.merchant-points .mo-bar-item small { flex-shrink:0; line-height:1.6; min-height:3.2em; text-align:center; }
+.merchant-points .mo-points-balance strong { overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+@media(max-width:600px) {
+ .merchant-points .mo-panel-heading>div:last-child { width:100%; }
+ .merchant-points .mo-panel-heading :is(input,select) { max-width:100%; min-width:0; flex:1 1 130px; }
+ .merchant-points>.mo-columns .mo-panel { display:flex; flex-direction:column; }
+ .merchant-points>.mo-columns .mo-panel h1 { margin-top:auto; padding-top:12px; overflow-wrap:anywhere; }
+}

@@ -1,3 +1,4 @@
+import {LanguageSelect} from '../../components/LanguageSelect';
 import {useMerchantFavorites,importLegacyOfferFavorites} from '../../customerFavorites';
 import {HomeBanners} from '../../components/HomeBanners';
 import { uiText } from '../../uiText';
@@ -158,18 +159,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             </button>
           </div>
           <div className="ae-home-language shrink-0">
-            <label className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700 shadow-2xs cursor-pointer hover:bg-gray-50 transition-colors" title={uiText('Language')}>
-              <Languages size={11} className="text-blue-600" />
-              <select
-                className="border-0 bg-transparent p-0 text-[10px] font-bold outline-none cursor-pointer text-gray-800"
-                value={i18n.language.startsWith('ml') ? 'ml' : 'en'}
-                onChange={(event) => void i18n.changeLanguage(event.target.value)}
-                aria-label={uiText('Language')}
-              >
-                <option value="en">English</option>
-                <option value="ml">മലയാളം</option>
-              </select>
-            </label>
+            <LanguageSelect/>
           </div>
         </div>
 
@@ -181,7 +171,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
 
             {/* Top Row: Label & Small Points Number + History Link */}
-            <div className="relative z-10 flex items-center justify-between">
+            <div className="ae-home-points-heading relative z-10 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-md bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">★</span>
                 <span className="text-[11px] font-bold text-sky-200 uppercase tracking-wide">
@@ -246,7 +236,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
         <section className="space-y-2.5 pt-1">
-          <div className="flex items-end justify-between">
+          <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⭐</span>
@@ -307,7 +297,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* 5. Nearby Partner Offers & Shops (Real Store Photos) */}
         <section className="space-y-2.5 pt-1">
-          <div className="flex items-end justify-between">
+          <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>📍</span>
@@ -369,7 +359,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* 6. Category-Wise Offers */}
         <section className="space-y-3 pt-1">
-          <div className="flex items-end justify-between">
+          <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>🏷️</span>
@@ -491,7 +481,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* 7. Trending Offers Carousel */}
         <section className="space-y-2.5 pt-1">
-          <div className="flex items-end justify-between">
+          <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⚡</span>
@@ -554,7 +544,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
 
         {/* 8. Favourite Offers (At the very end) */}
         <section className="space-y-2.5 pt-1">
-          <div className="flex items-end justify-between">
+          <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span className="text-rose-500">❤️</span>
@@ -638,7 +628,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
       {/* BEGIN: StickyFloatingPointsBar (Shows minimized when scrolling down past Hero Points) */}
       <aside
         aria-label={uiText("Points balance shortcut")}
-        className={`fixed bottom-[calc(84px+env(safe-area-inset-bottom,16px))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-40 transition-all duration-300 transform ${showStickyPoints ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
+        className={`ae-home-floating-points fixed bottom-[calc(84px+env(safe-area-inset-bottom,16px))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-40 transition-all duration-300 transform ${showStickyPoints ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
       >
         <div className="bg-slate-950/95 backdrop-blur-xl border border-blue-500/40 text-white rounded-2xl px-3.5 py-2.5 shadow-2xl shadow-blue-950/40 flex items-center justify-between gap-2.5 ring-1 ring-blue-500/20">
@@ -678,7 +668,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               title={uiText("Redeem Points")}
             >
               <Gift size={13} className="text-cyan-300" />
-              <span>{uiText("Redeem")}</span>
+              <span>{i18n.language.startsWith("ml") ? "ഉപയോഗിക്കുക" : uiText("Redeem")}</span>
             </Link>
 
             {/* History Shortcut */}

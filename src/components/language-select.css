@@ -1,0 +1,8 @@
+/* One predictable language control across the customer and staff interfaces. */
+.ae-language-select.ae-language-switch { display:inline-flex; flex-wrap:nowrap; align-items:stretch; gap:3px; padding:3px; border:1px solid var(--border,#dce5f1); border-radius:12px; background:var(--surface,#fff); max-width:100%; min-width:0; }
+.ae-language-select.ae-language-switch>button { appearance:none; display:flex; align-items:center; justify-content:center; flex:1 1 auto; min-width:0; min-height:36px; max-width:100%; margin:0; padding:6px 10px; border:0; border-radius:9px; background:transparent; color:var(--text,#18233e); font:600 12px/1.6 system-ui,sans-serif; white-space:nowrap; cursor:pointer; }
+.ae-language-select.ae-language-switch>button[aria-pressed=true] { background:#0868e5; color:#fff; }
+.ae-language-select.ae-language-switch>button:focus-visible { outline:3px solid #58a6ff; outline-offset:2px; }
+.ae-counter-page .ae-language-select.ae-language-switch { width:max-content; }
+.ae-home-language .ae-language-select.ae-language-switch { margin:0; }
+@media(max-width:360px) { .ae-language-select.ae-language-switch>button { padding-inline:8px; } }

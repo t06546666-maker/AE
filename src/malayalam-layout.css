@@ -78,3 +78,31 @@ html[lang="ml"] .ae-field-footer>a span { font-size:9px; line-height:1.35; }
  html[lang="ml"] .field-home-actions>a { min-height:132px; padding:13px; }
  html[lang="ml"] .ae-field-footer>a { min-height:48px; }
 }
+/* Shared interface sizing: allow translated copy to grow instead of escaping cards.
+   Do not hide page overflow: tables and carousels retain their own scrolling. */
+:is(.main-content,.customer-modern-page,.expense-shell,.ae-auth-window,.ae-auth-sheet,.ae-counter-page,.panel,.mo-panel,.ae-product-panel) { min-width:0; }
+:is(.button,.ae-auth-primary,.ae-auth-secondary,.ae-product-send,.ae-product-upload,.ae-product-section-heading button,.ae-product-status) { max-width:100%; white-space:normal; overflow-wrap:anywhere; height:auto; line-height:1.55; }
+:is(.button,.ae-auth-primary,.ae-auth-secondary,.ae-product-send,.ae-product-upload)>svg { flex-shrink:0; }
+:is(.ae-auth-roles a,.ae-product-heading h2,.ae-product-record-top strong,.ae-product-summary,.ae-product-section-heading h3) { min-width:0; overflow-wrap:anywhere; }
+.ae-product-record-top,.ae-product-section-heading { flex-wrap:wrap; }
+.ae-product-status { flex-shrink:1; }
+:is(.ae-auth-page,.expense-shell,.ae-counter-page,.main-content) input:not([type=checkbox]):not([type=radio]),
+:is(.ae-auth-page,.expense-shell,.ae-counter-page,.main-content) :is(select,textarea) { min-width:0; max-width:100%; }
+@media(max-width:600px) {
+ :is(.page-header,.panel-heading,.mo-panel-heading,.page-actions,.form-actions,.modal-actions,.admin-heading-actions) { min-width:0; flex-wrap:wrap; }
+ :is(.page-header,.panel-heading,.mo-panel-heading,.page-actions,.form-actions,.modal-actions)>* { min-width:0; max-width:100%; }
+ :is(.two-column-form,.four-column-form,.settings-fields,.form-grid,.expense-form-grid) { grid-template-columns:minmax(0,1fr); }
+ :is(.mobile-summary-cards,.mobile-quick-actions,.customer-stats)>* { min-width:0; overflow-wrap:anywhere; }
+ .ae-auth-sheet { padding-inline:18px; }
+ .ae-auth-roles a { gap:6px; padding-inline:6px; white-space:normal; text-align:center; }
+ .ae-product-panel { padding-inline:16px; }
+ .ae-product-heading { align-items:flex-start; }
+ .ae-product-heading h2 { font-size:clamp(19px,5.5vw,25px); }
+ .ae-product-field { gap:10px; padding-inline:12px; }
+ .ae-product-upload { flex-wrap:wrap; }
+ .expense-toolbar label { width:auto; flex:1 1 140px; min-width:0; }
+ .expense-departments { grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); }
+ .ae-counter-page dl>div { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+ .ae-counter-page dd { white-space:normal; overflow-wrap:anywhere; }
+}
+html[lang=ml] :is(.ae-auth-roles a,.ae-auth-primary,.ae-auth-secondary,.ae-product-send,.ae-product-upload,.ae-product-status) { line-height:1.75; letter-spacing:normal; }
