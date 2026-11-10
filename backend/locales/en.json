@@ -3132,5 +3132,11 @@
   "ui.Add another customer": "Add another customer",
   "ui.Bill amount (₹)": "Bill amount (₹)",
   "ui.The customer agrees to account creation and onboarding messages.": "The customer agrees to account creation and onboarding messages.",
-  "ui.Save customer and issue points": "Save customer and issue points"
+  "ui.Save customer and issue points": "Save customer and issue points",
+  "ui.Cash selected!": "Cash selected!",
+  "ui.Welcome back!": "Welcome back!",
+  "ui.Please pay this amount at the shop counter.": "Please pay this amount at the shop counter.",
+  "ui.If you paid using UPI, please check with the shop that they received your payment.": "If you paid using UPI, please check with the shop that they received your payment.",
+  "ui.Thank you for shopping with AE! 🛍️": "Thank you for shopping with AE! 🛍️",
+  "ui.OK — Go Home": "OK — Go Home"
 }
