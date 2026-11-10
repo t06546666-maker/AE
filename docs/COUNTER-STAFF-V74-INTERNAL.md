@@ -14,3 +14,5 @@ SHA256: 8DD232E962FF57C54B909245605AA0FB16033E56A28816270FC8823E197B42A3
 TypeScript/backend checks, Counter Staff regression and registered-customer no-side-effect tests passed. Local English/Malayalam notice UI and OK routing verified. Real Android UPI switch/return still needs device testing. Build bundleRelease/assembleRelease, jarsigner, apksigner and aapt version checks passed. Demo carousel/Content Studio absent from built assets.
 
 Internal testing only. No Production promotion authorized for version 74.
+
+Published to Google Play Internal testing release 33 on 10 Nov 2026 12:37 Console time; verified Available to internal testers. Production 73 approved and ready to publish but held with managed publishing ON. No Production promotion of 74 performed. Merchant Cancel request was requested afterward and is not included in this build.
