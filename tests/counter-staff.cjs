@@ -12,6 +12,8 @@ async function run(){
  const supabase={from(){let id;return {select(){return this},eq(key,value){id=value;return this},async maybeSingle(){return {data:[shopA,shopB].includes(id)?{id,name:id===shopA?'Shop A':'Shop B'}:null}}}}};
  const work=[],pushes=[];let checkouts=0,lastCheckout;
  const access=registerCounterStaff(app,{database:async()=>db,supabase,auth,merchantRole,customerAuth,normalizePhone:value=>/^\d{10}$/.test(String(value))?'91'+value:'',signingSecret:()=> 'test-secret-'.repeat(8),discount:(amount,type,value)=>({amount:type==='flat'?value:Math.round(amount*value)/100}),points:(amount,rate)=>Math.min(100,amount*rate/100),checkout:async value=>{checkouts++;lastCheckout=value;return {status:201,body:{success:true,purchase:{order_id:'order1'}}}},merchantPush:async(...args)=>merchantMessages.push(args),pushCustomer:async(...args)=>pushes.push(args),sendPush:async(...args)=>{staffPushes.push(args);return true;},background:fn=>work.push(fn)});
+ let customerAdds=0,lastAddition;
+ require('../backend/counter-customers.cjs').registerCounterCustomers(app,{...access,database:async()=>db,onboard:async value=>{customerAdds++;lastAddition=value;return {status:201,body:{success:true,customer:{name:value.name,id:'C001',rewardPoints:10,temporaryPassword:'must-not-leak',phone:value.phone},order:{private:'hidden'}}};}});
  require('../backend/counter-history.cjs').registerCounterHistory(app,{database:async()=>db,auth,merchantRole,...access});
  app.post('/api/customer/shop-requests',customerAuth,(req,res)=>res.json({legacy:true}));
  const server=await new Promise(resolve=>{const server=app.listen(0,'127.0.0.1',()=>resolve(server));});const base='http://127.0.0.1:'+server.address().port;
@@ -25,8 +27,16 @@ async function run(){
   assert.equal((await call('/api/merchant/counter-staff/'+staffId,'PATCH',{enabled:false},{'x-owner':shopB})).status,400);
   response=await call('/api/counter/login','POST',{phone:'9999999999',password:'Temporary1'});assert.equal(response.status,200);let token=response.data.token;let staffHeaders={Authorization:'Bearer '+token};
   assert.equal((await call('/api/counter/requests','GET',undefined,staffHeaders)).status,403);
+  assert.equal((await call('/api/counter/customers','POST',{name:'Blocked'},staffHeaders)).status,403);
   response=await call('/api/counter/password','POST',{currentPassword:'Temporary1',password:'ChangedPassword1'},staffHeaders);assert.equal(response.status,200);token=response.data.token;staffHeaders={Authorization:'Bearer '+token};
   assert.equal((await call('/api/merchant/counter-staff','GET',undefined,staffHeaders)).status,401);
+  const addition={name:'Customer',phone:'9876543210',amount:'100',consent:true,merchantId:shopB,rewardPercentage:100};
+  const addHeaders={...staffHeaders,'Idempotency-Key':'customer-add-test-0001'};
+  assert.equal((await call('/api/counter/customers','POST',addition)).status,401);
+  assert.equal((await call('/api/counter/customers','POST',{...addition,consent:false},addHeaders)).status,400);
+  const added=await call('/api/counter/customers','POST',addition,addHeaders);assert.equal(added.status,201);assert.equal(lastAddition.merchantId,shopA);assert.equal(lastAddition.rewardPercentage,undefined);assert.equal(JSON.stringify(added.data).includes('must-not-leak'),false);assert.equal('phone' in added.data.customer,false);
+  assert.equal((await call('/api/counter/customers','POST',addition,addHeaders)).status,200);assert.equal(customerAdds,1);
+  assert.equal((await call('/api/counter/customers','POST',{...addition,amount:'101'},addHeaders)).status,503);assert.equal(customerAdds,1);
   const settings={enabled:true,pointsPer100:10,discountType:'percentage',discountValue:5,minimumBillAmount:1};assert.equal((await call('/api/merchant/counter-staff/settings','PUT',settings,owner)).status,200);assert.equal((await call('/api/counter/preferences','PUT',{push_token:'staff-device'},staffHeaders)).status,200);
   const samplePolicy={enabled:true,pointsPer100:10,discountType:'percentage',discountValue:5,minimumBillAmount:1},sampleBody={amount:500,action:'combined',policy:samplePolicy},unchanged=db.rows.size;
   const merchantPreview=await call('/api/merchant/counter-staff/preview','POST',sampleBody,owner);assert.equal(merchantPreview.status,200);assert.equal(merchantPreview.data.quote.discountAmount,25);assert.equal(merchantPreview.data.quote.payable,475);assert.equal(merchantPreview.data.quote.pointsToRedeem,100);assert.equal(db.rows.size,unchanged);

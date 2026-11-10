@@ -3125,5 +3125,12 @@
   "ui.Enter the sample amount and complete the rules to preview.": "Enter the sample amount and complete the rules to preview.",
   "ui.Updating preview…": "Updating preview…",
   "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.",
-  "ui.Transaction details": "Transaction details"
+  "ui.Transaction details": "Transaction details",
+  "ui.Add a customer to your assigned shop. The merchant’s points rules apply; you cannot change them.": "Add a customer to your assigned shop. The merchant’s points rules apply; you cannot change them.",
+  "ui.Customer added": "Customer added",
+  "ui.Available points": "Available points",
+  "ui.Add another customer": "Add another customer",
+  "ui.Bill amount (₹)": "Bill amount (₹)",
+  "ui.The customer agrees to account creation and onboarding messages.": "The customer agrees to account creation and onboarding messages.",
+  "ui.Save customer and issue points": "Save customer and issue points"
 }

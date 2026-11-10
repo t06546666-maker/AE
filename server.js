@@ -5613,7 +5613,7 @@ app.delete(['/api/customers/:id', '/api/admin/customers/:id'], requireAuth, requ
   res.json({ success: true });
 });
 
-app.post('/api/customers', requireAuth, async (req, res) => {
+async function onboardShopCustomer(req, res) {
   const name = cleanText(req.body.name, 100);
   const phone = normalizePhone(req.body.phone);
   const email = cleanText(req.body.email, 254).toLowerCase();
@@ -5732,7 +5732,8 @@ app.post('/api/customers', requireAuth, async (req, res) => {
     order: purchase,
     notifications: { whatsapp, email: emailResult },
   });
-});
+}
+app.post('/api/customers', requireAuth, onboardShopCustomer);
 
 app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async (req, res) => {
   const identifier = cleanText(req.params.code, 100);
@@ -5806,6 +5807,7 @@ app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async 
 });
 
 const counterStaffAccess=require('./backend/counter-staff.cjs').registerCounterStaff(app,{database:checkoutBillDatabase,supabase:supabaseAdmin,auth:requireAuth,merchantRole:requireRole('merchant'),customerAuth:requireCustomerAuth,normalizePhone,signingSecret:()=>process.env.COUNTER_STAFF_JWT_SECRET||process.env.CUSTOMER_JWT_SECRET,discount:redemptionDiscount,points:calculateFixedPurchasePoints,pushCustomer:pushToCustomer,merchantPush:pushToMerchant,sendPush:sendPushNotification,background:scheduleBackground,checkout:async args=>{let status=200,body;await runMerchantCheckout({auth:{profile:{merchant_id:args.merchantId}},body:{customerCode:args.customerCode,amount:args.amount,rewardPercentage:args.quote.pointsPer100,pointsToRedeem:args.quote.pointsToRedeem,discountType:args.quote.discountType,discountValue:args.quote.discountValue,paymentMode:'pilot_app_only',location:'Counter Staff: '+args.staffName},get:name=>name.toLowerCase()==='idempotency-key'?'counter-'+args.requestId:undefined},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
+require('./backend/counter-customers.cjs').registerCounterCustomers(app,{...counterStaffAccess,database:checkoutBillDatabase,onboard:async value=>{const db=await checkoutBillDatabase(),doc=await db.collection('ae_counter_settings').doc(value.merchantId).get();const rate=doc.exists?Number(doc.data().pointsPer100):10;let status=200,body;await onboardShopCustomer({auth:{profile:{role:'merchant',merchant_id:value.merchantId}},body:{name:value.name,phone:value.phone,amount:value.amount,rewardPercentage:rate,location:'Counter Staff: '+value.staffName},get:name=>name.toLowerCase()==='idempotency-key'?value.requestKey:undefined},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
 
 require('./backend/counter-history.cjs').registerCounterHistory(app,{...counterStaffAccess,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant')});
 require('./backend/counter-product-lists.cjs').registerCounterProductLists(app,{...counterStaffAccess,db:supabaseAdmin,database:checkoutBillDatabase,imageUrl:signedOfferImageUrl,pushToCustomer,pushToMerchant,pushToRole});

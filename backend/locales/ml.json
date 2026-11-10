@@ -1316,7 +1316,7 @@
   "ui.Save subscription & features": "സബ്സ്ക്രിപ്ഷനും സൗകര്യങ്ങളും സംരക്ഷിക്കുക",
   "ui.Saved visit report image": "സംരക്ഷിച്ച സന്ദർശന റിപ്പോർട്ട് ചിത്രം",
   "ui.Saving...": "സംരക്ഷിക്കുന്നു…",
-  "ui.Saving…": "സംരക്ഷിക്കുന്നു…",
+  "ui.Saving…": "സേവ് ചെയ്യുന്നു…",
   "ui.Scan another customer": "മറ്റൊരു ഉപഭോക്താവിനെ സ്കാൻ ചെയ്യുക",
   "ui.Scan customer QR to apply discount": "ഇളവ് നൽകാൻ ഉപഭോക്തൃ QR സ്കാൻ ചെയ്യുക",
   "ui.Search address or place": "വിലാസമോ സ്ഥലമോ തിരയുക",
@@ -3222,5 +3222,12 @@
   "ui.Enter the sample amount and complete the rules to preview.": "പ്രിവ്യൂ കാണാൻ ഉദാഹരണ തുകയും നിയമങ്ങളും നൽകുക.",
   "ui.Updating preview…": "പ്രിവ്യൂ പുതുക്കുന്നു…",
   "ui.Example only. No transaction is saved and no points are changed. Actual redemption requires 100 available customer points.": "ഇത് ഉദാഹരണം മാത്രമാണ്. ഇടപാട് സേവ് ചെയ്യുകയോ പോയിന്റുകൾ മാറ്റുകയോ ഇല്ല. യഥാർത്ഥ റിഡംപ്ഷന് ഉപഭോക്താവിന് 100 പോയിന്റുകൾ ഉണ്ടായിരിക്കണം.",
-  "ui.Transaction details": "ഇടപാട് വിശദാംശങ്ങൾ"
+  "ui.Transaction details": "ഇടപാട് വിശദാംശങ്ങൾ",
+  "ui.Add a customer to your assigned shop. The merchant’s points rules apply; you cannot change them.": "നിങ്ങളുടെ കടയിലേക്ക് ഉപഭോക്താവിനെ ചേർക്കുക. വ്യാപാരി നിശ്ചയിച്ച പോയിന്റ് നിയമങ്ങൾ ബാധകമാണ്; നിങ്ങൾക്ക് അവ മാറ്റാനാകില്ല.",
+  "ui.Customer added": "ഉപഭോക്താവിനെ ചേർത്തു",
+  "ui.Available points": "ലഭ്യമായ പോയിന്റുകൾ",
+  "ui.Add another customer": "മറ്റൊരു ഉപഭോക്താവിനെ ചേർക്കുക",
+  "ui.Bill amount (₹)": "ബിൽ തുക (₹)",
+  "ui.The customer agrees to account creation and onboarding messages.": "അക്കൗണ്ട് സൃഷ്ടിക്കുന്നതിനും തുടക്ക സന്ദേശങ്ങൾ ലഭിക്കുന്നതിനും ഉപഭോക്താവ് സമ്മതിച്ചിട്ടുണ്ട്.",
+  "ui.Save customer and issue points": "ഉപഭോക്താവിനെ ചേർത്ത് പോയിന്റുകൾ നൽകുക"
 }
