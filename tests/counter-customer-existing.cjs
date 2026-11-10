@@ -1,0 +1,7 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const source=fs.readFileSync(require.resolve('../server.js'),'utf8');
+const start=source.indexOf('async function onboardShopCustomer('),end=source.indexOf("app.post('/api/customers', requireAuth, onboardShopCustomer);",start);
+let purchaseCalls=0,writes=0;
+const lookup={select(){return this},eq(){return this},maybeSingle:async()=>({data:{id:'existing',phone:'919876543210',customer_code:'C001'},error:null}),update(){writes++;throw Error('Unexpected update')},insert(){writes++;throw Error('Unexpected insert')}};
+const handler=new Function('cleanText','normalizePhone','getAdminRewardConfig','supabaseAdmin','isEmail','processPurchase',source.slice(start,end)+';return onboardShopCustomer;')((v)=>String(v||''),v=>'91'+String(v).replace(/^\+?91/,''),async()=>({}),{from:()=>lookup},()=>true,async()=>{purchaseCalls++;});
+(async()=>{for(const phone of ['9876543210','919876543210','+919876543210']){let status,body;await handler({newCustomerOnly:true,body:{name:'Customer',phone,amount:100,rewardPercentage:10},auth:{profile:{role:'merchant',merchant_id:'own-shop'}}},{status(value){status=value;return this},json(value){body=value;return this}});assert.equal(status,409);assert.equal(body.code,'CUSTOMER_ALREADY_REGISTERED');}assert.equal(writes,0);assert.equal(purchaseCalls,0);console.log('PASS: existing normalized customer number rejected before updates, rewards or onboarding messages');})().catch(e=>{console.error(e);process.exitCode=1});

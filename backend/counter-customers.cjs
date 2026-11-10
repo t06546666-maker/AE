@@ -13,7 +13,7 @@ function registerCounterCustomers(app,{staffAuth,ready,database,onboard}){
    if(previous){if(previous.status==='completed')return res.status(200).json(previous.result);return res.status(409).json({error:'This submission needs merchant review before retrying.'});}
    // Persist the attempt before onboarding. Never replay an uncertain purchase.
    const outcome=await onboard({merchantId:req.counter.merchantId,staffName:req.counter.name,name,phone,amount:Number(amount),requestKey:'counter-add-'+ref.id});
-   if(outcome.status>=400||!outcome.body?.success){await ref.update({status:'needs_review'});return res.status(outcome.status>=400?outcome.status:503).json({error:outcome.body?.error||'Could not add customer. Ask the merchant to review.'});}
+   if(outcome.status>=400||!outcome.body?.success){await ref.update({status:'needs_review'});return res.status(outcome.status>=400?outcome.status:503).json({error:outcome.body?.error||'Could not add customer. Ask the merchant to review.',...(outcome.body?.code==='CUSTOMER_ALREADY_REGISTERED'?{code:'CUSTOMER_ALREADY_REGISTERED'}:{})});}
    const c=outcome.body.customer,result={success:true,customer:{name:c.name,code:c.id,rewardPoints:c.rewardPoints}};
    await db.runTransaction(async tx=>{tx.update(ref,{status:'completed',result,finishedAt:Date.now()});tx.set(root.collection('events').doc(),{action:'customer_added',staffId:req.counter.id,staffName:req.counter.name,actorRole:'counter_staff',customerName:c.name,customerCode:c.id,amount:Number(amount),createdAt:Date.now()});});
    return res.status(201).json(result);

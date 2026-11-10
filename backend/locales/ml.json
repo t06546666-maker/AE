@@ -3229,5 +3229,12 @@
   "ui.Add another customer": "മറ്റൊരു ഉപഭോക്താവിനെ ചേർക്കുക",
   "ui.Bill amount (₹)": "ബിൽ തുക (₹)",
   "ui.The customer agrees to account creation and onboarding messages.": "അക്കൗണ്ട് സൃഷ്ടിക്കുന്നതിനും തുടക്ക സന്ദേശങ്ങൾ ലഭിക്കുന്നതിനും ഉപഭോക്താവ് സമ്മതിച്ചിട്ടുണ്ട്.",
-  "ui.Save customer and issue points": "ഉപഭോക്താവിനെ ചേർത്ത് പോയിന്റുകൾ നൽകുക"
+  "ui.Save customer and issue points": "ഉപഭോക്താവിനെ ചേർത്ത് പോയിന്റുകൾ നൽകുക",
+  "ui.This mobile number is already registered. Please try another number.": "ഈ മൊബൈൽ നമ്പർ ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ട്. മറ്റൊരു നമ്പർ നൽകുക.",
+  "ui.Cash selected!": "പണമായി അടയ്ക്കാൻ തിരഞ്ഞെടുത്തു!",
+  "ui.Welcome back!": "വീണ്ടും സ്വാഗതം!",
+  "ui.Please pay this amount at the shop counter.": "ഈ തുക കടയിലെ കൗണ്ടറിൽ അടയ്ക്കുക.",
+  "ui.If you paid using UPI, please check with the shop that they received your payment.": "UPI വഴി പണമടച്ചിട്ടുണ്ടെങ്കിൽ, തുക ലഭിച്ചെന്ന് കടയിൽ അന്വേഷിച്ച് ഉറപ്പാക്കുക.",
+  "ui.Thank you for shopping with AE! 🛍️": "AE-യോടൊപ്പം ഷോപ്പിംഗ് നടത്തിയതിന് നന്ദി! 🛍️",
+  "ui.OK — Go Home": "ശരി — ഹോമിലേക്ക് പോകുക"
 }

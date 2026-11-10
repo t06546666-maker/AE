@@ -1,5 +1,8 @@
+import {CustomerPaymentNotice,type PaymentNotice} from './CustomerPaymentNotice';
+import {useNavigate} from 'react-router-dom';
+import {App as NativeApp} from '@capacitor/app';
 import { uiText } from '../uiText';
-import { useState } from 'react';
+import { useState,useRef,useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { apiFetch } from '../api';
@@ -11,7 +14,11 @@ type UpiApp = { id: string; name: string };
 const upi = registerPlugin<{ list(): Promise<{ apps: UpiApp[] }>; open(options: { id: string }): Promise<void> }>('UpiApps');
 type Bill = { id: string; merchantName: string; total: number; discount: number; payable: number; paymentMode?: 'cash' | 'customer_payment'; paymentStatus?: 'paid' | 'pending' };
 export function CustomerBillPopup({ customerId }: { customerId: string }) {
-  const client = useQueryClient();
+  const client = useQueryClient(),navigate=useNavigate();
+  const [notice,setNotice]=useState<PaymentNotice|null>(null);
+  const pendingUpi=useRef<{bill:Bill;departed:boolean}|null>(null);
+  useEffect(()=>{let active=true;const changed=(foreground:boolean)=>{const pending=pendingUpi.current;if(!active||!pending)return;if(!foreground){pending.departed=true;return;}if(pending.departed){pendingUpi.current=null;setNotice({kind:'upi',bill:pending.bill});}};const visibility=()=>changed(!document.hidden);document.addEventListener('visibilitychange',visibility);const listener=Capacitor.isNativePlatform()?NativeApp.addListener('appStateChange',state=>changed(state.isActive)):null;return()=>{active=false;document.removeEventListener('visibilitychange',visibility);void listener?.then(handle=>handle.remove()).catch(()=>{});};},[]);
+  async function finishNotice(){if(!notice||busy)return;setBusy(true);setError('');try{await apiFetch(`/api/customer/checkout-bills/${notice.bill.id}/dismiss`,{method:'POST'});client.setQueryData<{bills:Bill[]}>(['customer','checkout-bills',customerId],old=>old?{bills:old.bills.filter(b=>b.id!==notice.bill.id)}:old);setNotice(null);navigate('/customer/home');void client.invalidateQueries({queryKey:['customer','checkout-bills']});}catch{setError('Could not close this bill. Please try again.');}finally{setBusy(false);}}
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [opening, setOpening] = useState(false);
@@ -41,10 +48,11 @@ export function CustomerBillPopup({ customerId }: { customerId: string }) {
   async function openUpiApp(app: UpiApp) {
     if (opening) return;
     setOpening(true); setError('');
-    try { await upi.open({ id: app.id }); setUpiApps([]); }
-    catch { setError(uiText('Could not open this UPI app. Try another one.')); }
+    try { if(!bill)return;pendingUpi.current={bill:{...bill},departed:false};await upi.open({ id: app.id }); setUpiApps([]); }
+    catch { pendingUpi.current=null;setError(uiText('Could not open this UPI app. Try another one.')); }
     finally { setOpening(false); }
   }
+  if(notice)return <CustomerPaymentNotice notice={notice} busy={busy} error={error} onContinue={()=>void finishNotice()}/>;
   if (!bill) return null;
   const cashReceived = bill.paymentMode === 'cash' && bill.paymentStatus === 'paid';
   return <div className="modal-backdrop ae-bill-backdrop"><section className="modal ae-bill" role="dialog" aria-modal="true" aria-labelledby="ae-bill-title">
@@ -53,7 +61,7 @@ export function CustomerBillPopup({ customerId }: { customerId: string }) {
     <dl className="ae-bill-breakdown"><div><dt>{uiText("Bill total")}</dt><dd>{formatCurrency(bill.total)}</dd></div>{bill.discount > 0 ? <div><dt>{uiText("Discount")}</dt><dd>− {formatCurrency(bill.discount)}</dd></div> : null}</dl>
     {cashReceived ? <div className="ae-bill-cash-confirmed" role="status"><CheckCircle2 size={23}/><div><strong>{uiText("Cash received")}</strong><span>{uiText("The merchant confirmed this payment. No further payment is due.")}</span></div></div> : <>
       <div className="ae-bill-payment-options">
-        <button type="button" className="ae-bill-cash" disabled={busy || opening} onClick={() => void dismiss()}><Banknote size={19}/>{uiText("Pay with cash")}</button>
+        <button type="button" className="ae-bill-cash" disabled={busy || opening} onClick={() => {pendingUpi.current=null;setError('');setNotice({kind:'cash',bill:{...bill}});}}><Banknote size={19}/>{uiText("Pay with cash")}</button>
         <button type="button" className="button primary ae-bill-pay" disabled={opening || busy} onClick={() => void chooseUpiApp()}>{opening ? uiText("Opening UPI apps…") : uiText("Scan shop QR in UPI app")}<QrCode size={18}/></button>
       </div>
       {upiApps.length > 0 && <div className="ae-bill-apps" aria-label={uiText("Choose a UPI app")}><h3>{uiText("Choose a UPI app")}</h3><div>{upiApps.map(app => <button type="button" className="ae-bill-app" key={app.id} disabled={opening} onClick={() => void openUpiApp(app)}><span className={`ae-bill-app-mark ${app.name.toLowerCase().replace(/[^a-z]/g, '')}`}>{app.name[0]}</span>{app.name}<QrCode size={16}/></button>)}</div></div>}
