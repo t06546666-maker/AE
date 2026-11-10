@@ -14,3 +14,5 @@ SHA256: AA3842A7A8F6037D6B1DDE73ECBED971254F23540B220C0D7116DF8F78F2C80B
 Build bundleRelease/assembleRelease passed; jarsigner, apksigner and aapt version checks passed. Counter Staff isolation, temporary-password guard, consent validation, forged-shop/rate resistance and duplicate submission tests passed. Local sample save and mobile English/Malayalam alignment verified. No phone delivery test performed.
 
 Production version 72 remains separately in Google review with managed publishing ON, held at Safar request. This release is intended for Internal testing only.
+
+Published to Google Play Internal testing release 32, 10 Nov 2026 11:24 Console time. Verified Available to internal testers. Production version 72 remains in review with managed publishing on; no Production promotion performed.
