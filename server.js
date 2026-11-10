@@ -5924,7 +5924,7 @@ app.get('/api/orders', requireAuth, (req, res, next) => {
   const paging = paginationFromRequest(req, 25, 100);
   let query = supabaseAdmin.from('orders')
     .select(
-      'id, order_no, amount, reward_points, reward_percentage, is_returning, source, location, email_sent, created_at, customers(customer_code,name,phone,email), merchants(name), whatsapp_messages(status,updated_at)',
+      'id, merchant_id, order_no, amount, reward_points, reward_percentage, is_returning, source, location, email_sent, created_at, customers(customer_code,name,phone,email), merchants(name), whatsapp_messages(status,updated_at)',
       paging.enabled ? { count: 'exact' } : undefined,
     )
     .order('created_at', { ascending: false });
@@ -5944,9 +5944,14 @@ app.get('/api/orders', requireAuth, (req, res, next) => {
   if (paging.enabled) query = query.range(paging.from, paging.to);
   const { data, error, count } = await query;
   if (error) return res.status(500).json({ success: false, error: error.message });
+  let rewardDetails = new Map();
+  try { rewardDetails = await require('./backend/order-reward-details.cjs').orderRewardDetails(supabaseAdmin, data); }
+  catch (error) { console.warn('Order reward details unavailable:', error.message); }
   res.json({
     success: true,
     orders: data.map((row) => ({
+      earningPointsPer100: null, discountType: null, discountPercentage: null, discountAmount: null,
+      ...rewardDetails.get(row.id),
       id: row.id, orderNo: row.order_no, cid: row.customers?.customer_code,
       customer: row.customers?.name, phone: row.customers?.phone,
       email: row.customers?.email || '', amount: Number(row.amount),

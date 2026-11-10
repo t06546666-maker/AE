@@ -145,6 +145,10 @@ export interface Order {
   location: string;
   rewardPoints: number;
   rewardPercentage: number;
+  earningPointsPer100?: number | null;
+  discountType?: 'percentage' | 'flat' | 'none' | null;
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
   isReturning: boolean;
   source: 'registration' | 'qr';
   timestamp: string;

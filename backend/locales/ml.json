@@ -1,4 +1,8 @@
 {
+  "ui.Earning rate": "പോയിന്റ് നിരക്ക്",
+  "ui.Discount rate": "കിഴിവ് നിരക്ക്",
+  "ui.{{points}} points per ₹100": "₹100-ന് {{points}} പോയിന്റുകൾ",
+  "ui.Flat discount": "നിശ്ചിത തുക കിഴിവ്",
   "ui.Phone verified. Continue to create your account.": "ഫോൺ നമ്പർ സ്ഥിരീകരിച്ചു. അക്കൗണ്ട് സൃഷ്ടിക്കാൻ തുടരുക.",
   "ui.Supporting documents": "അനുബന്ധ രേഖകൾ",
   "ui.Add images or receipts (optional)": "ചിത്രങ്ങളോ രസീതുകളോ ചേർക്കുക (ഐച്ഛികം)",

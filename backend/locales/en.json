@@ -1,4 +1,8 @@
 {
+  "ui.Earning rate": "Earning rate",
+  "ui.Discount rate": "Discount rate",
+  "ui.{{points}} points per ₹100": "{{points}} points per ₹100",
+  "ui.Flat discount": "Flat discount",
   "ui.Phone verified. Continue to create your account.": "Phone verified. Continue to create your account.",
   "language.english": "English",
   "language.malayalam": "Malayalam",
