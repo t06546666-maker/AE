@@ -1,3 +1,4 @@
+import {ManualCustomerUpdate} from '../components/ManualCustomerUpdate';
 import '../admin-directory.css';
 import {CustomerAudiences} from '../components/CustomerAudiences';
 import {MerchantReminderStatus} from '../components/MerchantReminderStatus';
@@ -154,6 +155,7 @@ export function AdminNotifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Form states
+  const [messageTemplate,setMessageTemplate]=useState<'standard'|'customer_update'>('standard');
   const [target, setTarget] = useState<NotificationTarget>('customers');
   const [selectedCustomers, setSelectedCustomers] = useState<CustomerSearchResult[]>([]);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -790,8 +792,10 @@ export function AdminNotifications() {
         </button>
       </div>
 
+      {activeTab==='create'&&<section className="panel" style={{marginBottom:20,padding:18}}><label>{uiText('Message template')}<select value={messageTemplate} onChange={event=>setMessageTemplate(event.target.value as 'standard'|'customer_update')} style={{display:'block',width:'100%',padding:12,marginTop:8}}><option value="standard">{uiText('Push notification / existing WhatsApp message')}</option><option value="customer_update">ae_customer_update — {uiText('Customer points and account update (WhatsApp)')}</option></select></label></section>}
+      {activeTab==='create'&&messageTemplate==='customer_update'&&<ManualCustomerUpdate initialCustomers={selectedCustomers}/>}
       {/* TAB 1: CREATE / SEND NOTIFICATION */}
-      {activeTab === 'create' && (
+      {activeTab === 'create' && messageTemplate === 'standard' && (
         <div className="admin-notification-compose-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(320px, 1fr)', gap: '28px', alignItems: 'start' }}>
           {/* Form */}
           <form onSubmit={handleSubmit} className="panel" style={{ padding: '24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>

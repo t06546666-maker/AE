@@ -213,6 +213,8 @@ const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN;
 const WA_APP_SECRET = process.env.WA_APP_SECRET;
 const customerOnboardingTemplates = require('./backend/customer-onboarding-templates.cjs');
 const WA_REGISTRATION_TEMPLATE = customerOnboardingTemplates.welcomeTemplate(cleanText(process.env.WA_REGISTRATION_TEMPLATE || '',512));
+const WA_CUSTOMER_UPDATE_TEMPLATE = cleanText(process.env.WA_CUSTOMER_UPDATE_TEMPLATE || 'ae_customer_update',512);
+const WA_CUSTOMER_UPDATE_TEMPLATE_ID = cleanText(process.env.WA_CUSTOMER_UPDATE_TEMPLATE_ID || '',100);
 const WA_CUSTOMER_USAGE_TEMPLATE = cleanText(process.env.WA_CUSTOMER_USAGE_TEMPLATE ?? 'ae_use',512);
 const WA_CUSTOMER_INSTAGRAM_LINK = cleanText(process.env.WA_CUSTOMER_INSTAGRAM_LINK || customerOnboardingTemplates.INSTAGRAM_LINK,1000);
 const WA_CUSTOMER_APP_LINK = cleanText(
@@ -2068,6 +2070,10 @@ app.post('/api/admin/customers/award-points', requireAuth, requireRole('admin'),
   })();
   return res.json({ success: true, awardedCount: Number(data?.awardedCount || 0), pointsPerCustomer: points, awardedCustomerIds });
 });
+require('./backend/manual-customer-update.cjs').registerManualCustomerUpdate(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,database:checkoutBillDatabase,normalizePhone,sendTemplate:sendWhatsAppTemplate,templateName:WA_CUSTOMER_UPDATE_TEMPLATE,inspectTemplate:async()=>{
+ if(!/^\d+$/.test(WA_CUSTOMER_UPDATE_TEMPLATE_ID)||!WA_TOKEN)throw Error('Template metadata is not configured');
+ const result=await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/${WA_CUSTOMER_UPDATE_TEMPLATE_ID}`,{headers:{Authorization:`Bearer ${WA_TOKEN}`},params:{fields:'name,status,language,category,components'},timeout:10000});return result.data;
+}});
 require('./backend/admin-customer-guide.cjs').registerCustomerGuide(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,normalizePhone,sendTemplate:sendWhatsAppTemplate,appLink:WA_CUSTOMER_APP_LINK,instagramLink:WA_CUSTOMER_INSTAGRAM_LINK,usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE});
 app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), async(req,res)=>{
   const result=await supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id').eq('id',req.params.id).maybeSingle();
