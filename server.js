@@ -4625,12 +4625,45 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
       targets.docs.forEach(doc=>{const target=doc.data();if(target.notified){if(!target.readAt)salesTargetUnreadCount+=1;notifications.push({id:`sales-target:${doc.id}`,merchantId:target.merchantId,customerOrderId:null,title:'Sales target achieved!',body:`Your recorded AE sales reached your ${target.label || target.month} target.`,readAt:target.readAt || null,createdAt:target.achievedAt,requestNo:'',status:'',url:`/dashboard?month=${target.month}`});}});
     }catch(error){console.warn('Sales target notifications unavailable:',error.message);}
   }
+  let lowBalanceUnreadCount = 0;
+  if (req.auth.profile.role === 'admin') {
+    try {
+      const { data: lowMerchants, error: lowBalanceError } = await supabaseAdmin
+        .from('active_merchants')
+        .select('id,name,merchant_code,point_balance')
+        .lte('point_balance', 200)
+        .order('point_balance', { ascending: true })
+        .limit(limit);
+      if (lowBalanceError) throw lowBalanceError;
+      (lowMerchants || []).forEach((merchant) => {
+        const points = Number(merchant.point_balance || 0);
+        lowBalanceUnreadCount += 1;
+        notifications.push({
+          id: `low-balance:${merchant.id}`,
+          title: points <= 100 ? 'Urgent: merchant points are low' : 'Merchant points are running low',
+          body: `${merchant.name || merchant.merchant_code || 'Merchant'} has ${points.toLocaleString('en-IN')} points remaining. Add points from the merchant list if needed.`,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+          requestNo: '', status: '',
+          url: `/merchants/${encodeURIComponent(merchant.id)}`,
+          eventType: 'merchant_low_balance', entityId: merchant.id,
+        });
+      });
+    } catch (error) {
+      console.warn('Low merchant balance notifications unavailable:', error.message);
+    }
+  }
   notifications.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
   notifications.splice(limit);
-  res.json({ success: true, notifications, unreadCount: Number(appUnreadCount || 0) + legacyUnreadCount + salesTargetUnreadCount });
+  res.json({ success: true, notifications, unreadCount: Number(appUnreadCount || 0) + legacyUnreadCount + salesTargetUnreadCount + lowBalanceUnreadCount });
 });
 
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
+  if(req.params.id.startsWith('low-balance:')) {
+    return req.auth.profile.role === 'admin'
+      ? res.json({ success: true })
+      : res.status(403).json({ success: false, error: 'Forbidden' });
+  }
   if(req.params.id.startsWith('sales-target:')) {
     if(req.auth.profile.role!=='merchant')return res.status(403).json({error:'Forbidden'});
     const docId=req.params.id.slice('sales-target:'.length);
