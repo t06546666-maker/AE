@@ -3194,5 +3194,22 @@
   "ui.Your account update appears here.": "Your account update appears here.",
   "ui.Select customers for WhatsApp. A phone push token is not required. WhatsApp preferences are checked before sending.": "Select customers for WhatsApp. A phone push token is not required. WhatsApp preferences are checked before sending.",
   "ui.Send ae_customer_update to {{count}} customers on WhatsApp? Their current points balance will be filled automatically. This does not send a phone push notification.": "Send ae_customer_update to {{count}} customers on WhatsApp? Their current points balance will be filled automatically. This does not send a phone push notification.",
-  "ui.WhatsApp accepted {{accepted}} messages; {{failed}} failed or unconfirmed. Check delivery logs before retrying. Acceptance is not phone delivery.": "WhatsApp accepted {{accepted}} messages; {{failed}} failed or unconfirmed. Check delivery logs before retrying. Acceptance is not phone delivery."
+  "ui.WhatsApp accepted {{accepted}} messages; {{failed}} failed or unconfirmed. Check delivery logs before retrying. Acceptance is not phone delivery.": "WhatsApp accepted {{accepted}} messages; {{failed}} failed or unconfirmed. Check delivery logs before retrying. Acceptance is not phone delivery.",
+  "ui.Daily customer notifications": "Daily customer notifications",
+  "ui.App push: 10 a.m. and 5 p.m. IST. WhatsApp: 10 a.m. only, until app use or push registration is recorded.": "App push: 10 a.m. and 5 p.m. IST. WhatsApp: 10 a.m. only, until app use or push registration is recorded.",
+  "ui.Starts": "Starts",
+  "ui.Seven rotating messages per group; morning and evening use different variants.": "Seven rotating messages per group; morning and evening use different variants.",
+  "ui.App push enabled": "App push enabled",
+  "ui.Daily WhatsApp guide enabled": "Daily WhatsApp guide enabled",
+  "ui.WhatsApp uses the approved ae_use guide for customers with no recorded Android use and no push token, only when WhatsApp is enabled. App push respects notification preferences. Scheduler delays are possible; acceptance does not confirm delivery.": "WhatsApp uses the approved ae_use guide for customers with no recorded Android use and no push token, only when WhatsApp is enabled. App push respects notification preferences. Scheduler delays are possible; acceptance does not confirm delivery.",
+  "ui.Message preview group": "Message preview group",
+  "ui.New / no recorded app use": "New / no recorded app use",
+  "ui.100+ points": "100+ points",
+  "ui.Below 100 points": "Below 100 points",
+  "ui.Run recorded": "Run recorded",
+  "ui.App pushes accepted": "App pushes accepted",
+  "ui.WhatsApp accepted": "WhatsApp accepted",
+  "ui.Skipped / duplicate": "Skipped / duplicate",
+  "ui.Example balance: 200 points. The real balance is filled at send time.": "Example balance: 200 points. The real balance is filled at send time.",
+  "ui.WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.": "WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text."
 }

@@ -1,3 +1,4 @@
+import {CustomerDailyStatus} from '../components/CustomerDailyStatus';
 import {ManualCustomerUpdate} from '../components/ManualCustomerUpdate';
 import '../admin-directory.css';
 import {CustomerAudiences} from '../components/CustomerAudiences';
@@ -623,6 +624,7 @@ export function AdminNotifications() {
       />
 
       <MerchantReminderStatus/>
+      <CustomerDailyStatus/>
 
       {/* Audience Stats Bar */}
       <div

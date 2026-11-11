@@ -1,0 +1,26 @@
+name: Customer daily app and WhatsApp reminders
+on:
+  schedule:
+    # 10:00 and 17:00 India time; retries are idempotent, not additional messages.
+    - cron: '30,45 4,11 * * *'
+    - cron: '0 5,12 * * *'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: customer-daily-reminders
+  cancel-in-progress: false
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run scheduled reminders or preview without sending
+        env:
+          REMINDER_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+        run: node scripts/run-customer-reminders.cjs

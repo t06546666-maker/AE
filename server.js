@@ -3488,6 +3488,11 @@ const reminderDeps = {
   send: sendPushNotification,
 };
 merchantRemindersModule.registerMerchantReminders(app, reminderDeps);
+require('./backend/customer-daily-reminders.cjs').registerCustomerDailyReminders(app,{
+ auth:requireAuth,adminRole:requireRole('admin'),supabase:supabaseAdmin,firestore:reminderDeps.firestore,getTarget:getCustomerPushTarget,send:sendPushNotification,
+ usageReady:async()=>{if(!WA_TOKEN)return false;try{const result=await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/1422932579899278`,{headers:{Authorization:`Bearer ${WA_TOKEN}`},params:{fields:'name,status,language'},timeout:8000});return result.data.name===WA_CUSTOMER_USAGE_TEMPLATE&&result.data.status==='APPROVED'&&result.data.language==='en';}catch{return false;}},
+ sendUsage:async(customerId,phone)=>{const result=await customerOnboardingTemplates.sendCustomerUsage({customer_id:customerId,customer_phone:phone},{sendTemplate:sendWhatsAppTemplate,appLink:WA_CUSTOMER_APP_LINK,instagramLink:WA_CUSTOMER_INSTAGRAM_LINK,usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE});return result.sent;}
+});
 if (process.env.NODE_ENV !== 'test') {
   merchantRemindersModule.startServerReminderScheduler(reminderDeps);
 }
