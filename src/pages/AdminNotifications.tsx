@@ -1,3 +1,5 @@
+import '../admin-directory.css';
+import {CustomerAudiences} from '../components/CustomerAudiences';
 import {MerchantReminderStatus} from '../components/MerchantReminderStatus';
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -790,7 +792,7 @@ export function AdminNotifications() {
 
       {/* TAB 1: CREATE / SEND NOTIFICATION */}
       {activeTab === 'create' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(320px, 1fr)', gap: '28px', alignItems: 'start' }}>
+        <div className="admin-notification-compose-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(320px, 1fr)', gap: '28px', alignItems: 'start' }}>
           {/* Form */}
           <form onSubmit={handleSubmit} className="panel" style={{ padding: '24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -928,6 +930,7 @@ export function AdminNotifications() {
               </div>
             </div>
 
+            {(target==='customers'||target==='selected_customers'||target==='single_customer')&&<details className="admin-notification-audience"><summary>{uiText('Filter by customer audience')}</summary><CustomerAudiences onUseSelection={customers=>{setTarget('selected_customers');setSelectedCustomers(customers.map(c=>({id:c.id,name:c.name,phone:c.phone,customer_code:c.customer_code,hasPushToken:c.pushReady})));setCustomerSearchQuery('');setPushOnly(true);setSendWhatsApp(false);showToast(uiText('Audience applied. Review the selected customers and compose your notification below.'));}}/></details>}
             {/* If Selected Customers is target, show Multi-Customer Picker */}
             {(target === 'selected_customers' || target === 'single_customer') && (
               <div style={{ marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>

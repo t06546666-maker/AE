@@ -2024,6 +2024,7 @@ app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_mana
   const activity = await supabaseAdmin.from('field_manager_activity').insert({ manager_id: req.auth.profile.id, merchant_id: merchant.id, action: 'merchant_profile_view' });
   res.json({ merchant, activityRecorded: !activity.error });
 });
+require('./backend/customer-audiences.cjs').registerCustomerAudiences(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,database:checkoutBillDatabase});
 app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,res) => {
   const paging=paginationFromRequest(req,25,100);
   const source=String(req.query.source||'all');
@@ -2034,7 +2035,10 @@ app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,re
   if(paging.search) query=query.or(`name.ilike.%${paging.search}%,customer_code.ilike.%${paging.search}%,phone.ilike.%${paging.search}%`);
   const result=await query.range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});
-  res.json({records:result.data,pagination:paginationMeta(paging,result.count)});
+  try {
+    const records=await require('./backend/customer-onboarding-shops.cjs').withOnboardingShops(supabaseAdmin,result.data||[]);
+    res.json({records,pagination:paginationMeta(paging,result.count)});
+  } catch {res.status(503).json({error:'Unable to load onboarding shops. Please try again.'});}
 });
 app.post('/api/admin/customers/award-points', requireAuth, requireRole('admin'), async (req,res) => {
   const customerIds = Array.isArray(req.body.customerIds) ? [...new Set(req.body.customerIds.map(value => cleanText(value, 64)))] : [];
@@ -2073,7 +2077,7 @@ app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), a
   if(memberships.error)return res.status(500).json({error:memberships.error.message});
   let onboardingMerchant=null;
   if(result.data.merchant_id){
-    const merchant=await supabaseAdmin.from('active_merchants').select('id,name,merchant_code').eq('id',result.data.merchant_id).maybeSingle();
+    const merchant=await supabaseAdmin.from('merchants').select('id,name,merchant_code').eq('id',result.data.merchant_id).maybeSingle();
     if(merchant.error)return res.status(500).json({error:merchant.error.message});
     onboardingMerchant=merchant.data;
   }
