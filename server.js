@@ -3510,6 +3510,13 @@ registerAdBanners(app, {
   uploadImageHelper: uploadOfferImage,
 });
 
+require('./backend/customer-home-content.cjs').registerCustomerHomeContent(app, {
+  auth: requireAuth,
+  adminRole: requireRole('admin'),
+  supabase: supabaseAdmin,
+  uploadMiddleware: offerImageMiddleware,
+});
+
 require('./backend/admin-notifications.cjs').registerAdminNotifications(app, {
   auth: requireAuth,
   adminRole: requireRole('admin'),
