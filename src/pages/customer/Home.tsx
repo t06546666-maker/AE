@@ -18,12 +18,13 @@ import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../componen
 import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
 
-export function CustomerHome({ user }: { user: UserProfile }) {
+export function CustomerHome({ user, preview = false }: { user: UserProfile; preview?: boolean }) {
+  useEffect(()=>{if(!preview)return;const click=(event:MouseEvent)=>{const el=(event.target as HTMLElement).closest('button,a');if(!el)return;event.preventDefault();event.stopImmediatePropagation();const text=el.textContent||'';const key=text.includes('Claim')?'pointsLabel':text.includes('Explore')?'exploreLabel':text.includes('Hi,')?'greeting':null;if(key)window.parent.postMessage({type:'ae-preview-select',key},window.location.origin);};document.addEventListener('click',click,true);return()=>document.removeEventListener('click',click,true);},[preview]);
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:{pageText:Record<string,string>}}>('/api/customer/home-content'),refetchInterval:30000});
   const homeText = (key:string,fallback:string) => homeContent.data?.content?.pageText?.[key] || uiText(fallback);
-  const customerLocation = useCustomerLocation(true, true);
+  const customerLocation = useCustomerLocation(!preview, !preview);
   const dailyGreeting = useDailyGreeting('customer');
-  const { data, isLoading } = useCustomerDashboard();
+  const { data, isLoading } = useCustomerDashboard(!preview);
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const rewardPoints = data?.reward_points ?? 0;

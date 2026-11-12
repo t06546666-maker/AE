@@ -75,8 +75,9 @@ export type CustomerTransactionSummary = {
   monthly_activity: Array<{ month: string; earned: number; redeemed: number }>;
 };
 
-export function useCustomerDashboard() {
+export function useCustomerDashboard(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ['customer', 'dashboard'],
     queryFn: ({ signal }) => apiFetch<CustomerDashboard>('/api/customer/dashboard', { signal }),
     refetchInterval: 30000,

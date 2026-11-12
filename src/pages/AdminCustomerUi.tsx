@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { uiText } from '../uiText';
-import { HomeBanners } from '../components/HomeBanners';
+import { CustomerHome } from './customer/Home';
 
 type Content = { version: number; updatedAt: string; sections: unknown[]; banners: Array<Record<string, unknown>>; pageText: Record<string, unknown> };
 
 export function AdminCustomerUi() {
+  if(new URLSearchParams(window.location.search).get('canvas')==='1') return <><style>{`.topbar,.sidebar,.mobile-topbar{display:none!important}.main-content{padding:0!important;max-width:none!important}.app-shell,.shell-body{display:block!important}`}</style><div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div></>;
+  return <CustomerUiEditor/>;
+}
+function CustomerUiEditor() {
+  useEffect(()=>{const receive=(event:MessageEvent)=>{if(event.origin!==location.origin||event.data?.type!=='ae-preview-select')return;const key=event.data.key;if(typeof key==='string'){setSelected(key);document.getElementById('edit-'+key)?.focus({preventScroll:true});}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive);},[]);
   const client = useQueryClient();
   const query = useQuery({ queryKey: ['admin-customer-home-content'], queryFn: () => apiFetch<{ content: Content }>('/api/admin/customer-home-content') });
   const [draft, setDraft] = useState<Record<string, string> | null>(null);
@@ -33,17 +38,7 @@ export function AdminCustomerUi() {
           <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,maxHeight:'none',overflow:'visible',minWidth:0}}>
           <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
           <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div tabIndex={0} aria-label="Scroll full customer preview" style={{overflowX:'auto',overflowY:'scroll',height:'calc(100dvh - 310px)',minHeight:280,maxWidth:'100%',scrollbarGutter:'stable',WebkitOverflowScrolling:'touch'}}><div className="customer-ui-phone" style={{width:device,maxWidth:'none',height:'auto',overflow:'visible',boxSizing:'border-box',margin:'12px auto',minHeight:800}}>
-          <div className="customer-ui-phone-head"><img src="/logo.png" alt="AE" width="52"/><span>📍 Select location</span><span>♙ 🔔</span></div>
-          <button className="ui-edit-target" onClick={()=>select('greeting')}>{values.greeting} 👋</button>
-          <button className="ui-edit-target" onClick={()=>select('subtitle')}>{values.subtitle}</button>
-          <HomeBanners/>
-          <div className="customer-ui-points"><b>⭐ AVAILABLE POINTS — preview</b><div><button onClick={()=>select('pointsLabel')}>{values.pointsLabel}<small>Scan QR Code</small></button><button>Redeem Points<small>Scan QR Code</small></button></div></div>
-          <div className="customer-ui-section"><button className="ui-edit-target" onClick={()=>select('nearbyTitle')}>{values.nearbyTitle}</button><button className="ui-edit-target" onClick={()=>select('exploreLabel')}>{values.exploreLabel} →</button></div>
-          <p>Offer artwork is managed in Offers and Ad Banners.</p>
-          <button className="ui-edit-target" onClick={()=>select('trendingTitle')}>{values.trendingTitle}</button>
-          <footer>{['ordersLabel','offersLabel','reportsLabel','moreLabel'].map(key=><button key={key} className="ui-edit-target" onClick={()=>select(key)}>{values[key]}</button>)}</footer>
-          </div></div></div></div>
+          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><iframe title="Actual customer home preview" src="/admin/customer-ui?canvas=1" style={{width:device,height:'100%',minHeight:350,border:'1px solid #ccd8e8',background:'white'}}/></div></div></div>
         {save.isError && <p role="alert" className="form-error">{save.error.message}</p>}
         <button type="button" className="button primary" disabled={save.isPending || !content} onClick={() => save.mutate({ ...content!, pageText: values })}>{save.isPending ? uiText('Saving…') : uiText('Save customer UI')}</button>
       </>}
