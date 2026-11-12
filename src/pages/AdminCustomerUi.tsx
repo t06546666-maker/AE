@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { uiText } from '../uiText';
 import { CustomerHome } from './customer/Home';
 
 type Content = { version: number; updatedAt: string; sections: unknown[]; banners: Array<Record<string, unknown>>; pageText: Record<string, unknown> };
+
+function CustomerCanvas({width}:{width:number}) {
+  const [body,setBody]=useState<HTMLElement|null>(null);
+  return <iframe title="Actual customer home preview" srcDoc="<!doctype html><html><head></head><body><div id='preview-root'></div></body></html>" style={{width,height:'100%',minHeight:350,border:'1px solid #ccd8e8',background:'white'}} onLoad={event=>{
+    const frame=event.currentTarget,doc=frame.contentDocument;if(!doc)return;
+    doc.head.replaceChildren(...Array.from(document.querySelectorAll('link[rel="stylesheet"],style')).map(node=>node.cloneNode(true)));
+    doc.documentElement.lang=document.documentElement.lang;
+    frame.contentWindow?.addEventListener('scroll',()=>window.dispatchEvent(new Event('scroll')),{passive:true});
+    setBody(doc.getElementById('preview-root'));
+  }}>{body&&createPortal(<div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div>,body)}</iframe>;
+}
 
 export function AdminCustomerUi() {
   if(new URLSearchParams(window.location.search).get('canvas')==='1') return <><style>{`.topbar,.sidebar,.mobile-topbar{display:none!important}.main-content{padding:0!important;max-width:none!important}.app-shell,.shell-body{display:block!important}`}</style><div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div></>;
@@ -38,7 +50,7 @@ function CustomerUiEditor() {
           <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,maxHeight:'none',overflow:'visible',minWidth:0}}>
           <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
           <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><iframe title="Actual customer home preview" src="/admin/customer-ui?canvas=1" style={{width:device,height:'100%',minHeight:350,border:'1px solid #ccd8e8',background:'white'}}/></div></div></div>
+          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><CustomerCanvas width={device}/></div></div></div>
         {save.isError && <p role="alert" className="form-error">{save.error.message}</p>}
         <button type="button" className="button primary" disabled={save.isPending || !content} onClick={() => save.mutate({ ...content!, pageText: values })}>{save.isPending ? uiText('Saving…') : uiText('Save customer UI')}</button>
       </>}
