@@ -19,14 +19,13 @@ const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
   ['/admin/banners', 'Ad Banners', ImagePlus],
+  ['/admin/customer-ui', 'Customer UI Editor', Settings2],
   ['/admin/notifications', 'Push Notifications', Bell],
   ['/qr-common', 'QR Common', QrCode],
   ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],
   ['/expense-staff', 'Staffs', UserCog],
   ['/orders', 'Reports', BarChartIcon],
-  ['/add-customer', 'nav.addCustomer', Plus],
-  ['/add-merchant', 'Add merchant', Plus],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
 ] as const;
 
