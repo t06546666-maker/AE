@@ -1,0 +1,1 @@
+{"name":"ae-firebase-reminders","private":true,"main":"index.cjs","engines":{"node":"22"},"dependencies":{"firebase-functions":"^6.0.0","google-auth-library":"^9.0.0"}}
