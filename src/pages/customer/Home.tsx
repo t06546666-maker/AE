@@ -51,9 +51,9 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) => apiFetch<{ merchants: { id: string; merchant_name: string }[]; pagination: { page: number; totalPages: number } }>(`/api/customer/merchants?${new URLSearchParams({ page: String(pageParam), pageSize: '20', search: merchantSearch })}`, { signal }),
     getNextPageParam: last => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
-    enabled: productListOpen,
+    enabled: productListOpen && !preview,
   });
-  const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent, customerLocation.data);
+  const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent && !preview, customerLocation.data);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
   const offers = useMemo(()=>(offersData?.offers || []).slice(0,16),[offersData]);
   const [selectedCategory, setSelectedCategory] = useState('all');
