@@ -14,6 +14,13 @@
       ]
     },
     {
+      "source": "/admin/customer-ui",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'" }
+      ]
+    },
+    {
       "source": "/api/:path*",
       "headers": [{ "key": "Cache-Control", "value": "no-store" }]
     }
