@@ -6,7 +6,6 @@ import { ArrowLeft, Bell, ExternalLink, Sparkles, Maximize2, X } from 'lucide-re
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../api';
 import { useCustomerTransactions } from '../../hooks/useCustomerData';
-import { MilestoneVoucherCard } from '../../components/MilestoneVoucherCard';
 
 interface Announcement {
   id: string;
@@ -106,13 +105,7 @@ export function CustomerNotifications() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-[15px] text-gray-900 leading-tight">{item.title}</h3>
-                        {((item.title || '').toLowerCase().includes('offer') || (item.body || '').includes('Al-Madeena') || (item.body || '').includes('സമ്മാനം')) ? (
-                          <div className="mt-2.5">
-                            <MilestoneVoucherCard compact />
-                          </div>
-                        ) : (
-                          <p className="mt-1 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{item.body}</p>
-                        )}
+                        <p className="mt-1 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{item.body}</p>
                         <time className="mt-2 block text-[11px] font-medium text-gray-400">{formatDateTime(item.created_at)}</time>
                       </div>
                     </div>

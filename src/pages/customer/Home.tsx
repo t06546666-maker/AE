@@ -17,7 +17,6 @@ import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
-import { MilestoneVoucherCard } from '../../components/MilestoneVoucherCard';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
   const customerLocation = useCustomerLocation(true, true);
@@ -224,14 +223,6 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               </Link>
             </div>
           </div>
-        </section>
-
-        {/* 3B. Milestone Gift Vouchers Card (Better UI for 1st Transaction Gift) */}
-        <section className="pt-0.5">
-          <MilestoneVoucherCard
-            customerName={user.name?.split(' ')[0] || user.phone || 'Customer'}
-            compact
-          />
         </section>
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
@@ -757,7 +748,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
                     {uiText("Redeem Rewards & WhatsApp Grocery Orders")}
                   </h4>
                   <p className="text-[11px] text-gray-600 leading-relaxed">
-                    {uiText("Redeem points for discounts, claim milestone gifts, or send product grocery lists directly to shops via WhatsApp!")}
+                    {uiText("Redeem points for discounts or send product grocery lists directly to shops via WhatsApp!")}
                   </p>
                 </div>
               </div>
