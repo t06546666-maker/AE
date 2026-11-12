@@ -364,7 +364,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
           className="admin-banners-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
             gap: '20px',
           }}
         >
@@ -381,6 +381,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 borderRadius: '16px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 background: '#ffffff',
+                minWidth: 0,
               }}
             >
               {/* Banner Image Preview */}
@@ -389,6 +390,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                   position: 'relative',
                   aspectRatio: '21/9',
                   width: '100%',
+                  minWidth: 0,
                   backgroundColor: '#0f172a',
                   overflow: 'hidden',
                 }}
