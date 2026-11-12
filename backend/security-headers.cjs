@@ -11,7 +11,7 @@ function securityHeaders(req, res, next) {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
   if (req.path === '/admin/customer-ui') {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'; object-src 'none'; base-uri 'self'");
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://affiliateae.co.in https://www.affiliateae.co.in; object-src 'none'; base-uri 'self'");
   }
   if (req.path === '/api' || req.path.startsWith('/api/')) {
     res.setHeader('Cache-Control', 'no-store');

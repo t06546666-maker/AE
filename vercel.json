@@ -17,7 +17,7 @@
       "source": "/admin/customer-ui",
       "headers": [
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'" }
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://affiliateae.co.in https://www.affiliateae.co.in; object-src 'none'; base-uri 'self'" }
       ]
     },
     {
