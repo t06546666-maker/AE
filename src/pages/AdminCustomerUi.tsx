@@ -7,12 +7,13 @@ import { CustomerHome } from './customer/Home';
 
 type Content = { version: number; updatedAt: string; sections: unknown[]; banners: Array<Record<string, unknown>>; pageText: Record<string, unknown> };
 
-function CustomerCanvas({width}:{width:number}) {
+function CustomerCanvas({width,onSelect}:{width:number;onSelect:(element:HTMLElement)=>void}) {
   const [body,setBody]=useState<HTMLElement|null>(null);
   return <iframe title="Actual customer home preview" srcDoc="<!doctype html><html><head></head><body><div id='preview-root'></div></body></html>" style={{width,height:'100%',minHeight:350,border:'1px solid #ccd8e8',background:'white'}} onLoad={event=>{
     const frame=event.currentTarget,doc=frame.contentDocument;if(!doc)return;
     doc.head.replaceChildren(...Array.from(document.querySelectorAll('link[rel="stylesheet"],style')).map(node=>node.cloneNode(true)));
     doc.documentElement.lang=document.documentElement.lang;
+    doc.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();const target=event.target as HTMLElement;if(target.closest('#preview-root'))onSelect(target.closest('img,button,a,h1,h2,h3,p,span,label') as HTMLElement||target);},true);
     frame.contentWindow?.addEventListener('scroll',()=>window.dispatchEvent(new Event('scroll')),{passive:true});
     setBody(doc.getElementById('preview-root'));
   }}>{body&&createPortal(<div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div>,body)}</iframe>;
@@ -29,6 +30,10 @@ function CustomerUiEditor() {
   const [draft, setDraft] = useState<Record<string, string> | null>(null);
   const [selected, setSelected] = useState('greeting');
   const [device, setDevice] = useState(360);
+  const [element,setElement]=useState<HTMLElement|null>(null);
+  const [revision,setRevision]=useState(0);
+  const changeElement=(run:(target:HTMLElement)=>void)=>{if(element){run(element);setRevision(revision+1);}};
+  const pick=(target:HTMLElement)=>{if(element)element.style.outline='';target.style.outline='2px solid #5145d7';setElement(target);setRevision(revision+1);};
   const select = (key: string) => { setSelected(key); document.getElementById('edit-' + key)?.focus({preventScroll:true}); document.getElementById('edit-' + key)?.scrollIntoView({block:'nearest',behavior:'smooth'}); };
   const save = useMutation({
     mutationFn: (content: Content) => apiFetch('/api/admin/customer-home-content', { method: 'PUT', body: JSON.stringify(content) }),
@@ -45,12 +50,13 @@ function CustomerUiEditor() {
       {query.isPending ? <p>{uiText('Loading…')}</p> : query.isError ? <p role="alert">{uiText('Customer UI settings are unavailable.')}</p> : <>
         <div className="admin-ui-editor-grid">
           <div style={{maxHeight:'calc(100dvh - 220px)',overflowY:'auto',paddingRight:12}}><h2>Click the preview to edit</h2><p>Selected: {fields.find(([key])=>key===selected)?.[1]}</p>
+          {element&&<section className="panel"><h3>Selected {element.tagName.toLowerCase()}</h3><p>These visual adjustments are a local preview draft.</p>{element.tagName==='IMG'?<label>Image URL<input value={(element as HTMLImageElement).getAttribute('src')||''} onChange={e=>{const value=e.target.value;if(value.startsWith('/')||/^https:\/\//.test(value))changeElement(target=>target.setAttribute('src',value));}}/></label>:!element.children.length&&<label>Text<input value={element.textContent||''} onChange={e=>changeElement(target=>{target.textContent=e.target.value;})}/></label>}<label>Text size (px)<input type="number" min="8" max="72" value={parseFloat(element.style.fontSize)||''} onChange={e=>changeElement(target=>{target.style.fontSize=Math.min(72,Math.max(8,Number(e.target.value)))+'px';})}/></label><label>Colour<input type="color" onChange={e=>changeElement(target=>{target.style.color=e.target.value;})}/></label><label>Padding (px)<input type="number" min="0" max="80" onChange={e=>changeElement(target=>{target.style.padding=Math.min(80,Math.max(0,Number(e.target.value)))+'px';})}/></label>{element.tagName==='IMG'&&<label>Image fit<select onChange={e=>changeElement(target=>{target.style.objectFit=e.target.value;})}><option>contain</option><option>cover</option></select></label>}<button type="button" className="button secondary" onClick={()=>{element.style.outline='';setElement(null);}}>Clear selection</button></section>}
           {fields.map(([key,label])=><label key={key} style={{background:selected===key?'#edf4ff':undefined,padding:8,borderRadius:10}}>{label}<input id={'edit-'+key} value={values[key]||''} onFocus={()=>setSelected(key)} onChange={e=>update(key,e.target.value)}/></label>)}
           <a href="/admin/banners">Edit banner images and carousel →</a></div>
           <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,maxHeight:'none',overflow:'visible',minWidth:0}}>
           <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
           <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><CustomerCanvas width={device}/></div></div></div>
+          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><CustomerCanvas width={device} onSelect={pick}/></div></div></div>
         {save.isError && <p role="alert" className="form-error">{save.error.message}</p>}
         <button type="button" className="button primary" disabled={save.isPending || !content} onClick={() => save.mutate({ ...content!, pageText: values })}>{save.isPending ? uiText('Saving…') : uiText('Save customer UI')}</button>
       </>}
