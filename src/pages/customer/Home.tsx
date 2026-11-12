@@ -19,6 +19,8 @@ import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
 
 export function CustomerHome({ user }: { user: UserProfile }) {
+  const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:{pageText:Record<string,string>}}>('/api/customer/home-content'),refetchInterval:30000});
+  const homeText = (key:string,fallback:string) => homeContent.data?.content?.pageText?.[key] || uiText(fallback);
   const customerLocation = useCustomerLocation(true, true);
   const dailyGreeting = useDailyGreeting('customer');
   const { data, isLoading } = useCustomerDashboard();
@@ -205,7 +207,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
               >
                 <QrCode size={15} className="group-hover:scale-110 transition-transform text-white shrink-0" />
                 <div className="text-left leading-tight">
-                  <span className="block font-black text-[11px]">{uiText("Claim Points")}</span>
+                  <span className="block font-black text-[11px]">{homeText('pointsLabel','Claim Points')}</span>
                   <span className="block text-[9px] text-blue-100 font-medium">{uiText("Scan QR Code")}</span>
                 </div>
               </button>
@@ -231,7 +233,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⭐</span>
-                <span>{uiText("Nearby Best Offers")}</span>
+                <span>{homeText('nearbyTitle','Nearby Best Offers')}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 {uiText("Top discounts and offers close to you")}
@@ -476,7 +478,7 @@ export function CustomerHome({ user }: { user: UserProfile }) {
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⚡</span>
-                <span>{uiText("Trending Offers")}</span>
+                <span>{homeText('trendingTitle','Trending Offers')}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 {uiText("Swipe to explore special discounts")}
