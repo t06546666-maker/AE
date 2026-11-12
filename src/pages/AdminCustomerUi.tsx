@@ -30,10 +30,10 @@ export function AdminCustomerUi() {
           <div style={{maxHeight:'calc(100dvh - 220px)',overflowY:'auto',paddingRight:12}}><h2>Click the preview to edit</h2><p>Selected: {fields.find(([key])=>key===selected)?.[1]}</p>
           {fields.map(([key,label])=><label key={key} style={{background:selected===key?'#edf4ff':undefined,padding:8,borderRadius:10}}>{label}<input id={'edit-'+key} value={values[key]||''} onFocus={()=>setSelected(key)} onChange={e=>update(key,e.target.value)}/></label>)}
           <a href="/admin/banners">Edit banner images and carousel →</a></div>
-          <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,height:'calc(100dvh - 220px)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,maxHeight:'none',overflow:'visible',minWidth:0}}>
           <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
           <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div tabIndex={0} aria-label="Scroll full customer preview" style={{overflow:'auto',maxWidth:'100%',minHeight:0,flex:1,overscrollBehavior:'contain'}}><div className="customer-ui-phone" style={{width:device,maxWidth:'none',boxSizing:'border-box',margin:'12px auto',minHeight:600}}>
+          <div tabIndex={0} aria-label="Scroll full customer preview" style={{overflowX:'auto',overflowY:'scroll',height:'calc(100dvh - 310px)',minHeight:280,maxWidth:'100%',scrollbarGutter:'stable',WebkitOverflowScrolling:'touch'}}><div className="customer-ui-phone" style={{width:device,maxWidth:'none',height:'auto',overflow:'visible',boxSizing:'border-box',margin:'12px auto',minHeight:800}}>
           <div className="customer-ui-phone-head"><img src="/logo.png" alt="AE" width="52"/><span>📍 Select location</span><span>♙ 🔔</span></div>
           <button className="ui-edit-target" onClick={()=>select('greeting')}>{values.greeting} 👋</button>
           <button className="ui-edit-target" onClick={()=>select('subtitle')}>{values.subtitle}</button>
