@@ -12,7 +12,7 @@ export function AdminCustomerUi() {
   const [draft, setDraft] = useState<Record<string, string> | null>(null);
   const [selected, setSelected] = useState('greeting');
   const [device, setDevice] = useState(360);
-  const select = (key: string) => { setSelected(key); document.getElementById('edit-' + key)?.focus(); };
+  const select = (key: string) => { setSelected(key); document.getElementById('edit-' + key)?.focus({preventScroll:true}); document.getElementById('edit-' + key)?.scrollIntoView({block:'nearest',behavior:'smooth'}); };
   const save = useMutation({
     mutationFn: (content: Content) => apiFetch('/api/admin/customer-home-content', { method: 'PUT', body: JSON.stringify(content) }),
     onSuccess: () => void client.invalidateQueries({ queryKey: ['admin-customer-home-content'] }),
@@ -27,13 +27,13 @@ export function AdminCustomerUi() {
     <section className="panel">
       {query.isPending ? <p>{uiText('Loading…')}</p> : query.isError ? <p role="alert">{uiText('Customer UI settings are unavailable.')}</p> : <>
         <div className="admin-ui-editor-grid">
-          <div><h2>Click the preview to edit</h2><p>Selected: {fields.find(([key])=>key===selected)?.[1]}</p>
+          <div style={{maxHeight:'calc(100dvh - 220px)',overflowY:'auto',paddingRight:12}}><h2>Click the preview to edit</h2><p>Selected: {fields.find(([key])=>key===selected)?.[1]}</p>
           {fields.map(([key,label])=><label key={key} style={{background:selected===key?'#edf4ff':undefined,padding:8,borderRadius:10}}>{label}<input id={'edit-'+key} value={values[key]||''} onFocus={()=>setSelected(key)} onChange={e=>update(key,e.target.value)}/></label>)}
           <a href="/admin/banners">Edit banner images and carousel →</a></div>
-          <div className="admin-ui-live-preview" style={{alignSelf:'start',top:90,maxHeight:'calc(100vh - 110px)',overflow:'auto'}}>
+          <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,height:'calc(100dvh - 220px)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
           <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
           <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div style={{overflow:'auto',maxWidth:'100%'}}><div className="customer-ui-phone" style={{width:device,maxWidth:'none',boxSizing:'border-box',margin:'12px auto',minHeight:600}}>
+          <div tabIndex={0} aria-label="Scroll full customer preview" style={{overflow:'auto',maxWidth:'100%',minHeight:0,flex:1,overscrollBehavior:'contain'}}><div className="customer-ui-phone" style={{width:device,maxWidth:'none',boxSizing:'border-box',margin:'12px auto',minHeight:600}}>
           <div className="customer-ui-phone-head"><img src="/logo.png" alt="AE" width="52"/><span>📍 Select location</span><span>♙ 🔔</span></div>
           <button className="ui-edit-target" onClick={()=>select('greeting')}>{values.greeting} 👋</button>
           <button className="ui-edit-target" onClick={()=>select('subtitle')}>{values.subtitle}</button>
