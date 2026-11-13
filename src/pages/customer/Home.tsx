@@ -97,6 +97,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
 
   const heroPointsRef = useRef<HTMLDivElement>(null);
   const [showStickyPoints, setShowStickyPoints] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Monitor when the top Hero Points Card scrolls out of view so the floating bottom pill smoothly appears
   useEffect(() => {
@@ -115,6 +116,19 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Give the customer the full viewport while actively scrolling, then restore
+  // the navigation and compact points bar shortly after the finger is released.
+  useEffect(() => {
+    let timer = 0;
+    const onScroll = () => {
+      setIsScrolling(true);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setIsScrolling(false), 220);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); window.clearTimeout(timer); };
+  }, []);
+
 
   const getInitials = (name?: string) => {
     if (!name) return 'AE';
@@ -129,7 +143,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   };
 
   return (
-    <div className="customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[180px]">
+    <div className={`customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[180px] ${isScrolling ? 'ae-is-scrolling' : ''}`}>
       {/* Header */}
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
@@ -621,7 +635,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
       {/* BEGIN: StickyFloatingPointsBar (Shows minimized when scrolling down past Hero Points) */}
       <aside
         aria-label={uiText("Points balance shortcut")}
-        className={`ae-home-floating-points fixed bottom-[calc(84px+env(safe-area-inset-bottom,16px))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-40 transition-all duration-300 transform ${showStickyPoints ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
+        className={`ae-home-floating-points fixed bottom-[calc(84px+env(safe-area-inset-bottom,16px))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-40 transition-all duration-300 transform ${showStickyPoints && !isScrolling ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
       >
         <div className="bg-slate-950/95 backdrop-blur-xl border border-blue-500/40 text-white rounded-2xl px-3.5 py-2.5 shadow-2xl shadow-blue-950/40 flex items-center justify-between gap-2.5 ring-1 ring-blue-500/20">
