@@ -17,6 +17,8 @@ import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 export function CustomerHome({ user, preview = false }: { user: UserProfile; preview?: boolean }) {
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:{pageText:Record<string,string>}}>('/api/customer/home-content'),refetchInterval:30000});
@@ -43,6 +45,10 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   useEffect(() => {
     const timer = window.setTimeout(() => setLoadSecondaryContent(true), 1800);
     return () => window.clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    AOS.init({ duration: 520, easing: 'ease-out-cubic', once: true, offset: 24, disable: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+    AOS.refresh();
   }, []);
   const [merchantSearch, setMerchantSearch] = useState('');
   const merchantDirectory = useInfiniteQuery({
@@ -178,10 +184,10 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
           </div>
         </div>
 
-        <HomeBanners/>
+        <div data-aos="fade-up"><HomeBanners/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
-        <section ref={heroPointsRef}>
+        <section ref={heroPointsRef} data-aos="fade-up" data-aos-delay="80">
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#0c2e68] via-[#081f48] to-[#040f26] text-white p-2.5 shadow-xl shadow-blue-950/20 border border-blue-500/40 space-y-2">
             <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
 
@@ -242,7 +248,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
-        <section className="space-y-2.5 pt-1">
+        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="120">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -303,7 +309,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 5. Nearby Partner Offers & Shops (Real Store Photos) */}
-        <section className="space-y-2.5 pt-1">
+        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="160">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -365,7 +371,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 6. Category-Wise Offers */}
-        <section className="space-y-3 pt-1">
+        <section className="space-y-3 pt-1" data-aos="fade-up" data-aos-delay="200">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -487,7 +493,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 7. Trending Offers Carousel */}
-        <section className="space-y-2.5 pt-1">
+        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="240">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -550,7 +556,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 8. Favourite Offers (At the very end) */}
-        <section className="space-y-2.5 pt-1">
+        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="280">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
