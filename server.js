@@ -2207,7 +2207,19 @@ app.get('/api/admin/field-managers/:id/profile', requireAuth, requireRole('admin
   ]);
   const fatal = results.slice(0, 3).find(r => r.error);
   if (fatal) return res.status(500).json({ error: fatal.error.message });
-  res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error, attendance: attendance.data || [], attendanceAvailable: !attendance.error, workRequests: workRequests.data || [], workRequestsAvailable: !workRequests.error, onboardedTotal: onboarded.error ? null : onboarded.count });
+  let onboardedCustomers = null, onboardedTransactions = null;
+  try {
+    const merchantIds = [...new Set((results[2].data || []).filter(row => row.status === 'approved' && row.payload?.action === 'onboard_merchant').map(row => row.merchant_id).filter(Boolean))];
+    if (merchantIds.length) {
+      const [customers, orders] = await Promise.all([
+        supabaseAdmin.from('customers').select('id', { count: 'exact', head: true }).in('merchant_id', merchantIds),
+        supabaseAdmin.from('orders').select('id', { count: 'exact', head: true }).in('merchant_id', merchantIds),
+      ]);
+      if (!customers.error) onboardedCustomers = customers.count || 0;
+      if (!orders.error) onboardedTransactions = orders.count || 0;
+    } else { onboardedCustomers = 0; onboardedTransactions = 0; }
+  } catch (error) { console.warn('Field manager merchant summary unavailable:', error.message); }
+  res.json({ profile: { ...profile, email: account.data?.user?.email || '', phone: account.data?.user?.phone || '' }, sessions: results[0].data, visits: results[1].data, updates: results[2].data, activity: results[3].data || [], activityAvailable: !results[3].error, attendance: attendance.data || [], attendanceAvailable: !attendance.error, workRequests: workRequests.data || [], workRequestsAvailable: !workRequests.error, onboardedTotal: onboarded.error ? null : onboarded.count, onboardedCustomers, onboardedTransactions });
 });
 async function recordUsage(req,res) {
   const actor=req.customer?{id:req.customer.id,role:'customer',merchant_id:null}:req.auth.profile;
@@ -3252,6 +3264,35 @@ app.patch('/api/product-list-requests/:id/review', requireAuth, requireRole('adm
 
 require('./backend/product-list-fulfillment.cjs').registerProductListFulfillment(app, { requireAuth, requireRole, db: supabaseAdmin, pushToCustomer, pushToRole });
 
+// Delivery-enabled product-list chat. Messages are kept in Firebase while the
+// product-list and participant relationship remain authoritative in Supabase.
+function participantAuth(req, res, next) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  try { if (token && jwt.decode(token)?.role === 'customer') return requireCustomerAuth(req, res, next); } catch {}
+  return requireAuth(req, res, next);
+}
+async function productListChatAccess(req, id) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const result = await supabaseAdmin.from('customer_orders').select('id,customer_id,merchant_id').eq('id', id).maybeSingle();
+  if (result.error || !result.data) return null;
+  const profile = req.auth?.profile;
+  const isCustomer = req.customer && req.customer.id === result.data.customer_id;
+  const isMerchant = profile?.role === 'merchant' && profile.merchant_id === result.data.merchant_id;
+  return isCustomer || isMerchant ? { ...result.data, role: isCustomer ? 'customer' : 'merchant' } : null;
+}
+app.get('/api/product-list-requests/:id/chat', participantAuth, async (req, res) => {
+  try { const access = await productListChatAccess(req, req.params.id); if (!access) return res.status(404).json({ error: 'Product list not found.' }); const db = await checkoutBillDatabase(); const snap = await db.collection('ae_product_list_chats').doc(access.id).collection('messages').orderBy('createdAt', 'asc').limit(100).get(); return res.json({ enabled: true, messages: snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) }); }
+  catch { return res.status(503).json({ error: 'Chat is temporarily unavailable.' }); }
+});
+app.post('/api/product-list-requests/:id/chat', participantAuth, async (req, res) => {
+  try { const access = await productListChatAccess(req, req.params.id); if (!access) return res.status(404).json({ error: 'Product list not found.' }); const message = cleanText(req.body?.message, 1000); if (!message) return res.status(400).json({ error: 'Enter a message.' }); const db = await checkoutBillDatabase(); const ref = db.collection('ae_product_list_chats').doc(access.id).collection('messages').doc(); await ref.set({ message, role: access.role, createdAt: Date.now(), reported: false }); return res.status(201).json({ id: ref.id, message, role: access.role, createdAt: Date.now() }); }
+  catch { return res.status(503).json({ error: 'Message could not be sent.' }); }
+});
+app.post('/api/product-list-requests/:id/chat/report', participantAuth, async (req, res) => {
+  try { const access = await productListChatAccess(req, req.params.id); if (!access) return res.status(404).json({ error: 'Product list not found.' }); const messageId = cleanText(req.body?.messageId, 128); const reason = cleanText(req.body?.reason, 300) || 'Reported by participant'; if (!messageId) return res.status(400).json({ error: 'Message is required.' }); const db = await checkoutBillDatabase(); await db.collection('ae_product_list_chats').doc(access.id).collection('messages').doc(messageId).set({ reported: true, reportReason: reason, reportedAt: Date.now(), reportedByRole: access.role }, { merge: true }); return res.json({ success: true }); }
+  catch { return res.status(503).json({ error: 'Report could not be saved.' }); }
+});
+
 app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
@@ -3807,7 +3848,23 @@ app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (re
   const { data, error } = await supabaseAdmin.from('active_merchants').select('name,merchant_code,email,phone,address,image_url,opening_time,closing_time,latitude,longitude,merchant_categories(name)').eq('id', merchantId).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: 'Merchant not found' });
-  return res.json({ data });
+  let settings = {};
+  try { const db = await checkoutBillDatabase(); const snap = await db.collection('ae_merchant_profile_settings').doc(merchantId).get(); if (snap.exists) settings = snap.data() || {}; } catch (error) { console.warn('Merchant profile settings unavailable:', error.message); }
+  return res.json({ data: { ...data, settings: { delivery_enabled: settings.delivery_enabled === true, open_24_hours: settings.open_24_hours === true, chat_enabled: settings.chat_enabled !== false } } });
+});
+
+app.patch('/api/merchant-profile/settings', requireAuth, requireRole('merchant'), async (req, res) => {
+  const merchantId = req.auth.profile.merchant_id;
+  if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });
+  const updates = {
+    delivery_enabled: req.body?.delivery_enabled === true,
+    open_24_hours: req.body?.open_24_hours === true,
+    chat_enabled: req.body?.chat_enabled !== false,
+    updated_at: new Date().toISOString(),
+    updated_by: req.auth.profile.id,
+  };
+  try { const db = await checkoutBillDatabase(); await db.collection('ae_merchant_profile_settings').doc(merchantId).set(updates, { merge: true }); return res.json({ settings: updates }); }
+  catch (error) { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
 });
 
 app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {

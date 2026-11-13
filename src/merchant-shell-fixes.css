@@ -36,6 +36,10 @@
 .merchant-profile .panel { background: var(--surface); border-color: var(--border); }
 .merchant-profile :is(h1,h2,dt,dd) { color: var(--text); }
 .merchant-profile :is(p,dt) { color: var(--muted); }
+.merchant-operating-settings .setting-toggle { display:flex; align-items:flex-start; gap:12px; padding:14px 0; border-top:1px solid var(--border); cursor:pointer; }
+.merchant-operating-settings .setting-toggle input { width:20px; height:20px; margin-top:2px; accent-color:#2563eb; }
+.merchant-operating-settings .setting-toggle span { display:grid; gap:4px; }
+.merchant-operating-settings .setting-toggle small { color:var(--muted); line-height:1.5; }
 .merchant-profile .panel > div > div { min-width: 0; overflow-wrap: anywhere; }
 .merchant-shell .ae-merchant-shop-qr { color: var(--text); background: var(--surface-alt); }
 .merchant-shell :is(.ae-shop-qr-card,.ae-shop-requests > a,.ae-shop-actions button) { background: var(--surface); border-color: var(--border); }
