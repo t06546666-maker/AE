@@ -153,7 +153,7 @@
 .ae-banner-line-controls input[type=range]{appearance:none;width:45%;height:3px;border:0;padding:0;background:#ffffff70;border-radius:3px;accent-color:#36ceff;}
 .ae-banner-line-controls input::-webkit-slider-thumb{appearance:none;width:28px;height:5px;border-radius:4px;background:linear-gradient(90deg,#0ed3ff,#834bff);}
 /* Keep the brand legible over every merchant artwork. */
-.customer-glass .ae-reference-home .ae-immersive-hero .customer-modern-topbar img.customer-home-logo{box-sizing:content-box;background:transparent;padding:0;border-radius:0;border:0;box-shadow:none;filter:drop-shadow(0 0 3px #ffffffb0) drop-shadow(0 2px 5px #09295660);object-fit:contain;flex-shrink:0;width:64px!important;height:40px!important;}
+.customer-glass .ae-reference-home .ae-immersive-hero .customer-modern-topbar img.customer-home-logo{box-sizing:content-box;background:transparent;padding:0;border-radius:0;border:0;box-shadow:none;filter:none;object-fit:contain;flex-shrink:0;width:64px!important;height:40px!important;}
 .ae-reference-home .ae-fixed-hero-background{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:#153b79;background-size:cover;background-position:center;opacity:1;transition:opacity .45s ease,transform .45s ease;}
 .ae-reference-home .ae-hero-passed .ae-fixed-hero-background{opacity:0;transform:translateY(-24px);}
 .ae-reference-home .ae-immersive-hero+div{position:relative;background:#f2efff;}
