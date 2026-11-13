@@ -177,7 +177,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
               className="group inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 active:text-blue-800 transition-colors mt-0.5 focus:outline-none cursor-pointer"
             >
               <HelpCircle size={12} className="text-blue-500 group-hover:scale-110 transition-transform" />
-              <span className="underline underline-offset-2">{uiText("How we use AE?")}</span>
+              <span className="underline underline-offset-2">{i18n.language.startsWith('ml') ? 'AE എങ്ങനെ ഉപയോഗിക്കാം?' : 'How to use AE?'}</span>
               <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
@@ -714,7 +714,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                 </div>
                 <div>
                   <h3 className="text-base font-black text-gray-900 leading-tight">
-                    {uiText("How we use AE?")}
+                    {i18n.language.startsWith('ml') ? 'AE എങ്ങനെ ഉപയോഗിക്കാം?' : 'How to use AE?'}
                   </h3>
                   <p className="text-[11px] text-gray-500 font-medium">
                     {uiText("3 simple steps to earn & redeem")}

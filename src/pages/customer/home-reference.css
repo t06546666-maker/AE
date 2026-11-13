@@ -128,6 +128,16 @@
  .ae-reference-home .ae-home-floating-points>div>div:last-child>a:not(:last-child)>svg { display:none; }
  .ae-reference-home .ae-home-floating-points>div>div:last-child span { font-size:10px; line-height:1.5; }
 }
+.ae-reference-home .ae-home-language .ae-language-switch{background:#fff!important;border:1px solid #d7e7ff!important;padding:4px!important;display:flex;max-width:100%;border-radius:24px;}
+.ae-reference-home .ae-home-language .ae-language-switch button{color:#102654!important;background:transparent!important;white-space:nowrap;line-height:1.7!important;padding:7px 10px!important;font-size:12px!important;min-width:0;}
+.ae-reference-home .ae-home-language .ae-language-switch button[aria-pressed=true]{color:#fff!important;background:#0869ef!important;border-radius:20px;}
+@media(max-width:380px){.ae-reference-home .customer-modern-greeting{flex-wrap:wrap;row-gap:10px;}.ae-reference-home .ae-home-language{margin-left:0;}}
+.ae-reference-home .ae-immersive-hero{min-height:min(177.78vw,960px);background-position:center center;display:flex;flex-direction:column;}
+.ae-reference-home .ae-immersive-hero>div:last-child{flex:1;display:flex;flex-direction:column;}
+.ae-reference-home .ae-hero-banner{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+.ae-reference-home .ae-banner-line-controls{display:flex!important;flex-wrap:nowrap!important;justify-content:center;}
+.ae-reference-home .ae-banner-line-controls>button{display:none;}
+.ae-reference-home .ae-banner-line-controls input[type=range]{width:42%;max-width:220px;min-height:24px;background:linear-gradient(#ffffff90,#ffffff90) center/100% 3px no-repeat;cursor:pointer;}
 .ae-banner-line-controls{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;color:white;}
 .ae-banner-line-controls button{background:transparent;border:0;color:inherit;min-width:32px;min-height:40px;display:grid;place-items:center;}
 .ae-banner-line-controls input[type=range]{appearance:none;width:45%;height:3px;border:0;padding:0;background:#ffffff70;border-radius:3px;accent-color:#36ceff;}
