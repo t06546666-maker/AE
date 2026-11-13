@@ -152,7 +152,8 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   return (
     <div className={`customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[180px] ${isScrolling ? 'ae-is-scrolling' : ''}`}>
       {/* Header */}
-      <div className="ae-immersive-hero" style={heroImage?{backgroundImage:`linear-gradient(180deg,rgba(5,28,71,.84),rgba(8,31,67,.12) 45%,rgba(10,26,62,.6) 82%,#f2efff),url(${JSON.stringify(heroImage)})`}:undefined}>
+      <div className={`ae-immersive-hero ${showStickyPoints ? 'ae-hero-passed' : ''}`}>
+      <div className="ae-fixed-hero-background" aria-hidden="true" style={heroImage?{backgroundImage:`linear-gradient(180deg,rgba(5,28,71,.84),rgba(8,31,67,.12) 45%,rgba(10,26,62,.6) 82%,#f2efff),url(${JSON.stringify(heroImage)})`}:undefined}/>
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
         <CustomerLocationBar compact />

@@ -153,7 +153,11 @@
 .ae-banner-line-controls input[type=range]{appearance:none;width:45%;height:3px;border:0;padding:0;background:#ffffff70;border-radius:3px;accent-color:#36ceff;}
 .ae-banner-line-controls input::-webkit-slider-thumb{appearance:none;width:28px;height:5px;border-radius:4px;background:linear-gradient(90deg,#0ed3ff,#834bff);}
 /* Keep the brand legible over every merchant artwork. */
-.customer-glass .ae-reference-home .ae-immersive-hero .customer-modern-topbar img.customer-home-logo{box-sizing:content-box;background:#fff;padding:7px 9px;border-radius:14px;border:1px solid #ffffffd9;box-shadow:0 4px 16px #041d5140,0 0 18px #47d7ff30;object-fit:contain;flex-shrink:0;width:55px!important;height:32px!important;}
+.customer-glass .ae-reference-home .ae-immersive-hero .customer-modern-topbar img.customer-home-logo{box-sizing:content-box;background:transparent;padding:0;border-radius:0;border:0;box-shadow:none;filter:drop-shadow(0 0 3px #ffffffb0) drop-shadow(0 2px 5px #09295660);object-fit:contain;flex-shrink:0;width:64px!important;height:40px!important;}
+.ae-reference-home .ae-fixed-hero-background{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:#153b79;background-size:cover;background-position:center;opacity:1;transition:opacity .45s ease,transform .45s ease;}
+.ae-reference-home .ae-hero-passed .ae-fixed-hero-background{opacity:0;transform:translateY(-24px);}
+.ae-reference-home .ae-immersive-hero+div{position:relative;background:#f2efff;}
+@media(prefers-reduced-motion:reduce){.ae-reference-home .ae-fixed-hero-background{transition:none;}}
 /* The active offer is the shared backdrop for the entire home hero. */
 .ae-reference-home .ae-immersive-hero{background-color:#153b79;background-size:cover;background-position:center;position:relative;padding-bottom:28px;isolation:isolate;}
 .ae-reference-home .ae-immersive-hero .customer-modern-topbar{position:relative;background:transparent!important;border:0;color:white;backdrop-filter:none;}
