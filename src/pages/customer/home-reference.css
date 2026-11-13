@@ -128,6 +128,10 @@
  .ae-reference-home .ae-home-floating-points>div>div:last-child>a:not(:last-child)>svg { display:none; }
  .ae-reference-home .ae-home-floating-points>div>div:last-child span { font-size:10px; line-height:1.5; }
 }
+.ae-banner-line-controls{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;color:white;}
+.ae-banner-line-controls button{background:transparent;border:0;color:inherit;min-width:32px;min-height:40px;display:grid;place-items:center;}
+.ae-banner-line-controls input[type=range]{appearance:none;width:45%;height:3px;border:0;padding:0;background:#ffffff70;border-radius:3px;accent-color:#36ceff;}
+.ae-banner-line-controls input::-webkit-slider-thumb{appearance:none;width:28px;height:5px;border-radius:4px;background:linear-gradient(90deg,#0ed3ff,#834bff);}
 /* The active offer is the shared backdrop for the entire home hero. */
 .ae-reference-home .ae-immersive-hero{background-color:#153b79;background-size:cover;background-position:center;position:relative;padding-bottom:28px;isolation:isolate;}
 .ae-reference-home .ae-immersive-hero .customer-modern-topbar{position:relative;background:transparent!important;border:0;color:white;backdrop-filter:none;}
@@ -138,7 +142,19 @@
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>div{background:linear-gradient(transparent,#071a3c88)!important;border-radius:16px;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>div{background:transparent!important;}
 .ae-reference-home .ae-hero-points>div{background:linear-gradient(115deg,#353775aa,#16719aaa)!important;backdrop-filter:blur(18px);border:1px solid #ffffff80!important;box-shadow:0 12px 28px #12213b44!important;padding:16px!important;}
-.ae-reference-home .ae-hero-points .ae-home-points-heading{margin-bottom:12px;}
+.ae-reference-home .ae-hero-points>div{display:grid!important;grid-template-columns:minmax(0,.95fr) minmax(0,1.5fr);gap:10px!important;align-items:center;padding:12px!important;}
+.ae-reference-home .ae-hero-points>div>div:first-child{display:none;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading{margin:0;border-right:1px solid #ffffff60;padding-right:8px;display:block;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading>div{display:flex;gap:4px;align-items:baseline;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading>div>span:first-child{display:none;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading>div>span:nth-child(2){flex-basis:100%;font-size:10px;letter-spacing:0;text-transform:none;color:white;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading>div>span:nth-child(3){font-size:clamp(24px,7vw,38px);line-height:1.15;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading>a{display:none;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading+div{margin:0!important;gap:6px;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading+div>:is(button,a){min-height:66px;padding:8px 4px;border:1px solid #ffffffb0;border-radius:14px;flex-direction:column;gap:4px;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading+div span:first-child{font-size:11px;white-space:normal;text-align:center;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading+div span+span{display:none;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{height:clamp(220px,64vw,420px);}
 /* Image-led AE home, with readable overlays and a glass points surface. */
 .ae-reference-home { background:radial-gradient(ellipse at 85% 0%,#70dafa55,transparent 45%),linear-gradient(160deg,#eaf5ff,#f2efff 65%,#fff)!important; }
 .ae-reference-home .customer-modern-topbar { background:#eef6ffde;backdrop-filter:blur(18px); }
