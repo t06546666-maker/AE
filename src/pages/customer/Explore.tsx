@@ -4,7 +4,7 @@ import { CustomerShopCard, checkMerchantOpen } from '../../components/CustomerSh
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Search, X, Map } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
 import { useCustomerLocation } from '../../hooks/useCustomerLocation';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
@@ -12,6 +12,12 @@ import { apiFetch } from '../../api';
 
 export function CustomerExplore({userId}:{userId:string}) {
   const routeLocation = useLocation();
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.querySelectorAll('.main-content,.shell-body').forEach(element => {
+      element.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+  }, [routeLocation.key]);
   const [reviewError, setReviewError] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
   const [page, setPage] = useState(1);
