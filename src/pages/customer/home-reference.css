@@ -128,10 +128,22 @@
  .ae-reference-home .ae-home-floating-points>div>div:last-child>a:not(:last-child)>svg { display:none; }
  .ae-reference-home .ae-home-floating-points>div>div:last-child span { font-size:10px; line-height:1.5; }
 }
-/* Keep banners evenly sized without letting artwork dominate the phone screen. */
+/* Image-led AE home, with readable overlays and a glass points surface. */
+.ae-reference-home { background:radial-gradient(ellipse at 85% 0%,#70dafa55,transparent 45%),linear-gradient(160deg,#eaf5ff,#f2efff 65%,#fff)!important; }
+.ae-reference-home .customer-modern-topbar { background:#eef6ffde;backdrop-filter:blur(18px); }
+.ae-reference-home [aria-roledescription=carousel] { border:0;border-radius:24px;background:#102c62;box-shadow:0 16px 36px #10367524; }
+.ae-reference-home [aria-roledescription=carousel]>button>div { aspect-ratio:4 / 3!important;padding:0!important; }
+.ae-reference-home [aria-roledescription=carousel]>button>div>div { padding:60px 20px 22px!important;background:linear-gradient(transparent,rgba(8,24,58,.9))!important; }
+.ae-reference-home [aria-roledescription=carousel] h3 { font-size:clamp(20px,4vw,30px)!important;line-height:1.3!important; }
+.ae-reference-home [aria-roledescription=carousel] p { font-size:14px!important;line-height:1.5!important; }
+.ae-reference-home [aria-roledescription=carousel]>div { color:white;background:#102c62; }
+.ae-reference-home section:has(>.relative.rounded-2xl)>div { background:linear-gradient(120deg,#123b78ee,#5849a5dd,#126da9e8)!important;border:1px solid #c3c9ff!important;border-radius:24px!important;box-shadow:0 14px 30px #25397330!important;backdrop-filter:blur(18px); }
+.ae-reference-home section:has(>.relative.rounded-2xl) { margin-top:18px; }
+.ae-reference-home section article { border-radius:22px; }
+/* Keep the entire uploaded artwork visible at every screen size. */
 @media(max-width:640px) {
  .ae-reference-home [aria-roledescription=carousel]>button>img { height:100px; padding:6px; object-fit:contain; }
- .ae-reference-home [aria-roledescription=carousel]>button>div { padding:8px 10px; }
+ .ae-reference-home [aria-roledescription=carousel]>button>div { padding:0; }
  .ae-reference-home [aria-roledescription=carousel] h3 { font-size:12px; line-height:1.5; margin:0; }
  .ae-reference-home [aria-roledescription=carousel] p { font-size:11px; line-height:1.5; }
  .ae-reference-home [aria-roledescription=carousel]>button>div>span { font-size:10px; line-height:1.5; }
