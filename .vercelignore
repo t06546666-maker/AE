@@ -1,0 +1,10 @@
+android
+build-tools
+dist
+node_modules
+*.aab
+*.apk
+*.keystore
+*.jks
+scripts
+tests
