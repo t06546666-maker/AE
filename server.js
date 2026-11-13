@@ -3853,20 +3853,6 @@ app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (re
   return res.json({ data: { ...data, settings: { delivery_enabled: settings.delivery_enabled === true, open_24_hours: settings.open_24_hours === true, chat_enabled: settings.chat_enabled !== false } } });
 });
 
-app.patch('/api/merchant-profile/settings', requireAuth, requireRole('merchant'), async (req, res) => {
-  const merchantId = req.auth.profile.merchant_id;
-  if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });
-  const updates = {
-    delivery_enabled: req.body?.delivery_enabled === true,
-    open_24_hours: req.body?.open_24_hours === true,
-    chat_enabled: req.body?.chat_enabled !== false,
-    updated_at: new Date().toISOString(),
-    updated_by: req.auth.profile.id,
-  };
-  try { const db = await checkoutBillDatabase(); await db.collection('ae_merchant_profile_settings').doc(merchantId).set(updates, { merge: true }); return res.json({ settings: updates }); }
-  catch (error) { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
-});
-
 async function saveMerchantOperatingSettings(merchantId, body, actorId) {
   const updates = { delivery_enabled: body?.delivery_enabled === true, open_24_hours: body?.open_24_hours === true, chat_enabled: body?.chat_enabled !== false, updated_at: new Date().toISOString(), updated_by: actorId };
   const db = await checkoutBillDatabase();
