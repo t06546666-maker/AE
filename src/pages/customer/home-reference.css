@@ -155,7 +155,9 @@
 /* The active offer is the shared backdrop for the entire home hero. */
 .ae-reference-home .ae-immersive-hero{background-color:#153b79;background-size:cover;background-position:center;position:relative;padding-bottom:28px;isolation:isolate;}
 .ae-reference-home .ae-immersive-hero .customer-modern-topbar{position:relative;background:transparent!important;border:0;color:white;backdrop-filter:none;}
-.ae-reference-home .ae-immersive-hero .customer-modern-greeting h2,.ae-reference-home .ae-immersive-hero .customer-modern-greeting button{color:white!important;}
+.ae-reference-home .ae-immersive-hero .customer-modern-greeting h2,.ae-reference-home .ae-immersive-hero .customer-modern-greeting>div:first-child>button{color:white!important;}
+.ae-reference-home .ae-immersive-hero .ae-home-language .ae-language-switch>button[lang=ml]{color:#102654!important;-webkit-text-fill-color:#102654!important;opacity:1!important;visibility:visible!important;}
+.ae-reference-home .ae-immersive-hero .ae-home-language .ae-language-switch>button[lang=ml][aria-pressed=true]{color:#fff!important;-webkit-text-fill-color:#fff!important;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]{background:transparent!important;box-shadow:none;border-radius:0;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{background:transparent!important;aspect-ratio:auto!important;height:clamp(260px,65vw,520px);}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>img{opacity:0;}
