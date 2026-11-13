@@ -3883,6 +3883,19 @@ app.get('/api/merchant-trading-times/:id',requireAuth,async(req,res)=>{
   if(!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'Not authorized for this shop.'});
   try{const db=await checkoutBillDatabase(),snap=await db.collection('ae_merchant_profile_settings').doc(req.params.id).get();const data=snap.data()||{};return res.json({peak_hours:data.peak_hours||[],low_hours:data.low_hours||[]});}catch{return res.status(503).json({error:'Shop time ranges are unavailable. Please retry.'});}
 });
+app.get('/api/field/merchants/:id/business-details',requireAuth,requireRole('field_manager'),async(req,res)=>{
+ if(!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'This shop is not assigned to you.'});
+ const merchantId=req.params.id,page=Math.max(1,Math.min(10000,parseInt(req.query.page,10)||1)),from=(page-1)*25;
+ try{
+  const [customers,orders,visits,database]=await Promise.all([
+   supabaseAdmin.from('customers').select('id,customer_code,name,created_at',{count:'exact'}).eq('merchant_id',merchantId).order('created_at',{ascending:false}).range(from,from+24),
+   supabaseAdmin.from('orders').select('id,order_no,amount,reward_points,created_at,customers(name)',{count:'exact'}).eq('merchant_id',merchantId).order('created_at',{ascending:false}).range(from,from+24),
+   supabaseAdmin.from('field_manager_visits').select('id,status,check_in_at,check_out_at,notes',{count:'exact'}).eq('merchant_id',merchantId).eq('manager_id',req.auth.profile.id).order('check_in_at',{ascending:false}).range(from,from+24),checkoutBillDatabase()]);
+  if(customers.error||orders.error||visits.error)throw Error('Unable to read shop activity.');
+  const settings=await database.collection('ae_merchant_profile_settings').doc(merchantId).get();
+  return res.json({customers:customers.data,orders:orders.data,visits:visits.data,counts:{customers:customers.count,orders:orders.count,visits:visits.count},settings:settings.data()||{},page});
+ }catch{return res.status(503).json({error:'Merchant activity is unavailable. Please retry.'});}
+});
 app.put('/api/merchant-trading-times/:id',requireAuth,async(req,res)=>{
   if(!['admin','field_manager'].includes(req.auth.profile.role)||!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'Not authorized to edit this shop.'});
   let times;try{times=validateTradingTimes(req.body);}catch(error){return res.status(400).json({error:error.message});}
