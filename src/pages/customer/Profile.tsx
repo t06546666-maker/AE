@@ -76,7 +76,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
             </div>
           ) : (
             <>
-              <h2 className="text-[20px] font-bold text-gray-900 leading-tight">{user.name || uiText("User")}</h2>
+              <h2 className="text-[20px] font-bold text-gray-900 leading-tight">{user.name || 'User'}</h2>
               <p className="text-[14px] text-[#087a4b] font-semibold mt-1">{user.phone}</p>
               <button
                 onClick={() => setEditMode(true)}

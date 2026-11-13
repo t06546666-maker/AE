@@ -1,4 +1,3 @@
-import {uiText} from "./uiText";
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,7 +9,6 @@ import './styles.css';
 import './customer-glass.css';
 import './customer-home-polish.css';
 import './malayalam-layout.css';
-import './compact-interface.css';
 
 if (import.meta.env.VITE_AE_ENV === 'staging') {
   const notice = document.createElement('div');
@@ -54,13 +52,13 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
     return (
       <div className="boot-screen root-crash-state">
         <div className="boot-brand"><img src="/logo.png" alt="AE" style={{ height: '48px' }} /></div>
-        <strong>{uiText("The application could not finish loading.")}</strong>
-        <span>{this.state.error.message || uiText("An unexpected startup error occurred.")}</span>
+        <strong>The application could not finish loading.</strong>
+        <span>{this.state.error.message || 'An unexpected startup error occurred.'}</span>
         <button className="button primary" onClick={() => {
           const url = new URL(window.location.href);
           url.searchParams.set('refresh', Date.now().toString());
           window.location.replace(url.toString());
-        }}>{uiText("Reload application")}</button>
+        }}>Reload application</button>
       </div>
     );
   }

@@ -1,23 +1,16 @@
-import {useMerchantFavorites} from '../../customerFavorites';
 import { uiText } from '../../uiText';
 import { CustomerShopCard, checkMerchantOpen } from '../../components/CustomerShopCard';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Search, X, Map } from 'lucide-react';
 import { useCustomerMerchants, useCustomerCategories } from '../../hooks/useCustomerData';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CustomerNearbyMap } from '../../components/CustomerNearbyMap';
 import { useCustomerLocation } from '../../hooks/useCustomerLocation';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { apiFetch } from '../../api';
 
-export function CustomerExplore({userId}:{userId:string}) {
+export function CustomerExplore(_props: {userId?: string}) {
   const routeLocation = useLocation();
-  useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.querySelectorAll('.main-content,.shell-body').forEach(element => {
-      element.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    });
-  }, [routeLocation.key]);
   const [reviewError, setReviewError] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
   const [page, setPage] = useState(1);
@@ -28,7 +21,7 @@ export function CustomerExplore({userId}:{userId:string}) {
   const [selectedMerchantId, setSelectedMerchantId] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'nearby' | 'open'>('all');
-  const {favorites,toggleFavorite}=useMerchantFavorites(userId);
+  const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('ae_favorite_merchants') || '[]'));
   const currentLocation = useCustomerLocation(true, true);
   const userLocation = currentLocation.data?.routeGroup ? currentLocation.data : { ...currentLocation.data, area: 'All', routeGroup: 'all' as const };
   const [detailMerchant, setDetailMerchant] = useState<typeof merchants[number] | null>(null);
@@ -69,6 +62,11 @@ export function CustomerExplore({userId}:{userId:string}) {
     setPage(1);
   };
 
+  const toggleFavorite = (id: string) => setFavorites(current => {
+    const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id];
+    localStorage.setItem('ae_favorite_merchants', JSON.stringify(next));
+    return next;
+  });
 
   const openMerchant = async (merchant: typeof merchants[number]) => {
     setReviewMessage('');
@@ -291,7 +289,7 @@ export function CustomerExplore({userId}:{userId:string}) {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold">{detailMerchant.merchant_name}</h2>
-                <p className="text-sm text-gray-500">{detailMerchant.category || uiText("AE Merchant")}</p>
+                <p className="text-sm text-gray-500">{detailMerchant.category || 'AE Merchant'}</p>
                 <p className="mt-1 text-sm font-bold text-[#3158f5]">
                   {distanceKm(detailMerchant.latitude, detailMerchant.longitude)?.toFixed(1) || '—'}{uiText(" km away")}
                 </p>
