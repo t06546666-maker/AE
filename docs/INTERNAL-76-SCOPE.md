@@ -2,6 +2,8 @@
 
 Package: com.affiliateae.app. Internal testing only.
 
+Published in Play Console on 13 November 2026 at 22:52 (console display, IST). Verified state: Available to internal testers. Release 35: 76 (1.0.75) - Merchant and Field Manager. Production remains version 74; no production promotion was performed. Google showed one non-blocking missing-deobfuscation-file warning and zero devices lost.
+
 Customer UI baseline: public version 74, source 6627604. Customer pages, layout, product-list panel and customer styles restored from that version. Three optional TypeScript prop declarations accommodate current routing/editor callers without changing rendered customer screens. Latest shared authentication and backend integrations remain.
 
 Merchant/Field Manager scope: multiple peak and low time ranges, onboarding capture, Admin and assigned Field Manager editing, merchant read-only view; delivery, 24-hour and product-list chat settings; assigned-shop customer onboarding records, transactions and own visits with pagination. Shop time ranges and operating settings use existing Firebase merchant profile settings. Financial/customer records remain in Supabase.
