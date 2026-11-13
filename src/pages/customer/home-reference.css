@@ -170,7 +170,7 @@
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]{background:transparent!important;box-shadow:none;border-radius:0;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{background:transparent!important;aspect-ratio:auto!important;height:clamp(260px,65vw,520px);}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>img{opacity:0;}
-.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>div{background:linear-gradient(transparent,#071a3c88)!important;border-radius:16px;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>div{background:transparent!important;border-radius:0;box-shadow:none!important;backdrop-filter:none!important;text-shadow:0 2px 5px #000b;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>div{background:transparent!important;}
 .ae-reference-home .ae-hero-points>div{background:linear-gradient(115deg,#353775aa,#16719aaa)!important;backdrop-filter:blur(18px);border:1px solid #ffffff80!important;box-shadow:0 12px 28px #12213b44!important;padding:16px!important;}
 .ae-reference-home .ae-hero-points>div{display:grid!important;grid-template-columns:minmax(0,.95fr) minmax(0,1.5fr);gap:10px!important;align-items:center;padding:12px!important;}
