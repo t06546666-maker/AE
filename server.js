@@ -3859,6 +3859,35 @@ async function saveMerchantOperatingSettings(merchantId, body, actorId) {
   await db.collection('ae_merchant_profile_settings').doc(merchantId).set(updates, { merge: true });
   return updates;
 }
+function validateTradingTimes(body) {
+  const result = {};
+  for (const key of ['peak_hours','low_hours']) {
+    const ranges = body?.[key] ?? [];
+    if (!Array.isArray(ranges) || ranges.length > 100) throw Error('Use up to 100 time ranges per group.');
+    result[key] = ranges.map(range => {
+      if (!range || !/^([01]\d|2[0-3]):[0-5]\d$/.test(range.start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(range.end) || range.start === range.end) throw Error('Each time range needs different valid start and end times.');
+      return {start:range.start,end:range.end};
+    });
+  }
+  return result;
+}
+async function canReadTradingTimes(req,id) {
+  const profile=req.auth.profile;
+  if(profile.role==='admin') return true;
+  if(profile.role==='merchant') return profile.merchant_id===id;
+  if(profile.role!=='field_manager') return false;
+  const linked=await supabaseAdmin.from('field_manager_merchant_updates').select('id').eq('manager_id',profile.id).eq('merchant_id',id).eq('status','approved').eq('payload->>action','onboard_merchant').limit(1);
+  return !linked.error&&!!linked.data?.length;
+}
+app.get('/api/merchant-trading-times/:id',requireAuth,async(req,res)=>{
+  if(!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'Not authorized for this shop.'});
+  try{const db=await checkoutBillDatabase(),snap=await db.collection('ae_merchant_profile_settings').doc(req.params.id).get();const data=snap.data()||{};return res.json({peak_hours:data.peak_hours||[],low_hours:data.low_hours||[]});}catch{return res.status(503).json({error:'Shop time ranges are unavailable. Please retry.'});}
+});
+app.put('/api/merchant-trading-times/:id',requireAuth,async(req,res)=>{
+  if(!['admin','field_manager'].includes(req.auth.profile.role)||!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'Not authorized to edit this shop.'});
+  let times;try{times=validateTradingTimes(req.body);}catch(error){return res.status(400).json({error:error.message});}
+  try{const db=await checkoutBillDatabase();await db.collection('ae_merchant_profile_settings').doc(req.params.id).set({...times,updated_at:new Date().toISOString(),updated_by:req.auth.profile.id},{merge:true});return res.json(times);}catch{return res.status(503).json({error:'Time ranges could not be saved. Please retry.'});}
+});
 app.patch('/api/admin/merchants/:id/settings', requireAuth, requireRole('admin'), async (req, res) => {
   try { return res.json({ settings: await saveMerchantOperatingSettings(req.params.id, req.body, req.auth.profile.id) }); }
   catch { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
@@ -4287,6 +4316,7 @@ app.get('/api/merchants/:id/summary', requireAuth, requireRole('admin'), async (
 });
 
 app.post('/api/merchants', requireAuth, (req, res, next) => {
+  if(req.body.trading_times){try{validateTradingTimes(req.body.trading_times);}catch(error){return res.status(400).json({error:error.message});}}
   if (!['admin', 'field_manager'].includes(req.auth.profile?.role)) {
     return res.status(403).json({ success: false, error: 'Admin or Field manager access required' });
   }
@@ -4397,6 +4427,10 @@ app.post('/api/merchants', requireAuth, (req, res, next) => {
   }
 
   let onboardingMapWarning = null;
+  if(req.body.trading_times){
+    try{const times=validateTradingTimes(req.body.trading_times),db=await checkoutBillDatabase();await db.collection('ae_merchant_profile_settings').doc(merchant.id).set({...times,updated_by:req.auth.profile.id,updated_at:new Date().toISOString()},{merge:true});}
+    catch(error){onboardingMapWarning='Merchant created, but peak/low hours were not saved. Open merchant details and save the time ranges again. Do not create the merchant again.';}
+  }
   if (req.auth.profile?.role === 'field_manager') {
     try {
       const onboardingRecord = await supabaseAdmin.from('field_manager_merchant_updates').insert({

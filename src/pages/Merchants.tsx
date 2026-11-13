@@ -1,4 +1,5 @@
 import { uiText } from '../uiText';
+import {MerchantTimeRanges,emptyTradingTimes,type TradingTimes} from '../components/MerchantTimeRanges';
 import { TimeInput } from '../components/TimeInput';
 import { formatClockTime, optimizeImageForUpload } from '../utils';
 import { useDeferredValue, useEffect, useRef, useState, type FormEvent } from 'react';
@@ -47,6 +48,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const [onboardStep, setOnboardStep] = useState(0);
   const [merchantRoute, setMerchantRoute] = useState('');
   const [openingTime, setOpeningTime] = useState(''); const [closingTime, setClosingTime] = useState('');
+  const [tradingTimes,setTradingTimes]=useState<TradingTimes>(emptyTradingTimes);
   const [shopImages, setShopImages] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [latitude, setLatitude] = useState('');
@@ -104,7 +106,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const create = useMutation({
     mutationFn: () => apiFetch<CreateMerchantResponse>('/api/merchants', {
       method: 'POST',
-      body: JSON.stringify({ images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
+      body: JSON.stringify({ trading_times:tradingTimes, images: shopImages, image_url: shopImages[0], route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, name: name.trim(), email: email.trim(), phone: `+91${phone.trim()}`, password, category_id: categoryId === '__other__' ? "__other__" : (categoryId || undefined), new_category_name: categoryId === '__other__' ? customCategory.trim() : undefined, address: address.trim() || undefined, latitude: latitude || undefined, longitude: longitude || undefined }),
     }),
     onSuccess(data) {
       setCredentials({
@@ -115,7 +117,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
       });
       setName('');
       setMerchantRoute('');
-      setOpeningTime(''); setClosingTime('');
+      setOpeningTime(''); setClosingTime(''); setTradingTimes(emptyTradingTimes());
       setShopImages([]); setOnboardStep(0);
       setEmail('');
       setPhone('');
@@ -249,6 +251,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
           </div></fieldset><fieldset disabled={onboardStep !== 1} hidden={onboardStep !== 1} style={{ border: 0 }}><div className="four-column-form"><label>{uiText("Store address ")}<input value={address} onChange={(event) => setAddress(event.target.value)} placeholder={uiText("Street, city")} /></label>
           <label>{uiText("Merchant route")}<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">{uiText("Select route")}</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
           <label>{uiText("Opening Time")}<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>{uiText("Closing Time")}<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
+          <MerchantTimeRanges value={tradingTimes} onChange={setTradingTimes}/>
           <label>{uiText("Latitude ")}<input type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="e.g. 9.9312" /></label>
           <label>{uiText("Longitude ")}<input type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="e.g. 76.2673" /></label>
           </div><button type="button" className="button secondary" onClick={() => setMapPickerOpen(true)}>{uiText("Select location on map")}</button></fieldset><fieldset disabled={onboardStep !== 2} hidden={onboardStep !== 2} style={{ border: 0 }}><div className="four-column-form"><label>{uiText("Upload Photo (required)")}<input type="file" accept="image/jpeg,image/png" disabled={uploadingPhoto || create.isPending} onChange={event => { void uploadShopPhoto(event.target.files?.[0]); event.target.value = ''; }} /><small>{uiText("JPG or PNG, maximum 5 MB.")}</small></label><LiveCamera facing="environment" disabled={uploadingPhoto || create.isPending} label="Take Photo" onCapture={file => void uploadShopPhoto(file)} />

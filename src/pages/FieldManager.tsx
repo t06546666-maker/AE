@@ -1,4 +1,5 @@
 import { uiText } from '../uiText';
+import {MerchantTimeRanges,emptyTradingTimes,type TradingTimes} from '../components/MerchantTimeRanges';
 import { TimeInput } from '../components/TimeInput';
 import { formatClockTime, optimizeImageForUpload } from '../utils';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
@@ -166,6 +167,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const [address, setAddress] = useState('');
   const [merchantRoute, setMerchantRoute] = useState('');
   const [openingTime, setOpeningTime] = useState(''); const [closingTime, setClosingTime] = useState('');
+  const [tradingTimes,setTradingTimes]=useState<TradingTimes>(emptyTradingTimes);
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
 
@@ -416,7 +418,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
         method: 'POST',
         body: JSON.stringify({
           name: name.trim(),
-          route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined,
+          route_name: merchantRoute || undefined, opening_time: openingTime || undefined, closing_time: closingTime || undefined, trading_times:tradingTimes,
           userId: cleanUserId || undefined,
           email: finalEmail,
           phone: `+91${cleanPhone}`,
@@ -443,7 +445,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       });
       setName('');
       setMerchantRoute('');
-      setOpeningTime(''); setClosingTime('');
+      setOpeningTime(''); setClosingTime(''); setTradingTimes(emptyTradingTimes());
       setUserId('');
       setEmail('');
       setPhone('');
@@ -671,6 +673,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
               <button type="button" className="button secondary" onClick={handleGenerateBoth}><Sparkles size={16} />{uiText(" Generate User ID & Password")}</button>
               <label>{uiText("Merchant route")}<select value={merchantRoute} onChange={event => setMerchantRoute(event.target.value)}><option value="">{uiText("Select route")}</option>{MERCHANT_ROUTES.map(route => <option key={route} value={route}>{routeLabel(route)}</option>)}</select></label>
           <label>{uiText("Opening Time")}<TimeInput value={openingTime} required={!!closingTime} onChange={setOpeningTime} /></label><label>{uiText("Closing Time")}<TimeInput value={closingTime} required={!!openingTime} onChange={setClosingTime} /></label>
+          <MerchantTimeRanges value={tradingTimes} onChange={setTradingTimes}/>
               </>}
               {onboardStep === 1 && <>
               <label>{uiText(" Address Line * ")}<input

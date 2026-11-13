@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {MerchantTradingTimes} from '../components/MerchantTimeRanges';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link,useParams } from 'react-router-dom';
 import { Pencil, X, Smartphone, Coins } from 'lucide-react';
@@ -39,6 +40,7 @@ export function AdminMerchantDetails() {
  const photos=Array.from(new Set([merchant.image_url,...(merchant.images||[])].filter((value):value is string=>typeof value==='string'&&!!value)));
  return <div className="admin-directory-page"><div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}><Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link><button type="button" className="button primary" onClick={()=>{setEditForm({name:merchant.name||'',email:merchant.email||'',phone:merchant.phone||'',address:merchant.address||''});setEditing(true);}}><Pencil size={16}/>{uiText('Edit merchant')}</button></div><header className="admin-detail-heading"><span className="admin-directory-avatar">{String(merchant.name || '').slice(0,1)}</span><div><h1>{merchant.name}</h1><p>{merchant.merchant_code} · {merchant.merchant_categories?.name || uiText('No Category')} · {merchant.route_name || '—'}</p></div></header>
  <section className="panel"><dl style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:18,margin:0}}>{[['Email',merchant.email],['Phone number',merchant.phone],['Address',merchant.address],['Available points',merchant.point_balance]].map(([title,value])=><div key={String(title)}><dt>{uiText(String(title))}</dt><dd style={{margin:0}}>{value==null?'—':String(value)}</dd></div>)}</dl></section>
+ <MerchantTradingTimes merchantId={id} role="admin"/>
  <section className="panel" style={{ borderLeft: merchant.hasPushToken ? '4px solid #10b981' : '4px solid #f59e0b', background: merchant.hasPushToken ? '#f0fdf4' : '#fffbeb', marginBottom: 16 }}>
    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
