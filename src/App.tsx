@@ -359,6 +359,11 @@ export function App() {
     if (new URLSearchParams(location.search).get('version') === 'old') return <OldLegalGate preview user={{ id: 'old-local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</OldLegalGate>;
     return <LegalGate preview user={{ id: 'local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</LegalGate>;
   }
+  // Keep the customer UI editor preview usable without a login or backend session.
+  // This is intentionally development-only; production still requires Admin access.
+  if (import.meta.env.DEV && location.pathname === '/admin/customer-ui') {
+    return <Suspense fallback={<StartupFallback />}><AdminCustomerUi /></Suspense>;
+  }
   if (location.pathname === '/legal' || location.pathname === '/terms' || location.pathname === '/privacy') return <Suspense fallback={<StartupFallback />}><LegalNavigation backTo={user?.role === 'customer' ? '/customer/profile' : user?.role === 'merchant' ? '/more' : user?.role === 'field_manager' ? '/field' : user?.role === 'admin' ? '/dashboard' : '/customer/login'}><Legal /></LegalNavigation></Suspense>;
   if (restoring) return <div className="boot-screen"><div className="boot-brand"><img src="/logo.png" alt="AE" /></div></div>;
   if (restoreError && !user) return <div className="state-panel error-state"><strong>{uiText("Your saved session has been kept.")}</strong><span>{restoreError}</span><button className="button primary" onClick={() => { setRestoreError(''); setRestoring(true); setRestoreAttempt(value => value + 1); }}>{uiText("Retry connection")}</button><button className="button" onClick={() => { setRestoreError(''); logout(); }}>{uiText("Sign out")}</button></div>;
