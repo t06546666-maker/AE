@@ -187,7 +187,7 @@
 .ae-reference-home .ae-hero-points .ae-home-points-heading+div span+span{display:none;}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{height:clamp(220px,64vw,420px);}
 /* Image-led AE home, with readable overlays and a glass points surface. */
-.ae-reference-home { background:radial-gradient(ellipse at 85% 0%,#70dafa55,transparent 45%),linear-gradient(160deg,#eaf5ff,#f2efff 65%,#fff)!important; }
+.customer-glass .main-content>.ae-reference-home,.ae-reference-home { background:#f2efff!important;background-image:none!important; }
 .ae-reference-home .customer-modern-topbar { background:#eef6ffde;backdrop-filter:blur(18px); }
 .ae-reference-home [aria-roledescription=carousel] { border:0;border-radius:24px;background:#102c62;box-shadow:0 16px 36px #10367524; }
 .ae-reference-home [aria-roledescription=carousel]>button>div { aspect-ratio:4 / 3!important;padding:0!important; }

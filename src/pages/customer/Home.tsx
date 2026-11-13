@@ -196,7 +196,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
 
             {/* Top Row: Label & Small Points Number + History Link */}
             <div className="ae-home-points-heading relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5" role="link" tabIndex={0} aria-label={uiText('Points History')} style={{cursor:'pointer'}} onClick={()=>navigate('/customer/transactions')} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('/customer/transactions');}}}>
                 <span className="w-5 h-5 rounded-md bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">★</span>
                 <span className="text-[11px] font-bold text-sky-200 uppercase tracking-wide">
                   {uiText("Available Points:")}
