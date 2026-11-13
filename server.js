@@ -3867,6 +3867,24 @@ app.patch('/api/merchant-profile/settings', requireAuth, requireRole('merchant')
   catch (error) { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
 });
 
+async function saveMerchantOperatingSettings(merchantId, body, actorId) {
+  const updates = { delivery_enabled: body?.delivery_enabled === true, open_24_hours: body?.open_24_hours === true, chat_enabled: body?.chat_enabled !== false, updated_at: new Date().toISOString(), updated_by: actorId };
+  const db = await checkoutBillDatabase();
+  await db.collection('ae_merchant_profile_settings').doc(merchantId).set(updates, { merge: true });
+  return updates;
+}
+app.patch('/api/admin/merchants/:id/settings', requireAuth, requireRole('admin'), async (req, res) => {
+  try { return res.json({ settings: await saveMerchantOperatingSettings(req.params.id, req.body, req.auth.profile.id) }); }
+  catch { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
+});
+app.patch('/api/field/merchants/:id/settings', requireAuth, requireRole('field_manager'), async (req, res) => {
+  const merchantId = req.params.id;
+  const linked = await supabaseAdmin.from('field_manager_merchant_updates').select('id').eq('manager_id', req.auth.profile.id).eq('merchant_id', merchantId).eq('status', 'approved').eq('payload->>action', 'onboard_merchant').limit(1);
+  if (linked.error || !linked.data?.length) return res.status(403).json({ error: 'This shop is not assigned to this Field Manager.' });
+  try { return res.json({ settings: await saveMerchantOperatingSettings(merchantId, req.body, req.auth.profile.id) }); }
+  catch { return res.status(503).json({ error: 'Merchant settings could not be saved. Please retry.' }); }
+});
+
 app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
   if (req.params.id === 'summary' || req.params.id === 'reset-password') return next(); // Skip specific routes
   const { data, error } = await supabaseAdmin
