@@ -152,6 +152,8 @@
 .ae-banner-line-controls button{background:transparent;border:0;color:inherit;min-width:32px;min-height:40px;display:grid;place-items:center;}
 .ae-banner-line-controls input[type=range]{appearance:none;width:45%;height:3px;border:0;padding:0;background:#ffffff70;border-radius:3px;accent-color:#36ceff;}
 .ae-banner-line-controls input::-webkit-slider-thumb{appearance:none;width:28px;height:5px;border-radius:4px;background:linear-gradient(90deg,#0ed3ff,#834bff);}
+/* Keep the brand legible over every merchant artwork. */
+.customer-glass .ae-reference-home .ae-immersive-hero .customer-modern-topbar img.customer-home-logo{box-sizing:content-box;background:#fff;padding:7px 9px;border-radius:14px;border:1px solid #ffffffd9;box-shadow:0 4px 16px #041d5140,0 0 18px #47d7ff30;object-fit:contain;flex-shrink:0;width:55px!important;height:32px!important;}
 /* The active offer is the shared backdrop for the entire home hero. */
 .ae-reference-home .ae-immersive-hero{background-color:#153b79;background-size:cover;background-position:center;position:relative;padding-bottom:28px;isolation:isolate;}
 .ae-reference-home .ae-immersive-hero .customer-modern-topbar{position:relative;background:transparent!important;border:0;color:white;backdrop-filter:none;}
