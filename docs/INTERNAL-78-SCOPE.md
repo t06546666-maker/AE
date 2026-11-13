@@ -15,3 +15,5 @@ Validation: backend role isolation, validation, atomic writes, stale-update prot
 AAB SHA256: B1D72D440621949C4FA21E0DE2E7DA33F5868F81EC84FDCFD3D3F6A8CFD72D24
 
 Location entry uses a map tap and draggable shop pin, with no latitude/longitude inputs or current-location request. Version 77 was uploaded but excluded before publication after the user requested this correction.
+
+Published: 13 November 2026, 23:52 IST (Play Console display), release 36. Verified Available to internal testers, one version code 78. No production promotion. Google showed only the non-blocking deobfuscation-file warning; zero devices lost.
