@@ -79,6 +79,7 @@ const CustomerFavorites = lazy(() => import('./pages/customer/Favorites').then(m
 const FieldManager = lazy(() => import('./pages/FieldManager').then(m => ({ default: m.FieldManager })));
 const FieldManagers = lazy(() => import('./pages/FieldManagers').then(m => ({ default: m.FieldManagers })));
 const ShopVisitTracking = lazy(() => import('./components/ShopVisitTracking').then(m=>({default:m.ShopVisitTracking})));
+const ShopVisitDemo = lazy(()=>import('./pages/ShopVisitDemo'));
 const FieldMerchantVisit = lazy(() => import('./pages/FieldMerchantVisit').then(m => ({ default: m.FieldMerchantVisit })));
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -360,6 +361,7 @@ export function App() {
     if (new URLSearchParams(location.search).get('version') === 'old') return <OldLegalGate preview user={{ id: 'old-local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</OldLegalGate>;
     return <LegalGate preview user={{ id: 'local-preview', email: '', full_name: 'Preview', role, merchant_id: null }} onLogout={() => navigate('/customer/login')}>{null}</LegalGate>;
   }
+  if(import.meta.env.DEV&&location.pathname==='/shop-visit-demo')return <Suspense fallback={<StartupFallback/>}><ShopVisitDemo/></Suspense>;
   // Keep the customer UI editor preview usable without a login or backend session.
   // This is intentionally development-only; production still requires Admin access.
   if (import.meta.env.DEV && location.pathname === '/admin/customer-ui') {
