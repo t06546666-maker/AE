@@ -6,5 +6,3 @@ node_modules
 *.apk
 *.keystore
 *.jks
-scripts
-tests
