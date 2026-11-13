@@ -2162,6 +2162,7 @@ app.get('/api/admin/field-managers/:id/records',requireAuth,requireRole('admin')
   res.json({records:safe(selection[0]==='field_manager_visits'?result.data.map(fieldVisitRecord):result.data),pagination:paginationMeta(paging,result.count)});
 });
 require('./backend/field-onboarded-merchants.cjs').registerFieldOnboardingMaps(app, { auth: requireAuth, fieldRole: requireRole('field_manager'), adminRole: requireRole('admin'), db: supabaseAdmin });
+require('./backend/shop-prospects.cjs').registerShopProspects(app,{auth:requireAuth,database:checkoutBillDatabase});
 app.get('/api/admin/field-managers/:id/check-in-map', requireAuth, requireRole('admin'), async (req, res) => {
   const range = checkinDay(req.query.day);
   if (!range) return res.status(400).json({error:'Choose a valid date.'});

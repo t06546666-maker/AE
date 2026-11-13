@@ -10,6 +10,7 @@ export function FieldHome({ name }: { name: string }) {
     { section: 'onboarding', title: 'Onboard Merchant', detail: 'Add new merchant', Icon: Store },
     { section: 'directory', title: 'All Merchants', detail: 'View and manage', Icon: Building2 },
     { section: 'mapper', title: 'Merchant Mapper', detail: 'Shop pins and planned routes', Icon: MapPin },
+    { section: 'shop-tracking', title: 'Shop Visit Tracking', detail: 'Prospective shops and follow-ups', Icon: MapPin },
     { section: 'visits', title: 'Visits & Check-in', detail: 'Check in at locations', Icon: MapPin },
     { section: 'routes', title: 'Routes', detail: 'View your route plan', Icon: Route },
   ];

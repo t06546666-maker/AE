@@ -1,5 +1,6 @@
 import { uiText } from '../uiText';
 import {MerchantTimeRanges,emptyTradingTimes,type TradingTimes} from '../components/MerchantTimeRanges';
+import {ShopVisitTracking} from '../components/ShopVisitTracking';
 import { TimeInput } from '../components/TimeInput';
 import { formatClockTime, optimizeImageForUpload } from '../utils';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
@@ -140,9 +141,9 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
   const queryClient = useQueryClient();
   const [sectionParams, setSectionParams] = useSearchParams();
   const navigate = useNavigate();
-  type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'profile';
+  type FieldSection = 'home' | 'attendance' | 'routes' | 'onboarding' | 'directory' | 'visits' | 'mapper' | 'profile' | 'shop-tracking';
   const section = sectionParams.get('section');
-  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'profile'].includes(section || '') ? section as FieldSection : "home";
+  const activeTab: FieldSection = ['home', 'attendance', 'routes', 'onboarding', 'directory', 'visits', 'mapper', 'profile','shop-tracking'].includes(section || '') ? section as FieldSection : "home";
   const setActiveTab = (value: FieldSection) => setSectionParams({ section: value });
   useEffect(() => { const query = sectionParams.get('search'); if (query != null) setSearch(query); }, [sectionParams]);
 
@@ -885,6 +886,7 @@ export function FieldManager({ user }: { user: UserProfile; onLogout: () => void
       {/* EXACT ADMIN CREDENTIALS MODAL */}
       {/* ========================================================================= */}
       {activeTab === 'mapper' && <OnboardedMerchantsMap viewerId={user.id} allMerchants={allMerchants} categories={categories} />}
+      {activeTab === 'shop-tracking' && <ShopVisitTracking/>}
       {activeTab === 'profile' && <FieldProfile user={user} visits={visitsQuery.data?.visits || []} merchantCount={allMerchants.length} loading={visitsQuery.isPending} error={visitsQuery.isError ? visitsQuery.error.message : null} />}
       <FieldCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 
