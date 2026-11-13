@@ -8,6 +8,16 @@
 .ae-reference-home [aria-roledescription="carousel"] > div:first-child > a { height:220px; border-radius:22px; }
 .ae-reference-home .customer-modern-greeting h2 { font-size:27px; }.ae-reference-home .customer-modern-greeting p { font-size:13px; line-height:1.5; }
 .ae-reference-home .customer-home-points { min-height:160px; }.ae-home-language { display:flex; justify-content:flex-end; }
+@media(max-width:480px){
+ .customer-glass .ae-reference-home .customer-modern-greeting{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;}
+ .customer-glass .ae-reference-home .customer-modern-greeting h2{font-size:19px!important;line-height:1.4;}
+ .customer-glass .ae-reference-home .ae-home-language{margin:0!important;max-width:none;}
+ .customer-glass .ae-reference-home .ae-home-language .ae-language-switch{gap:2px;padding:3px!important;}
+ .customer-glass .ae-reference-home .ae-home-language .ae-language-switch button{flex:0 0 auto!important;padding:6px 8px!important;min-height:38px;font-size:12px!important;letter-spacing:normal!important;word-break:normal!important;overflow:visible;}
+ .customer-glass .ae-reference-home .ae-home-language button[lang=ml]{font-family:'Noto Sans Malayalam','Nirmala UI',sans-serif!important;min-width:76px;line-height:1.8!important;}
+ .customer-glass .ae-reference-home .customer-modern-greeting>div:first-child>button{font-size:11px;line-height:1.7;gap:3px;}
+}
+@media(max-width:340px){.customer-glass .ae-reference-home .customer-modern-greeting{grid-template-columns:1fr;}}
 @media(min-width:480px){.ae-home-shortcuts a{font-size:13px}.ae-reference-home [aria-roledescription="carousel"] > div:first-child > a{height:260px}}
 
 /* Realistic Top Ad Banner Shimmer & Ambient Glow */
