@@ -128,6 +128,17 @@
  .ae-reference-home .ae-home-floating-points>div>div:last-child>a:not(:last-child)>svg { display:none; }
  .ae-reference-home .ae-home-floating-points>div>div:last-child span { font-size:10px; line-height:1.5; }
 }
+/* The active offer is the shared backdrop for the entire home hero. */
+.ae-reference-home .ae-immersive-hero{background-color:#153b79;background-size:cover;background-position:center;position:relative;padding-bottom:28px;isolation:isolate;}
+.ae-reference-home .ae-immersive-hero .customer-modern-topbar{position:relative;background:transparent!important;border:0;color:white;backdrop-filter:none;}
+.ae-reference-home .ae-immersive-hero .customer-modern-greeting h2,.ae-reference-home .ae-immersive-hero .customer-modern-greeting button{color:white!important;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]{background:transparent!important;box-shadow:none;border-radius:0;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{background:transparent!important;aspect-ratio:auto!important;height:clamp(260px,65vw,520px);}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>img{opacity:0;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div>div{background:linear-gradient(transparent,#071a3c88)!important;border-radius:16px;}
+.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>div{background:transparent!important;}
+.ae-reference-home .ae-hero-points>div{background:linear-gradient(115deg,#353775aa,#16719aaa)!important;backdrop-filter:blur(18px);border:1px solid #ffffff80!important;box-shadow:0 12px 28px #12213b44!important;padding:16px!important;}
+.ae-reference-home .ae-hero-points .ae-home-points-heading{margin-bottom:12px;}
 /* Image-led AE home, with readable overlays and a glass points surface. */
 .ae-reference-home { background:radial-gradient(ellipse at 85% 0%,#70dafa55,transparent 45%),linear-gradient(160deg,#eaf5ff,#f2efff 65%,#fff)!important; }
 .ae-reference-home .customer-modern-topbar { background:#eef6ffde;backdrop-filter:blur(18px); }

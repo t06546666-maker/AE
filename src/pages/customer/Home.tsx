@@ -21,6 +21,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 export function CustomerHome({ user, preview = false }: { user: UserProfile; preview?: boolean }) {
+  const [heroImage,setHeroImage] = useState('');
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:{pageText:Record<string,string>}}>('/api/customer/home-content'),refetchInterval:30000});
   const homeText = (key:string,fallback:string) => homeContent.data?.content?.pageText?.[key] || uiText(fallback);
   const customerLocation = useCustomerLocation(!preview, !preview);
@@ -151,6 +152,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   return (
     <div className={`customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[180px] ${isScrolling ? 'ae-is-scrolling' : ''}`}>
       {/* Header */}
+      <div className="ae-immersive-hero" style={heroImage?{backgroundImage:`linear-gradient(180deg,rgba(5,28,71,.84),rgba(8,31,67,.12) 45%,rgba(10,26,62,.6) 82%,#f2efff),url(${JSON.stringify(heroImage)})`}:undefined}>
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
         <CustomerLocationBar compact />
@@ -184,10 +186,10 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
           </div>
         </div>
 
-        <div data-aos="fade-up"><HomeBanners/></div>
+        <div className="ae-hero-banner"><HomeBanners onImageChange={setHeroImage}/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
-        <section ref={heroPointsRef} data-aos="fade-up" data-aos-delay="80">
+        <section className="ae-hero-points" ref={heroPointsRef}>
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#0c2e68] via-[#081f48] to-[#040f26] text-white p-2.5 shadow-xl shadow-blue-950/20 border border-blue-500/40 space-y-2">
             <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-cyan-400/20 blur-xl pointer-events-none"></div>
 
@@ -248,6 +250,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
+        </div></div><div className="px-4 pt-1 space-y-3.5">
         <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="120">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
