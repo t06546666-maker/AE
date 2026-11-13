@@ -78,6 +78,7 @@ const CustomerReferral = lazy(() => import('./pages/customer/Referral').then(m =
 const CustomerFavorites = lazy(() => import('./pages/customer/Favorites').then(m => ({ default: m.CustomerFavorites })));
 const FieldManager = lazy(() => import('./pages/FieldManager').then(m => ({ default: m.FieldManager })));
 const FieldManagers = lazy(() => import('./pages/FieldManagers').then(m => ({ default: m.FieldManagers })));
+const ShopVisitTracking = lazy(() => import('./components/ShopVisitTracking').then(m=>({default:m.ShopVisitTracking})));
 const FieldMerchantVisit = lazy(() => import('./pages/FieldMerchantVisit').then(m => ({ default: m.FieldMerchantVisit })));
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -467,6 +468,7 @@ export function App() {
           <Route path="/locations/:id" element={<RoleRoute user={user} role="admin"><LocationProfile /></RoleRoute>} />
           <Route path="/administrators" element={<RoleRoute user={user} role="admin"><Administrators /></RoleRoute>} />
           <Route path="/field-managers" element={<RoleRoute user={user} role="admin"><FieldManagers /></RoleRoute>} />
+          <Route path="/admin/shop-visit-tracking" element={<RoleRoute user={user} role="admin"><ShopVisitTracking admin /></RoleRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes></Suspense>
       </PageErrorBoundary>

@@ -24,6 +24,7 @@ const adminNav = [
   ['/qr-common', 'QR Common', QrCode],
   ['/customers', 'nav.customers', Users],
   ['/field-managers', 'Field Managers', UserCog],
+  ['/admin/shop-visit-tracking', 'Shop Visit Tracking', MapPin],
   ['/expense-staff', 'Staffs', UserCog],
   ['/orders', 'Reports', BarChartIcon],
   ['/feedback', 'Feedback & Reviews', MessageSquare],
@@ -51,6 +52,7 @@ const fieldNav = [
   ['/field?section=visits', 'Visits & Check-in', MapPin],
   ['/field?section=routes', 'Routes', MapPin],
   ['/field?section=mapper', 'Merchant Mapper', MapPin],
+  ['/field?section=shop-tracking', 'Shop Visit Tracking', MapPin],
   ['/field?section=profile', 'My Profile', UserCog],
 ] as const;
 
