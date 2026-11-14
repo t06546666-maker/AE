@@ -31,6 +31,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:HomeLayout}>('/api/customer/home-content'),refetchInterval:30000});
   const layout=layoutOverride||homeContent.data?.content;
   const sections=homeSections(layout);
+  const webCarousel=(carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))==='web';
   const sectionStyle=(id:string)=>({order:sections.findIndex(row=>row.id===id),display:sections.find(row=>row.id===id)?.visible===false?'none':undefined});
   const homeText = (key:string,fallback:string) => layout?.pageText?.[key] || uiText(fallback);
   const customerLocation = useCustomerLocation(!preview, !preview);
@@ -220,7 +221,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
         </div>
 
-        <div className="ae-hero-banner" style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners onImageChange={setHeroImage} bannerIds={carouselFor(layout,carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))}/></div>
+        <div className={`ae-hero-banner ${webCarousel?'ae-web-carousel':''}`} style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners overrides={webCarousel?layout?.carouselWebOverrides:undefined} onImageChange={setHeroImage} bannerIds={carouselFor(layout,carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))}/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
         <section className="ae-hero-points" ref={heroPointsRef}>

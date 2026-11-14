@@ -146,3 +146,9 @@
 .ae-reference-home .ae-category-offer-rail .ae-discovery-photo{height:auto;aspect-ratio:1.8}
 
 .ae-reference-home .ae-category-filter .ae-category-choice>span:first-child:has(img){width:36px;height:36px}.ae-category-choice img{display:block;width:36px;height:36px;object-fit:cover;border-radius:50%;border:1px solid #d1e6ff}
+
+/* A fixed 9:6 image frame, scaled down on short screens to preserve points. */
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]{justify-content:flex-end;align-items:center}
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button{flex:0 0 auto;width:min(100%,max(135px,calc((100svh - 420px)*1.5)));aspect-ratio:9 / 6;margin-inline:auto}
+.ae-reference-home .ae-hero-banner.ae-web-carousel[style] [aria-roledescription=carousel]>button>div,.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div{height:100%!important;aspect-ratio:9 / 6!important;border-radius:16px}
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div>img:not(:first-child){opacity:1;object-fit:contain}
