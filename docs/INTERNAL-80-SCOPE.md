@@ -13,3 +13,5 @@ Web backend/source: aebd06a, Vercel deployment completed at https://vercel.com/t
 Checks: TypeScript, production web build, Firebase compatibility and Capacitor sync passed. IST midnight/leap-day/invalid-date tests passed; merchant time-range/access tests passed. Local demo verified both buttons, today's filter and All dates with synthetic data. Real-device and live merchant records still require tester verification.
 
 Gradle bundleRelease succeeded; jarsigner verified. AAB SHA256: 427C862745D4E1F18C2A0DF5CA2CA0807D5862E1FFB51EF5D1526DD437033DCF. Built assets contain no immersive customer hero markers.
+
+Published Internal testing release 38 on 14 November 2026 at 13:00 IST (Play Console display). Verified Available to internal testers, one version code 80. Only non-blocking deobfuscation-file warning; no devices lost. No Production promotion.
