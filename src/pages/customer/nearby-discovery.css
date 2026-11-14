@@ -124,3 +124,9 @@
 .ae-admin-image-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}.ae-admin-image-grid img{width:100%;height:auto;border-radius:20px;object-fit:contain}
 
 .ae-reference-home .ae-hero-banner[style] [aria-roledescription=carousel]>button>div{height:var(--ae-carousel-height)!important;max-height:70vh}
+
+/* Keep category navigation in one swipeable row on every screen. */
+.ae-reference-home .ae-category-filter{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;padding:5px 3px 12px;scrollbar-width:thin;scrollbar-color:#b9d5f5 transparent}
+.ae-reference-home .ae-category-filter .ae-category-choice{flex:0 0 auto;flex-direction:row;min-height:46px;padding:8px 14px;border-radius:999px;gap:8px;white-space:nowrap;font-size:12px;box-shadow:0 3px 9px #31509b0c}
+.ae-reference-home .ae-category-filter .ae-category-choice>span:first-child{width:24px;height:24px;background:transparent;box-shadow:none}
+.ae-reference-home .ae-category-filter .ae-category-choice svg{width:21px;height:21px;filter:none}
