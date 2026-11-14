@@ -1,3 +1,4 @@
+import {OfferCarousel3D} from '../../components/OfferCarousel3D';
 import {categoryArtwork} from '../../categoryArtwork';
 import {Capacitor} from '@capacitor/core';
 import {OFFER_CATEGORIES,offerCategory} from '../../offerCategories';
@@ -302,8 +303,8 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             </Link>
           </div>
 
-          <div className="ae-best-offer-carousel" ref={bestTrack} onPointerDown={()=>{bestPauseUntil.current=Date.now()+8000;}} onScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
-            {(bestOffers.length>1?[...bestOffers,bestOffers[0]]:bestOffers).map((offer, idx) => {
+          <OfferCarousel3D enabled={webCarousel} variant="stack" label={homeText('bestOffersTitle','Best Offers')} fallbackClass="ae-best-offer-carousel" fallbackRef={bestTrack} onInteract={()=>{bestPauseUntil.current=Date.now()+8000;}} onFallbackScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
+            {(!webCarousel&&bestOffers.length>1?[...bestOffers,bestOffers[0]]:bestOffers).map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx);
               const tag = getOfferDiscountTag(idx);
               return (
@@ -344,8 +345,8 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
               );
             })}
-          </div>
-          {bestOffers.length>1&&<div className="ae-best-loop-line" role="status" aria-label={`${uiText('Offer')} ${bestIndex+1} / ${bestOffers.length}`}><span style={{left:`${bestIndex*100/bestOffers.length}%`,width:`${100/bestOffers.length}%`}}/></div>}
+          </OfferCarousel3D>
+          {!webCarousel&&bestOffers.length>1&&<div className="ae-best-loop-line" role="status" aria-label={`${uiText('Offer')} ${bestIndex+1} / ${bestOffers.length}`}><span style={{left:`${bestIndex*100/bestOffers.length}%`,width:`${100/bestOffers.length}%`}}/></div>}
         </section>
 
         <section style={sectionStyle('image')} className="ae-discovery-section ae-admin-image-grid" aria-label="Featured images">{sections.find(row=>row.id==='image')?.images?.map(image=><img key={image.id} src={image.url} alt={image.alt} loading="lazy"/>)}</section>
@@ -367,7 +368,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
 
           {/* Horizontal Swipe Carousel */}
-          <div className="ae-nearby-offer-rail">
+          <OfferCarousel3D enabled={webCarousel} variant="coverflow" label={homeText('trendingTitle','Trending Offers')} fallbackClass="ae-nearby-offer-rail">
             {trendingOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 3);
               const tag = getOfferDiscountTag(idx + 2);
@@ -410,7 +411,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
               );
             })}
-          </div>
+          </OfferCarousel3D>
         </section>
 
         {/* 5. Nearby Partner Offers & Shops (Real Store Photos) */}
