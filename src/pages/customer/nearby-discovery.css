@@ -152,3 +152,13 @@
 .ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button{flex:0 0 auto;width:min(100%,max(135px,calc((100svh - 420px)*1.5)));aspect-ratio:9 / 6;margin-inline:auto}
 .ae-reference-home .ae-hero-banner.ae-web-carousel[style] [aria-roledescription=carousel]>button>div,.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div{height:100%!important;aspect-ratio:9 / 6!important;border-radius:16px}
 .ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div>img:not(:first-child){opacity:1;object-fit:contain}
+
+/* Website hero uses the active image as a full-bleed background, not an inset poster. */
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]{align-items:stretch;flex:1}
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button{flex:1;width:100%;aspect-ratio:auto;margin:0;min-height:0}
+.ae-reference-home .ae-hero-banner.ae-web-carousel[style] [aria-roledescription=carousel]>button>div,.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div{aspect-ratio:auto!important;border-radius:0;background:transparent!important}
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div>img{opacity:0!important}
+.ae-reference-home .ae-hero-banner.ae-web-carousel [aria-roledescription=carousel]>button>div>div{padding:24px 8px 12px!important;background:transparent!important;text-shadow:0 2px 8px #071a3bcc}
+.ae-reference-home .ae-3d-stack .ae-3d-slide{width:calc(100% - 16px);max-width:none;transform:translateX(calc(-50% + var(--slide-offset)*3px)) translateY(calc(var(--slide-offset)*9px)) translateZ(calc(var(--slide-offset)*-45px)) rotateZ(calc(var(--slide-offset)*-1.5deg)) scale(calc(1 - var(--slide-offset)*.025))}
+.ae-reference-home .ae-3d-stack .ae-best-card .ae-discovery-copy>div:last-child{display:flex;align-items:center;justify-content:space-between;gap:18px;width:fit-content;padding:10px 16px;border:0;border-radius:999px;background:white;color:#16448d;box-shadow:0 4px 12px #07275c24;font-weight:750}
+@media(prefers-reduced-motion:reduce){.ae-reference-home .ae-3d-stack .ae-3d-slide{transform:translateX(calc(-50% + var(--slide-offset)*110%));}}
