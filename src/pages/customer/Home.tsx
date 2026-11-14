@@ -1,3 +1,4 @@
+import {OFFER_CATEGORIES,offerCategory} from '../../offerCategories';
 import {homeSections,curatedOffers,type HomeLayout} from '../../customerHomeLayout';
 import type {CustomerOffer} from '../../hooks/useCustomerData';
 import {LanguageSelect} from '../../components/LanguageSelect';
@@ -5,7 +6,7 @@ import {useMerchantFavorites,importLegacyOfferFavorites} from '../../customerFav
 import {HomeBanners} from '../../components/HomeBanners';
 import { uiText } from '../../uiText';
 import { formatDateTime } from '../../utils';
-import { useEffect, useState, useRef, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, useRef, useMemo, type CSSProperties } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User, Sparkles, History, TrendingUp, Wallet, ArrowUpRight, Heart, HelpCircle, ArrowRight, Utensils, ShoppingCart, Shirt, HeartPulse, Headphones, Flame } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,12 +23,6 @@ import './nearby-discovery.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-
-function CategoryOfferDialog({open,title,onClose,children}:{open:boolean;title:string;onClose:()=>void;children:ReactNode}){
- const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{const node=dialog.current;if(open&&!node?.open)node?.showModal();else if(!open&&node?.open)node.close();},[open]);
- return <dialog className="ae-category-dialog" ref={dialog} aria-labelledby="ae-category-dialog-title" onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}><header><h2 id="ae-category-dialog-title">{title}</h2><button type="button" onClick={onClose} aria-label={uiText('Close')}><X size={20}/></button></header><div className="ae-category-dialog-body">{children}</div></dialog>;
-}
 
 export function CustomerHome({ user, preview = false, layoutOverride, offersOverride }: { user: UserProfile; preview?: boolean; layoutOverride?:HomeLayout; offersOverride?:CustomerOffer[] }) {
   const [heroImage,setHeroImage] = useState('');
@@ -75,15 +70,13 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
   const offers = useMemo(()=>(offersOverride||offersData?.offers || []), [offersData,offersOverride]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [categoryOpen,setCategoryOpen]=useState(false);
   const bestTrack=useRef<HTMLDivElement>(null);
   const [bestIndex,setBestIndex]=useState(0);
   const curated=!!layout?.sections?.length;
   const bestOffers=curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5);
   const trendingOffers=curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending);
-  const categoryDirectory=useQuery({queryKey:['customer-categories'],queryFn:()=>apiFetch<{categories:{id:string;name:string}[]}>('/api/customer/categories')});
-  const categoryNames=categoryDirectory.data?.categories?.map(row=>row.name)||[...new Set(offers.map(row=>row.category).filter(Boolean))] as string[];
-  const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:/supermarket/i.test(name)?'Grocery':name.replace(/(^|[\s/&-])([a-z])/g,(_,prefix,letter)=>prefix+letter.toUpperCase()),icon:<ShoppingBag/>}))];
+  const categoryNames=[...new Set(offers.map(offer=>offerCategory(offer.category)))].sort((a,b)=>{const rank=(name:string)=>{const index=OFFER_CATEGORIES.indexOf(name);return index<0?OFFER_CATEGORIES.length:index;};return rank(a)-rank(b);});
+  const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:name,icon:<ShoppingBag/>}))];
   const bestPauseUntil=useRef(0);
   useEffect(()=>{
     if(bestOffers.length<2)return;
@@ -104,7 +97,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const favoriteOffers=offers.filter(offer=>offer.merchant_id&&favorites.includes(offer.merchant_id));
   const filteredOffers = useMemo(() => {
     if (selectedCategory === 'all') return offers;
-    return offers.filter(o=>(o.category||'').toLowerCase()===selectedCategory.toLowerCase());
+    return offers.filter(o=>offerCategory(o.category)===selectedCategory);
   }, [offers, selectedCategory]);
 
   const nearbyOffers = useMemo(() => {
@@ -500,7 +493,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => {setSelectedCategory(cat.id);setCategoryOpen(true);}}
+                onClick={() => setSelectedCategory(cat.id)}
                 aria-pressed={selectedCategory === cat.id}
                 className={`ae-category-choice flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${selectedCategory === cat.id
                   ? 'bg-slate-900 text-white shadow-xs scale-[1.02]'
@@ -513,13 +506,13 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             ))}
           </div>
 
-          <CategoryOfferDialog open={categoryOpen} onClose={()=>setCategoryOpen(false)} title={uiText(categoryChoices.find(row=>row.id===selectedCategory)?.label||'Category Offers')}>
+          <div aria-live="polite" aria-label={uiText(categoryChoices.find(row=>row.id===selectedCategory)?.label||'Category Offers')}>
           {offersLoading ? (
             <div className="rounded-2xl bg-gray-50 py-10 text-center text-sm text-gray-400 font-medium">
               {uiText("Loading exciting partner offers...")}
             </div>
           ) : filteredOffers.length ? (
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="ae-category-offer-rail">
               {filteredOffers.map((offer, idx) => {
                 const photo = getOfferPhoto(offer, idx);
                 const tag = getOfferDiscountTag(idx);
@@ -528,7 +521,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                     key={offer.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => {setCategoryOpen(false);setSelectedOffer({
+                    onClick={() => {setSelectedOffer({
                       id: offer.id,
                       title: offer.title,
                       description: offer.description,
@@ -542,7 +535,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        setCategoryOpen(false);
+
                         setSelectedOffer({
                           id: offer.id,
                           title: offer.title,
@@ -595,7 +588,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
               </button>
             </div>
           )}
-          </CategoryOfferDialog>
+          </div>
         </section>
 
         {/* 8. Favourite Offers (At the very end) */}

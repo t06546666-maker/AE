@@ -1,3 +1,4 @@
+import {OFFER_CATEGORIES,offerCategory} from '../offerCategories';
 import { uiText } from '../uiText';
 import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +13,7 @@ import { useToast } from '../toast';
 import { OfferPerformance } from '../components/OfferPerformance';
 
 type OffersResponse = { offers: Offer[]; pagination: Pagination };
-const OFFER_CATEGORIES = ['Food & Dining', 'Fashion', 'Beauty', 'Services', 'Travel', 'Other'];
+
 
 function tomorrowInput() {
   const date = new Date();
@@ -101,7 +102,7 @@ export function Offers({ user }: { user: UserProfile }) {
     setEditing(offer);
     setTitle(offer.title);
     setDescription(offer.description);
-    setCategory(offer.category || '');
+    setCategory(offer.category?offerCategory(offer.category):'');
     setAudience(offer.audience || 'all');
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
