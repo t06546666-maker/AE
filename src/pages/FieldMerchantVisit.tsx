@@ -94,8 +94,8 @@ export function FieldMerchantVisit() {
     <header><Store /><div><h1>{!visitMode ? uiText("Merchant Profile") : ownActive ? uiText("Visit Report") : uiText("Check In")}</h1><p>{merchant.name} · {merchant.merchant_code}</p></div></header>
     <article className="attendance-card"><h2>{uiText("Merchant information")}</h2>{merchant.opening_time && merchant.closing_time && <p><Clock size={17} />{uiText(" Shop hours: ")}{formatClockTime(merchant.opening_time)} – {formatClockTime(merchant.closing_time)}{uiText(" (IST)")}{merchant.closing_time < merchant.opening_time ? uiText(" · closes next day") : ''}</p>}<p><MapPin size={17} /> {merchant.address || uiText("Address not added")}</p>{merchant.phone && <p><Phone size={17} /> <a href={`tel:${merchant.phone}`}>{merchant.phone}</a></p>}<p>{merchant.email}</p>{merchant.image_url && <img src={merchant.image_url} alt={merchant.name} style={{ maxWidth:'100%',maxHeight:220,borderRadius:14 }} />}</article>
     {!profile.data.activityRecorded && <p role="alert">{uiText("Profile-view activity could not be recorded.")}</p>}
-    <MerchantTradingTimes merchantId={id} role="field"/>
     <FieldMerchantBusiness merchantId={id}/>
+    <MerchantTradingTimes merchantId={id} role="field"/>
     {visitMode && <article className="attendance-card"><h2>{ownActive ? uiText("Visit in progress") : uiText("Check-in location")}</h2>
       {!ownActive && merchant.latitude != null && merchant.longitude != null && <div className="ae-checkin-map"><FieldMerchantMapper merchants={[merchant]} categories={[]} visitPosition={location ? { latitude: location.coords.latitude, longitude: location.coords.longitude } : null} /></div>}
       {ownActive && <div className="ae-visit-clock"><Clock /><div><small>{uiText("Visit in progress")}</small><br /><strong>{new Date(Math.max(0, clock - Date.parse(ownActive.check_in_at))).toISOString().slice(11,19)}</strong></div></div>}
