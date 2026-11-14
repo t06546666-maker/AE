@@ -3885,8 +3885,14 @@ app.get('/api/merchant-trading-times/:id',requireAuth,async(req,res)=>{
   if(!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'Not authorized for this shop.'});
   try{const db=await checkoutBillDatabase(),snap=await db.collection('ae_merchant_profile_settings').doc(req.params.id).get();const data=snap.data()||{};return res.json({peak_hours:data.peak_hours||[],low_hours:data.low_hours||[]});}catch{return res.status(503).json({error:'Shop time ranges are unavailable. Please retry.'});}
 });
+async function canReadFieldMerchantActivity(req,id) {
+ if(req.auth?.profile?.role!=='field_manager')return false;
+ const merchant=await supabaseAdmin.from('active_merchants').select('id').eq('id',id).maybeSingle();
+ if(merchant.error)throw Error('Merchant lookup unavailable.');
+ return !!merchant.data;
+}
 app.get('/api/field/merchants/:id/business-details',requireAuth,requireRole('field_manager'),async(req,res)=>{
- if(!await canReadTradingTimes(req,req.params.id))return res.status(403).json({error:'This shop is not assigned to you.'});
+ try{if(!await canReadFieldMerchantActivity(req,req.params.id))return res.status(404).json({error:'Merchant not found.'});}catch{return res.status(503).json({error:'Merchant lookup is unavailable. Please retry.'});}
  const merchantId=req.params.id,page=Math.max(1,Math.min(10000,parseInt(req.query.page,10)||1)),from=(page-1)*25;
  let bounds;try{bounds=transactionDateBounds(req.query.transactionDate);}catch(error){return res.status(400).json({error:error.message});}
  try{
