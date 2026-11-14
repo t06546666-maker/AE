@@ -138,5 +138,5 @@
 .ae-reference-home .ae-hero-banner{flex:1;min-height:0}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]{display:flex;flex-direction:column;flex:1;min-height:0}
 .ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button{flex:1;min-height:0}
-.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{height:100%!important;max-height:none!important;aspect-ratio:auto!important;min-height:0}
+.ae-reference-home .ae-hero-banner[style] [aria-roledescription=carousel]>button>div,.ae-reference-home .ae-hero-banner [aria-roledescription=carousel]>button>div{height:100%!important;max-height:none!important;aspect-ratio:auto!important;min-height:0}
 .ae-reference-home .ae-hero-banner .ae-banner-line-controls,.ae-reference-home .ae-hero-points{flex-shrink:0}
