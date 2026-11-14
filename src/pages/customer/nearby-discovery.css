@@ -144,3 +144,5 @@
 .ae-category-offer-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 16px;scrollbar-width:thin;scrollbar-color:#b9d5f5 transparent}
 .ae-reference-home .ae-category-offer-rail .ae-category-card{flex:0 0 clamp(230px,70vw,290px);scroll-snap-align:start;min-width:0}
 .ae-reference-home .ae-category-offer-rail .ae-discovery-photo{height:auto;aspect-ratio:1.8}
+
+.ae-reference-home .ae-category-filter .ae-category-choice>span:first-child:has(img){width:36px;height:36px}.ae-category-choice img{display:block;width:36px;height:36px;object-fit:cover;border-radius:50%;border:1px solid #d1e6ff}

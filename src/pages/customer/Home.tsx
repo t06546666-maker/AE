@@ -1,3 +1,4 @@
+import {categoryArtwork} from '../../categoryArtwork';
 import {Capacitor} from '@capacitor/core';
 import {OFFER_CATEGORIES,offerCategory} from '../../offerCategories';
 import {homeSections,curatedOffers,carouselFor,type HomeLayout} from '../../customerHomeLayout';
@@ -501,7 +502,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                   }`}
               >
-                <span>{cat.icon}</span>
+                <span>{categoryArtwork[cat.id]?<img src={categoryArtwork[cat.id]} alt="" loading="lazy" width={36} height={36}/>:cat.icon}</span>
                 <span>{uiText(cat.label)}</span>
               </button>
             ))}
