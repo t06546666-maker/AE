@@ -15,3 +15,5 @@ Checks: TypeScript, production web build, Firebase compatibility and Capacitor s
 Gradle bundleRelease succeeded; jarsigner verified. AAB SHA256: 427C862745D4E1F18C2A0DF5CA2CA0807D5862E1FFB51EF5D1526DD437033DCF. Built assets contain no immersive customer hero markers.
 
 Published Internal testing release 38 on 14 November 2026 at 13:00 IST (Play Console display). Verified Available to internal testers, one version code 80. Only non-blocking deobfuscation-file warning; no devices lost. No Production promotion.
+
+Backend follow-up (14 November 2026): Field Managers may read customer onboarding and transactions for every active merchant, including Admin-onboarded shops. The prior assignment requirement for business-detail reads was removed. Settings edits retain their existing assignment checks; personal visit history remains manager-scoped. This server-side correction works with installed version 80 without another AAB. Access, missing-shop, role and IST-date tests passed.
