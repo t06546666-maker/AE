@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { uploadFileToCloudStorage, deleteFileFromCloudStorage } = require('./cloud-storage.cjs');
 
 const SETTINGS_KEY = 'customer_home_content';
+const CONFIG_BUCKET='app-config';
+const CONFIG_FILE='customer-home-content.json';
 
 function cleanContent(input) {
   const value = input && typeof input === 'object' ? input : {};
@@ -37,12 +39,7 @@ function cleanContent(input) {
 }
 
 function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMiddleware }) {
-  async function readContent() {
-    const { data, error } = await supabase.from('app_settings').select('value').eq('key', SETTINGS_KEY).maybeSingle();
-    if (error) throw error;
-    if (!data?.value) return cleanContent({});
-    try { return cleanContent(JSON.parse(data.value)); } catch { return cleanContent({}); }
-  }
+  const readContent=()=>readStoredContent(supabase);
 
   app.get('/api/customer/home-content', async (_req, res) => {
     try {
@@ -62,7 +59,7 @@ function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMid
   app.put('/api/admin/customer-home-content', auth, adminRole, async (req, res) => {
     try {
       const content = cleanContent(req.body);
-      const { error } = await supabase.from('app_settings').upsert({ key: SETTINGS_KEY, value: JSON.stringify(content) });
+      const { error } = await supabase.storage.from(CONFIG_BUCKET).upload(CONFIG_FILE,Buffer.from(JSON.stringify(content)),{contentType:'application/json',cacheControl:'0',upsert:true});
       if (error) return res.status(400).json({ success: false, error: error.message });
       res.json({ success: true, content });
     } catch (error) { res.status(400).json({ success: false, error: error.message }); }
@@ -86,10 +83,16 @@ function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMid
   });
 }
 
-async function homeFeaturedOfferIds(supabase){
+async function readStoredContent(supabase){
+ const stored=await supabase.storage.from(CONFIG_BUCKET).download(CONFIG_FILE);
+ if(!stored.error&&stored.data){return cleanContent(JSON.parse(await stored.data.text()));}
+ if(stored.error&&String(stored.error.statusCode)!=='404'&&!/not.?found/i.test(stored.error.message||''))throw stored.error;
  const {data,error}=await supabase.from('app_settings').select('value').eq('key',SETTINGS_KEY).maybeSingle();
  if(error)throw error;
- let value={};try{value=JSON.parse(data?.value||'{}');}catch{}
- return [...new Set(cleanContent(value).sections.filter(row=>row.visible&&['best','trending'].includes(row.id)).flatMap(row=>row.offerIds))];
+ try{return cleanContent(typeof data?.value==='string'?JSON.parse(data.value):{});}catch{return cleanContent({});}
 }
-module.exports = { registerCustomerHomeContent, SETTINGS_KEY, cleanContent, homeFeaturedOfferIds };
+async function homeFeaturedOfferIds(supabase){
+ const value=await readStoredContent(supabase);
+ return [...new Set(value.sections.filter(row=>row.visible&&['best','trending'].includes(row.id)).flatMap(row=>row.offerIds))];
+}
+module.exports = { registerCustomerHomeContent, SETTINGS_KEY, CONFIG_BUCKET, CONFIG_FILE, cleanContent, homeFeaturedOfferIds, readStoredContent };
