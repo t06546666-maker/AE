@@ -1,5 +1,6 @@
+import {Capacitor} from '@capacitor/core';
 import {OFFER_CATEGORIES,offerCategory} from '../../offerCategories';
-import {homeSections,curatedOffers,type HomeLayout} from '../../customerHomeLayout';
+import {homeSections,curatedOffers,carouselFor,type HomeLayout} from '../../customerHomeLayout';
 import type {CustomerOffer} from '../../hooks/useCustomerData';
 import {LanguageSelect} from '../../components/LanguageSelect';
 import {useMerchantFavorites,importLegacyOfferFavorites} from '../../customerFavorites';
@@ -24,7 +25,7 @@ import { ProductListPanel } from '../../components/ProductListPanel';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-export function CustomerHome({ user, preview = false, layoutOverride, offersOverride }: { user: UserProfile; preview?: boolean; layoutOverride?:HomeLayout; offersOverride?:CustomerOffer[] }) {
+export function CustomerHome({ user, preview = false, layoutOverride, offersOverride, carouselPlatform }: { user: UserProfile; preview?: boolean; layoutOverride?:HomeLayout; offersOverride?:CustomerOffer[]; carouselPlatform?:"web"|"app" }) {
   const [heroImage,setHeroImage] = useState('');
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:HomeLayout}>('/api/customer/home-content'),refetchInterval:30000});
   const layout=layoutOverride||homeContent.data?.content;
@@ -218,7 +219,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
         </div>
 
-        <div className="ae-hero-banner" style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners onImageChange={setHeroImage} bannerIds={layout?.carouselIds}/></div>
+        <div className="ae-hero-banner" style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners onImageChange={setHeroImage} bannerIds={carouselFor(layout,carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))}/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
         <section className="ae-hero-points" ref={heroPointsRef}>

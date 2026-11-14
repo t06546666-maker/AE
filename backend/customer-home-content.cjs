@@ -9,6 +9,7 @@ function cleanContent(input) {
     version: 1,
     updatedAt: new Date().toISOString(),
     ...(Array.isArray(value.carouselIds)?{carouselIds:[...new Set(value.carouselIds.filter(id=>typeof id==='string'&&id.length<100))].slice(0,40)}:{}),
+    ...Object.fromEntries(['carouselWebIds','carouselAppIds'].filter(key=>Array.isArray(value[key])).map(key=>[key,[...new Set(value[key].filter(id=>typeof id==='string'&&id.length<100))].slice(0,40)])),
     carouselHeight: Math.min(640,Math.max(220,Number(value.carouselHeight)||420)),
     sections: Array.isArray(value.sections) ? [...new Map(value.sections.filter(item=>item&&['best','trending','image','nearby','categories','favourites'].includes(item.id)).map(item=>[item.id,{
       id:item.id,visible:item.visible!==false,
