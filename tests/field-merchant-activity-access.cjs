@@ -13,6 +13,6 @@ vm.createContext(context);vm.runInContext(source.slice(begin,end),context);
  exists=false;assert.equal(await context.canReadFieldMerchantActivity(request('field_manager'),'admin-created-shop'),false);
  failed=true;await assert.rejects(()=>context.canReadFieldMerchantActivity(request('field_manager'),'admin-created-shop'));
  const write=source.slice(source.indexOf("app.patch('/api/field/merchants/:id/settings'"),source.indexOf("app.get('/api/merchants/:id'"));
- assert.match(write,/field_manager_merchant_updates/);assert.match(write,/status','approved'/);
+ assert.match(write,/field_manager_merchant_updates/);assert.match(write,/status',\s*'approved'/);
  console.log('PASS: field read access includes Admin-created active shops; other roles and missing shops denied; settings write restrictions retained');
 })().catch(error=>{console.error(error);process.exitCode=1;});
