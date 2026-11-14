@@ -8,7 +8,13 @@ function cleanContent(input) {
   return {
     version: 1,
     updatedAt: new Date().toISOString(),
-    sections: Array.isArray(value.sections) ? value.sections.slice(0, 80) : [],
+    ...(Array.isArray(value.carouselIds)?{carouselIds:[...new Set(value.carouselIds.filter(id=>typeof id==='string'&&id.length<100))].slice(0,40)}:{}),
+    carouselHeight: Math.min(640,Math.max(220,Number(value.carouselHeight)||420)),
+    sections: Array.isArray(value.sections) ? [...new Map(value.sections.filter(item=>item&&['best','trending','image','nearby','categories','favourites'].includes(item.id)).map(item=>[item.id,{
+      id:item.id,visible:item.visible!==false,
+      offerIds:Array.isArray(item.offerIds)?[...new Set(item.offerIds.filter(id=>typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))].slice(0,item.id==='best'?5:40):[],
+      images:Array.isArray(item.images)?item.images.filter(image=>image&&/^https:\/\//.test(String(image.url||''))).slice(0,20).map(image=>({id:String(image.id||crypto.randomUUID()).slice(0,100),url:String(image.url).slice(0,1000),alt:String(image.alt||'').slice(0,180)})):[],
+    }])).values()] : [],
     banners: Array.isArray(value.banners) ? value.banners.slice(0, 40).map((item) => ({
       id: String(item.id || crypto.randomUUID()),
       title: String(item.title || '').slice(0, 180),
@@ -74,4 +80,10 @@ function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMid
   });
 }
 
-module.exports = { registerCustomerHomeContent, SETTINGS_KEY };
+async function homeFeaturedOfferIds(supabase){
+ const {data,error}=await supabase.from('app_settings').select('value').eq('key',SETTINGS_KEY).maybeSingle();
+ if(error)throw error;
+ let value={};try{value=JSON.parse(data?.value||'{}');}catch{}
+ return [...new Set(cleanContent(value).sections.filter(row=>row.visible&&['best','trending'].includes(row.id)).flatMap(row=>row.offerIds))];
+}
+module.exports = { registerCustomerHomeContent, SETTINGS_KEY, cleanContent, homeFeaturedOfferIds };

@@ -1,4 +1,8 @@
 {
+  "ui.Grocery": "പലചരക്ക്",
+  "ui.Previous offer": "മുൻ ഓഫർ",
+  "ui.Next offer": "അടുത്ത ഓഫർ",
+  "ui.Choose offer": "ഓഫർ തിരഞ്ഞെടുക്കുക",
   "ui.Earning rate": "പോയിന്റ് നിരക്ക്",
   "ui.Discount rate": "കിഴിവ് നിരക്ക്",
   "ui.{{points}} points per ₹100": "₹100-ന് {{points}} പോയിന്റുകൾ",
@@ -3309,5 +3313,10 @@
   "ui.WhatsApp accepted": "വാട്സ്ആപ്പ് സ്വീകരിച്ചത്",
   "ui.Skipped / duplicate": "ഒഴിവാക്കിയത് / ആവർത്തനം",
   "ui.Example balance: 200 points. The real balance is filled at send time.": "ഉദാഹരണ ബാലൻസ്: 200 പോയിന്റ്. അയയ്ക്കുമ്പോൾ യഥാർത്ഥ ബാലൻസ് ചേർക്കും.",
-  "ui.WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.": "വാട്സ്ആപ്പിൽ അംഗീകൃത How to use AE മാർഗനിർദേശമാണ് അയയ്ക്കുന്നത്; മാറിവരുന്ന പുഷ് സന്ദേശമല്ല."
+  "ui.WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.": "വാട്സ്ആപ്പിൽ അംഗീകൃത How to use AE മാർഗനിർദേശമാണ് അയയ്ക്കുന്നത്; മാറിവരുന്ന പുഷ് സന്ദേശമല്ല.",
+  "ui.Discover offers from shops around you": "നിങ്ങളുടെ സമീപത്തെ കടകളിലെ ഓഫറുകൾ കണ്ടെത്തൂ",
+  "ui.Customers & transactions": "ഉപഭോക്താക്കളും ഇടപാടുകളും",
+  "ui.Best Offers": "മികച്ച ഓഫറുകൾ",
+  "ui.Nearby Shops & Offers": "സമീപത്തെ കടകളും ഓഫറുകളും",
+  "ui.Favourite Shops Offers": "പ്രിയപ്പെട്ട കടകളിലെ ഓഫറുകൾ"
 }

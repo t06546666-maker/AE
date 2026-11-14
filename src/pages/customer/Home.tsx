@@ -1,11 +1,13 @@
+import {homeSections,curatedOffers,type HomeLayout} from '../../customerHomeLayout';
+import type {CustomerOffer} from '../../hooks/useCustomerData';
 import {LanguageSelect} from '../../components/LanguageSelect';
 import {useMerchantFavorites,importLegacyOfferFavorites} from '../../customerFavorites';
 import {HomeBanners} from '../../components/HomeBanners';
 import { uiText } from '../../uiText';
 import { formatDateTime } from '../../utils';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User, Sparkles, History, TrendingUp, Wallet, ArrowUpRight, Heart, HelpCircle, ArrowRight } from 'lucide-react';
+import { Bell, ChevronRight, Gift, Languages, MapPin, Star, ListPlus, X, ShoppingBag, QrCode, Tags, User, Sparkles, History, TrendingUp, Wallet, ArrowUpRight, Heart, HelpCircle, ArrowRight, Utensils, ShoppingCart, Shirt, HeartPulse, Headphones, Flame } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { UserProfile } from '../../types';
@@ -16,14 +18,24 @@ import { useDailyGreeting } from '../../dailyGreeting';
 import { CustomerLocationBar } from '../../components/CustomerLocationBar';
 import { CustomerOfferPreviewModal, type PreviewOfferData } from '../../components/CustomerOfferPreviewModal';
 import './home-reference.css';
+import './nearby-discovery.css';
 import { ProductListPanel } from '../../components/ProductListPanel';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-export function CustomerHome({ user, preview = false }: { user: UserProfile; preview?: boolean }) {
+function CategoryOfferDialog({open,title,onClose,children}:{open:boolean;title:string;onClose:()=>void;children:ReactNode}){
+ const dialog=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{const node=dialog.current;if(open&&!node?.open)node?.showModal();else if(!open&&node?.open)node.close();},[open]);
+ return <dialog className="ae-category-dialog" ref={dialog} aria-labelledby="ae-category-dialog-title" onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}><header><h2 id="ae-category-dialog-title">{title}</h2><button type="button" onClick={onClose} aria-label={uiText('Close')}><X size={20}/></button></header><div className="ae-category-dialog-body">{children}</div></dialog>;
+}
+
+export function CustomerHome({ user, preview = false, layoutOverride, offersOverride }: { user: UserProfile; preview?: boolean; layoutOverride?:HomeLayout; offersOverride?:CustomerOffer[] }) {
   const [heroImage,setHeroImage] = useState('');
-  const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:{pageText:Record<string,string>}}>('/api/customer/home-content'),refetchInterval:30000});
-  const homeText = (key:string,fallback:string) => homeContent.data?.content?.pageText?.[key] || uiText(fallback);
+  const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:HomeLayout}>('/api/customer/home-content'),refetchInterval:30000});
+  const layout=layoutOverride||homeContent.data?.content;
+  const sections=homeSections(layout);
+  const sectionStyle=(id:string)=>({order:sections.findIndex(row=>row.id===id),display:sections.find(row=>row.id===id)?.visible===false?'none':undefined});
+  const homeText = (key:string,fallback:string) => layout?.pageText?.[key] || uiText(fallback);
   const customerLocation = useCustomerLocation(!preview, !preview);
   const dailyGreeting = useDailyGreeting('customer');
   const { data, isLoading } = useCustomerDashboard(!preview);
@@ -61,14 +73,38 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   });
   const { data: offersData, isLoading: offersQueryLoading } = useCustomerOffers(loadSecondaryContent && !preview, customerLocation.data);
   const offersLoading = !loadSecondaryContent || offersQueryLoading;
-  const offers = useMemo(()=>(offersData?.offers || []).slice(0,16),[offersData]);
+  const offers = useMemo(()=>(offersOverride||offersData?.offers || []), [offersData,offersOverride]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [categoryOpen,setCategoryOpen]=useState(false);
+  const bestTrack=useRef<HTMLDivElement>(null);
+  const [bestIndex,setBestIndex]=useState(0);
+  const curated=!!layout?.sections?.length;
+  const bestOffers=curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5);
+  const trendingOffers=curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending);
+  const categoryDirectory=useQuery({queryKey:['customer-categories'],queryFn:()=>apiFetch<{categories:{id:string;name:string}[]}>('/api/customer/categories')});
+  const categoryNames=categoryDirectory.data?.categories?.map(row=>row.name)||[...new Set(offers.map(row=>row.category).filter(Boolean))] as string[];
+  const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:/supermarket/i.test(name)?'Grocery':name.replace(/(^|[\s/&-])([a-z])/g,(_,prefix,letter)=>prefix+letter.toUpperCase()),icon:<ShoppingBag/>}))];
+  const bestPauseUntil=useRef(0);
+  useEffect(()=>{
+    if(bestOffers.length<2)return;
+    let reset:ReturnType<typeof setTimeout>|undefined;
+    const timer=setInterval(()=>{
+      const track=bestTrack.current;
+      if(!track||document.hidden||Date.now()<bestPauseUntil.current||track.matches(':hover, :focus-within')||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      const width=track.children[1]?(track.children[1] as HTMLElement).offsetLeft-(track.children[0] as HTMLElement).offsetLeft:track.clientWidth;
+      const next=Math.round(track.scrollLeft/width)+1;
+      track.scrollTo({left:next*width,behavior:'smooth'});
+      if(next>=bestOffers.length)reset=setTimeout(()=>track.scrollTo({left:0,behavior:'instant'}),900);
+    },2200);
+    return()=>{clearInterval(timer);clearTimeout(reset);};
+  },[bestOffers.length]);
+
   const {favorites,toggleFavorite}=useMerchantFavorites(user.id);
   useEffect(()=>{importLegacyOfferFavorites(user.id,offersData?.offers||[]);},[user.id,offersData]);
-  const favoriteOffers=(offersData?.offers||[]).filter(offer=>offer.merchant_id&&favorites.includes(offer.merchant_id));
+  const favoriteOffers=offers.filter(offer=>offer.merchant_id&&favorites.includes(offer.merchant_id));
   const filteredOffers = useMemo(() => {
     if (selectedCategory === 'all') return offers;
-    return offers.filter((o) => (o.category || '').toLowerCase().includes(selectedCategory.toLowerCase()));
+    return offers.filter(o=>(o.category||'').toLowerCase()===selectedCategory.toLowerCase());
   }, [offers, selectedCategory]);
 
   const nearbyOffers = useMemo(() => {
@@ -108,9 +144,10 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
 
   // Monitor when the top Hero Points Card scrolls out of view so the floating bottom pill smoothly appears
   useEffect(() => {
+    const scrollWindow=heroPointsRef.current?.ownerDocument.defaultView||window;
     const handleScroll = () => {
       if (!heroPointsRef.current) {
-        setShowStickyPoints(window.scrollY > 200);
+        setShowStickyPoints(scrollWindow.scrollY > 200);
         return;
       }
       const rect = heroPointsRef.current.getBoundingClientRect();
@@ -118,22 +155,23 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
       setShowStickyPoints(rect.bottom < 75);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    scrollWindow.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => scrollWindow.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Give the customer the full viewport while actively scrolling, then restore
   // the navigation and compact points bar shortly after the finger is released.
   useEffect(() => {
+    const scrollWindow=heroPointsRef.current?.ownerDocument.defaultView||window;
     let timer = 0;
     const onScroll = () => {
       setIsScrolling(true);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => setIsScrolling(false), 220);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => { window.removeEventListener('scroll', onScroll); window.clearTimeout(timer); };
+    scrollWindow.addEventListener('scroll', onScroll, { passive: true });
+    return () => { scrollWindow.removeEventListener('scroll', onScroll); window.clearTimeout(timer); };
   }, []);
 
 
@@ -152,7 +190,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
   return (
     <div className={`customer-modern-page ae-reference-home bg-white min-h-screen text-gray-900 font-sans pb-[180px] ${isScrolling ? 'ae-is-scrolling' : ''}`}>
       {/* Header */}
-      <div className={`ae-immersive-hero ${showStickyPoints ? 'ae-hero-passed' : ''}`}>
+      <div className={`ae-immersive-hero ${heroImage ? 'ae-has-offer-backdrop' : ''} ${showStickyPoints ? 'ae-hero-passed' : ''}`}>
       <div className="ae-fixed-hero-background" aria-hidden="true" style={heroImage?{backgroundImage:`linear-gradient(180deg,rgba(5,28,71,.84),rgba(8,31,67,.12) 45%,rgba(10,26,62,.6) 82%,#f2efff),url(${JSON.stringify(heroImage)})`}:undefined}/>
       <header className="customer-modern-topbar flex justify-between items-center px-4 py-4 bg-white sticky top-0 z-10">
         <img src="/logo.png" alt={uiText("AE")} className="customer-home-logo object-contain" style={{ width: 83, height: 48 }} />
@@ -187,7 +225,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
           </div>
         </div>
 
-        <div className="ae-hero-banner"><HomeBanners onImageChange={setHeroImage}/></div>
+        <div className="ae-hero-banner" style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners onImageChange={setHeroImage} bannerIds={layout?.carouselIds}/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
         <section className="ae-hero-points" ref={heroPointsRef}>
@@ -251,13 +289,13 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
-        </div></div><div className="px-4 pt-1 space-y-3.5">
-        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="120">
+        </div></div><div className="ae-discovery-feed px-4 pt-1 space-y-3.5">
+        <section style={sectionStyle('best')} className="ae-discovery-section ae-best-section space-y-2.5 pt-1" data-aos="fade-down" data-aos-delay="120">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⭐</span>
-                <span>{homeText('nearbyTitle','Nearby Best Offers')}</span>
+                <span>{homeText('bestOffersTitle','Best Offers')}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 {uiText("Top discounts and offers close to you")}
@@ -268,8 +306,8 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            {offers.slice(0, 2).map((offer, idx) => {
+          <div className="ae-best-offer-carousel" ref={bestTrack} onPointerDown={()=>{bestPauseUntil.current=Date.now()+8000;}} onScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
+            {(bestOffers.length>1?[...bestOffers,bestOffers[0]]:bestOffers).map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx);
               const tag = getOfferDiscountTag(idx);
               return (
@@ -277,6 +315,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                   key={`best-offer-${offer.id}-${idx}`}
                   role="button"
                   tabIndex={0}
+                  onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.currentTarget.click();}}}
                   onClick={() => setSelectedOffer({
                     id: offer.id,
                     title: offer.title,
@@ -288,9 +327,9 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                     category: offer.category,
                     expiresAt: offer.expires_at,
                   })}
-                  className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
+                  className="ae-discovery-card ae-best-card group relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="relative h-[95px] overflow-hidden bg-slate-100">
+                  <div className="ae-discovery-photo relative h-[95px] overflow-hidden bg-slate-100">
                     <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />{offer.merchant_id&&<button type="button" className="absolute top-2 right-2 z-10 rounded-full bg-white p-2 text-rose-600" aria-pressed={favorites.includes(offer.merchant_id)} aria-label={uiText(favorites.includes(offer.merchant_id)?'Remove favorite':'Add favorite')} onClick={event=>{event.stopPropagation();toggleFavorite(offer.merchant_id);}}><Heart size={16} fill={favorites.includes(offer.merchant_id)?'currentColor':'none'}/></button>}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-xs">
@@ -298,7 +337,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                     </span>
                     <span className="absolute bottom-1.5 left-2 text-[10px] text-cyan-300 font-bold">{uiText(" 📍 Nearby ")}</span>
                   </div>
-                  <div className="p-2.5 space-y-1">
+                  <div className="ae-discovery-copy p-2.5 space-y-1">
                     <h4 className="font-bold text-xs text-slate-900 leading-tight line-clamp-1">{offer.merchant_name || uiText("AE Partner Store")}</h4>
                     <p className="text-[11px] text-gray-500 line-clamp-1 font-medium">{offer.title}</p>
                     <div className="flex items-center justify-between text-[10px] pt-1 border-t border-gray-100 text-blue-600 font-bold">
@@ -310,34 +349,38 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
               );
             })}
           </div>
+          {bestOffers.length>1&&<div className="ae-best-loop-line" role="status" aria-label={`${uiText('Offer')} ${bestIndex+1} / ${bestOffers.length}`}><span style={{left:`${bestIndex*100/bestOffers.length}%`,width:`${100/bestOffers.length}%`}}/></div>}
         </section>
 
-        {/* 5. Nearby Partner Offers & Shops (Real Store Photos) */}
-        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="160">
+        <section style={sectionStyle('image')} className="ae-discovery-section ae-admin-image-grid" aria-label="Featured images">{sections.find(row=>row.id==='image')?.images?.map(image=><img key={image.id} src={image.url} alt={image.alt} loading="lazy"/>)}</section>
+        {/* 7. Trending Offers Carousel */}
+        <section style={sectionStyle('trending')} className="ae-discovery-section ae-trending-section space-y-2.5 pt-1" data-aos="fade-down" data-aos-delay="240">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <span>📍</span>
-                <span>{uiText("Nearby Offers & Shops")}</span>
+                <span>⚡</span>
+                <span>{homeText('trendingTitle','Trending Offers')}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
-                {uiText("Discounts & deals at stores in Chittur & Palakkad")}
+                {uiText("Swipe to explore special discounts")}
               </p>
             </div>
-            <Link to="/customer/explore" className="text-xs font-bold text-blue-600 hover:underline">
-              {uiText("View Map →")}
+            <Link to="/customer/offers" className="text-xs font-bold text-blue-600 hover:underline">
+              {uiText("View all →")}
             </Link>
           </div>
 
-          <div className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-0.5 hide-scrollbar snap-x">
-            {nearbyOffers.map((offer, idx) => {
-              const photo = getOfferPhoto(offer, idx + 2);
-              const tag = getOfferDiscountTag(idx + 1);
+          {/* Horizontal Swipe Carousel */}
+          <div className="ae-nearby-offer-rail">
+            {trendingOffers.map((offer, idx) => {
+              const photo = getOfferPhoto(offer, idx + 3);
+              const tag = getOfferDiscountTag(idx + 2);
               return (
                 <div
-                  key={`nearby-${offer.id}-${idx}`}
+                  key={`slide-${offer.id}`}
                   role="button"
                   tabIndex={0}
+                  onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.currentTarget.click();}}}
                   onClick={() => setSelectedOffer({
                     id: offer.id,
                     title: offer.title,
@@ -349,23 +392,86 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                     category: offer.category,
                     expiresAt: offer.expires_at,
                   })}
-                  className="w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
+                  className="ae-discovery-card ae-trending-card group w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="relative h-[95px] overflow-hidden bg-slate-100">
+                  <div className="ae-discovery-photo relative h-[105px] overflow-hidden bg-slate-100">
+                    <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
+                    <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                      {uiText(tag)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h4 className="line-clamp-1 text-xs font-bold text-gray-900">{offer.title}</h4>
+                      <p className="line-clamp-1 text-[11px] font-semibold text-blue-600 mt-0.5">{offer.merchant_name || uiText("AE Partner Store")}</p>
+                    </div>
+                    <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
+                      <span className="text-gray-500 truncate max-w-[110px]">{offer.merchant_address || uiText("Nearby")}</span>
+                      <span className="text-blue-600 font-bold">{uiText("View →")}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 5. Nearby Partner Offers & Shops (Real Store Photos) */}
+        <section style={sectionStyle('nearby')} className="ae-discovery-section ae-nearby-section space-y-2.5 pt-1" data-aos="fade-down" data-aos-delay="160">
+          <div className="ae-home-section-heading flex items-end justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span>📍</span>
+                <span>{uiText("Nearby Shops & Offers")}</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 font-medium">
+                {uiText("Discover offers from shops around you")}
+              </p>
+            </div>
+            <Link to="/customer/explore" className="text-xs font-bold text-blue-600 hover:underline">
+              {uiText("View Map →")}
+            </Link>
+          </div>
+
+          <div className="ae-nearby-offer-rail">
+            {nearbyOffers.map((offer, idx) => {
+              const photo = getOfferPhoto(offer, idx + 2);
+              const tag = getOfferDiscountTag(idx + 1);
+              return (
+                <div
+                  key={`nearby-${offer.id}-${idx}`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.currentTarget.click();}}}
+                  onClick={() => setSelectedOffer({
+                    id: offer.id,
+                    title: offer.title,
+                    description: offer.description,
+                    imageUrl: photo,
+                    merchantName: offer.merchant_raw_name || offer.merchant_name,
+                    merchantPhone: offer.merchant_phone,
+                    merchantAddress: offer.merchant_address,
+                    category: offer.category,
+                    expiresAt: offer.expires_at,
+                  })}
+                  className="ae-discovery-card ae-nearby-card group w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div className="ae-discovery-photo relative h-[95px] overflow-hidden bg-slate-100">
                     <img src={photo} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
                     <span className="absolute top-2 left-2 bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-xs">
                       {uiText(tag)}
                     </span>
                     <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-cyan-300 px-1.5 py-0.5 rounded-md text-[9px] font-bold">
-                      📍 {offer.distance ? `${offer.distance.toFixed(1)} km` : uiText("Chittur")}
+                      📍 {typeof offer.distance === 'number' ? `${offer.distance.toFixed(1)} km` : uiText("Nearby")}
                     </span>
                     <div className="absolute bottom-1.5 left-2 right-2">
                       <h4 className="font-bold text-xs text-white leading-tight line-clamp-1">{offer.merchant_name || uiText("AE Partner Store")}</h4>
                     </div>
                   </div>
-                  <div className="p-2.5 flex items-center justify-between text-[10px] bg-white border-t border-gray-50">
-                    <span className="text-gray-500 truncate max-w-[95px]">{offer.merchant_address || "Main Road"}</span>
+                  <div className="ae-nearby-card-footer">
+                    <div className="ae-nearby-copy"><h4>{offer.merchant_name || uiText("AE Partner Store")}</h4><p>{offer.title}</p><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span>{offer.merchant_code&&<small>{offer.merchant_code}</small>}</div>
                     <span className="text-blue-600 font-bold">{uiText("View →")}</span>
                   </div>
                 </div>
@@ -375,7 +481,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         </section>
 
         {/* 6. Category-Wise Offers */}
-        <section className="space-y-3 pt-1" data-aos="fade-up" data-aos-delay="200">
+        <section style={sectionStyle('categories')} className="ae-discovery-section ae-category-section space-y-3 pt-1" data-aos="fade-down" data-aos-delay="200">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -389,20 +495,14 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
           </div>
 
           {/* Deal Categories Quick Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 hide-scrollbar">
-            {[
-              { id: 'all', label: 'All Deals', icon: '🔥' },
-              { id: 'supermarket', label: 'Supermarkets', icon: '🛒' },
-              { id: 'restaurant', label: 'Food & Cafes', icon: '🍽️' },
-              { id: 'fashion', label: 'Fashion', icon: '👕' },
-              { id: 'health', label: 'Health', icon: '💊' },
-              { id: 'electronics', label: 'Electronics', icon: '📱' },
-            ].map((cat) => (
+          <div className="ae-category-filter">
+            {categoryChoices.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${selectedCategory === cat.id
+                onClick={() => {setSelectedCategory(cat.id);setCategoryOpen(true);}}
+                aria-pressed={selectedCategory === cat.id}
+                className={`ae-category-choice flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${selectedCategory === cat.id
                   ? 'bg-slate-900 text-white shadow-xs scale-[1.02]'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                   }`}
@@ -413,7 +513,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
             ))}
           </div>
 
-          {/* Category Deals Grid */}
+          <CategoryOfferDialog open={categoryOpen} onClose={()=>setCategoryOpen(false)} title={uiText(categoryChoices.find(row=>row.id===selectedCategory)?.label||'Category Offers')}>
           {offersLoading ? (
             <div className="rounded-2xl bg-gray-50 py-10 text-center text-sm text-gray-400 font-medium">
               {uiText("Loading exciting partner offers...")}
@@ -428,7 +528,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                     key={offer.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setSelectedOffer({
+                    onClick={() => {setCategoryOpen(false);setSelectedOffer({
                       id: offer.id,
                       title: offer.title,
                       description: offer.description,
@@ -438,10 +538,11 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                       merchantAddress: offer.merchant_address,
                       category: offer.category,
                       expiresAt: offer.expires_at,
-                    })}
+                    });}}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
+                        setCategoryOpen(false);
                         setSelectedOffer({
                           id: offer.id,
                           title: offer.title,
@@ -455,7 +556,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                         });
                       }
                     }}
-                    className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
+                    className="ae-discovery-card ae-category-card group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div className="relative h-[105px] overflow-hidden bg-slate-100">
                       <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -494,78 +595,16 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
               </button>
             </div>
           )}
-        </section>
-
-        {/* 7. Trending Offers Carousel */}
-        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="240">
-          <div className="ae-home-section-heading flex items-end justify-between">
-            <div>
-              <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <span>⚡</span>
-                <span>{homeText('trendingTitle','Trending Offers')}</span>
-              </h3>
-              <p className="text-[11px] text-slate-500 font-medium">
-                {uiText("Swipe to explore special discounts")}
-              </p>
-            </div>
-            <Link to="/customer/offers" className="text-xs font-bold text-blue-600 hover:underline">
-              {uiText("View all →")}
-            </Link>
-          </div>
-
-          {/* Horizontal Swipe Carousel */}
-          <div className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-0.5 hide-scrollbar snap-x">
-            {offers.map((offer, idx) => {
-              const photo = getOfferPhoto(offer, idx + 3);
-              const tag = getOfferDiscountTag(idx + 2);
-              return (
-                <div
-                  key={`slide-${offer.id}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedOffer({
-                    id: offer.id,
-                    title: offer.title,
-                    description: offer.description,
-                    imageUrl: photo,
-                    merchantName: offer.merchant_raw_name || offer.merchant_name,
-                    merchantPhone: offer.merchant_phone,
-                    merchantAddress: offer.merchant_address,
-                    category: offer.category,
-                    expiresAt: offer.expires_at,
-                  })}
-                  className="w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="relative h-[105px] overflow-hidden bg-slate-100">
-                    <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
-                    <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                      {uiText(tag)}
-                    </span>
-                  </div>
-                  <div className="p-2.5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="line-clamp-1 text-xs font-bold text-gray-900">{offer.title}</h4>
-                      <p className="line-clamp-1 text-[11px] font-semibold text-blue-600 mt-0.5">{offer.merchant_name || uiText("AE Partner Store")}</p>
-                    </div>
-                    <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
-                      <span className="text-gray-500 truncate max-w-[110px]">{offer.merchant_address || "Main Road"}</span>
-                      <span className="text-blue-600 font-bold">{uiText("View →")}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          </CategoryOfferDialog>
         </section>
 
         {/* 8. Favourite Offers (At the very end) */}
-        <section className="space-y-2.5 pt-1" data-aos="fade-up" data-aos-delay="280">
+        <section style={sectionStyle('favourites')} className="ae-discovery-section ae-favourite-section space-y-2.5 pt-1" data-aos="fade-down" data-aos-delay="280">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span className="text-rose-500">❤️</span>
-                <span>{uiText("Favourite Offers")}</span>
+                <span>{uiText("Favourite Shops Offers")}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 {uiText('Offers from your saved shops')}
@@ -577,7 +616,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
           </div>
 
           {!favoriteOffers.length&&<p className="text-sm text-slate-500">{uiText('Save a shop using the heart in Offers or Explore. Its offers will appear here.')}</p>}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="ae-favourite-feed">
             {favoriteOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 1);
               const tag = getOfferDiscountTag(idx);
@@ -587,6 +626,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                   key={`fav-${offer.id}-${idx}`}
                   role="button"
                   tabIndex={0}
+                  onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.currentTarget.click();}}}
                   onClick={() => setSelectedOffer({
                     id: offer.id,
                     title: offer.title,
@@ -598,7 +638,7 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
                     category: offer.category,
                     expiresAt: offer.expires_at,
                   })}
-                  className="group relative overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
+                  className="ae-discovery-card ae-favourite-card group relative overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-xs hover:shadow-md active:scale-[0.98] transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div className="relative h-[95px] overflow-hidden bg-rose-50">
                     <img src={photo} alt={offer.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -648,54 +688,14 @@ export function CustomerHome({ user, preview = false }: { user: UserProfile; pre
         className={`ae-home-floating-points fixed bottom-[calc(84px+env(safe-area-inset-bottom,16px))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-40 transition-all duration-300 transform ${showStickyPoints && !isScrolling ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
           }`}
       >
-        <div className="bg-slate-950/95 backdrop-blur-xl border border-blue-500/40 text-white rounded-2xl px-3.5 py-2.5 shadow-2xl shadow-blue-950/40 flex items-center justify-between gap-2.5 ring-1 ring-blue-500/20">
-          {/* Live Points Compact Left */}
-          <Link to="/customer/transactions" className="flex items-center gap-2 min-w-0 group">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-sm text-white font-black text-xs shrink-0 group-hover:scale-105 transition-transform">
-              ★
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-1 leading-none">
-                <span className="text-sm font-black text-white tracking-tight">{isLoading ? '...' : formattedPoints}</span>
-                <span className="text-[9px] font-black text-cyan-300 uppercase tracking-wide">{uiText("PTS")}</span>
-              </div>
-              <span className="text-[9px] text-sky-200/80 font-medium block mt-0.5">
-                {uiText("Available Balance")}
-              </span>
-            </div>
+        <div className="ae-points-capsule">
+          <Link to="/customer/transactions" className="ae-capsule-balance" aria-label={`${uiText('Available Points:')} ${formattedPoints}. ${uiText('Points History')}`}>
+            <span className="ae-capsule-coin" aria-hidden="true">✦</span>
+            <span className="ae-capsule-total"><small>{uiText('Available Points:')}</small><strong>{isLoading?'…':formattedPoints}<em>{uiText('PTS')}</em></strong></span>
           </Link>
-
-          {/* Actions Right: Claim & Redeem & History */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Quick Claim Button */}
-            <button
-              type="button"
-              onClick={() => navigate('/customer/shop-scan?mode=earn')}
-              className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 active:scale-95 text-white text-xs font-black px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm shadow-blue-500/25"
-              title={uiText("Claim Points on purchase")}
-            >
-              <QrCode size={13} />
-              <span>{uiText("Claim")}</span>
-            </button>
-
-            {/* Quick Redeem Button */}
-            <Link
-              to="/customer/shop-scan?mode=redeem"
-              className="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-black px-2.5 py-1.5 rounded-xl border border-white/20 transition-all flex items-center gap-1 shadow-xs"
-              title={uiText("Redeem Points")}
-            >
-              <Gift size={13} className="text-cyan-300" />
-              <span>{i18n.language.startsWith("ml") ? "ഉപയോഗിക്കുക" : uiText("Redeem")}</span>
-            </Link>
-
-            {/* History Shortcut */}
-            <Link
-              to="/customer/transactions"
-              className="bg-white/10 hover:bg-white/20 active:scale-95 text-sky-200 hover:text-white p-1.5 rounded-xl border border-white/15 transition-all flex items-center justify-center"
-              title={uiText("History")}
-            >
-              <History size={14} />
-            </Link>
+          <div className="ae-capsule-actions">
+            <button type="button" onClick={()=>navigate('/customer/shop-scan?mode=earn')} title={uiText('Claim Points on purchase')}><QrCode size={14}/><span>{uiText('Claim')}</span></button>
+            <Link to="/customer/shop-scan?mode=redeem" title={uiText('Redeem Points')}><Gift size={14}/><span>{i18n.language.startsWith('ml')?'ഉപയോഗിക്കുക':uiText('Redeem')}</span></Link>
           </div>
         </div>
       </aside>

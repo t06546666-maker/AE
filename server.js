@@ -3300,7 +3300,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
 
-  const { data: offers, error } = await supabaseAdmin
+  let { data: offers, error } = await supabaseAdmin
     .from('offers')
     .select('*, merchants(id, name, merchant_code, phone, email, address, latitude, longitude)')
     .eq('status', 'approved')
@@ -3309,6 +3309,16 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     .limit(60);
     
   if (error) return res.status(500).json({ success: false, error: error.message });
+  try {
+    const ids=await require('./backend/customer-home-content.cjs').homeFeaturedOfferIds(supabaseAdmin);
+    const missing=ids.filter(id=>!(offers||[]).some(offer=>offer.id===id));
+    if(missing.length){
+      const featured=await supabaseAdmin.from('offers').select('*, merchants(id,name,merchant_code,phone,email,address,latitude,longitude)').in('id',missing).eq('status','approved').gt('expires_at',new Date().toISOString());
+      if(featured.error)throw featured.error;
+      offers=[...(offers||[]),...(featured.data||[])];
+    }
+  }catch{return res.status(503).json({success:false,error:'Unable to load featured offers.'});}
+
   
   const eligibleMerchants = new Set();
   for (const merchantId of new Set((offers || []).filter(o => o.audience === 'loyal').map(o => o.merchant_id))) {
@@ -3342,6 +3352,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
       merchant_id: o.merchant_id || o.merchants?.id,
       merchant_name: `${name}${phoneTag}`,
       merchant_raw_name: name,
+      merchant_code: o.merchants?.merchant_code || '',
       merchant_phone: phone,
       merchant_address: o.merchants?.address || '',
       category: o.category || '',
@@ -3550,7 +3561,7 @@ registerAdBanners(app, {
   bucket: OFFER_IMAGE_BUCKET,
   signedUrlHelper: signedOfferImageUrl,
   setOfferBannerPathHelper: setOfferBannerPath,
-  uploadImageHelper: uploadOfferImage,
+  uploadImageHelper: (merchantId,file)=>uploadFileToCloudStorage(`banners/${merchantId}/${crypto.randomUUID()}.${offerImageExtension(file.mimetype)||'jpg'}`,file.buffer,file.mimetype),
 });
 
 require('./backend/customer-home-content.cjs').registerCustomerHomeContent(app, {
@@ -4822,6 +4833,7 @@ app.get('/api/offers', requireAuth, async (req, res) => {
     'id,merchant_id,title,description,category,audience,image_path,expires_at,status,rejection_reason,reviewed_at,broadcast_at,created_at,updated_at,merchants(name,merchant_code),offer_campaigns(id,status,total_recipients,queued_count,processing_count,sent_count,delivered_count,read_count,failed_count,skipped_count,started_at,completed_at,created_at)',
     { count: 'exact' },
   ).order('created_at', { ascending: false });
+  if(req.auth.profile.role==='admin'&&req.query.ids){const ids=String(req.query.ids).split(',').filter(id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)).slice(0,50);if(!ids.length)return res.json({success:true,offers:[],pagination:paginationMeta(paging,0)});query=query.in('id',ids);}
   if (req.auth.profile.role === 'merchant') {
     query = query.eq('merchant_id', req.auth.profile.merchant_id);
   }

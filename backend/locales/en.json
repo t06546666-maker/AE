@@ -3211,5 +3211,10 @@
   "ui.WhatsApp accepted": "WhatsApp accepted",
   "ui.Skipped / duplicate": "Skipped / duplicate",
   "ui.Example balance: 200 points. The real balance is filled at send time.": "Example balance: 200 points. The real balance is filled at send time.",
-  "ui.WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.": "WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text."
+  "ui.WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.": "WhatsApp sends the fixed, approved How to use AE guide; it does not use the rotating push text.",
+  "ui.Discover offers from shops around you": "Discover offers from shops around you",
+  "ui.Customers & transactions": "Customers & transactions",
+  "ui.Best Offers": "Best Offers",
+  "ui.Nearby Shops & Offers": "Nearby Shops & Offers",
+  "ui.Favourite Shops Offers": "Favourite Shops Offers"
 }

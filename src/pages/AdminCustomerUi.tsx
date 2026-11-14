@@ -1,65 +1,45 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../api';
-import { uiText } from '../uiText';
-import { CustomerHome } from './customer/Home';
+import {useEffect,useState} from 'react';
+import {createPortal} from 'react-dom';
+import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
+import {apiFetch} from '../api';
+import {CustomerHome} from './customer/Home';
+import {homeSections,sectionNames,type HomeLayout,type HomeSection} from '../customerHomeLayout';
+import type {CustomerOffer} from '../hooks/useCustomerData';
+import './customer-layout-editor.css';
 
-type Content = { version: number; updatedAt: string; sections: unknown[]; banners: Array<Record<string, unknown>>; pageText: Record<string, unknown> };
-
-function CustomerCanvas({width,onSelect}:{width:number;onSelect:(element:HTMLElement)=>void}) {
-  const [body,setBody]=useState<HTMLElement|null>(null);
-  return <iframe title="Actual customer home preview" srcDoc="<!doctype html><html><head></head><body><div id='preview-root'></div></body></html>" style={{width,height:'100%',minHeight:350,border:'1px solid #ccd8e8',background:'white'}} onLoad={event=>{
-    const frame=event.currentTarget,doc=frame.contentDocument;if(!doc)return;
-    doc.head.replaceChildren(...Array.from(document.querySelectorAll('link[rel="stylesheet"],style')).map(node=>node.cloneNode(true)));
-    doc.documentElement.lang=document.documentElement.lang;
-    doc.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();const target=event.target as HTMLElement;if(target.closest('#preview-root'))onSelect(target.closest('img,button,a,h1,h2,h3,p,span,label') as HTMLElement||target);},true);
-    frame.contentWindow?.addEventListener('scroll',()=>window.dispatchEvent(new Event('scroll')),{passive:true});
-    setBody(doc.getElementById('preview-root'));
-  }}>{body&&createPortal(<div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div>,body)}</iframe>;
+type Content=HomeLayout&{version:number;updatedAt:string;banners:unknown[];pageText:Record<string,string>};
+type OfferRow={id:string;title:string;merchant:string;merchantId:string;merchantCode?:string;imageUrl?:string;category?:string;description:string;expiresAt:string};
+function Canvas({width,layout,offers}:{width:number;layout:HomeLayout;offers:CustomerOffer[]}){
+ const [body,setBody]=useState<HTMLElement|null>(null);
+ return <iframe title="Customer layout preview" style={{width,height:760,border:0,background:'#edf4ff'}} srcDoc="<!doctype html><html><head></head><body style='margin:0'><div id='canvas'></div></body></html>" onLoad={event=>{const doc=event.currentTarget.contentDocument;if(!doc)return;doc.body.className='ae-admin-canvas';doc.head.replaceChildren(...Array.from(document.querySelectorAll('link[rel=stylesheet],style')).map(node=>node.cloneNode(true)));doc.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();},true);setBody(doc.getElementById('canvas'));}}>{body&&createPortal(<div className="customer-glass"><CustomerHome preview layoutOverride={layout} offersOverride={offers} user={{id:'admin-preview',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div>,body)}</iframe>;
 }
-
-export function AdminCustomerUi() {
-  if(new URLSearchParams(window.location.search).get('canvas')==='1') return <><style>{`.topbar,.sidebar,.mobile-topbar{display:none!important}.main-content{padding:0!important;max-width:none!important}.app-shell,.shell-body{display:block!important}`}</style><div className="customer-glass"><CustomerHome preview user={{id:'admin-preview',name:'Customer',full_name:'Preview',email:'',role:'customer',merchant_id:null}}/></div></>;
-  return <CustomerUiEditor/>;
-}
-function CustomerUiEditor() {
-  useEffect(()=>{const receive=(event:MessageEvent)=>{if(event.origin!==location.origin||event.data?.type!=='ae-preview-select')return;const key=event.data.key;if(typeof key==='string'){setSelected(key);document.getElementById('edit-'+key)?.focus({preventScroll:true});}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive);},[]);
-  const client = useQueryClient();
-  const query = useQuery({ queryKey: ['admin-customer-home-content'], queryFn: () => apiFetch<{ content: Content }>('/api/admin/customer-home-content') });
-  const [draft, setDraft] = useState<Record<string, string> | null>(null);
-  const [selected, setSelected] = useState('greeting');
-  const [device, setDevice] = useState(360);
-  const [element,setElement]=useState<HTMLElement|null>(null);
-  const [revision,setRevision]=useState(0);
-  const changeElement=(run:(target:HTMLElement)=>void)=>{if(element){run(element);setRevision(revision+1);}};
-  const pick=(target:HTMLElement)=>{if(element)element.style.outline='';target.style.outline='2px solid #5145d7';setElement(target);setRevision(revision+1);};
-  const select = (key: string) => { setSelected(key); document.getElementById('edit-' + key)?.focus({preventScroll:true}); document.getElementById('edit-' + key)?.scrollIntoView({block:'nearest',behavior:'smooth'}); };
-  const save = useMutation({
-    mutationFn: (content: Content) => apiFetch('/api/admin/customer-home-content', { method: 'PUT', body: JSON.stringify(content) }),
-    onSuccess: () => void client.invalidateQueries({ queryKey: ['admin-customer-home-content'] }),
-  });
-  const content = query.data?.content;
-  const initial = { greeting: 'Welcome to AE', subtitle: 'Where customers meet businesses and beyond', trendingTitle: 'Trending Offers', nearbyTitle: 'Nearby Best Offers', exploreLabel: 'Explore', pointsLabel: 'Claim Points', ordersLabel: 'Orders', offersLabel: 'Offers', reportsLabel: 'Reports', moreLabel: 'More', ...(content?.pageText || {}) } as Record<string, string>;
-  const fields: Array<[string, string]> = [['greeting', 'Home greeting'], ['subtitle', 'Home subtitle'], ['trendingTitle', 'Trending offers heading'], ['nearbyTitle', 'Nearby offers heading'], ['exploreLabel', 'Explore button'], ['pointsLabel', 'Claim points button'], ['ordersLabel', 'Orders navigation'], ['offersLabel', 'Offers navigation'], ['reportsLabel', 'Reports navigation'], ['moreLabel', 'More navigation']];
-  const values = draft || initial;
-  const update = (key: string, value: string) => setDraft({ ...values, [key]: value });
-  return <main className="dashboard-page">
-    <div className="page-heading"><div><h1>{uiText('Customer UI Editor')}</h1><p>{uiText('Edit customer-facing text and content settings. Banner images remain in Ad Banners.')}</p></div></div>
-    <section className="panel">
-      {query.isPending ? <p>{uiText('Loading…')}</p> : query.isError ? <p role="alert">{uiText('Customer UI settings are unavailable.')}</p> : <>
-        <div className="admin-ui-editor-grid">
-          <div style={{maxHeight:'calc(100dvh - 220px)',overflowY:'auto',paddingRight:12}}><h2>Click the preview to edit</h2><p>Selected: {fields.find(([key])=>key===selected)?.[1]}</p>
-          {element&&<section className="panel"><h3>Selected {element.tagName.toLowerCase()}</h3><p>These visual adjustments are a local preview draft.</p>{element.tagName==='IMG'?<label>Image URL<input value={(element as HTMLImageElement).getAttribute('src')||''} onChange={e=>{const value=e.target.value;if(value.startsWith('/')||/^https:\/\//.test(value))changeElement(target=>target.setAttribute('src',value));}}/></label>:!element.children.length&&<label>Text<input value={element.textContent||''} onChange={e=>changeElement(target=>{target.textContent=e.target.value;})}/></label>}<label>Text size (px)<input type="number" min="8" max="72" value={parseFloat(element.style.fontSize)||''} onChange={e=>changeElement(target=>{target.style.fontSize=Math.min(72,Math.max(8,Number(e.target.value)))+'px';})}/></label><label>Colour<input type="color" onChange={e=>changeElement(target=>{target.style.color=e.target.value;})}/></label><label>Padding (px)<input type="number" min="0" max="80" onChange={e=>changeElement(target=>{target.style.padding=Math.min(80,Math.max(0,Number(e.target.value)))+'px';})}/></label>{element.tagName==='IMG'&&<label>Image fit<select onChange={e=>changeElement(target=>{target.style.objectFit=e.target.value;})}><option>contain</option><option>cover</option></select></label>}<button type="button" className="button secondary" onClick={()=>{element.style.outline='';setElement(null);}}>Clear selection</button></section>}
-          {fields.map(([key,label])=><label key={key} style={{background:selected===key?'#edf4ff':undefined,padding:8,borderRadius:10}}>{label}<input id={'edit-'+key} value={values[key]||''} onFocus={()=>setSelected(key)} onChange={e=>update(key,e.target.value)}/></label>)}
-          <a href="/admin/banners">Edit banner images and carousel →</a></div>
-          <div className="admin-ui-live-preview" style={{alignSelf:'start',position:'sticky',top:90,maxHeight:'none',overflow:'visible',minWidth:0}}>
-          <h2>Customer preview</h2><select aria-label="Preview device" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={360}>Phone</option><option value={768}>Tablet</option><option value={1100}>Laptop</option></select>
-          <p>Click any outlined text to edit it. Banner uses your actual uploaded images.</p>
-          <div style={{overflow:'auto',height:'calc(100dvh - 310px)',minHeight:350}}><CustomerCanvas width={device} onSelect={pick}/></div></div></div>
-        {save.isError && <p role="alert" className="form-error">{save.error.message}</p>}
-        <button type="button" className="button primary" disabled={save.isPending || !content} onClick={() => save.mutate({ ...content!, pageText: values })}>{save.isPending ? uiText('Saving…') : uiText('Save customer UI')}</button>
-      </>}
-    </section>
-  </main>;
+export function AdminCustomerUi({demoOffers}:{demoOffers?:CustomerOffer[]}){
+ const client=useQueryClient(),demo=!!demoOffers;
+ const query=useQuery({queryKey:['admin-customer-home-content'],queryFn:()=>apiFetch<{content:Content}>('/api/admin/customer-home-content'),enabled:!demo});
+ const bannersQuery=useQuery({queryKey:['customer','home-banners'],queryFn:()=>apiFetch<{banners:{id:string;imageUrl:string;title:string}[]}>('/api/customer/banners')});
+ const [draft,setDraft]=useState<Content|null>(null),[tab,setTab]=useState('best'),[device,setDevice]=useState(390),[search,setSearch]=useState(''),[page,setPage]=useState(1),[notice,setNotice]=useState('');
+ const offerQuery=useQuery({queryKey:['home-editor-offers',search,page],queryFn:()=>apiFetch<{offers:OfferRow[];pagination:{totalPages:number}}>(`/api/offers?status=approved&pageSize=50&page=${page}&search=${encodeURIComponent(search)}`),enabled:!demo});
+ const [known,setKnown]=useState<CustomerOffer[]>(demoOffers||[]);
+ const savedIds=(query.data?.content.sections||[]).flatMap(section=>section.offerIds||[]);
+ const savedOffers=useQuery({queryKey:['home-editor-selected',savedIds.join(',')],queryFn:()=>apiFetch<{offers:OfferRow[]}>(`/api/offers?status=approved&pageSize=50&ids=${encodeURIComponent(savedIds.join(','))}`),enabled:!demo&&savedIds.length>0});
+ useEffect(()=>{if(savedOffers.data)setKnown(old=>{const map=new Map(old.map(o=>[o.id,o]));for(const o of savedOffers.data.offers)map.set(o.id,{id:o.id,title:o.title,description:o.description,imageUrl:o.imageUrl,merchant_id:o.merchantId,merchant_name:o.merchant,merchant_code:o.merchantCode,category:o.category,expires_at:o.expiresAt});return [...map.values()];});},[savedOffers.data]);
+ useEffect(()=>{if(offerQuery.data)setKnown(old=>{const map=new Map(old.map(o=>[o.id,o]));for(const o of offerQuery.data.offers)map.set(o.id,{id:o.id,title:o.title,description:o.description,imageUrl:o.imageUrl,merchant_id:o.merchantId,merchant_name:o.merchant,merchant_code:o.merchantCode,category:o.category,expires_at:o.expiresAt});return [...map.values()];});},[offerQuery.data]);
+ const initial:Content=query.data?.content||{version:1,updatedAt:'',sections:homeSections(),banners:[],pageText:{}};
+ const value=draft||initial,sections=homeSections(value);
+ const change=(patch:Partial<Content>)=>{setDraft({...value,...patch});setNotice('Unsaved changes');};
+ const update=(id:string,patch:Partial<HomeSection>)=>change({sections:sections.map(s=>s.id===id?{...s,...patch}:s)});
+ const move=(id:string,delta:number)=>{const rows=[...sections],i=rows.findIndex(s=>s.id===id),next=i+delta;if(next<0||next>=rows.length)return;[rows[i],rows[next]]=[rows[next],rows[i]];change({sections:rows});};
+ const save=useMutation({mutationFn:async()=>{if(demo)return {content:value};return apiFetch<{content:Content}>('/api/admin/customer-home-content',{method:'PUT',body:JSON.stringify(value)});},onSuccess:result=>{client.setQueryData(['admin-customer-home-content'],result);void client.invalidateQueries({queryKey:['customer-home-content']});setDraft(null);setNotice(demo?'Saved in this demo session only.':'Customer layout saved.');}});
+ const [uploading,setUploading]=useState(false);
+ async function upload(file:File){setUploading(true);try{if(!file.type.startsWith('image/')||file.size>8*1024*1024)throw new Error('Choose an image under 8 MB.');const data=new FormData();data.append('image',file);const result=demo?{url:URL.createObjectURL(file)}:await apiFetch<{url:string}>('/api/admin/customer-home-content/assets',{method:'POST',body:data});const section=sections.find(s=>s.id==='image')!;update('image',{visible:true,images:[...(section.images||[]),{id:crypto.randomUUID(),url:result.url,alt:file.name.replace(/\.[^.]+$/,'')}]});}catch(error){setNotice((error as Error).message);}finally{setUploading(false);}}
+ const selected=sections.find(s=>s.id===tab),rows=demo?known.filter(o=>(o.title+' '+o.merchant_name).toLowerCase().includes(search.toLowerCase())):known.filter(o=>offerQuery.data?.offers.some(row=>row.id===o.id));
+ return <main className="dashboard-page ae-layout-editor"><div className="page-heading"><div><h1>Customer Home Layout</h1><p>Choose images, pick featured offers and arrange the customer home sections.</p></div><button className="button primary" disabled={save.isPending||(!demo&&!query.data)} onClick={()=>save.mutate()}>{save.isPending?'Saving…':demo?'Save demo layout':'Save layout'}</button></div>
+ {!demo&&query.isPending?<p>Loading layout…</p>:!demo&&query.isError?<p role="alert">Unable to load the layout. Please retry.</p>:<><nav className="ae-layout-tabs" aria-label="Layout sections">{[['best','Best Offers'],['trending','Trending Offers'],['carousel','Carousel images'],['image','Image grid'],['order','Section order']].map(([id,title])=><button className={tab===id?'active':''} key={id} onClick={()=>setTab(id)}>{title}</button>)}</nav><p role="status">{save.isError?save.error.message:notice}</p>
+ <div className="ae-layout-columns"><section className="panel ae-layout-controls">
+ {(tab==='best'||tab==='trending')&&<><h2>Choose {sectionNames[tab]}</h2><p>Select approved, unexpired offers. Only eligible customers will see an offer. {tab==='best'?'Choose up to five in the order you want.':''}</p><label><input type="checkbox" checked={selected?.visible!==false} onChange={e=>update(tab,{visible:e.target.checked})}/> Show this section</label><h3>Selected offers</h3>{!selected?.offerIds?.length&&<p>No offers selected. This section will not show cards until you choose them.</p>}{selected?.offerIds?.map((id,i)=><div className="ae-picked-offer" key={id}><span>{i+1}. {known.find(o=>o.id===id)?.title||'Previously selected offer'}</span><button aria-label="Move offer up" disabled={!i} onClick={()=>{const ids=[...selected.offerIds!];[ids[i-1],ids[i]]=[ids[i],ids[i-1]];update(tab,{offerIds:ids});}}>↑</button><button aria-label="Move offer down" disabled={i===selected.offerIds!.length-1} onClick={()=>{const ids=[...selected.offerIds!];[ids[i+1],ids[i]]=[ids[i],ids[i+1]];update(tab,{offerIds:ids});}}>↓</button><button onClick={()=>update(tab,{offerIds:selected.offerIds!.filter(x=>x!==id)})}>Remove</button></div>)}<label>Find an offer or shop<input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search offers…"/></label>{offerQuery.isError&&!demo&&<p role="alert">Unable to load offers.</p>}<div className="ae-offer-picker">{rows.filter(o=>new Date(o.expires_at)>new Date()).map(offer=>{const checked=selected?.offerIds?.includes(offer.id)||false;return <label key={offer.id}><input type="checkbox" checked={checked} disabled={!checked&&tab==='best'&&(selected?.offerIds?.length||0)>=5} onChange={()=>update(tab,{offerIds:checked?selected?.offerIds?.filter(id=>id!==offer.id):[...(selected?.offerIds||[]),offer.id]})}/>{offer.imageUrl&&<img src={offer.imageUrl} alt=""/>}<span><strong>{offer.title}</strong><small>{offer.merchant_name} · {offer.merchant_code}</small></span></label>;})}</div>{!demo&&<div><button disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous</button><span> Page {page} </span><button disabled={page>=(offerQuery.data?.pagination.totalPages||1)} onClick={()=>setPage(p=>p+1)}>Next</button></div>}</>}
+ {tab==='carousel'&&<><h2>Carousel images</h2><p>Keep the existing carousel style. Add, replace or reorder its images in Ad Banners.</p><a className="button secondary" href="/admin/banners">Upload or replace carousel images</a><p>Select images below, then use the arrows to set their order.</p>{(value.carouselIds||bannersQuery.data?.banners.map(row=>row.id)||[]).map((id,i,ids)=>{const banner=bannersQuery.data?.banners.find(row=>row.id===id);return <div className="ae-image-row" key={id}>{banner&&<img src={banner.imageUrl} alt={banner.title}/>}<button disabled={!i} onClick={()=>{const next=[...ids];[next[i-1],next[i]]=[next[i],next[i-1]];change({carouselIds:next});}}>↑</button><button disabled={i===ids.length-1} onClick={()=>{const next=[...ids];[next[i+1],next[i]]=[next[i],next[i+1]];change({carouselIds:next});}}>↓</button><button onClick={()=>change({carouselIds:ids.filter(row=>row!==id)})}>Hide image</button></div>;})}{bannersQuery.data?.banners.filter(banner=>!(value.carouselIds||bannersQuery.data.banners.map(row=>row.id)).includes(banner.id)).map(banner=><button key={banner.id} onClick={()=>change({carouselIds:[...(value.carouselIds||[]),banner.id]})}>Add {banner.title||'image'}</button>)}<label>Carousel image height<input type="range" min="220" max="640" step="20" value={value.carouselHeight||420} onChange={e=>change({carouselHeight:Number(e.target.value)})}/>{value.carouselHeight||420}px on phone; larger screens adapt automatically.</label><p>No text or button styling is changed here.</p></>}
+ {tab==='image'&&<><h2>Image grid</h2><p>Add promotional images here. They will appear in the customer home at the position you choose.</p><label><input type="checkbox" checked={selected?.visible!==false} onChange={e=>update('image',{visible:e.target.checked})}/> Show image grid</label><label>Add image<input type="file" accept="image/*" disabled={uploading} onChange={e=>{if(e.target.files?.[0])void upload(e.target.files[0]);e.target.value='';}}/></label>{uploading&&<p>Uploading…</p>}{selected?.images?.map((image,i)=><div className="ae-image-row" key={image.id}><img src={image.url} alt={image.alt}/><label>Image description<input value={image.alt} onChange={e=>update('image',{images:selected.images!.map(row=>row.id===image.id?{...row,alt:e.target.value}:row)})}/></label><button disabled={!i} onClick={()=>{const imgs=[...selected.images!];[imgs[i-1],imgs[i]]=[imgs[i],imgs[i-1]];update('image',{images:imgs});}}>↑</button><button onClick={()=>update('image',{images:selected.images!.filter(row=>row.id!==image.id)})}>Remove</button></div>)}</>}
+ {tab==='order'&&<><h2>Section order & visibility</h2><p>The carousel stays at the top. Arrange the sections below it.</p>{sections.map((section,i)=><div className="ae-section-order" key={section.id}><label><input type="checkbox" checked={section.visible} onChange={e=>update(section.id,{visible:e.target.checked})}/><span><strong>{sectionNames[section.id]}</strong><small>{['best','trending','image'].includes(section.id)?'Selected by Admin':'Managed by the system'}</small></span></label><button disabled={!i} aria-label={'Move '+sectionNames[section.id]+' up'} onClick={()=>move(section.id,-1)}>↑</button><button disabled={i===sections.length-1} aria-label={'Move '+sectionNames[section.id]+' down'} onClick={()=>move(section.id,1)}>↓</button></div>)}</>}
+ </section><section className="panel ae-layout-preview"><div><h2>Live draft preview</h2><select aria-label="Preview size" value={device} onChange={e=>setDevice(Number(e.target.value))}><option value={390}>Phone</option><option value={768}>Tablet</option><option value={1100}>Desktop</option></select></div><p>Preview changes before saving. Sample customer; customer actions are disabled.</p><div className="ae-canvas-scroll"><Canvas width={device} layout={{...value,sections}} offers={known}/></div></section></div></>}
+ </main>;
 }

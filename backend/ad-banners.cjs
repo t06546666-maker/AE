@@ -290,7 +290,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           try {
             imagePath = await uploadImageHelper(uploadFolder, req.file);
           } catch (uploadErr) {
-            console.warn('[ad-banners] uploadImageHelper error, falling back:', uploadErr.message);
+            throw new Error('Google image storage upload failed. Please retry.');
           }
         }
 
@@ -447,7 +447,7 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           try {
             imagePath = await uploadImageHelper(uploadFolder, req.file);
           } catch (uploadErr) {
-            console.warn('[ad-banners] uploadImageHelper update error:', uploadErr.message);
+            throw new Error('Google image storage upload failed. Please retry.');
           }
         }
 
