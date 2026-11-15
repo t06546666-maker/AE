@@ -49,6 +49,7 @@ export type CustomerOffer = {
   merchant_id?: string;
   merchant_name?: string;
   merchant_raw_name?: string;
+  merchant_code?: string;
   merchant_phone?: string;
   merchant_address?: string;
   category?: string;
