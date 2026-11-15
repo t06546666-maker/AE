@@ -13,3 +13,6 @@ Uses the live backend, existing authentication and existing native Firebase/noti
 Validation: Firebase compatibility, TypeScript and Vite build passed; Capacitor sync and signed Gradle bundleRelease passed. Existing trading-time, IST transaction date and field access checks passed. AAB assets checked for new customer hero, Exclusive Products, featured artwork and review mode. jarsigner verified. No real-device verification claimed.
 
 SHA256: f806011754d9cf04173c8cde3ab4294847f2fe22118421628310ba39ebe3326f
+
+Published Internal testing release 39 on 15 November 2026 at 15:50 (Play Console display). Verified 'Available to internal testers', version code 81 (1.0.80). Zero newly unsupported devices. Only a non-blocking deobfuscation-file warning. No Production promotion.
+
