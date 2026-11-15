@@ -293,10 +293,10 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <span>⭐</span>
-                <span>{homeText('bestOffersTitle','Best Offers')}</span>
+                <span>{homeText('exclusiveProductsTitle','Exclusive Products')}</span>
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
-                {uiText("Top discounts and offers close to you")}
+                {uiText("Discover exclusive products from our partner shops")}
               </p>
             </div>
             <Link to="/customer/explore" className="text-xs font-bold text-blue-600 hover:underline">
@@ -304,7 +304,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             </Link>
           </div>
 
-          <OfferCarousel3D enabled={webCarousel} variant="stack" label={homeText('bestOffersTitle','Best Offers')} fallbackClass="ae-best-offer-carousel" fallbackRef={bestTrack} onInteract={()=>{bestPauseUntil.current=Date.now()+8000;}} onFallbackScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
+          <OfferCarousel3D enabled={webCarousel} variant="stack" label={homeText('exclusiveProductsTitle','Exclusive Products')} fallbackClass="ae-best-offer-carousel" fallbackRef={bestTrack} onInteract={()=>{bestPauseUntil.current=Date.now()+8000;}} onFallbackScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
             {(!webCarousel&&bestOffers.length>1?[...bestOffers,bestOffers[0]]:bestOffers).map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx);
               const tag = getOfferDiscountTag(idx);
