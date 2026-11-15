@@ -1,5 +1,5 @@
 import type {CustomerOffer} from './hooks/useCustomerData';
-export type HomeSection={id:string;visible:boolean;offerIds?:string[];images?:{id:string;url:string;alt:string}[]};
+export type HomeSection={id:string;visible:boolean;offerIds?:string[];images?:{id:string;url:string;alt:string;offerId?:string}[]};
 export type WebBannerOverride={imageUrl?:string;title?:string;subtitle?:string};
 export type HomeLayout={sections:HomeSection[];featuredWebImages?:Record<string,string>;carouselHeight?:number;carouselIds?:string[];carouselWebIds?:string[];carouselWebOverrides?:Record<string,WebBannerOverride>;carouselAppIds?:string[];pageText?:Record<string,string>};
 export const sectionNames:Record<string,string>={trending:'Trending Offers',best:'Exclusive Products',image:'Image block',nearby:'Nearby Shops & Offers',categories:'Category Offers',favourites:'Favourite Shops Offers'};

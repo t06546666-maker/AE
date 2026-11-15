@@ -26,3 +26,7 @@
 .ae-reference-home .ae-3d-controls{padding:8px 0 12px}
 .ae-reference-home .ae-3d-progress{width:70%;max-width:220px;height:3px}
 .ae-reference-home .ae-trending-section:has(.ae-3d-carousel){padding:14px 0 0;border:0;background:transparent;box-shadow:none}
+
+.ae-product-cards .ae-best-card .ae-discovery-copy,.ae-product-cards .ae-best-card .ae-discovery-photo>span,.ae-product-cards .ae-best-card .ae-discovery-photo>div{display:none!important}
+.ae-product-cards .ae-best-card .ae-discovery-photo:after{display:none}
+.ae-product-cards .ae-best-card .ae-discovery-photo img{object-fit:contain}

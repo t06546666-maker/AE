@@ -78,7 +78,8 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const [bestIndex,setBestIndex]=useState(0);
   const curated=!!layout?.sections?.length;
   const featuredImage=(offer:CustomerOffer)=>webCarousel&&layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
-  const bestOffers=(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5)).map(featuredImage);
+  const productCards=webCarousel?(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];}):[];
+  const bestOffers=webCarousel&&(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5)).map(featuredImage);
   const trendingOffers=(curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending)).map(featuredImage);
   const categoryNames=[...new Set(offers.map(offer=>offerCategory(offer.category)))].sort((a,b)=>{const rank=(name:string)=>{const index=OFFER_CATEGORIES.indexOf(name);return index<0?OFFER_CATEGORIES.length:index;};return rank(a)-rank(b);});
   const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:name,icon:<ShoppingBag/>}))];
@@ -288,7 +289,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
 
         {/* 4. Nearby Best Offers (Top-Rated Partner Deals Near Chittur with Photos) */}
         </div></div><div className="ae-discovery-feed px-4 pt-1 space-y-3.5">
-        <section style={sectionStyle('best')} className="ae-discovery-section ae-best-section space-y-2.5 pt-1" data-aos="fade-down" data-aos-delay="120">
+        <section style={sectionStyle('best')} className={`ae-discovery-section ae-best-section space-y-2.5 pt-1 ${productCards.length?'ae-product-cards':''}`} data-aos="fade-down" data-aos-delay="120">
           <div className="ae-home-section-heading flex items-end justify-between">
             <div>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">

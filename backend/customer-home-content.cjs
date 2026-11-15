@@ -22,7 +22,7 @@ function cleanContent(input) {
     sections: Array.isArray(value.sections) ? [...new Map(value.sections.filter(item=>item&&['best','trending','image','nearby','categories','favourites'].includes(item.id)).map(item=>[item.id,{
       id:item.id,visible:item.visible!==false,
       offerIds:Array.isArray(item.offerIds)?[...new Set(item.offerIds.filter(id=>typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))].slice(0,item.id==='best'?5:40):[],
-      images:Array.isArray(item.images)?item.images.filter(image=>image&&/^https:\/\//.test(String(image.url||''))).slice(0,20).map(image=>({id:String(image.id||crypto.randomUUID()).slice(0,100),url:String(image.url).slice(0,1000),alt:String(image.alt||'').slice(0,180)})):[],
+      images:Array.isArray(item.images)?item.images.filter(image=>image&&/^https:\/\//.test(String(image.url||''))).slice(0,20).map(image=>({id:String(image.id||crypto.randomUUID()).slice(0,100),url:String(image.url).slice(0,1000),alt:String(image.alt||'').slice(0,180),...(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(image.offerId||'')?{offerId:image.offerId}:{})})):[],
     }])).values()] : [],
     banners: Array.isArray(value.banners) ? value.banners.slice(0, 40).map((item) => ({
       id: String(item.id || crypto.randomUUID()),
@@ -94,6 +94,6 @@ async function readStoredContent(supabase){
 }
 async function homeFeaturedOfferIds(supabase){
  const value=await readStoredContent(supabase);
- return [...new Set(value.sections.filter(row=>row.visible&&['best','trending'].includes(row.id)).flatMap(row=>row.offerIds))];
+ return [...new Set(value.sections.filter(row=>row.visible&&['best','trending'].includes(row.id)).flatMap(row=>[...row.offerIds,...row.images.map(image=>image.offerId).filter(Boolean)]))];
 }
 module.exports = { registerCustomerHomeContent, SETTINGS_KEY, CONFIG_BUCKET, CONFIG_FILE, cleanContent, homeFeaturedOfferIds, readStoredContent };
