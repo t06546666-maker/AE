@@ -162,3 +162,6 @@
 .ae-reference-home .ae-3d-stack .ae-3d-slide{width:calc(100% - 16px);max-width:none;transform:translateX(calc(-50% + var(--slide-offset)*3px)) translateY(calc(var(--slide-offset)*9px)) translateZ(calc(var(--slide-offset)*-45px)) rotateZ(calc(var(--slide-offset)*-1.5deg)) scale(calc(1 - var(--slide-offset)*.025))}
 .ae-reference-home .ae-3d-stack .ae-best-card .ae-discovery-copy>div:last-child{display:flex;align-items:center;justify-content:space-between;gap:18px;width:fit-content;padding:10px 16px;border:0;border-radius:999px;background:white;color:#16448d;box-shadow:0 4px 12px #07275c24;font-weight:750}
 @media(prefers-reduced-motion:reduce){.ae-reference-home .ae-3d-stack .ae-3d-slide{transform:translateX(calc(-50% + var(--slide-offset)*110%));}}
+
+/* Portrait website artwork is shown whole, matching the approved phone test. */
+.ae-reference-home .ae-has-offer-backdrop:has(.ae-web-carousel) .ae-fixed-hero-background{background-size:cover,contain;background-repeat:no-repeat;background-position:center top;background-color:#08235a}
