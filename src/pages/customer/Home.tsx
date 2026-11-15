@@ -470,7 +470,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                     </div>
                   </div>
                   <div className="ae-nearby-card-footer">
-                    <div className="ae-nearby-copy"><h4>{offer.merchant_name || uiText("AE Partner Store")}</h4><p>{offer.title}</p><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span>{offer.merchant_code&&<small>{offer.merchant_code}</small>}</div>
+                    <div className="ae-nearby-copy"><h4>{offer.merchant_name || uiText("AE Partner Store")}</h4><p>{offer.title}</p><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span></div>
                     <span className="text-blue-600 font-bold">{uiText("View →")}</span>
                   </div>
                 </div>

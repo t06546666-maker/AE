@@ -165,3 +165,15 @@
 
 /* Portrait website artwork is shown whole, matching the approved phone test. */
 .ae-reference-home .ae-has-offer-backdrop:has(.ae-web-carousel) .ae-fixed-hero-background{background-size:cover,contain;background-repeat:no-repeat;background-position:center top;background-color:#08235a}
+
+/* Artwork contracts: product 9:10, trending 9:8, independent of phone width. */
+.ae-reference-home .ae-discovery-section .ae-3d-carousel{container-type:inline-size}
+.ae-reference-home .ae-discovery-section .ae-3d-stack .ae-3d-stage{height:calc((100cqw - 4px) * 10 / 9 + 24px)}
+.ae-reference-home .ae-discovery-section .ae-3d-stack .ae-3d-slide{width:calc(100% - 4px);top:3px}
+.ae-reference-home .ae-discovery-section .ae-3d-stack .ae-best-card{min-height:0}
+.ae-reference-home .ae-discovery-section .ae-3d-stack .ae-best-card .ae-discovery-photo{width:100%;height:auto!important;min-height:0!important;aspect-ratio:9 / 10}
+.ae-reference-home .ae-discovery-section .ae-3d-stack .ae-discovery-photo img{object-fit:contain;transform:none!important}
+.ae-reference-home .ae-discovery-section .ae-3d-coverflow .ae-3d-stage{height:calc(92cqw * 8 / 9 + 100px)}
+.ae-reference-home .ae-discovery-section .ae-3d-coverflow .ae-trending-card .ae-discovery-photo{width:100%;height:auto!important;min-height:0;aspect-ratio:9 / 8}
+.ae-reference-home .ae-discovery-section .ae-3d-coverflow .ae-discovery-photo img{object-fit:contain;transform:none!important}
+.ae-reference-home .ae-discovery-section .ae-3d-coverflow .ae-trending-card .ae-discovery-photo>div,.ae-reference-home .ae-discovery-section .ae-3d-coverflow .ae-trending-card .ae-discovery-photo>span{display:none}
