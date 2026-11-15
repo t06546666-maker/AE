@@ -1,0 +1,13 @@
+import {useState} from 'react';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {counterApi} from '../counterApi';
+import {uiText} from '../uiText';
+import {CheckoutRuleForm,type CheckoutPolicy,type CheckoutPolicyDraft} from './CheckoutRuleForm';
+import {CounterRulePreview} from './CounterRulePreview';
+export function CounterCheckoutRules({staffId}:{staffId:string}){
+ const client=useQueryClient(),[draft,setDraft]=useState<CheckoutPolicyDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false);
+ const settings=useQuery({queryKey:['counter','settings',staffId],queryFn:()=>counterApi<{policy:CheckoutPolicy;canEditRules:boolean}>('/api/counter/settings'),refetchInterval:10000,retry:false});
+ async function save(value:CheckoutPolicy){setBusy(true);setError('');setSaved(false);try{const result=await counterApi<{policy:CheckoutPolicy}>('/api/counter/settings',{method:'PUT',body:JSON.stringify(value)});client.setQueryData(['counter','settings',staffId],{policy:result.policy,canEditRules:true});setDraft(null);setSaved(true);await client.invalidateQueries({queryKey:['counter','counter-history']});}catch(e){setError(e instanceof Error?e.message:'Could not save.');await settings.refetch();}finally{setBusy(false);}}
+ const p=draft||settings.data?.policy;
+ return <section className="panel"><h2>{uiText('Checkout rules')}</h2><p>{uiText('Saved rules apply to new checkout requests for this shop. Existing requests keep their original calculation.')}</p>{settings.isPending&&<p>{uiText('Loading…')}</p>}{(error||settings.error)&&<p role="alert" className="form-error">{uiText(error||settings.error?.message)}</p>}{saved&&<p role="status">{uiText('Checkout rules saved.')}</p>}{settings.data&&!settings.data.canEditRules&&<><p>{uiText('Only the merchant can allow you to edit checkout rules.')}</p><dl>{[['Points per ₹100',settings.data.policy.pointsPer100],['Discount type',uiText(settings.data.policy.discountType==='flat'?'Flat amount':'Percentage')],['Discount value',settings.data.policy.discountType==='flat'?'₹'+settings.data.policy.discountValue:settings.data.policy.discountValue+'%'],['Minimum bill for point redemption (₹)',settings.data.policy.minimumBillAmount]].map(([label,value])=><div key={label}><dt>{uiText(label)}</dt><dd>{value}</dd></div>)}</dl></>}{p&&settings.data?.canEditRules&&<><p>{uiText('The merchant has allowed you to edit these rules. Your changes are recorded for the merchant.')}</p><CheckoutRuleForm p={p} setDraft={value=>{setDraft(value);setSaved(false);}} busy={busy} onSave={save}/><CounterRulePreview policy={p} unsaved={!!draft} counter/></>}</section>;
+}

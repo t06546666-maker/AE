@@ -5988,6 +5988,7 @@ require('./backend/counter-history.cjs').registerCounterHistory(app,{...counterS
 require('./backend/counter-product-lists.cjs').registerCounterProductLists(app,{...counterStaffAccess,db:supabaseAdmin,database:checkoutBillDatabase,imageUrl:signedOfferImageUrl,pushToCustomer,pushToMerchant,pushToRole});
 require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), adminRole: requireRole('admin'), push: pushToMerchant, background: scheduleBackground });
 
+require('./backend/counter-scan.cjs').registerCounterScan(app,{...counterStaffAccess,database:checkoutBillDatabase,discount:redemptionDiscount,points:calculateFixedPurchasePoints,lookupCustomer:async code=>{const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);const result=await supabaseAdmin.from('customers').select('id,customer_code,name,reward_points').eq(uuid?'id':'customer_code',code).maybeSingle();if(result.error)throw Error('Customer verification is temporarily unavailable. Please try again.');return result.data;}});
 async function runMerchantCheckout(req, res) {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);

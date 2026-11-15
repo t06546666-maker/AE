@@ -1,6 +1,7 @@
-const ACTIONS=new Set(['confirmed','returned','cancelled','needs_review','product_list_updated']);
+const ACTIONS=new Set(['confirmed','returned','cancelled','needs_review','product_list_updated','rules_updated']);
 function historyRow(doc){
  const row=doc.data(),result={id:doc.id,action:row.action,staffName:row.staffName||'',customerName:row.customerName||'',customerCode:row.customerCode||'',reason:row.reason||'',createdAt:row.createdAt,orderId:row.orderId||null,requestId:row.requestId||null};
+ if(row.action==='rules_updated'&&row.policy)result.rules={pointsPer100:row.policy.pointsPer100,discountType:row.policy.discountType,discountValue:row.policy.discountValue,minimumBillAmount:row.policy.minimumBillAmount};
  for(const key of ['amount','discountAmount','payable','pointsToEarn','pointsToRedeem'])if(Number.isFinite(row[key]))result[key]=row[key];
  return result;
 }
