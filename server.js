@@ -6004,6 +6004,11 @@ require('./backend/counter-product-lists.cjs').registerCounterProductLists(app,{
 require('./backend/shop-checkout-requests.cjs').registerShopRequests(app, { database: checkoutBillDatabase, supabase: supabaseAdmin, customerAuth: requireCustomerAuth, auth: requireAuth, merchantRole: requireRole('merchant'), adminRole: requireRole('admin'), push: pushToMerchant, background: scheduleBackground });
 
 require('./backend/counter-scan.cjs').registerCounterScan(app,{...counterStaffAccess,database:checkoutBillDatabase,discount:redemptionDiscount,points:calculateFixedPurchasePoints,lookupCustomer:async code=>{const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);const result=await supabaseAdmin.from('customers').select('id,customer_code,name,reward_points').eq(uuid?'id':'customer_code',code).maybeSingle();if(result.error)throw Error('Customer verification is temporarily unavailable. Please try again.');return result.data;}});
+async function redemptionMinimumBill(merchantId) {
+  const db = await checkoutBillDatabase();
+  const snapshot = await db.collection('ae_counter_settings').doc(merchantId).get();
+  return require('./backend/counter-staff.cjs').money(snapshot.data()?.minimumBillAmount ?? 10);
+}
 async function runMerchantCheckout(req, res) {
   const customerCode = cleanText(req.body.customerCode, 100);
   const amount = Number(req.body.amount);
@@ -6028,6 +6033,10 @@ async function runMerchantCheckout(req, res) {
   }
   let redemptionContext = null;
   if (pointsToRedeem > 0) {
+    let minimumBill;
+    try { minimumBill = await redemptionMinimumBill(req.auth.profile.merchant_id); }
+    catch { return res.status(503).json({success:false,error:'Could not verify the shop minimum bill. Please retry.'}); }
+    if (amount < minimumBill) return res.status(400).json({success:false,error:'This shop requires a bill of at least ₹'+minimumBill+' for redemption.'});
     const customerIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerCode);
     const { data: customer, error: customerError } = await supabaseAdmin.from('customers').select('id, reward_points').eq(customerIsUuid ? 'id' : 'customer_code', customerCode).maybeSingle();
     if (customerError) return res.status(500).json({ success: false, error: 'Unable to read customer balance. Please try again.' });
@@ -7379,6 +7388,9 @@ app.post('/api/merchants/:id/redeem', requireAuth, requireRole('merchant'), asyn
     
     if (transactionAmount < 1) return res.status(400).json({ success: false, error: 'Purchase must be at least ₹1.' });
     if (pointsToRedeem !== 100) return res.status(400).json({ success: false, error: 'Redemption is fixed at exactly 100 points' });
+
+    const minimumBill = await redemptionMinimumBill(merchantId);
+    if (transactionAmount < minimumBill) return res.status(400).json({success:false,error:'This shop requires a bill of at least ₹'+minimumBill+' for redemption.'});
 
     // 1. Get Merchant settings
     const settings = await getMerchantRewardSettings(merchantId);

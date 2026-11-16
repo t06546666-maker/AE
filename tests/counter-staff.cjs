@@ -1,8 +1,18 @@
 const merchantMessages=[],staffPushes=[];
 const assert=require('node:assert/strict'),express=require('express');
-const {registerCounterStaff,policy,money,safe,passwordRecord,passwordMatches,assertDecision}=require('../backend/counter-staff.cjs');
+const {registerCounterStaff,policy,quote,money,safe,passwordRecord,passwordMatches,assertDecision}=require('../backend/counter-staff.cjs');
 function memoryDatabase(){const rows=new Map();let sequence=0,tail=Promise.resolve();const snap=path=>({id:path.split('/').at(-1),exists:rows.has(path),data:()=>structuredClone(rows.get(path))});const ref=path=>({id:path.split('/').at(-1),path,get:async()=>snap(path),set:async value=>rows.set(path,structuredClone(value)),update:async value=>{if(!rows.has(path))throw Error('Missing');rows.set(path,{...rows.get(path),...structuredClone(value)});},delete:async()=>rows.delete(path),collection:name=>collection(path+'/'+name)});function collection(path,filters=[],ordering=null,limit=1000,after=null){return {doc:id=>ref(path+'/'+(id||String(++sequence).padStart(20,'a'))),where:(key,op,value)=>collection(path,[...filters,{key,op,value}],ordering,limit,after),orderBy:(key,direction)=>collection(path,filters,{key,direction},limit,after),limit:n=>collection(path,filters,ordering,n,after),startAfter:doc=>collection(path,filters,ordering,limit,doc.id),get:async()=>{let docs=[...rows.keys()].filter(key=>key.startsWith(path+'/')&&!key.slice(path.length+1).includes('/')).map(snap).filter(doc=>filters.every(f=>f.op==='=='?doc.data()[f.key]===f.value:f.op==='>='?doc.data()[f.key]>=f.value:doc.data()[f.key]<f.value));if(ordering)docs.sort((a,b)=>(a.data()[ordering.key]-b.data()[ordering.key])*(ordering.direction==='desc'?-1:1));if(after)docs=docs.slice(docs.findIndex(doc=>doc.id===after)+1);return {docs:docs.slice(0,limit)};}}}const db={rows,collection,runTransaction(fn){const operation=tail.then(async()=>{const writes=[];const tx={get:async ref=>snap(ref.path),set:(ref,value)=>writes.push(()=>rows.set(ref.path,structuredClone(value))),update:(ref,value)=>writes.push(()=>rows.set(ref.path,{...rows.get(ref.path),...structuredClone(value)}))};const result=await fn(tx);writes.forEach(write=>write());return result;});tail=operation.catch(()=>{});return operation;}};return db;}
 async function run(){
+ assert.equal(policy().minimumBillAmount,10);
+ assert.equal(policy({minimumBillAmount:null}).minimumBillAmount,10);
+ assert.equal(policy({minimumBillAmount:1}).minimumBillAmount,1);
+ assert.equal(policy({minimumBillAmount:250}).minimumBillAmount,250);
+ const sampleDiscount=(amount,type,value)=>({amount:amount*value/100}),samplePoints=()=>0;
+ assert.throws(()=>quote(9,'combined',policy(),sampleDiscount,samplePoints),/at least ₹10/);
+ assert.equal(quote(10,'combined',policy(),sampleDiscount,samplePoints).amount,10);
+ assert.equal(quote(1,'combined',policy({minimumBillAmount:1}),sampleDiscount,samplePoints).amount,1);
+ assert.equal(quote(1,'earn',policy(),sampleDiscount,samplePoints).pointsToRedeem,0);
+
  assert.equal(money('300.25'),300.25);for(const value of [0,-1,'1.001','1e3',NaN])assert.throws(()=>money(value));assert.throws(()=>policy({pointsPer100:101}));assert.throws(()=>policy({discountType:'flat',discountValue:50,minimumBillAmount:100}));assert.equal(policy({discountType:'flat',discountValue:5,minimumBillAmount:100}).discountValue,5);
  const password=await passwordRecord('Temporary1');assert.notEqual(password.hash,'Temporary1');assert(await passwordMatches('Temporary1',password));assert.equal(await passwordMatches('wrong',password),false);assert.equal('hash' in safe({...password}),false);
  const db=memoryDatabase(),app=express();app.use(express.json());const shopA='11111111-1111-4111-8111-111111111111',shopB='22222222-2222-4222-8222-222222222222';
