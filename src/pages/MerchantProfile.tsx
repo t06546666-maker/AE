@@ -1,3 +1,4 @@
+import {MerchantUpiSettings} from '../components/MerchantUpiSettings';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Store, MapPin } from 'lucide-react';
@@ -33,6 +34,7 @@ export function MerchantProfile({ user }: { user: UserProfile }) {
       {shop.latitude != null && shop.longitude != null && <a className="button secondary" target="_blank" rel="noopener noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`}><MapPin size={17} />{uiText('View shop on map')}</a>}
       <p style={{ marginTop: 20 }}>{uiText('Contact admin to update your business details.')}</p>
     </section>
+    <MerchantUpiSettings/>
     <MerchantTradingTimes merchantId={user.merchant_id} role="merchant"/>
     <section className="panel merchant-operating-settings">
       <h2>{uiText('Operating settings')}</h2>

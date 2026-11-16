@@ -3249,5 +3249,19 @@
   "ui.Staff confirms the bill amount, not whether payment was received. Only staff permitted by the merchant can change these rules.": "Staff confirms the bill amount, not whether payment was received. Only staff permitted by the merchant can change these rules.",
   "ui.Redemption uses 100 points. Existing earning limits apply. Changing rules does not confirm payment receipt.": "Redemption uses 100 points. Existing earning limits apply. Changing rules does not confirm payment receipt.",
   "ui.Staff sign in through Counter Staff Login below Merchant Login. They cannot access CRM or reports. You control permission to edit checkout rules.": "Staff sign in through Counter Staff Login below Merchant Login. They cannot access CRM or reports. You control permission to edit checkout rules.",
-  "ui.Choose a valid rules permission.": "Choose a valid rules permission."
+  "ui.Choose a valid rules permission.": "Choose a valid rules permission.",
+  "UPI payment settings": "UPI payment settings",
+  "Internal testing: add your shop’s UPI ID and payment QR. Verify the recipient in your UPI app before paying.": "Internal testing: add your shop’s UPI ID and payment QR. Verify the recipient in your UPI app before paying.",
+  "Shop UPI ID": "Shop UPI ID",
+  "Enable UPI payment links for this shop": "Enable UPI payment links for this shop",
+  "Shop payment QR image": "Shop payment QR image",
+  "Shop payment QR": "Shop payment QR",
+  "The uploaded QR must belong to the same UPI ID. AE does not verify payment receipt.": "The uploaded QR must belong to the same UPI ID. AE does not verify payment receipt.",
+  "Save payment settings": "Save payment settings",
+  "Payment settings saved.": "Payment settings saved.",
+  "QR image saved.": "QR image saved.",
+  "Could not load payment settings.": "Could not load payment settings.",
+  "Could not save payment settings.": "Could not save payment settings.",
+  "Could not save QR image.": "Could not save QR image.",
+  "Check the shop name, UPI ID and amount in your UPI app before paying. Returning to AE does not confirm payment; confirm receipt at the shop.": "Check the shop name, UPI ID and amount in your UPI app before paying. Returning to AE does not confirm payment; confirm receipt at the shop."
 }

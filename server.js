@@ -3844,6 +3844,8 @@ app.get('/api/offers-performance', requireAuth, requireRole('merchant'), async (
   } catch(error) { return res.status(500).json({ error:error.message }); }
 });
 
+const merchantUpi = require('./backend/merchant-upi.cjs').registerMerchantUpi(app,{auth:requireAuth,merchantRole:requireRole('merchant'),database:checkoutBillDatabase,upload:shopImageUpload,uploadImage:uploadFileToCloudStorage});
+
 app.get('/api/merchant-profile', requireAuth, requireRole('merchant'), async (req, res) => {
   const merchantId = req.auth.profile.merchant_id;
   if (!merchantId) return res.status(404).json({ error: 'No merchant account is linked to this login.' });
@@ -5964,7 +5966,8 @@ app.get('/api/customer/checkout-bills', requireCustomerAuth, async (req, res) =>
     const snapshot = await database.collection('ae_checkout_bills').where('customerId', '==', req.customer.id).where('dismissed', '==', false).get();
     const pending = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.createdAt > Date.now() - 86400000).sort((a,b) => a.createdAt - b.createdAt).slice(0,20);
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ bills: pending });
+    const bills = await Promise.all(pending.map(async bill => { let payment=null; try { if(bill.merchantId) payment=merchantUpi.paymentDetails(await merchantUpi.read(bill.merchantId),bill.merchantName,Number(bill.payable)); } catch {} return {...bill,payment}; }));
+    return res.json({ bills });
   } catch (error) { console.warn('Checkout bill lookup failed:', error.message); return res.status(503).json({ error: 'Bill notifications are currently unavailable.' }); }
 });
 app.post('/api/customer/checkout-bills/:id/dismiss', requireCustomerAuth, async (req, res) => {

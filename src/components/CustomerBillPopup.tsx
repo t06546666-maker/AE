@@ -11,8 +11,8 @@ import { Banknote, CheckCircle2, QrCode, ReceiptText, X } from 'lucide-react';
 import './customer-bill-popup.css';
 
 type UpiApp = { id: string; name: string };
-const upi = registerPlugin<{ list(): Promise<{ apps: UpiApp[] }>; open(options: { id: string }): Promise<void> }>('UpiApps');
-type Bill = { id: string; merchantName: string; total: number; discount: number; payable: number; paymentMode?: 'cash' | 'customer_payment'; paymentStatus?: 'paid' | 'pending' };
+const upi = registerPlugin<{ list(): Promise<{ apps: UpiApp[] }>; open(options: { id: string; url?: string }): Promise<void> }>('UpiApps');
+type Bill = { payment?: {upiId:string;qrUrl:string;upiUrl:string}|null; id: string; merchantName: string; total: number; discount: number; payable: number; paymentMode?: 'cash' | 'customer_payment'; paymentStatus?: 'paid' | 'pending' };
 export function CustomerBillPopup({ customerId }: { customerId: string }) {
   const client = useQueryClient(),navigate=useNavigate();
   const [notice,setNotice]=useState<PaymentNotice|null>(null);
@@ -48,7 +48,7 @@ export function CustomerBillPopup({ customerId }: { customerId: string }) {
   async function openUpiApp(app: UpiApp) {
     if (opening) return;
     setOpening(true); setError('');
-    try { if(!bill)return;pendingUpi.current={bill:{...bill},departed:false};await upi.open({ id: app.id }); setUpiApps([]); }
+    try { if(!bill)return;pendingUpi.current={bill:{...bill},departed:false};await upi.open({ id: app.id, ...(bill.payment?.upiUrl ? {url:bill.payment.upiUrl} : {}) }); setUpiApps([]); }
     catch { pendingUpi.current=null;setError(uiText('Could not open this UPI app. Try another one.')); }
     finally { setOpening(false); }
   }
@@ -62,11 +62,12 @@ export function CustomerBillPopup({ customerId }: { customerId: string }) {
     {cashReceived ? <div className="ae-bill-cash-confirmed" role="status"><CheckCircle2 size={23}/><div><strong>{uiText("Cash received")}</strong><span>{uiText("The merchant confirmed this payment. No further payment is due.")}</span></div></div> : <>
       <div className="ae-bill-payment-options">
         <button type="button" className="ae-bill-cash" disabled={busy || opening} onClick={() => {pendingUpi.current=null;setError('');setNotice({kind:'cash',bill:{...bill}});}}><Banknote size={19}/>{uiText("Pay with cash")}</button>
-        <button type="button" className="button primary ae-bill-pay" disabled={opening || busy} onClick={() => void chooseUpiApp()}>{opening ? uiText("Opening UPI apps…") : uiText("Scan shop QR in UPI app")}<QrCode size={18}/></button>
+        <button type="button" className="button primary ae-bill-pay" disabled={opening || busy} onClick={() => void chooseUpiApp()}>{opening ? uiText("Opening UPI apps…") : bill.payment ? uiText("Pay with UPI") : uiText("Scan shop QR in UPI app")}<QrCode size={18}/></button>
       </div>
       {upiApps.length > 0 && <div className="ae-bill-apps" aria-label={uiText("Choose a UPI app")}><h3>{uiText("Choose a UPI app")}</h3><div>{upiApps.map(app => <button type="button" className="ae-bill-app" key={app.id} disabled={opening} onClick={() => void openUpiApp(app)}><span className={`ae-bill-app-mark ${app.name.toLowerCase().replace(/[^a-z]/g, '')}`}>{app.name[0]}</span>{app.name}<QrCode size={16}/></button>)}</div></div>}
       {error && <p role="alert" className="form-error">{error}</p>}
-      <p className="ae-bill-note">{uiText("This only opens your UPI app. Choose Scan QR there and scan the shop’s own QR code. AE does not start or confirm a payment.")}</p>
+      {bill.payment?.qrUrl && <div style={{textAlign:'center',margin:'12px 0'}}><a href={bill.payment.qrUrl} target="_blank" rel="noopener noreferrer"><img src={bill.payment.qrUrl} alt={uiText("Shop payment QR")} style={{width:180,height:180,maxWidth:'100%',objectFit:'contain',background:'#fff'}}/></a><p>{bill.payment.upiId}</p></div>}
+      <p className="ae-bill-note">{bill.payment ? uiText("Check the shop name, UPI ID and amount in your UPI app before paying. Returning to AE does not confirm payment; confirm receipt at the shop.") : uiText("This only opens your UPI app. Choose Scan QR there and scan the shop’s own QR code. AE does not start or confirm a payment.")}</p>
     </>}
   </section></div>;
 }

@@ -3346,5 +3346,19 @@
   "ui.Staff confirms the bill amount, not whether payment was received. Only staff permitted by the merchant can change these rules.": "ജീവനക്കാരൻ ബിൽ തുകയാണ് സ്ഥിരീകരിക്കുന്നത്; പണം ലഭിച്ചതല്ല. വ്യാപാരി അനുമതി നൽകിയ ജീവനക്കാർക്ക് മാത്രമേ ഈ നിയമങ്ങൾ മാറ്റാനാകൂ.",
   "ui.Redemption uses 100 points. Existing earning limits apply. Changing rules does not confirm payment receipt.": "റിഡംപ്ഷന് 100 പോയിന്റ് ഉപയോഗിക്കും. നിലവിലുള്ള പോയിന്റ് സമ്പാദന പരിധികൾ ബാധകമാണ്. നിയമങ്ങൾ മാറ്റുന്നത് പണം ലഭിച്ചതിന്റെ സ്ഥിരീകരണമല്ല.",
   "ui.Staff sign in through Counter Staff Login below Merchant Login. They cannot access CRM or reports. You control permission to edit checkout rules.": "Merchant Login-ന് താഴെയുള്ള Counter Staff Login വഴി ജീവനക്കാർക്ക് പ്രവേശിക്കാം. CRM-ഉം റിപ്പോർട്ടുകളും കാണാനാകില്ല. ചെക്ക്ഔട്ട് നിയമങ്ങൾ തിരുത്താനുള്ള അനുമതി നിങ്ങൾ നിയന്ത്രിക്കും.",
-  "ui.Choose a valid rules permission.": "നിയമങ്ങൾ തിരുത്താനുള്ള സാധുവായ അനുമതി തിരഞ്ഞെടുക്കുക."
+  "ui.Choose a valid rules permission.": "നിയമങ്ങൾ തിരുത്താനുള്ള സാധുവായ അനുമതി തിരഞ്ഞെടുക്കുക.",
+  "UPI payment settings": "UPI പേയ്‌മെന്റ് ക്രമീകരണങ്ങൾ",
+  "Internal testing: add your shop’s UPI ID and payment QR. Verify the recipient in your UPI app before paying.": "നിങ്ങളുടെ കടയുടെ UPI ID, പേയ്‌മെന്റ് QR എന്നിവ ചേർക്കുക. പണം നൽകുന്നതിനു മുമ്പ് UPI ആപ്പിൽ സ്വീകർത്താവിനെ പരിശോധിക്കുക.",
+  "Shop UPI ID": "കടയുടെ UPI ID",
+  "Enable UPI payment links for this shop": "ഈ കടയ്ക്ക് UPI പേയ്‌മെന്റ് ലിങ്ക് പ്രവർത്തനക്ഷമമാക്കുക",
+  "Shop payment QR image": "കടയുടെ പേയ്‌മെന്റ് QR ചിത്രം",
+  "Shop payment QR": "കടയുടെ പേയ്‌മെന്റ് QR",
+  "The uploaded QR must belong to the same UPI ID. AE does not verify payment receipt.": "ചേർത്ത QR ഇതേ UPI ID-യുടേതായിരിക്കണം. പണം ലഭിച്ചതായി AE സ്ഥിരീകരിക്കുന്നില്ല.",
+  "Save payment settings": "പേയ്‌മെന്റ് ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുക",
+  "Payment settings saved.": "പേയ്‌മെന്റ് ക്രമീകരണങ്ങൾ സംരക്ഷിച്ചു.",
+  "QR image saved.": "QR ചിത്രം സംരക്ഷിച്ചു.",
+  "Could not load payment settings.": "പേയ്‌മെന്റ് ക്രമീകരണങ്ങൾ ലഭ്യമല്ല.",
+  "Could not save payment settings.": "പേയ്‌മെന്റ് ക്രമീകരണങ്ങൾ സംരക്ഷിക്കാനായില്ല.",
+  "Could not save QR image.": "QR ചിത്രം സംരക്ഷിക്കാനായില്ല.",
+  "Check the shop name, UPI ID and amount in your UPI app before paying. Returning to AE does not confirm payment; confirm receipt at the shop.": "പണം നൽകുന്നതിനു മുമ്പ് UPI ആപ്പിൽ കടയുടെ പേര്, UPI ID, തുക എന്നിവ പരിശോധിക്കുക. AE-യിലേക്ക് മടങ്ങിയെത്തുന്നത് പേയ്‌മെന്റ് സ്ഥിരീകരണമല്ല. കടയിൽ പണം ലഭിച്ചെന്ന് ഉറപ്പാക്കുക."
 }
