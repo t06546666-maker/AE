@@ -433,13 +433,14 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             </Link>
           </div>
 
-          <div className="ae-nearby-offer-rail">
+          <div className="ae-nearby-offer-rail ae-circle-orbit" style={{'--orbit-duration':`${Math.max(1,nearbyOffers.length)*4}s`} as CSSProperties}>
             {nearbyOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 2);
               const tag = getOfferDiscountTag(idx + 1);
               return (
                 <div
                   key={`nearby-${offer.id}-${idx}`}
+                  style={{animationDelay:`-${idx*4}s`} as CSSProperties}
                   role="button"
                   tabIndex={0}
                   onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.currentTarget.click();}}}
