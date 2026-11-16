@@ -1,4 +1,5 @@
 import {OfferCarousel3D} from '../../components/OfferCarousel3D';
+import {FavouriteWheel} from '../../components/FavouriteWheel';
 import {categoryArtwork} from '../../categoryArtwork';
 import {Capacitor} from '@capacitor/core';
 import {OFFER_CATEGORIES,offerCategory} from '../../offerCategories';
@@ -616,7 +617,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
 
           {!favoriteOffers.length&&<p className="text-sm text-slate-500">{uiText('Save a shop using the heart in Offers or Explore. Its offers will appear here.')}</p>}
-          <div className="ae-favourite-feed">
+          <FavouriteWheel>
             {favoriteOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 1);
               const tag = getOfferDiscountTag(idx);
@@ -677,7 +678,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
               );
             })}
-          </div>
+          </FavouriteWheel>
         </section>
 
       </div>
