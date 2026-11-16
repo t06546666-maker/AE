@@ -99,7 +99,7 @@ function registerShopRequests(app, {database, supabase, customerAuth, auth, merc
       const db=await database(),ref=db.collection('ae_shop_requests').doc(id);
       await db.runTransaction(async tx=>{const doc=await tx.get(ref);const row=doc.exists?doc.data():null;assertPending(row,req.auth.profile.merchant_id);if(req.body.customerCode!==row.customerCode||Number(req.body.pointsToRedeem||0)!==(row.action==='combined'?100:0))throw new Error('Checkout does not match customer request');tx.update(ref,{status:'processing'});});
       req.headers['idempotency-key']='shop-'+id;
-      res.once('finish',()=>background(()=>ref.update({status:res.statusCode<400?'completed':'needs_review',finishedAt:Date.now()}).catch(()=>{})));
+      res.once('finish',()=>background(()=>ref.update(res.statusCode<400?{status:'completed',finishedAt:Date.now()}:req.checkoutPurchaseStarted?{status:'needs_review',finishedAt:Date.now()}:{status:'pending',expiresAt:Date.now()+TTL,lastValidationFailedAt:Date.now()}).catch(()=>{})));
       next();
     }catch(error){res.status(409).json({error:error.message});}
   });

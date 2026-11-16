@@ -6048,6 +6048,7 @@ async function runMerchantCheckout(req, res) {
     redemptionContext = { customer, membership, discountPercentage: discount.percentage, discountAmount: discount.amount, discountType: discount.type, discountValue: discount.value };
   }
   
+  req.checkoutPurchaseStarted = true;
   const { data, error, redemption: atomicRedemption } = await processPurchase({
     p_customer_code: customerCode,
     p_merchant_id: req.auth.profile.merchant_id,
