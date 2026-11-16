@@ -9,3 +9,5 @@ Customer: on a checkout bill, Pay with UPI opens the selected installed UPI app 
 Validation: TypeScript/build, UPI validation and isolation tests, gateway-disabled regression, Counter Staff tests. Physical UPI handoff/payment must be verified by the tester on Android.
 
 Release: versionCode 84, versionName 1.0.83. Internal testing only; do not promote to Production.
+
+Published to Internal testing on 16 November 2026. Play Console verified “Available to internal testers”, release 41. Backend commit 532f5af deployed successfully; protected live settings route returns 401 without authentication. No Production promotion.
