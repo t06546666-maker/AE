@@ -472,7 +472,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                     </div>
                   </div>
                   <div className="ae-nearby-card-footer">
-                    <div className="ae-nearby-copy"><h4>{offer.merchant_name || uiText("AE Partner Store")}</h4><p>{offer.title}</p><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span></div>
+                    <div className="ae-nearby-copy"><h4>{offer.merchant_raw_name || offer.merchant_name || uiText("AE Partner Store")}</h4><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span></div>
                     <span className="text-blue-600 font-bold">{uiText("View →")}</span>
                   </div>
                 </div>
@@ -657,24 +657,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                       <Heart size={14} className={isFav ? 'fill-rose-500 text-rose-500' : ''} />
                     </button>
                   </div>
-                  <div className="p-2.5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="line-clamp-1 text-xs font-bold text-gray-900 leading-tight">
-                        {offer.title}
-                      </h4>
-                      <p className="mt-0.5 line-clamp-1 text-[10px] text-gray-500 font-medium">
-                        {offer.merchant_name || uiText("AE Partner Store")}
-                      </p>
-                    </div>
-                    <div className="mt-2 pt-1 border-t border-rose-50 flex items-center justify-between text-[10px]">
-                      <span className="text-blue-600 font-bold">
-                        {uiText(tag)}
-                      </span>
-                      <span className="text-rose-600 font-bold group-hover:translate-x-0.5 transition-transform">
-                        {uiText("View →")}
-                      </span>
-                    </div>
-                  </div>
+                  <div className="ae-nearby-card-footer"><div className="ae-nearby-copy"><h4>{offer.merchant_raw_name || offer.merchant_name || uiText("AE Partner Store")}</h4><span><MapPin size={12}/>{offer.merchant_address || uiText("Location unavailable")}</span></div>{typeof offer.distance==='number'&&<small className="ae-shop-distance">{offer.distance.toFixed(1)} km</small>}</div>
                 </div>
               );
             })}
