@@ -13,10 +13,16 @@ import { apiFetch } from '../../api';
 export function CustomerExplore({userId}:{userId:string}) {
   const routeLocation = useLocation();
   useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.querySelectorAll('.main-content,.shell-body').forEach(element => {
-      element.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    });
+    const reset = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant'});
+      document.querySelectorAll('.main-content,.shell-body,.app-shell,#root').forEach(element => {
+        element.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      });
+    };
+    reset();
+    const frame=requestAnimationFrame(reset);
+    return ()=>cancelAnimationFrame(frame);
   }, [routeLocation.key]);
   const [reviewError, setReviewError] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
