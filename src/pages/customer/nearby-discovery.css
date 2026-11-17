@@ -189,3 +189,5 @@
 .ae-reference-home .ae-nearby-card>div:first-child>div,.ae-reference-home .ae-nearby-card>div:first-child>span:first-of-type,.ae-reference-home .ae-favourite-card>div:first-child>div,.ae-reference-home .ae-favourite-card>div:first-child>span{display:none}
 .ae-reference-home .ae-nearby-card-footer{padding:10px 12px;min-height:62px;gap:8px}.ae-reference-home .ae-nearby-card-footer>span{display:none}.ae-reference-home .ae-nearby-copy h4{font-size:13px;font-weight:800;margin:0 0 5px}.ae-reference-home .ae-nearby-copy>span{display:flex;align-items:center;gap:4px;font-size:11px;color:#63738d}.ae-shop-distance{white-space:nowrap;color:#1266c5;font-weight:700}
 .ae-reference-home .ae-circle-orbit,.ae-reference-home .ae-favourite-wheel-stage{height:360px}.ae-reference-home .ae-favourite-wheel-panel .ae-favourite-card{min-height:0}
+.ae-reference-home .ae-home-section-heading h3{font-size:18px;line-height:1.35;font-weight:800}
+@media(min-width:768px){.ae-reference-home .ae-home-section-heading h3{font-size:20px}}
