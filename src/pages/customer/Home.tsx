@@ -472,7 +472,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                   </div>
                   <div className="ae-nearby-card-footer">
                     <div className="ae-nearby-copy"><h4>{offer.merchant_raw_name || offer.merchant_name || uiText("AE Partner Store")}</h4></div>
-                    <span className="text-blue-600 font-bold">{uiText("View →")}</span>
+                    {typeof offer.distance==='number'&&<small className="ae-shop-distance">{offer.distance.toFixed(1)} km</small>}
                   </div>
                 </div>
               );
