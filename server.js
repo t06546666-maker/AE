@@ -7382,7 +7382,6 @@ require('./backend/expenses.cjs').registerExpenses(app, {db:supabaseAdmin,auth:s
 module.exports = app;
 
 const PORT = process.env.PORT || 3000;
-require('./backend/app-update-policy.cjs').registerAppUpdatePolicy(app,{supabase:supabaseAdmin,auth:requireAuth,adminRole:requireRole('admin')});
 if (require.main === module) app.listen(PORT, () => {
   console.log(`\n🚀  AE → http://localhost:${PORT}`);
   console.log(`    Resend   : ${process.env.RESEND_API_KEY ? '✅' : '❌ RESEND_API_KEY not set'}`);
