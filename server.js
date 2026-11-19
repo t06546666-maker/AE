@@ -782,7 +782,17 @@ function saveLocalBannerPath(offerId, bannerPath) {
   } catch (_) {}
 }
 
+const { createReadCache } = require('./backend/read-cache.cjs');
+const bannerReadCache = createReadCache({ ttlMs: 30000 });
+const signedImageCache = createReadCache({ ttlMs: 45 * 60 * 1000, cacheable: Boolean });
+
 async function getOfferBannerPath(offerId) {
+  const local = getLocalBannerPath(offerId);
+  if (local) return local;
+  return bannerReadCache.get(offerId, () => readOfferBannerPath(offerId));
+}
+
+async function readOfferBannerPath(offerId) {
   const local = getLocalBannerPath(offerId);
   if (local) return local;
   try {
@@ -804,6 +814,7 @@ async function getOfferBannerPath(offerId) {
 }
 
 async function setOfferBannerPath(offerId, bannerPath) {
+  bannerReadCache.delete(offerId);
   saveLocalBannerPath(offerId, bannerPath);
   try {
     if (bannerPath) {
@@ -892,14 +903,17 @@ async function signedOfferImageUrl(imagePath) {
   if (isCloudStorageUrl(imagePath)) {
     return imagePath;
   }
-  const { data, error } = await supabaseAdmin.storage
-    .from(OFFER_IMAGE_BUCKET)
-    .createSignedUrl(imagePath, 60 * 60);
-  return error ? '' : data.signedUrl;
+  return signedImageCache.get(imagePath, async () => {
+    const { data, error } = await supabaseAdmin.storage
+      .from(OFFER_IMAGE_BUCKET)
+      .createSignedUrl(imagePath, 60 * 60);
+    return error ? '' : data.signedUrl;
+  });
 }
 
 async function deleteOfferStorageImage(pathOrUrl) {
   if (!pathOrUrl) return;
+  signedImageCache.delete(pathOrUrl);
   if (isCloudStorageUrl(pathOrUrl)) {
     await deleteFileFromCloudStorage(pathOrUrl);
   } else {
@@ -3342,13 +3356,16 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
     const phoneTag = phone ? ` • 📞 ${phone}` : '';
     const name = o.merchants?.name || 'Store';
     const dist = nearby ? calculateDistance(latitude, longitude, o.merchants?.latitude, o.merchants?.longitude) : Infinity;
+    const offerImageUrl = await signedOfferImageUrl(o.image_path);
+    const bannerPath = o.banner_image_path || await getOfferBannerPath(o.id);
+    const bannerImageUrl = bannerPath ? await signedOfferImageUrl(bannerPath) : null;
     return {
       id: o.id,
       title: o.title,
       description: o.description || '',
-      imageUrl: await signedOfferImageUrl(o.image_path),
-      bannerImageUrl: (o.banner_image_path || await getOfferBannerPath(o.id)) ? await signedOfferImageUrl(o.banner_image_path || await getOfferBannerPath(o.id)) : null,
-      offerImageUrl: await signedOfferImageUrl(o.image_path),
+      imageUrl: offerImageUrl,
+      bannerImageUrl,
+      offerImageUrl,
       merchant_id: o.merchant_id || o.merchants?.id,
       merchant_name: `${name}${phoneTag}`,
       merchant_raw_name: name,
