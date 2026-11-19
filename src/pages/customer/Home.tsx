@@ -108,7 +108,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   }, [offers, selectedCategory]);
 
   const nearbyOffers = useMemo(() => {
-    return offers.slice(0, 8);
+    return offers;
   }, [offers]);
 
   const categoryDefaultImages: Record<string, string> = {

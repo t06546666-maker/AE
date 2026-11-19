@@ -4,13 +4,14 @@ export function FavouriteWheel({children,autoPlay=false,label='Favourite shops c
  const cards=Children.toArray(children),start=useRef<{x:number;y:number}|null>(null),swiped=useRef(false);
  const [turn,setTurn]=useState(0),[drag,setDrag]=useState(0);
  const count=cards.length,step=360/Math.max(1,count);
+ const radius=180*Math.max(1,count/8);
  const [paused,setPaused]=useState(false),pauseUntil=useRef(0);
  useEffect(()=>{if(!autoPlay||count<2||paused||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;const timer=window.setInterval(()=>{if(!document.hidden&&!start.current&&Date.now()>pauseUntil.current)setTurn(t=>t+1);},4000);return()=>window.clearInterval(timer);},[autoPlay,count,paused]);
  if(!count)return null;
  const active=((turn%count)+count)%count;
  return <div className={`ae-favourite-wheel ${autoPlay?'ae-nearby-interactive-wheel':''}`} role="region" aria-label={label} onPointerDownCapture={()=>{pauseUntil.current=Date.now()+10000;}} onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onFocusCapture={()=>setPaused(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget))setPaused(false);}} onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();setTurn(t=>t+(e.key==='ArrowRight'?1:-1));}}}>
  <div className="ae-favourite-wheel-stage" onPointerDown={e=>{start.current={x:e.clientX,y:e.clientY};swiped.current=false;}} onPointerMove={e=>{if(!start.current)return;const dx=e.clientX-start.current.x,dy=e.clientY-start.current.y;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>8){swiped.current=true;setDrag(Math.max(-60,Math.min(60,dx)));}}} onPointerUp={e=>{if(start.current&&swiped.current){const dx=e.clientX-start.current.x;if(Math.abs(dx)>35)setTurn(t=>t+(dx<0?1:-1));}start.current=null;setDrag(0);}} onPointerCancel={()=>{start.current=null;setDrag(0);}} onPointerLeave={()=>{start.current=null;setDrag(0);}} onClickCapture={e=>{if(swiped.current){e.preventDefault();e.stopPropagation();swiped.current=false;}}}>
- {cards.map((card,i)=>{const angle=(i-turn)*step+drag*.45;return <div key={i} className="ae-favourite-wheel-panel" inert={i!==active} aria-hidden={i!==active} style={{transform:count===1?'translateX(-50%)':`translateX(-50%) translateZ(-180px) rotateY(${angle}deg) translateZ(180px)`,zIndex:i===active?10:1,opacity:i===active?1:.45}}>{card}</div>;})}
+ {cards.map((card,i)=>{const angle=(i-turn)*step+drag*.45;return <div key={i} className="ae-favourite-wheel-panel" inert={i!==active} aria-hidden={i!==active} style={{transform:count===1?'translateX(-50%)':`translateX(-50%) translateZ(${-radius}px) rotateY(${angle}deg) translateZ(${radius}px)`,zIndex:i===active?10:1,opacity:i===active?1:.45}}>{card}</div>;})}
  </div>
  {count>1&&<div className="ae-favourite-wheel-navigation"><button type="button" aria-label="Previous favourite shop" onClick={()=>setTurn(t=>t-1)}>‹</button><span aria-live="polite">{active+1} / {count}</span><button type="button" aria-label="Next favourite shop" onClick={()=>setTurn(t=>t+1)}>›</button></div>}
  </div>;
