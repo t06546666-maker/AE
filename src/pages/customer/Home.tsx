@@ -33,7 +33,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const homeContent = useQuery({queryKey:['customer-home-content'],queryFn:()=>apiFetch<{content:HomeLayout}>('/api/customer/home-content'),refetchInterval:30000});
   const layout=layoutOverride||homeContent.data?.content;
   const sections=homeSections(layout);
-  const webCarousel=(carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))==='web';
+  const webCarousel=true;
   const sectionStyle=(id:string)=>({order:sections.findIndex(row=>row.id===id),display:sections.find(row=>row.id===id)?.visible===false?'none':undefined});
   const homeText = (key:string,fallback:string) => layout?.pageText?.[key] || uiText(fallback);
   const customerLocation = useCustomerLocation(!preview, !preview);
@@ -78,9 +78,9 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const bestTrack=useRef<HTMLDivElement>(null);
   const [bestIndex,setBestIndex]=useState(0);
   const curated=!!layout?.sections?.length;
-  const featuredImage=(offer:CustomerOffer)=>webCarousel&&layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
-  const productCards=webCarousel?(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];}):[];
-  const bestOffers=webCarousel&&(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5));
+  const featuredImage=(offer:CustomerOffer)=>layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
+  const productCards=(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];});
+  const bestOffers=(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5));
   const trendingOffers=(curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending)).map(featuredImage);
   const categoryNames=[...new Set(offers.map(offer=>offerCategory(offer.category)))].sort((a,b)=>{const rank=(name:string)=>{const index=OFFER_CATEGORIES.indexOf(name);return index<0?OFFER_CATEGORIES.length:index;};return rank(a)-rank(b);});
   const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:name,icon:<ShoppingBag/>}))];
@@ -120,7 +120,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
     electronics: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=600&q=80',
   };
 
-  const shopPhoto=(offer:CustomerOffer,idx:number)=>getOfferPhoto(webCarousel&&layout?.shopCardWebImages?.[offer.id]?{...offer,imageUrl:layout.shopCardWebImages[offer.id]}:offer,idx);
+  const shopPhoto=(offer:CustomerOffer,idx:number)=>getOfferPhoto(layout?.shopCardWebImages?.[offer.id]?{...offer,imageUrl:layout.shopCardWebImages[offer.id]}:offer,idx);
   const getOfferPhoto = (offer?: { imageUrl?: string; category?: string }, idx = 0): string => {
     if (offer?.imageUrl) return offer.imageUrl;
     const cat = (offer?.category || '').toLowerCase();
@@ -226,7 +226,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
         </div>
 
-        <div className={`ae-hero-banner ${webCarousel?'ae-web-carousel':''}`} style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners overrides={webCarousel?layout?.carouselWebOverrides:undefined} onImageChange={setHeroImage} bannerIds={carouselFor(layout,carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))}/></div>
+        <div className={`ae-hero-banner ${webCarousel?'ae-web-carousel':''}`} style={layout?.carouselHeight?{'--ae-carousel-height':`${layout.carouselHeight}px`} as CSSProperties:undefined}><HomeBanners overrides={layout?.carouselWebOverrides} onImageChange={setHeroImage} bannerIds={carouselFor(layout,carouselPlatform||(Capacitor.isNativePlatform()?'app':'web'))}/></div>
 
         {/* 3. Hero Points Section (Radiant Blue Theme, Compact) */}
         <section className="ae-hero-points" ref={heroPointsRef}>
@@ -307,8 +307,8 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
             </Link>
           </div>
 
-          <OfferCarousel3D enabled={webCarousel} variant="stack" label={homeText('exclusiveProductsTitle','Exclusive Products')} fallbackClass="ae-best-offer-carousel" fallbackRef={bestTrack} onInteract={()=>{bestPauseUntil.current=Date.now()+8000;}} onFallbackScroll={()=>{const track=bestTrack.current;if(!track||!track.firstElementChild)return;const first=(track.firstElementChild as HTMLElement).offsetLeft;let nearest=0,distance=Infinity;Array.from(track.children).forEach((item,index)=>{const delta=Math.abs((item as HTMLElement).offsetLeft-first-track.scrollLeft);if(delta<distance){nearest=index;distance=delta;}});setBestIndex(nearest%Math.max(1,bestOffers.length));}}>
-            {(!webCarousel&&bestOffers.length>1?[...bestOffers,bestOffers[0]]:bestOffers).map((offer, idx) => {
+          <OfferCarousel3D enabled variant="stack" label={homeText('exclusiveProductsTitle','Exclusive Products')} fallbackClass="ae-best-offer-carousel">
+            {bestOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx);
               const tag = getOfferDiscountTag(idx);
               return (
@@ -350,7 +350,6 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
               );
             })}
           </OfferCarousel3D>
-          {!webCarousel&&bestOffers.length>1&&<div className="ae-best-loop-line" role="status" aria-label={`${uiText('Offer')} ${bestIndex+1} / ${bestOffers.length}`}><span style={{left:`${bestIndex*100/bestOffers.length}%`,width:`${100/bestOffers.length}%`}}/></div>}
         </section>
 
         <section style={sectionStyle('image')} className="ae-discovery-section ae-admin-image-grid" aria-label="Featured images">{sections.find(row=>row.id==='image')?.images?.map(image=><img key={image.id} src={image.url} alt={image.alt} loading="lazy"/>)}</section>
@@ -372,7 +371,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           </div>
 
           {/* Horizontal Swipe Carousel */}
-          <OfferCarousel3D enabled={webCarousel} variant="coverflow" label={homeText('trendingTitle','Trending Offers')} fallbackClass="ae-nearby-offer-rail">
+          <OfferCarousel3D enabled variant="coverflow" label={homeText('trendingTitle','Trending Offers')} fallbackClass="ae-nearby-offer-rail">
             {trendingOffers.map((offer, idx) => {
               const photo = getOfferPhoto(offer, idx + 3);
               const tag = getOfferDiscountTag(idx + 2);
@@ -725,7 +724,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-gray-900">
-                    {uiText("Shop at Local AE Partner Stores")}
+                    {i18n.language.startsWith('ml') ? 'AE പാർട്ണർ സ്റ്റോറുകളിൽ ഷോപ്പ് ചെയ്യൂ' : 'Shop at AE Partner Stores'}
                   </h4>
                   <p className="text-[11px] text-gray-600 leading-relaxed">
                     {uiText("Visit affiliated supermarkets, bakeries, clothing stores, and pharmacies in your locality.")}
@@ -740,10 +739,10 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-gray-900">
-                    {uiText("Show QR / Mobile Number at Billing")}
+                    {i18n.language.startsWith('ml') ? 'കടയുടെ QR കോഡ് സ്കാൻ ചെയ്യൂ' : 'Scan the Merchant QR Code'}
                   </h4>
                   <p className="text-[11px] text-gray-600 leading-relaxed">
-                    {uiText("Show your Claim QR code or tell your mobile number to the cashier to instantly earn cashback reward points.")}
+                    {i18n.language.startsWith('ml') ? 'കടയുടെ QR കോഡ് സ്കാൻ ചെയ്ത് അഭ്യർത്ഥന അയയ്ക്കൂ. മെർച്ചന്റ് അല്ലെങ്കിൽ കൗണ്ടർ സ്റ്റാഫ് ബിൽ തുക നൽകി ചെക്കൗട്ട് സ്ഥിരീകരിക്കുമ്പോൾ കടയുടെ നിയമങ്ങൾക്കനുസരിച്ച് റിവാർഡ് പോയിന്റുകൾ ലഭിക്കും.' : 'Scan the merchant QR code to send a request. The merchant or Counter Staff enters the bill amount and confirms checkout to award reward points under the shop’s rules.'}
                   </p>
                 </div>
               </div>
@@ -755,10 +754,10 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-gray-900">
-                    {uiText("Redeem Rewards & WhatsApp Grocery Orders")}
+                    {i18n.language.startsWith('ml') ? 'റിവാർഡുകൾ റിഡീം ചെയ്യൂ, പ്രോഡക്റ്റ് ലിസ്റ്റ് അയയ്ക്കൂ' : 'Redeem Rewards & Send a Product List'}
                   </h4>
                   <p className="text-[11px] text-gray-600 leading-relaxed">
-                    {uiText("Redeem points for discounts or send product grocery lists directly to shops via WhatsApp!")}
+                    {i18n.language.startsWith('ml') ? '100 പോയിന്റുകൾ റിഡീം ചെയ്ത് AE പാർട്ണർ ഷോപ്പുകളിൽ കടയുടെ നിയമങ്ങൾക്കനുസരിച്ച് ഡിസ്കൗണ്ട് നേടൂ. പലചരക്ക് ലിസ്റ്റോ മറ്റേതെങ്കിലും ഉൽപ്പന്നങ്ങളുടെ ലിസ്റ്റോ അയയ്ക്കാൻ AEയിലെ Product List ഉപയോഗിക്കൂ.' : 'Redeem 100 points to get a discount at AE-powered shops, subject to the shop’s rules. Use Product List in AE to send a grocery list or any other product list to your chosen shop.'}
                   </p>
                 </div>
               </div>

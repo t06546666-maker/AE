@@ -21,6 +21,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(UpiAppsPlugin.class);
+        registerPlugin(AEAppUpdatePlugin.class);
         super.onCreate(savedInstanceState);
 
         // Prevent Android system navigation bar (Back/Home/Recents buttons) from overlaying bottom checkout buttons & nav bars

@@ -1,4 +1,5 @@
 import {uiText} from "./uiText";
+import {RequiredAppUpdate} from './components/RequiredAppUpdate';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -71,7 +72,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <RootErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ToastProvider><App /></ToastProvider>
+          <ToastProvider><RequiredAppUpdate><App /></RequiredAppUpdate></ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </RootErrorBoundary>

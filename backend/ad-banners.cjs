@@ -103,13 +103,15 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
     try {
       const allBanners = await loadBannersFromStorage(supabase);
       const activeBanners = allBanners.filter(b => b.active);
+      const artwork = await require('./customer-home-content.cjs').readStoredContent(supabase);
 
       const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);
       const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
       const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
 
       const resolved = await Promise.all(activeBanners.map(async b => {
-        const imgUrl = await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
+        const override = artwork.carouselWebOverrides?.[b.id];
+        const imgUrl = override?.imageUrl || await resolveBannerImageUrl(b, supabase, bucket, signedUrlHelper);
         const offerImgUrl = b.offerImagePath ? await resolveBannerImageUrl({ imagePath: b.offerImagePath, imageUrl: b.offerImageUrl }, supabase, bucket, signedUrlHelper) : imgUrl;
         const dist = nearby ? calculateDistance(latitude, longitude, b.latitude, b.longitude) : Infinity;
 
@@ -120,10 +122,10 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
           merchantName: b.merchantName,
           merchantPhone: b.merchantPhone,
           merchantAddress: b.merchantAddress,
-          title: b.title,
+          title: override?.title ?? b.title,
           titleMl:b.titleMl||'',
           subtitleMl:b.subtitleMl||'',
-          subtitle: b.subtitle || '',
+          subtitle: override?.subtitle ?? b.subtitle ?? '',
           placement: 'top',
           linkType: 'offer',
           linkValue: b.linkValue || b.offerId || '',
