@@ -80,7 +80,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const curated=!!layout?.sections?.length;
   const featuredImage=(offer:CustomerOffer)=>webCarousel&&layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
   const productCards=webCarousel?(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];}):[];
-  const bestOffers=webCarousel&&(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5)).map(featuredImage);
+  const bestOffers=webCarousel&&(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5));
   const trendingOffers=(curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending)).map(featuredImage);
   const categoryNames=[...new Set(offers.map(offer=>offerCategory(offer.category)))].sort((a,b)=>{const rank=(name:string)=>{const index=OFFER_CATEGORIES.indexOf(name);return index<0?OFFER_CATEGORIES.length:index;};return rank(a)-rank(b);});
   const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:name,icon:<ShoppingBag/>}))];
@@ -120,6 +120,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
     electronics: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=600&q=80',
   };
 
+  const shopPhoto=(offer:CustomerOffer,idx:number)=>getOfferPhoto(webCarousel&&layout?.shopCardWebImages?.[offer.id]?{...offer,imageUrl:layout.shopCardWebImages[offer.id]}:offer,idx);
   const getOfferPhoto = (offer?: { imageUrl?: string; category?: string }, idx = 0): string => {
     if (offer?.imageUrl) return offer.imageUrl;
     const cat = (offer?.category || '').toLowerCase();
@@ -436,7 +437,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
 
           <FavouriteWheel autoPlay label={uiText('Nearby Shops & Offers')}>
             {nearbyOffers.map((offer, idx) => {
-              const photo = getOfferPhoto(offer, idx + 2);
+              const photo = shopPhoto(offer, idx + 2);
               const tag = getOfferDiscountTag(idx + 1);
               return (
                 <div
@@ -521,7 +522,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           ) : filteredOffers.length ? (
             <div className="ae-category-offer-rail">
               {filteredOffers.map((offer, idx) => {
-                const photo = getOfferPhoto(offer, idx);
+                const photo = shopPhoto(offer, idx);
                 const tag = getOfferDiscountTag(idx);
                 return (
                   <div
@@ -618,7 +619,7 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
           {!favoriteOffers.length&&<p className="text-sm text-slate-500">{uiText('Save a shop using the heart in Offers or Explore. Its offers will appear here.')}</p>}
           <FavouriteWheel>
             {favoriteOffers.map((offer, idx) => {
-              const photo = getOfferPhoto(offer, idx + 1);
+              const photo = shopPhoto(offer, idx + 1);
               const tag = getOfferDiscountTag(idx);
               const isFav = !!offer.merchant_id&&favorites.includes(offer.merchant_id);
               return (

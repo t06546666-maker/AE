@@ -20,6 +20,7 @@ function cleanContent(input) {
       ...(typeof item?.subtitle==='string'?{subtitle:item.subtitle.slice(0,300)}:{}),
     }])),
     featuredWebImages:Object.fromEntries(Object.entries(value.featuredWebImages&&typeof value.featuredWebImages==='object'?value.featuredWebImages:{}).filter(([id,url])=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)&&typeof url==='string'&&/^https:\/\//.test(url)).slice(0,80).map(([id,url])=>[id,url.slice(0,1000)])),
+    shopCardWebImages:Object.fromEntries(Object.entries(value.shopCardWebImages&&typeof value.shopCardWebImages==='object'?value.shopCardWebImages:{}).filter(([id,url])=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)&&typeof url==='string'&&/^https:\/\//.test(url)).slice(0,80).map(([id,url])=>[id,url.slice(0,1000)])),
     carouselHeight: Math.min(640,Math.max(220,Number(value.carouselHeight)||420)),
     sections: Array.isArray(value.sections) ? [...new Map(value.sections.filter(item=>item&&['best','trending','image','nearby','categories','favourites'].includes(item.id)).map(item=>[item.id,{
       id:item.id,visible:item.visible!==false,
