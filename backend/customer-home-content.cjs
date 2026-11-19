@@ -4,6 +4,8 @@ const { uploadFileToCloudStorage, deleteFileFromCloudStorage } = require('./clou
 const SETTINGS_KEY = 'customer_home_content';
 const CONFIG_BUCKET='app-config';
 const CONFIG_FILE='customer-home-content.json';
+const contentCache=new WeakMap();
+const cacheVersion=new WeakMap();
 
 function cleanContent(input) {
   const value = input && typeof input === 'object' ? input : {};
@@ -62,6 +64,8 @@ function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMid
       const content = cleanContent(req.body);
       const { error } = await supabase.storage.from(CONFIG_BUCKET).upload(CONFIG_FILE,Buffer.from(JSON.stringify(content)),{contentType:'application/json',cacheControl:'0',upsert:true});
       if (error) return res.status(400).json({ success: false, error: error.message });
+      cacheVersion.set(supabase,(cacheVersion.get(supabase)||0)+1);
+      contentCache.set(supabase,{value:content,expires:Date.now()+30000});
       res.json({ success: true, content });
     } catch (error) { res.status(400).json({ success: false, error: error.message }); }
   });
@@ -85,6 +89,15 @@ function registerCustomerHomeContent(app, { auth, adminRole, supabase, uploadMid
 }
 
 async function readStoredContent(supabase){
+ const cached=contentCache.get(supabase);
+ if(cached?.value&&cached.expires>Date.now())return cached.value;
+ if(cached?.pending)return cached.pending;
+ const version=cacheVersion.get(supabase)||0;
+ const pending=readContentUncached(supabase).then(value=>{if((cacheVersion.get(supabase)||0)===version)contentCache.set(supabase,{value,expires:Date.now()+30000});return value;}).catch(error=>{if(contentCache.get(supabase)?.pending===pending)contentCache.delete(supabase);throw error;});
+ contentCache.set(supabase,{pending});
+ return pending;
+}
+async function readContentUncached(supabase){
  const stored=await supabase.storage.from(CONFIG_BUCKET).download(CONFIG_FILE);
  if(!stored.error&&stored.data){return cleanContent(JSON.parse(await stored.data.text()));}
  if(stored.error&&String(stored.error.statusCode)!=='404'&&!/not.?found/i.test(stored.error.message||''))throw stored.error;

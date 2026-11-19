@@ -106,7 +106,7 @@ export function useCustomerMerchants(page: number, search?: string, categoryId?:
   return useQuery({
     queryKey: ['customer', 'merchants', page, search, categoryId, location?.latitude, location?.longitude, location?.routeGroup],
     queryFn: ({ signal }) => apiFetch<{ merchants: CustomerMerchant[], pagination: PaginationMeta }>(`/api/customer/merchants?${queryString({ page, pageSize: 20, search, categoryId, latitude: location?.latitude, longitude: location?.longitude, routeGroup: location?.routeGroup })}`, { signal }),
-    staleTime: 60000,
+    staleTime: 120000,
     enabled,
   });
 }
@@ -123,7 +123,7 @@ export function useCustomerOffers(enabled = true, location?: { latitude?: number
       const qs = params.toString();
       return apiFetch<{ offers: CustomerOffer[] }>(`/api/customer/offers${qs ? '?' + qs : ''}`, { signal });
     },
-    staleTime: 60000,
+    staleTime: 120000,
     enabled,
   });
 }
