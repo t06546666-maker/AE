@@ -2046,9 +2046,13 @@ app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,re
   const paging=paginationFromRequest(req,25,100);
   const source=String(req.query.source||'all');
   if(!['all','self','merchant','unknown'].includes(source))return res.status(400).json({error:'Invalid onboarding source'});
+  const from=String(req.query.from||''),to=String(req.query.to||'');
+  if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to))||(from&&to&&from>to))return res.status(400).json({error:'Invalid registration date range'});
   let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id,reward_points',{count:'exact'}).order('created_at',{ascending:false});
   if(source==='unknown')query=query.is('registration_source',null);
   else if(source!=='all')query=query.eq('registration_source',source);
+  if(from)query=query.gte('created_at',`${from}T00:00:00+05:30`);
+  if(to)query=query.lte('created_at',`${to}T23:59:59.999+05:30`);
   if(paging.search) query=query.or(`name.ilike.%${paging.search}%,customer_code.ilike.%${paging.search}%,phone.ilike.%${paging.search}%`);
   const result=await query.range(paging.from,paging.to);
   if(result.error)return res.status(500).json({error:result.error.message});
