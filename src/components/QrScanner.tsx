@@ -45,12 +45,13 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState('100');
-  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>(settings.merchantDiscountType ?? 'percentage');
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat' | 'none'>(settings.merchantDiscountType ?? 'percentage');
   const [discountValue, setDiscountValue] = useState(String(settings.merchantDiscountType === 'flat' ? (settings.merchantFlatDiscount ?? 50) : (settings.merchantRedeemDiscount ?? 5)));
   const [redeemResult, setRedeemResult] = useState<{discountAmount: number; newBalance: number} | null>(null);
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
   const [paymentMode, setPaymentMode] = useState<'pilot_app_only' | 'cash'>('pilot_app_only');
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  useEffect(() => { if (discountType === 'none') setTransactionMode('earn'); }, [discountType]);
   useEffect(() => {
     if (!shopRequest) return;
     let active = true;
@@ -278,8 +279,8 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
               <p className="balance-line">{t('scanner.currentBalance')} <strong>{formatPoints(customer.rewardPoints)}{uiText(" points")}</strong></p>
               <label className="scanner-mode-field">{uiText("Transaction type ")}<select disabled={Boolean(shopRequest)} value={transactionMode} onChange={(event) => { setTransactionMode(event.target.value as 'earn' | 'redeem' | 'combined'); setRedeemResult(null); }}>
                   <option value="earn">{uiText("Issue points")}</option>
-                  <option value="redeem">{uiText("Redeem points")}</option>
-                  <option value="combined">{uiText("Both: redeem + issue points")}</option>
+                  <option value="redeem" disabled={discountType==='none'}>{uiText("Redeem points")}</option>
+                  <option value="combined" disabled={discountType==='none'}>{uiText("Both: redeem + issue points")}</option>
                 </select>
               </label>
               {redeemResult ? (
