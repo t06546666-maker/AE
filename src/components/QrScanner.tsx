@@ -51,7 +51,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
   const [transactionMode, setTransactionMode] = useState<'earn' | 'redeem' | 'combined'>(mode);
   const [paymentMode, setPaymentMode] = useState<'pilot_app_only' | 'cash'>('pilot_app_only');
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
-  useEffect(() => { if (discountType === 'none') setTransactionMode('earn'); }, [discountType]);
+
   useEffect(() => {
     if (!shopRequest) return;
     let active = true;
@@ -197,7 +197,7 @@ export default function QrScanner({ settings, autoStart = false, mode = 'earn', 
     mutationFn: (verifiedPaymentId?: string) => apiFetch<{ purchase: { points_earned: number }; discountAmount?: number; cashPaymentRecorded?: boolean | null; whatsapp: { queued?: boolean; sent?: boolean } }>('/api/checkouts', {
       method: 'POST',
       headers: { 'Idempotency-Key': checkoutKey.current },
-      body: JSON.stringify({ customerCode: shopRequest?.customerCode || customer?.id, shopRequestId: shopRequest?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentMode, location: notes.trim() || 'In-store' }),
+      body: JSON.stringify({ customerCode: shopRequest?.customerCode || customer?.id, shopRequestId: shopRequest?.id, amount: Number(amount), rewardPercentage: percentage, pointsToRedeem: transactionMode === 'combined' && discountType !== 'none' ? 100 : 0, discountType, discountValue: Number(discountValue), paymentMode, location: notes.trim() || 'In-store' }),
     }),
     onSuccess(data) {
       showToast(paymentMode === 'cash' ? `Cash received ✓ ₹${Math.max(0, Number(amount) - Number(data.discountAmount || 0)).toFixed(2)} · checkout complete${data.cashPaymentRecorded === false ? ' (payment record could not sync)' : ''}` : t('scanner.checkoutSaved', { points: formatPoints(data.purchase.points_earned) }), data.cashPaymentRecorded === false ? 'error' : 'success');
