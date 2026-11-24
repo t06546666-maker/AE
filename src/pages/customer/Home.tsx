@@ -78,9 +78,9 @@ export function CustomerHome({ user, preview = false, layoutOverride, offersOver
   const bestTrack=useRef<HTMLDivElement>(null);
   const [bestIndex,setBestIndex]=useState(0);
   const curated=!!layout?.sections?.length;
-  const featuredImage=(offer:CustomerOffer)=>webCarousel&&layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
-  const productCards=webCarousel?(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];}):[];
-  const bestOffers=webCarousel&&(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5));
+  const featuredImage=(offer:CustomerOffer)=>layout?.featuredWebImages?.[offer.id]?{...offer,imageUrl:layout.featuredWebImages[offer.id]}:offer;
+  const productCards=(sections.find(row=>row.id==='best')?.images||[]).flatMap(image=>{const offer=offers.find(item=>item.id===image.offerId);return offer?[{...offer,title:image.alt,imageUrl:image.url}]:[];});
+  const bestOffers=(sections.find(row=>row.id==='best')?.images?.length||0)>0?productCards:(curated?curatedOffers(offers,sections.find(row=>row.id==='best')).slice(0,5):offers.slice(0,5));
   const trendingOffers=(curated?curatedOffers(offers,sections.find(row=>row.id==='trending')):offers.filter(row=>row.is_trending)).map(featuredImage);
   const categoryNames=[...new Set(offers.map(offer=>offerCategory(offer.category)))].sort((a,b)=>{const rank=(name:string)=>{const index=OFFER_CATEGORIES.indexOf(name);return index<0?OFFER_CATEGORIES.length:index;};return rank(a)-rank(b);});
   const categoryChoices=[{id:'all',label:'All Deals',icon:<Flame/>},...categoryNames.map(name=>({id:name,label:name,icon:<ShoppingBag/>}))];

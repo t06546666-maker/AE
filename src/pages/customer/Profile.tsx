@@ -89,7 +89,7 @@ export function CustomerProfile({ user, onLogout }: { user: UserProfile; onLogou
 
       <div className="px-5 -mt-6 relative z-20 space-y-4">
         {/* Section 1 */}
-        <Link to="/customer/coupons" className="p-4 flex items-center justify-between bg-white rounded-[24px] font-semibold">My Coupons · Scratch & reveal<ChevronRight size={18}/></Link>
+        <Link to="/customer/coupons" className="p-4 flex items-center justify-between bg-white rounded-[24px] hover:bg-gray-50 transition-colors active:scale-[0.99]"><div className="flex items-center space-x-4"><Gift size={20} className="text-gray-400"/><span className="font-semibold text-[15px] text-gray-800">{uiText('My Coupons')}</span></div><ChevronRight size={18} className="text-gray-400"/></Link>
         <div className="customer-modern-menu bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
           <Link to="/customer/transactions" className="p-4 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.99]">
             <div className="flex items-center space-x-4">
