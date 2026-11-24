@@ -1,5 +1,6 @@
 import {uiText} from "./uiText";
 import {AdminShopCoupons,MerchantShopCoupons} from './components/ShopCoupons';
+import {CustomerCoupons} from './pages/customer/Coupons';
 import {counterToken} from './counterApi';
 import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
@@ -412,6 +413,7 @@ export function App() {
             <Route path="/customer/scan" element={<Navigate to="/customer/shop-scan" replace />} />
             <Route path="/customer/shop-scan" element={<CustomerShopScan key={location.search} user={user} />} />
             <Route path="/customer/rewards" element={<CustomerRewards user={user} />} />
+            <Route path="/customer/coupons" element={<CustomerCoupons/>}/>
             <Route path="/customer/profile" element={<CustomerProfile user={user} onLogout={logout} />} />
             <Route path="/customer/favorites" element={<CustomerFavorites />} />
             <Route path="/customer/transactions" element={<CustomerTransactions user={user} />} />

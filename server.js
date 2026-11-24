@@ -647,6 +647,7 @@ async function processPurchase(params, idempotencyKey, redemption = null) {
       p_discount_value: redemption?.discountValue || 0, p_issue: true,
     });
     if (result.error) return result; // No non-atomic fallback once enabled.
+    await awardPurchaseCoupon(result.data.purchase);
     scheduleBackground(() => checkSalesTarget(params.p_merchant_id).catch(error => console.warn('Sales target check failed:', error.message)));
     return { data: [result.data.purchase], error: null, redemption: result.data.redemption };
   }
@@ -687,10 +688,15 @@ async function processPurchase(params, idempotencyKey, redemption = null) {
     }
   }
   // -------------------------------------
+  if (!result.error && result.data?.length) await awardPurchaseCoupon(result.data[0]);
   if (!result.error && result.data?.length) scheduleBackground(() => checkSalesTarget(params.p_merchant_id).catch(error => console.warn('Sales target check failed:',error.message)));
   return result;
 }
 
+async function awardPurchaseCoupon(purchase) {
+  try { await require('./backend/shop-coupons.cjs').issueCoupon({database:checkoutBillDatabase,customerId:purchase.customer_id,orderId:purchase.order_id||purchase.id,push:pushToCustomer}); }
+  catch(error) { console.warn('Coupon issue failed; purchase remains completed:',error.message); }
+}
 async function uploadQrMedia(payload) {
   const qrPath = path.join(os.tmpdir(), `ae-qr-${crypto.randomUUID()}.png`);
   try {
