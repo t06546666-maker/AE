@@ -17,6 +17,15 @@ import { MERCHANT_ROUTES, routeLabel } from '../merchantRoutes';
 import { LiveCamera } from '../components/LiveCamera';
 import '../admin-directory.css';
 
+function DeletedMerchants({search}:{search:string}) {
+ const [page,setPage]=useState(1);
+ useEffect(()=>setPage(1),[search]);
+ const rows=useQuery({queryKey:['deleted-merchants',page,search],queryFn:({signal})=>apiFetch<{merchants:{id:string;name:string;merchant_code:string;email:string;phone:string;address:string|null;deleted_at:string}[];pagination:Pagination}>(`/api/admin/deleted-merchants?${queryString({page,search})}`,{signal})});
+ if(rows.isPending)return <LoadingState label="Loading deleted merchants"/>;
+ if(rows.isError)return <ErrorState error={rows.error} retry={()=>rows.refetch()}/>;
+ return <section className="table-panel"><h2>Deleted Merchants</h2><div className="table-scroll"><table><thead><tr><th>Shop</th><th>Merchant ID</th><th>Contact</th><th>Address</th><th>Deleted on</th></tr></thead><tbody>{rows.data.merchants.map(row=><tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.merchant_code}</td><td>{row.phone}<br/>{row.email}</td><td>{row.address||'—'}</td><td>{formatDate(row.deleted_at)}</td></tr>)}</tbody></table></div>{!rows.data.merchants.length&&<EmptyState>No deleted merchants found.</EmptyState>}<PaginationBar pagination={rows.data.pagination} onPage={setPage}/></section>;
+}
+
 interface CredentialResult {
   merchantCode: string;
   loginEmail: string;
@@ -37,6 +46,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const [allocation, setAllocation] = useState<Merchant | null>(null);
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
+  const [deletedView,setDeletedView]=useState(false);
   const [search, setSearch] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -147,11 +157,13 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   const remove = useMutation({
     retry: false,
     mutationFn: (merchant: Merchant) => apiFetch<{ cleanupPending?: boolean }>(
-      `/api/merchants/${encodeURIComponent(merchant.id)}`,
-      { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE'}) },
+      `/api/admin/merchants/${encodeURIComponent(merchant.id)}/archive`,
+      { method: 'POST', body: JSON.stringify({confirmation:'DELETE'}) },
     ),
     onSuccess(data) {
-      showToast(data.cleanupPending ? 'Merchant removed. Remaining shop files are queued for cleanup.' : 'Merchant removed. Customer history is preserved.');
+      showToast('Merchant moved to Deleted Merchants. Customer and transaction history is preserved.');
+      void data;
+      void queryClient.invalidateQueries({ queryKey: ['deleted-merchants'] });
       void queryClient.invalidateQueries({ queryKey: ['merchants'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -209,7 +221,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
   }, [mapPickerOpen]);
 
   function deleteMerchant(merchant: Merchant) {
-    if (window.confirm(`Permanently remove ${merchant.name}?\n\nThe merchant login, contact details and shop content will be removed. Customers, balances and purchase/payment history remain, labelled Deleted merchant. This cannot be undone.`)) {
+    if (window.confirm(`Move ${merchant.name} to Deleted Merchants?\n\nThe shop and its offers will disappear from customers and its login will be blocked. Only Admin can see the deleted merchant details. Customers, balances and transaction history will be kept.`)) {
       remove.mutate(merchant);
     }
   }
@@ -265,10 +277,12 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
       </form>}
 
       <div className="list-toolbar">
+        {!onboardingOnly&&<div role="group" aria-label="Merchant list"><button className={`button ${!deletedView?'primary':'secondary'}`} aria-pressed={!deletedView} onClick={()=>setDeletedView(false)}>Active Merchants</button><button className={`button ${deletedView?'primary':'secondary'}`} aria-pressed={deletedView} onClick={()=>setDeletedView(true)}>Deleted Merchants</button></div>}
         <label className="search-field"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={uiText('Search merchants')} aria-label={t('common.search')} /></label>
       </div>
 
-      {!onboardingOnly && (merchants.isPending ? <LoadingState label={t('common.loading')} /> : merchants.isError ? (
+      {!onboardingOnly&&deletedView&&<DeletedMerchants search={deferredSearch}/>}
+      {!onboardingOnly && !deletedView && (merchants.isPending ? <LoadingState label={t('common.loading')} /> : merchants.isError ? (
         <ErrorState error={merchants.error} retry={() => merchants.refetch()} />
       ) : (
         <section className="table-panel">

@@ -102,7 +102,14 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
   const customerHandler = async (req, res) => {
     try {
       const allBanners = await loadBannersFromStorage(supabase);
-      const activeBanners = allBanners.filter(b => b.active);
+      let activeBanners = allBanners.filter(b => b.active);
+      const shopIds=[...new Set(activeBanners.map(b=>b.merchantId).filter(Boolean))];
+      if(shopIds.length){
+        const shops=await supabase.from('active_merchants').select('id').in('id',shopIds);
+        if(shops.error)throw shops.error;
+        const available=new Set((shops.data||[]).map(shop=>shop.id));
+        activeBanners=activeBanners.filter(b=>!b.merchantId||available.has(b.merchantId));
+      }
       const artwork = await require('./customer-home-content.cjs').readStoredContent(supabase);
 
       const latitude = req.query.latitude == null ? NaN : Number(req.query.latitude);

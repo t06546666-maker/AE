@@ -3345,6 +3345,12 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   }catch{return res.status(503).json({success:false,error:'Unable to load featured offers.'});}
 
   
+  if(offers?.length){
+    const shops=await supabaseAdmin.from('active_merchants').select('id').in('id',[...new Set(offers.map(offer=>offer.merchant_id))]);
+    if(shops.error)return res.status(503).json({error:'Unable to verify shop availability.'});
+    const available=new Set((shops.data||[]).map(shop=>shop.id));
+    offers=offers.filter(offer=>available.has(offer.merchant_id));
+  }
   const eligibleMerchants = new Set();
   for (const merchantId of new Set((offers || []).filter(o => o.audience === 'loyal').map(o => o.merchant_id))) {
     const result = await supabaseAdmin.from('orders').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('customer_id', req.customer.id);
@@ -3988,7 +3994,7 @@ app.get('/api/merchants/:id', requireAuth, async (req, res, next) => {
 // Admins can maintain the merchant's business profile from the merchant detail screen.
 app.patch('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
-  const { data: existing, error: findError } = await supabaseAdmin.from('merchants').select('*').eq('id', merchantId).maybeSingle();
+  const { data: existing, error: findError } = await supabaseAdmin.from('active_merchants').select('*').eq('id', merchantId).maybeSingle();
   if (findError || !existing) return res.status(404).json({ success: false, error: 'Merchant not found' });
 
   const updates = {};
@@ -4607,19 +4613,20 @@ app.post('/api/merchants/:id/reset-password', requireAuth, (req, res, next) => {
   });
 });
 
+require('./backend/deleted-merchants.cjs').registerDeletedMerchants(app,{db:supabaseAdmin,auth:requireAuth,adminRole:requireRole('admin')});
+
 app.delete('/api/merchants/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const merchantId = cleanText(req.params.id, 100);
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(merchantId)) return res.status(400).json({error:'Invalid merchant ID'});
   if (req.body?.confirmation !== 'DELETE') return res.status(400).json({error:'Confirm merchant deletion first.'});
   try {
-    const { error } = await supabaseAdmin.rpc('admin_remove_merchant', {p_admin:req.auth.profile.id,p_merchant:merchantId});
+    const { error } = await supabaseAdmin.rpc('admin_archive_merchant', {p_admin:req.auth.profile.id,p_merchant:merchantId});
     if (error) {
       const code=error.code;
       const status=code==='23503'?409:code==='P0002'?404:code==='42501'?403:503;
       return res.status(status).json({success:false,error:code==='23503'?'A linked account record needs review before removal. No records were removed.':code==='P0002'?'Merchant not found':code==='42501'?'Admin access required':'Merchant removal is unavailable. Please retry or contact support.'});
     }
-    const cleanup = await require('./backend/merchant-removal.cjs').cleanupMerchantRemoval({db:supabaseAdmin,database:checkoutBillDatabase,merchantId});
-    res.json({success:true,removed:true,deletedCustomers:0,cleanupPending:!cleanup});
+    res.json({success:true,removed:true,archived:true,deletedCustomers:0,cleanupPending:false});
   } catch { res.status(503).json({success:false,error:'Could not confirm deletion. Refresh the merchant list before retrying.'}); }
 });
 
@@ -4960,14 +4967,14 @@ app.post(
     if (isAdmin) {
       const requestedMerchantId = cleanText(req.body.merchantId || req.body.merchant_id, 100);
       if (requestedMerchantId) {
-        const { data: m } = await supabaseAdmin.from('merchants').select('id').eq('id', requestedMerchantId).maybeSingle();
+        const { data: m } = await supabaseAdmin.from('active_merchants').select('id').eq('id', requestedMerchantId).maybeSingle();
         if (m) merchantId = m.id;
         else return res.status(400).json({ success: false, error: 'Selected merchant was not found' });
       } else {
         const { data: firstM } = await supabaseAdmin.from('active_merchants').select('id').order('created_at', { ascending: true }).limit(1).maybeSingle();
         if (firstM) merchantId = firstM.id;
         else {
-          const { data: anyM } = await supabaseAdmin.from('merchants').select('id').limit(1).maybeSingle();
+          const { data: anyM } = await supabaseAdmin.from('active_merchants').select('id').limit(1).maybeSingle();
           if (anyM) merchantId = anyM.id;
           else return res.status(400).json({ success: false, error: 'A merchant is required for the offer' });
         }
