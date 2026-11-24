@@ -1,4 +1,5 @@
 import { AdminTransactionReports } from './AdminTransactionReports';
+import { customerPayable } from '../customerPayable';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ function PurchaseOrders({ user }: { user: UserProfile }) {
             {orders.data?.orders.map((order) => <tr key={order.id}>
               <td><strong className="order-number">{order.orderNo}</strong><small>{order.source}</small></td>
               <td><div className="person-cell"><span>{initials(order.customer)}</span><div><strong>{order.customer}</strong><small>{order.cid}</small></div></div></td>
-              <td>{user.role === 'merchant' ? maskedPhone(order.phone) : order.phone}</td><td>{order.email}</td><td className="amount-column"><span className="tag success amount-tag">{formatCurrency(order.amount)}</span></td>
+              <td>{user.role === 'merchant' ? maskedPhone(order.phone) : order.phone}</td><td>{order.email}</td><td className="amount-column"><small>{uiText('Customer pays')}</small><br/><span className="tag success amount-tag">{customerPayable(order.amount,order.discountAmount)==null?uiText('Not recorded'):formatCurrency(customerPayable(order.amount,order.discountAmount)!)}</span><br/><small>{uiText('Bill amount')}: {formatCurrency(order.amount)}</small></td>
               <td>{order.earningPointsPer100 == null ? uiText('Not recorded') : <span className="tag info">{uiText('{{points}} points per ₹100', { points: formatPoints(order.earningPointsPer100) })}</span>}</td>
               <td><strong className="points-text">{formatPoints(order.rewardPoints)}</strong></td>
               <td>{order.discountType === 'flat' ? uiText('Flat discount') : order.discountPercentage == null ? uiText('Not recorded') : `${order.discountPercentage}%`}</td>
