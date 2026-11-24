@@ -1,4 +1,5 @@
 import { uiText } from '../../uiText';
+import {CustomerShopCoupon} from '../../components/ShopCoupons';
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ export function CustomerRewards({ user }: { user: UserProfile }) {
       <Link to="/customer/home" aria-label={uiText("Back to home")}><ArrowLeft size={24}/></Link>
       <h1 className="text-lg font-bold">{uiText("Redeem QR")}</h1>
     </header>
+    <CustomerShopCoupon/>
     <section className="mx-5 mt-5 rounded-3xl border border-blue-100 bg-white p-5 text-center shadow-sm">
       <h2 className="text-xl font-bold">{uiText("Redeem + Receive")}</h2>
       <p className="mt-2 text-sm text-gray-500">{uiText("Show this QR to your merchant to redeem 100 points and earn points on your purchase.")}</p>

@@ -2094,6 +2094,7 @@ require('./backend/manual-customer-update.cjs').registerManualCustomerUpdate(app
  const result=await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/${WA_CUSTOMER_UPDATE_TEMPLATE_ID}`,{headers:{Authorization:`Bearer ${WA_TOKEN}`},params:{fields:'name,status,language,category,components'},timeout:10000});return result.data;
 }});
 require('./backend/admin-customer-guide.cjs').registerCustomerGuide(app,{auth:requireAuth,adminRole:requireRole('admin'),db:supabaseAdmin,normalizePhone,sendTemplate:sendWhatsAppTemplate,appLink:WA_CUSTOMER_APP_LINK,instagramLink:WA_CUSTOMER_INSTAGRAM_LINK,usageTemplate:WA_CUSTOMER_USAGE_TEMPLATE});
+require('./backend/shop-coupons.cjs').registerShopCoupons(app,{auth:requireAuth,customerAuth:requireCustomerAuth,adminRole:requireRole('admin'),merchantRole:requireRole('merchant'),database:checkoutBillDatabase,supabase:supabaseAdmin});
 app.get('/api/admin/customers/:id/details', requireAuth, requireRole('admin'), async(req,res)=>{
   const result=await supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id').eq('id',req.params.id).maybeSingle();
   if(result.error)return res.status(500).json({error:result.error.message});

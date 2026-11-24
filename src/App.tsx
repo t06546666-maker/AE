@@ -1,9 +1,10 @@
 import {uiText} from "./uiText";
+import {AdminShopCoupons,MerchantShopCoupons} from './components/ShopCoupons';
 import {counterToken} from './counterApi';
 import { savePushRegistration } from './pushRegistration';
 import { Component, lazy, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { ApiError, apiFetch, clearAccessToken, getAccessToken } from './api';
@@ -430,10 +431,12 @@ export function App() {
 
   return (
     <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}>
+      {['admin','merchant'].includes(user.role)&&<Link className="button secondary" to="/shop-coupons">₹100 shop coupons</Link>}
       {user.role === 'merchant' && <Suspense fallback={null}><ShopRequestAlert /></Suspense>}
       <PageErrorBoundary key={location.pathname}>
         <Suspense fallback={<RouteFallback />}><Routes>
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
+          <Route path="/shop-coupons" element={user.role==='admin'?<AdminShopCoupons/>:user.role==='merchant'?<MerchantShopCoupons/>:<Navigate to="/dashboard" replace/>}/>
           <Route path="/expense-staff" element={<RoleRoute user={user} role="admin"><ExpenseStaff/></RoleRoute>}/>
           <Route path="/add-customer" element={<AddCustomer user={user} />} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
