@@ -134,6 +134,7 @@ export interface Customer {
 }
 
 export interface Order {
+  salesAmount?: number;
   id: string;
   orderNo: string;
   cid: string;

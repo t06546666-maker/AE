@@ -6190,6 +6190,7 @@ app.get('/api/orders', requireAuth, (req, res, next) => {
       id: row.id, orderNo: row.order_no, cid: row.customers?.customer_code,
       customer: row.customers?.name, phone: row.customers?.phone,
       email: row.customers?.email || '', amount: Number(row.amount),
+      salesAmount: require('./backend/net-sales.cjs').salesAmount(row,rewardDetails.get(row.id)),
       merchant: row.merchants?.name || '', location: row.location,
       rewardPoints: Number(row.reward_points),
       rewardPercentage: Number(row.reward_percentage),
@@ -6815,6 +6816,16 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     p_merchant_id: merchantId,
   });
   if (!analyticsResult.error && analyticsResult.data) {
+    if(merchantId){
+      const saleRows=[];
+      for(let offset=0;;offset+=500){
+        const batch=await supabaseAdmin.from('orders').select('id,merchant_id,amount').eq('merchant_id',merchantId).gte('created_at',from.toISOString()).lt('created_at',to.toISOString()).order('id').range(offset,offset+499);
+        if(batch.error)return res.status(503).json({error:'Sales total is unavailable. Please retry.'});
+        saleRows.push(...(batch.data||[]));if((batch.data||[]).length<500)break;
+      }
+      try{analyticsResult.data.summary.totalRevenue=await require('./backend/net-sales.cjs').netSales(supabaseAdmin,saleRows);}
+      catch{return res.status(503).json({error:'Sales total is unavailable. Please retry.'});}
+    }
     if (bucket === 'six-hour') return res.json({ ...analyticsResult.data, summary: { ...analyticsResult.data.summary, totalPointsRedeemed } });
 
     let dailyOrdersQuery = supabaseAdmin.from('orders')
@@ -6843,7 +6854,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
   }
 
   let ordersQuery = supabaseAdmin.from('orders')
-    .select('amount,reward_points,is_returning,created_at,customer_id')
+    .select('id,merchant_id,amount,reward_points,is_returning,created_at,customer_id')
     .gte('created_at', from.toISOString())
     .lt('created_at', to.toISOString())
     .limit(10000);
@@ -6922,7 +6933,7 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     success: true,
     summary: {
       totalOrders: orders.length,
-      totalRevenue: orders.reduce((sum, order) => sum + Number(order.amount), 0),
+      totalRevenue: merchantId ? await require('./backend/net-sales.cjs').netSales(supabaseAdmin,orders) : orders.reduce((sum, order) => sum + Number(order.amount), 0),
       rewardPointsIssued: orders.reduce((sum, order) => sum + Number(order.reward_points), 0),
       totalPointsRedeemed,
       totalCustomers: customersResult.data?.length || 0,

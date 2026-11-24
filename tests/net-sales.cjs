@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {salesAmount,netSales}=require('../backend/net-sales.cjs');
+assert.equal(salesAmount({amount:1000},{discountAmount:100}),900);
+assert.equal(salesAmount({amount:1000},{discountAmount:0}),1000);
+assert.equal(salesAmount({amount:10.1},{discountAmount:.2}),9.9);
+assert.equal(salesAmount({amount:1000},null),1000);
+assert.equal(salesAmount({amount:1000},{discountAmount:2000}),1000);
+const orders=[{id:'discounted',merchant_id:'shop',amount:1000},{id:'full',merchant_id:'shop',amount:100}];
+const snapshots=[{merchant_id:'shop',parameters:{rate:5,discountType:'percentage',discountValue:10},result:{purchase:{order_id:'discounted'},redemption:{id:'r'},discountAmount:100}},{merchant_id:'shop',parameters:{rate:5,redeem:0},result:{purchase:{order_id:'full'}}}];
+const db={from(){return {select(){return this},in(){return this},async range(){return {data:snapshots,error:null}}}}};
+(async()=>{assert.equal(await netSales(db,orders),1000);assert.equal(orders[0].amount,1000);console.log('PASS: net sales use recorded discounts, zero discounts and original bills remain unchanged');})().catch(e=>{console.error(e);process.exitCode=1});

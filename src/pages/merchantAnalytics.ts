@@ -42,8 +42,8 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
     const countThroughEnd = (c: typeof customers[number]) => c.visits.filter(o => indiaDate(o.timestamp) <= end).length;
     const repeat = active.filter(c => countThroughEnd(c) >= 2);
     const loyal = active.filter(c => countThroughEnd(c) >= 5);
-    const sales = current.reduce((sum, o) => sum + o.amount, 0);
-    return { orders: current, active, fresh, returning, repeat, loyal, sales, average: current.length ? sales / current.length : 0 };
+    const sales = Math.round(current.reduce((sum, o) => sum + Math.round((o.salesAmount ?? o.amount)*100), 0))/100;
+    return { orders: current, active, fresh, returning, repeat, loyal, sales, average: current.length ? current.reduce((sum,o)=>sum+o.amount,0) / current.length : 0 };
   }
   const current = period(month, days);
   const priorMonth = previousMonth(month);
@@ -69,7 +69,7 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
   const busiest = heat.map(row => row.reduce((sum, n) => sum + n, 0));
   const busiestDay = current.orders.length ? busiest.indexOf(Math.max(...busiest)) : -1;
   const newSpend = current.orders.filter(o => freshIds.has(o.cid || o.phone || o.id)).reduce((sum, o) => sum + o.amount, 0);
-  return { customers, current, previous, priorMonth, growth, heat, busiestDay, days, newSpend, returningSpend: current.sales - newSpend,
+  return { customers, current, previous, priorMonth, growth, heat, busiestDay, days, newSpend, returningSpend: current.orders.reduce((sum,o)=>sum+o.amount,0) - newSpend,
     comparisonLabel: month === today.slice(0, 7) ? `vs first ${Math.min(days, monthDays(priorMonth))} days of last month` : 'vs previous month' };
 }
 export type MerchantAnalytics = ReturnType<typeof buildMerchantAnalytics>;
