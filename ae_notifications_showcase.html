@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AE Push Notifications & Offer Ad Integration Showcase</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+Malayalam:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif; }
+    .malayalam { font-family: 'Noto Sans Malayalam', 'Plus Jakarta Sans', sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-3 sm:p-6 flex flex-col items-center">
+
+  <!-- Header -->
+  <header class="w-full max-w-6xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center font-black text-white text-base shadow-lg shadow-orange-600/30">AE</span>
+        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Official Rich Push Notifications (01–06)</h1>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-400 mt-1">
+        Device Push Notifications (FCM) · Pure Phone Alert (<code class="text-orange-400 font-mono">pushOnly: true</code>, never clutters in-app inbox) · Offer & Ad Upload Hook
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Backend & App Connected
+      </span>
+      <a href="/merchant" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+        Merchant UI
+      </a>
+      <a href="/customer" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+        Customer UI
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT: Template Selector & Settings (7 cols) -->
+    <div class="lg:col-span-7 space-y-5">
+
+      <!-- Templates Grid -->
+      <section class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-extrabold uppercase tracking-wider text-slate-400">Step 1 · Pick Rich Push Template</h2>
+            <p class="text-xs text-slate-500">Click any official template from the PDF to auto-fill Malayalam copy & targeting</p>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-orange-950/60 text-orange-400 border border-orange-800/40">
+            6 Templates Ready
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="templateGrid">
+          <!-- Template cards injected by JS -->
+        </div>
+      </section>
+
+      <!-- Offer / Ad Banner Push on Upload Demo -->
+      <section class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-extrabold uppercase tracking-wider text-slate-400">Step 2 · Offer & Ad Upload Auto-Push Hook</h2>
+            <p class="text-xs text-slate-500">Test how uploading an offer/ad automatically sends the push notification</p>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-950/60 text-blue-400 border border-blue-800/40">
+            Auto-Matching
+          </span>
+        </div>
+
+        <div class="space-y-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800/80">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Offer / Ad Title</label>
+              <input id="demoOfferTitle" type="text" value="Special Malabar Biryani Festival - 20% Off" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:border-orange-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Category (Triggers matched template)</label>
+              <select id="demoCategory" onchange="handleCategoryChange(this.value)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:border-orange-500">
+                <option value="Food & Dining">Food & Dining (Maps to 04 FOOD ALERT)</option>
+                <option value="Fashion & Lifestyle">Fashion & Lifestyle (Maps to 01 OFFER ALERT)</option>
+                <option value="Electronics & Retail">Electronics & Retail (Maps to 02 SHOPPING REMINDER)</option>
+                <option value="Local Store Special">Local Store Special (Maps to 06 SHOP LOCAL)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- The Push on Upload Toggle -->
+          <div class="p-3 bg-slate-900 rounded-lg border border-orange-500/30 flex items-start gap-3">
+            <input type="checkbox" id="pushOnUploadToggle" checked onchange="togglePushOnUpload(this.checked)" class="mt-1 w-4 h-4 accent-orange-500 cursor-pointer">
+            <div class="flex-1">
+              <label for="pushOnUploadToggle" class="text-xs font-bold text-orange-400 cursor-pointer flex items-center gap-2">
+                🚀 Send Rich Push Notification on upload
+                <span class="text-[10px] font-extrabold bg-orange-600/20 text-orange-300 px-1.5 py-0.5 rounded">pushOnly: true</span>
+              </label>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Device push notification arrives instantly on customer phones. <strong>Never saved into customer in-app notifications inbox</strong>, keeping their app inbox uncluttered.
+              </p>
+            </div>
+          </div>
+
+          <!-- Matched Template Indicator -->
+          <div id="matchedTemplateNotice" class="text-xs p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">Auto-Matched Template:</span>
+            <span id="matchedTemplateBadge" class="font-extrabold text-amber-400">04 FOOD ALERT (AE FOOD OFFERS)</span>
+          </div>
+
+          <!-- Dispatch Test Action -->
+          <button onclick="dispatchDemoPush()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2 transition active:scale-[0.99]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            Simulate Upload & Dispatch Pure Push Notification
+          </button>
+        </div>
+      </section>
+
+      <!-- Target Audience Details -->
+      <section class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-xs space-y-2">
+        <h3 class="font-extrabold text-slate-300 flex items-center gap-2">
+          <span>🎯 Audience Targeting Matrix</span>
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-slate-400">
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-orange-400">01 Offer Alert</div>
+            <div>Offer browsers & shoppers</div>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-indigo-400">02 Shop & Save</div>
+            <div>Active retail customers</div>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-sky-400">03 AE Points</div>
+            <div>All rewards members</div>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-amber-400">04 Food Offers</div>
+            <div>Food & dining category</div>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-teal-400">05 What's New</div>
+            <div>Inactive users (14+ days)</div>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded border border-slate-800/60">
+            <div class="font-bold text-emerald-400">06 Shop Local</div>
+            <div>Local community & stores</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT: Phone Mockup & Push Notification Preview (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col items-center">
+      <div class="w-full max-w-[360px] bg-slate-900 border-4 border-slate-800 rounded-[44px] p-4 shadow-2xl shadow-black relative overflow-hidden">
+
+        <!-- Phone Top Notch & Camera -->
+        <div class="w-28 h-5 bg-slate-950 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+        </div>
+
+        <!-- Phone Status Bar -->
+        <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400 px-3 mb-4">
+          <span id="phoneClock">10:45 AM</span>
+          <div class="flex items-center gap-1.5">
+            <span>5G</span>
+            <div class="w-4 h-2 rounded-sm border border-slate-400 p-0.5">
+              <div class="h-full w-full bg-slate-400"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Banner Card -->
+        <div class="bg-white/95 backdrop-blur rounded-2xl p-3.5 text-slate-900 shadow-xl border border-slate-200">
+          <!-- Notification Header -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-md bg-orange-600 text-white font-black text-[10px] flex items-center justify-center shadow">AE</div>
+              <span class="text-xs font-bold text-slate-800">Affiliate AE</span>
+              <span class="text-[10px] text-slate-400">• Just now</span>
+            </div>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">Phone Push Only</span>
+          </div>
+
+          <!-- Malayalam Title & Body -->
+          <div class="mb-2.5">
+            <h4 id="previewTitle" class="malayalam text-sm font-extrabold text-slate-900 leading-tight">ഓഫറുകൾ കണ്ടോ?</h4>
+            <p id="previewBody" class="malayalam text-xs text-slate-600 mt-1 leading-snug">നമ്മുടെ നാട്ടിലെ കിടിലൻ ഓഫറുകൾ അറിയാൻ ഇപ്പോൾ തന്നെ AE തുറക്കൂ.</p>
+          </div>
+
+          <!-- 2:1 Aspect Ratio Push Banner (1200 x 600 px spec) -->
+          <div id="previewBanner" class="w-full aspect-[2/1] rounded-xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-3 text-white relative transition-all duration-300" style="background: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%);">
+            <span id="previewBannerSub" class="text-[9px] font-bold uppercase tracking-wider opacity-90 mb-1">01 / OFFER ALERT</span>
+            <span id="previewBannerText" class="text-xl font-black tracking-wide">AE OFFERS</span>
+            <span class="text-[9px] opacity-75 mt-2">1200 × 600 px (2:1 Ratio Push Banner)</span>
+          </div>
+
+          <!-- Deep Link Action Button -->
+          <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span id="previewDeepLink" class="text-[10px] font-mono text-slate-500">Target: /offers</span>
+            <button class="px-2.5 py-1 rounded-md bg-orange-600 text-white font-bold text-[10px] shadow-sm hover:bg-orange-700">Open App</button>
+          </div>
+        </div>
+
+        <!-- Device Push Notice -->
+        <div class="mt-4 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+          <div class="flex items-center gap-1.5 text-emerald-400 font-bold">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            FCM Direct Device Dispatch
+          </div>
+          <p>Bypasses <code class="text-slate-300">ae_customer_announcements</code> collection. Inbox stays clean while device alert rings.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const TEMPLATES = [
+      {
+        id: '01_offer_alert',
+        number: '01 / OFFER ALERT',
+        bannerText: 'AE OFFERS',
+        color: '#ea580c',
+        gradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%)',
+        title: 'ഓഫറുകൾ കണ്ടോ?',
+        body: 'നമ്മുടെ നാട്ടിലെ കിടിലൻ ഓഫറുകൾ അറിയാൻ ഇപ്പോൾ തന്നെ AE തുറക്കൂ.',
+        targetLabel: 'Offer Browsers & Shoppers',
+        url: '/offers'
+      },
+      {
+        id: '02_shopping_reminder',
+        number: '02 / SHOPPING REMINDER',
+        bannerText: 'AE SHOP & SAVE',
+        color: '#6366f1',
+        gradient: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%)',
+        title: 'ഇന്ന് പർച്ചേസ് ഉണ്ടോ?',
+        body: 'കടയിൽ പോകുന്നതിന് മുമ്പ് AE തുറക്കാൻ മറക്കല്ലേ. ഡിസ്കൗണ്ടുകളും ഓഫറുകളും അറിയാം!',
+        targetLabel: 'Active Retail Shoppers',
+        url: '/merchants'
+      },
+      {
+        id: '03_points_reminder',
+        number: '03 / POINTS REMINDER',
+        bannerText: 'AE POINTS',
+        color: '#0284c7',
+        gradient: 'linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #38bdf8 100%)',
+        title: 'പർച്ചേസ് ചെയ്യുമ്പോൾ പോയിന്റുകൾ നേടാം!',
+        body: 'AE സ്ഥാപനങ്ങളിൽ പർച്ചേസ് ചെയ്യുമ്പോൾ QR സ്കാൻ ചെയ്യാൻ മറക്കല്ലേ.',
+        targetLabel: 'All Reward Members',
+        url: '/scan'
+      },
+      {
+        id: '04_food_alert',
+        number: '04 / FOOD ALERT',
+        bannerText: 'AE FOOD OFFERS',
+        color: '#b45309',
+        gradient: 'linear-gradient(135deg, #92400e 0%, #b45309 50%, #d97706 100%)',
+        title: 'എന്തെങ്കിലും സ്പെഷ്യൽ കഴിച്ചാലോ?',
+        body: 'നമ്മുടെ നാട്ടിലെ ഭക്ഷണശാലകളിലെ ഓഫറുകൾ AE വഴി അറിയാം.',
+        targetLabel: 'Food & Dining Category',
+        url: '/offers?category=Food%20%26%20Dining'
+      },
+      {
+        id: '05_re_engagement',
+        number: '05 / RE-ENGAGEMENT',
+        bannerText: "AE WHAT'S NEW",
+        color: '#0f766e',
+        gradient: 'linear-gradient(135deg, #115e59 0%, #0f766e 50%, #14b8a6 100%)',
+        title: 'എന്താ, AE മറന്നോ?',
+        body: 'പുതിയ ഓഫറുകളും ഡിസ്കൗണ്ടുകളും നിങ്ങളെ കാത്തിരിക്കുന്നു. ഒന്ന് തുറന്നു നോക്കൂ!',
+        targetLabel: 'Inactive Users (14+ days)',
+        url: '/home'
+      },
+      {
+        id: '06_local_merchant_promotion',
+        number: '06 / LOCAL MERCHANT PROMOTION',
+        bannerText: 'AE SHOP LOCAL',
+        color: '#15803d',
+        gradient: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%)',
+        title: 'നമ്മുടെ നാട്ടിൽ തന്നെ ലാഭം നേടാം!',
+        body: 'നമ്മുടെ നാട്, നമ്മുടെ സ്ഥാപനങ്ങൾ, നമ്മുടെ സന്തോഷം. AE കൂടെയുണ്ട്.',
+        targetLabel: 'Local Community & Shoppers',
+        url: '/merchants'
+      }
+    ];
+
+    let currentTemplateId = '01_offer_alert';
+
+    function renderTemplates() {
+      const grid = document.getElementById('templateGrid');
+      grid.innerHTML = TEMPLATES.map(t => {
+        const isSel = t.id === currentTemplateId;
+        return `
+          <div onclick="selectTemplate('${t.id}')"
+            class="cursor-pointer rounded-xl border transition-all p-3 flex flex-col justify-between ${isSel ? 'border-orange-500 bg-slate-800 shadow-md ring-2 ring-orange-500/30' : 'border-slate-800 bg-slate-950/70 hover:border-slate-700'}">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-white" style="background: ${t.color}">${t.bannerText}</span>
+                <span class="text-[9px] font-bold text-slate-400">${t.number.split(' / ')[0]}</span>
+              </div>
+              <h4 class="malayalam font-extrabold text-xs text-white leading-tight mb-1">${t.title}</h4>
+              <p class="malayalam text-[11px] text-slate-400 line-clamp-2 leading-relaxed">${t.body}</p>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+              <span class="font-bold" style="color: ${t.color}">🎯 ${t.targetLabel}</span>
+              <span class="font-mono text-slate-500">${t.url.split('?')[0]}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectTemplate(id) {
+      currentTemplateId = id;
+      const t = TEMPLATES.find(item => item.id === id);
+      if (!t) return;
+
+      document.getElementById('previewTitle').innerText = t.title;
+      document.getElementById('previewBody').innerText = t.body;
+      document.getElementById('previewBanner').style.background = t.gradient;
+      document.getElementById('previewBannerSub').innerText = t.number;
+      document.getElementById('previewBannerText').innerText = t.bannerText;
+      document.getElementById('previewDeepLink').innerText = 'Target: ' + t.url;
+
+      renderTemplates();
+    }
+
+    function handleCategoryChange(cat) {
+      if (cat.includes('Food') || cat.includes('Dining')) {
+        selectTemplate('04_food_alert');
+        document.getElementById('matchedTemplateBadge').innerText = '04 FOOD ALERT (AE FOOD OFFERS)';
+        document.getElementById('matchedTemplateBadge').className = 'font-extrabold text-amber-400';
+      } else if (cat.includes('Retail') || cat.includes('Electronics')) {
+        selectTemplate('02_shopping_reminder');
+        document.getElementById('matchedTemplateBadge').innerText = '02 SHOPPING REMINDER (AE SHOP & SAVE)';
+        document.getElementById('matchedTemplateBadge').className = 'font-extrabold text-indigo-400';
+      } else if (cat.includes('Local')) {
+        selectTemplate('06_local_merchant_promotion');
+        document.getElementById('matchedTemplateBadge').innerText = '06 SHOP LOCAL (AE SHOP LOCAL)';
+        document.getElementById('matchedTemplateBadge').className = 'font-extrabold text-emerald-400';
+      } else {
+        selectTemplate('01_offer_alert');
+        document.getElementById('matchedTemplateBadge').innerText = '01 OFFER ALERT (AE OFFERS)';
+        document.getElementById('matchedTemplateBadge').className = 'font-extrabold text-orange-400';
+      }
+    }
+
+    function togglePushOnUpload(enabled) {
+      const notice = document.getElementById('matchedTemplateNotice');
+      if (enabled) {
+        notice.style.display = 'flex';
+      } else {
+        notice.style.display = 'none';
+      }
+    }
+
+    function dispatchDemoPush() {
+      const t = TEMPLATES.find(item => item.id === currentTemplateId);
+      alert(`🚀 Rich Push Notification Dispatched!\n\nTemplate: ${t.number} (${t.bannerText})\nTitle: ${t.title}\nBody: ${t.body}\nTarget URL: ${t.url}\npushOnly: true (Not saved to customer in-app inbox)`);
+    }
+
+    // Init clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('phoneClock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+
+    renderTemplates();
+  </script>
+</body>
+</html>

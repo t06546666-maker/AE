@@ -1,5 +1,8 @@
 const crypto = require('crypto');
 const { uploadFileToCloudStorage } = require('./cloud-storage.cjs');
+const { RICH_PUSH_TEMPLATES } = require('./rich-push-templates.cjs');
+
+let globalExecuteBroadcast = null;
 
 /**
  * Register Admin Notification Management routes and background scheduler
@@ -33,6 +36,7 @@ function registerAdminNotifications(app, {
   /**
    * Helper to execute broadcast notification to customers and/or merchants or a specific customer
    */
+  globalExecuteBroadcast = executeBroadcastNotification;
   async function executeBroadcastNotification({
     title,
     body,
@@ -459,11 +463,40 @@ function registerAdminNotifications(app, {
         successCount += response.successCount;
         failureCount += response.failureCount;
 
+        const deadTokens = [];
         response.responses.forEach((r, idx) => {
           if (!r.success) {
+            const errCode = r.error?.code || '';
             console.warn(`[admin-notifications] FCM Token error (${chunk[idx].token.slice(0, 10)}...):`, r.error?.message);
+            if (errCode === 'messaging/registration-token-not-registered' || errCode === 'messaging/invalid-registration-token') {
+              deadTokens.push(chunk[idx].token);
+            }
           }
         });
+
+        // Automatically prune stale / unregistered tokens so future broadcasts only target active devices
+        if (deadTokens.length > 0) {
+          Promise.allSettled(
+            deadTokens.map(async (staleToken) => {
+              try {
+                // 1. Prune from customer notifications
+                const cSnap = await db.collection('ae_customer_notifications').where('push_token', '==', staleToken).get();
+                cSnap.forEach((d) => d.ref.update({ push_token: null, push_enabled: false, pruned_at: new Date().toISOString() }));
+
+                // 2. Prune from profile push registrations
+                const pSnap = await db.collection('ae_profile_push_registrations').where('push_token', '==', staleToken).get();
+                pSnap.forEach((d) => d.ref.update({ push_token: null, push_enabled: false, pruned_at: new Date().toISOString() }));
+
+                // 3. Prune from Supabase profiles
+                if (supabase) {
+                  await supabase.from('profiles').update({ push_token: null }).eq('push_token', staleToken);
+                }
+              } catch (pruneErr) {
+                console.warn('[admin-notifications] Could not auto-prune stale token:', pruneErr.message);
+              }
+            })
+          ).catch(() => {});
+        }
       } catch (batchErr) {
         console.error('[admin-notifications] Batch send error:', batchErr.message);
         failureCount += chunk.length;
@@ -594,16 +627,27 @@ function registerAdminNotifications(app, {
       const { db, FieldValue } = await getFirebaseInstances();
       const nowIso = new Date().toISOString();
 
-      const snapshot = await db
-        .collection('ae_scheduled_notifications')
-        .where('status', '==', 'scheduled')
-        .where('scheduled_at', '<=', nowIso)
-        .limit(10)
-        .get();
+      let snapshot;
+      try {
+        snapshot = await db
+          .collection('ae_scheduled_notifications')
+          .where('status', '==', 'scheduled')
+          .limit(25)
+          .get();
+      } catch (err) {
+        return;
+      }
 
-      if (snapshot.empty) return;
+      if (!snapshot || snapshot.empty) return;
 
-      for (const doc of snapshot.docs) {
+      const dueDocs = snapshot.docs.filter((doc) => {
+        const d = doc.data();
+        return d.scheduled_at && d.scheduled_at <= nowIso;
+      });
+
+      if (dueDocs.length === 0) return;
+
+      for (const doc of dueDocs) {
         const data = doc.data();
         console.log(`[admin-notifications-scheduler] Processing scheduled push: ${doc.id} ("${data.title}")`);
 
@@ -652,7 +696,10 @@ function registerAdminNotifications(app, {
       }
     } catch (schedErr) {
       // Don't crash server on scheduler loop error
-      console.warn('[admin-notifications-scheduler] Loop check warning:', schedErr.message);
+      if (!global.__firestoreIndexWarned) {
+        global.__firestoreIndexWarned = true;
+        console.warn('[admin-notifications-scheduler] Loop check warning (logged once):', schedErr.message);
+      }
     }
   }
 
@@ -806,6 +853,14 @@ function registerAdminNotifications(app, {
    * GET /api/admin/notifications/stats
    * Returns active device counts
    */
+  /**
+   * GET /api/admin/notification-templates
+   * Returns official AE rich push notification templates (01-06)
+   */
+  app.get('/api/admin/notification-templates', auth, async (_req, res) => {
+    return res.json({ success: true, templates: RICH_PUSH_TEMPLATES });
+  });
+
   app.get('/api/admin/notifications/stats', auth, adminRole, async (_req, res) => {
     try {
       const { db } = await getFirebaseInstances();
@@ -1221,6 +1276,15 @@ function registerAdminNotifications(app, {
   });
 }
 
+async function dispatchPushNotification(payload) {
+  if (typeof globalExecuteBroadcast === 'function') {
+    return await globalExecuteBroadcast(payload);
+  }
+  console.warn('[admin-notifications] Broadcast dispatcher not initialized yet');
+  return null;
+}
+
 module.exports = {
   registerAdminNotifications,
+  dispatchPushNotification,
 };

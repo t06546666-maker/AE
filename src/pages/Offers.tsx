@@ -9,6 +9,7 @@ import { apiFetch, downloadExport, queryString } from '../api';
 import { EmptyState, ErrorState, LoadingState, PageHeader, PaginationBar } from '../components/Common';
 import type { Offer, OfferStatus, Pagination, UserProfile } from '../types';
 import { formatDate, optimizeImageForUpload } from '../utils';
+import { RICH_PUSH_TEMPLATES, getTemplateForCategory } from '../constants/richPushTemplates';
 import { useToast } from '../toast';
 import { OfferPerformance } from '../components/OfferPerformance';
 
@@ -44,6 +45,8 @@ export function Offers({ user }: { user: UserProfile }) {
   const [downloadingOfferId, setDownloadingOfferId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
   const [adminMerchantId, setAdminMerchantId] = useState('');
+  const [sendPushOnUpload, setSendPushOnUpload] = useState(false);
+  const [chosenTemplateId, setChosenTemplateId] = useState('01_offer_alert');
   const merchantsQuery = useQuery({
     queryKey: ['admin-merchants-selection'],
     queryFn: () => apiFetch<{ merchants: { id: string; name: string; merchantCode: string }[] }>('/api/merchants?pageSize=100'),
@@ -93,6 +96,8 @@ export function Offers({ user }: { user: UserProfile }) {
     setExpiresAt(tomorrowInput());
     setImage(null);
     setBannerImage(null);
+    setSendPushOnUpload(false);
+    setChosenTemplateId('01_offer_alert');
     if (user.role === 'admin' && merchantsQuery.data?.merchants?.length) {
       setAdminMerchantId(merchantsQuery.data.merchants[0].id);
     }
@@ -107,6 +112,8 @@ export function Offers({ user }: { user: UserProfile }) {
     setExpiresAt(offer.expiresAt.slice(0, 10));
     setImage(null);
     setBannerImage(null);
+    setSendPushOnUpload(false);
+    setChosenTemplateId('01_offer_alert');
     if (user.role === 'admin' && offer.merchantId) {
       setAdminMerchantId(offer.merchantId);
     }
@@ -128,6 +135,8 @@ export function Offers({ user }: { user: UserProfile }) {
       }
       if (image) body.set('image', image);
       if (bannerImage) body.set('bannerImage', bannerImage);
+      body.set('sendPush', String(sendPushOnUpload));
+      if (sendPushOnUpload) body.set('templateId', chosenTemplateId);
       return apiFetch(editing ? `/api/offers/${encodeURIComponent(editing.id)}` : '/api/offers', {
         method: editing ? "PUT" : "POST",
         body,
@@ -276,6 +285,49 @@ export function Offers({ user }: { user: UserProfile }) {
               )}
             </label>
           </div>
+                      {/* Send Rich Push on Publish */}
+            <div style={{ gridColumn: '1 / -1', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#166534' }}>
+                <input
+                  type="checkbox"
+                  checked={sendPushOnUpload}
+                  onChange={(e) => {
+                    setSendPushOnUpload(e.target.checked);
+                    if (e.target.checked) {
+                      const matched = getTemplateForCategory(category);
+                      setChosenTemplateId(matched.id);
+                    }
+                  }}
+                  style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                />
+                <span>📲 {uiText("Send Rich Push Notification to Customers on publish")}</span>
+              </label>
+              <div style={{ fontSize: '11px', color: '#15803d', marginLeft: '26px', marginTop: '3px' }}>
+                {uiText("Normal device push notification (pushOnly) — pops up on customers' phone screens, but is NOT saved into their in-app inbox.")}
+              </div>
+
+              {sendPushOnUpload && (
+                <div style={{ marginTop: '10px', marginLeft: '26px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#14532d' }}>{uiText("Target Template:")}</span>
+                    <select
+                      value={chosenTemplateId}
+                      onChange={(e) => setChosenTemplateId(e.target.value)}
+                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #86efac', fontSize: '12px', fontWeight: 600 }}
+                    >
+                      {RICH_PUSH_TEMPLATES.map((tmpl) => (
+                        <option key={tmpl.id} value={tmpl.id}>
+                          {tmpl.number}: {tmpl.title} ({tmpl.bannerText})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#166534', background: '#dcfce7', padding: '6px 10px', borderRadius: '6px' }}>
+                    📢 {RICH_PUSH_TEMPLATES.find((t) => t.id === chosenTemplateId)?.body}
+                  </div>
+                </div>
+              )}
+            </div>
           <div className="form-actions">
             <button className="button primary" disabled={save.isPending}>
               <Send size={16} />{editing ? t('offers.resubmit') : user.role === 'admin' ? uiText('Publish Ad / Offer') : t('offers.submit')}
@@ -401,7 +453,7 @@ export function Offers({ user }: { user: UserProfile }) {
             <h2>{t('offers.reject')}</h2>
             <p>{rejecting.title}</p>
             <label>{t('offers.rejectionReason')}<textarea value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} maxLength={500} required /></label>
-            <div className="form-actions">
+                      <div className="form-actions">
               <button className="button danger-button" disabled={reject.isPending}>{t('offers.reject')}</button>
               <button type="button" className="button secondary" onClick={() => setRejecting(null)}>{t('offers.cancel')}</button>
             </div>

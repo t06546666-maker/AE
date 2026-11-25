@@ -102,6 +102,23 @@ async function sendPushNotification(token, title, body, data = {}, imageUrl = nu
     return true;
   } catch (error) {
     console.error('Error sending push notification:', error.message);
+    if (error.code === 'messaging/registration-token-not-registered' || error.code === 'messaging/invalid-registration-token') {
+      (async () => {
+        try {
+          const { getFirestore } = await import('firebase-admin/firestore');
+          const db = getFirestore();
+          const cSnap = await db.collection('ae_customer_notifications').where('push_token', '==', token).get();
+          cSnap.forEach((d) => d.ref.update({ push_token: null, push_enabled: false, pruned_at: new Date().toISOString() }));
+          const pSnap = await db.collection('ae_profile_push_registrations').where('push_token', '==', token).get();
+          pSnap.forEach((d) => d.ref.update({ push_token: null, push_enabled: false, pruned_at: new Date().toISOString() }));
+          if (supabaseAdmin) {
+            await supabaseAdmin.from('profiles').update({ push_token: null }).eq('push_token', token);
+          }
+        } catch (cleanErr) {
+          console.warn('Could not auto-prune dead token:', cleanErr.message);
+        }
+      })().catch(() => {});
+    }
     return false;
   }
 }
@@ -5065,7 +5082,35 @@ app.post(
       }
 
       if (!isAdmin) {
-        await pushToRole('admin', 'New merchant offer', `${title} is waiting for approval.`, { url: '/offers', offerId: offer.id });
+        await pushToRole('admin', 'New merchant offer', ` is waiting for approval.`, { url: '/offers', offerId: offer.id });
+      } else {
+        const sendPush = req.body.sendPush === 'true' || req.body.sendPush === true;
+        if (sendPush) {
+          try {
+            const { getTemplateForCategory, getTemplateById } = require('./backend/rich-push-templates.cjs');
+            const { dispatchPushNotification } = require('./backend/admin-notifications.cjs');
+            const chosenTemplate = (req.body.templateId && getTemplateById(req.body.templateId)) || getTemplateForCategory(category);
+            const pushTitle = (req.body.pushTitle || '').trim() || chosenTemplate?.title || title || 'ഓഫറുകൾ കണ്ടോ?';
+            const pushBody = (req.body.pushBody || '').trim() || chosenTemplate?.body || description || 'നമ്മുടെ നാട്ടിലെ കിടിലൻ ഓഫറുകൾ അറിയാൻ ഇപ്പോൾ തന്നെ AE തുറക്കൂ.';
+            const pushUrl = (req.body.pushUrl || '').trim() || chosenTemplate?.url || '/offers';
+            const pushTarget = (req.body.pushTarget || 'customers').trim();
+
+            const finalOfferDto = await offerDto(offer);
+            const offerImg = finalOfferDto.bannerImageUrl || finalOfferDto.imageUrl || '';
+
+            await dispatchPushNotification({
+              title: pushTitle,
+              body: pushBody,
+              url: pushUrl,
+              imageUrl: offerImg,
+              target: pushTarget,
+              pushOnly: true,
+            });
+            console.log('[offers] Dispatched rich push notification on offer publish:', { pushTitle, pushTarget });
+          } catch (pushErr) {
+            console.warn('[offers] Failed to dispatch push notification on offer publish:', pushErr.message);
+          }
+        }
       }
       return res.status(201).json({ success: true, offer: await offerDto(offer) });
     } catch (error) {

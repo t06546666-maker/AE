@@ -37,6 +37,7 @@ import { useToast } from '../toast';
 import { uiText } from '../uiText';
 import { formatDateTime } from '../utils';
 import { MilestoneVoucherCard } from '../components/MilestoneVoucherCard';
+import { RICH_PUSH_TEMPLATES, type RichPushTemplate } from '../constants/richPushTemplates';
 
 interface NotificationStats {
   customerTokens: number;
@@ -176,6 +177,7 @@ export function AdminNotifications() {
   const [dispatchMode, setDispatchMode] = useState<'now' | 'schedule'>('now');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
   const [activeTab, setActiveTab] = useState<'create' | 'scheduled' | 'history'>('create');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Handle URL query parameters for pre-selecting a customer or merchant
   useEffect(() => {
@@ -1386,7 +1388,105 @@ export function AdminNotifications() {
               </div>
             )}
 
-            {/* Quick Templates / Milestone Presets Bar */}
+                        {/* Official AE Rich Push Notification Templates (01–06) */}
+            <div style={{ marginBottom: '16px', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="#ea580c" /> {uiText("Official AE Rich Push Notification Templates (01–06)")}
+                  </span>
+                  <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#64748b' }}>
+                    {uiText("Target the right audience with pure device push (does NOT save or clutter in-app inbox).")}
+                  </p>
+                </div>
+                {selectedTemplateId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTemplateId(null);
+                      setTitle('');
+                      setBody('');
+                      setUrl('');
+                    }}
+                    style={{ fontSize: '11px', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    ✕ {uiText("Clear Template")}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                {RICH_PUSH_TEMPLATES.map((tmpl) => {
+                  const isSelected = selectedTemplateId === tmpl.id;
+                  return (
+                    <div
+                      key={tmpl.id}
+                      onClick={() => {
+                        setSelectedTemplateId(tmpl.id);
+                        setTitle(tmpl.title);
+                        setBody(tmpl.body);
+                        setUrl(tmpl.url);
+                        setPushOnly(true);
+                        setPreviewTab('push');
+                        if (tmpl.defaultTarget === 'all') {
+                          setTarget('all');
+                        } else {
+                          setTarget('customers');
+                        }
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        borderRadius: '12px',
+                        border: isSelected ? `2px solid ${tmpl.color}` : '1px solid #cbd5e1',
+                        background: isSelected ? '#f8fafc' : '#ffffff',
+                        boxShadow: isSelected ? `0 4px 14px ${tmpl.color}35` : '0 1px 3px rgba(0,0,0,0.04)',
+                        overflow: 'hidden',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      {/* Top Banner Tag */}
+                      <div
+                        style={{
+                          background: tmpl.gradient,
+                          padding: '7px 10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          color: '#ffffff',
+                        }}
+                      >
+                        <span style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.5px' }}>{tmpl.bannerText}</span>
+                        <span style={{ fontSize: '9px', fontWeight: 700, opacity: 0.9, textTransform: 'uppercase', background: 'rgba(0,0,0,0.22)', padding: '2px 6px', borderRadius: '4px' }}>
+                          {tmpl.number}
+                        </span>
+                      </div>
+
+                      {/* Card Body */}
+                      <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>{tmpl.title}</div>
+                        <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {tmpl.body}
+                        </div>
+
+                        {/* Target & Deep Link info */}
+                        <div style={{ marginTop: 'auto', paddingTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0' }}>
+                          <span style={{ fontSize: '10px', color: tmpl.color, fontWeight: 700 }}>
+                            🎯 {tmpl.targetLabel}
+                          </span>
+                          <span style={{ fontSize: '9px', color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                            {tmpl.url}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+{/* Quick Templates / Milestone Presets Bar */}
             <div style={{ marginBottom: '16px', padding: '12px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2296,12 +2396,40 @@ export function AdminNotifications() {
                       {body || uiText("Your notification message will appear here on customer phones.")}
                     </div>
 
-                    {/* Optional Image */}
-                    {imagePreview && (
+                    {/* Optional Image / Template Banner */}
+                    {imagePreview ? (
                       <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', aspectRatio: '2/1', background: '#0f172a', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img src={imagePreview} alt="Push banner" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       </div>
-                    )}
+                    ) : selectedTemplateId ? (
+                      <div
+                        style={{
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          marginBottom: '10px',
+                          aspectRatio: '2/1',
+                          background: RICH_PUSH_TEMPLATES.find((t) => t.id === selectedTemplateId)?.gradient || '#ea580c',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          padding: '16px',
+                          textAlign: 'center',
+                          boxShadow: 'inset 0 0 20px rgba(0,0,0,0.15)',
+                        }}
+                      >
+                        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '1px', opacity: 0.9, textTransform: 'uppercase', marginBottom: '4px' }}>
+                          {RICH_PUSH_TEMPLATES.find((t) => t.id === selectedTemplateId)?.number}
+                        </span>
+                        <span style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '1px' }}>
+                          {RICH_PUSH_TEMPLATES.find((t) => t.id === selectedTemplateId)?.bannerText}
+                        </span>
+                        <span style={{ fontSize: '10px', marginTop: '6px', opacity: 0.85 }}>
+                          1200 × 600 px (2:1 Ratio Push Banner)
+                        </span>
+                      </div>
+                    ) : null}
 
                     {/* Optional Link Button */}
                     {url && (

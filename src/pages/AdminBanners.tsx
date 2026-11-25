@@ -20,6 +20,7 @@ import { useToast } from '../toast';
 import { uiText } from '../uiText';
 import { optimizeImageForUpload } from '../utils';
 import type { UserProfile, Offer } from '../types';
+import { RICH_PUSH_TEMPLATES, getTemplateForCategory } from '../constants/richPushTemplates';
 
 interface AdBannerItem {
   id: string;
@@ -62,6 +63,8 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   const [optimizingImage, setOptimizingImage] = useState(false);
   const [active, setActive] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendPushOnUpload, setSendPushOnUpload] = useState(false);
+  const [chosenTemplateId, setChosenTemplateId] = useState('01_offer_alert');
 
   // 1. Fetch current ad banners
   const { data: bannersData, isLoading: bannersLoading, error: bannersError, refetch } = useQuery({
@@ -117,6 +120,8 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
     setBannerImageFile(null);
     setBannerImagePreview('');
     setActive(true);
+    setSendPushOnUpload(false);
+    setChosenTemplateId('01_offer_alert');
     setModalOpen(true);
   };
 
@@ -188,6 +193,8 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
       form.set('subtitle',subtitle);form.set('titleMl',titleMl);form.set('subtitleMl',subtitleMl);form.set('displayOrder',String(displayOrder));
       form.append('active', String(active));
       form.append('placement', 'top');
+      form.append('sendPush', String(sendPushOnUpload));
+      if (sendPushOnUpload) form.append('templateId', chosenTemplateId);
 
       // If custom banner file selected, attach it
       if (bannerImageFile) {
@@ -812,6 +819,51 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
                 />
                 <span>{uiText("Show immediately on customer home carousel")}</span>
               </label>
+
+              {/* Send Push on Upload */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginTop: '6px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                  <input
+                    type="checkbox"
+                    checked={sendPushOnUpload}
+                    onChange={(e) => {
+                      setSendPushOnUpload(e.target.checked);
+                      if (e.target.checked && selectedOffer?.category) {
+                        const matched = getTemplateForCategory(selectedOffer.category);
+                        setChosenTemplateId(matched.id);
+                      }
+                    }}
+                    style={{ width: '18px', height: '18px', accentColor: '#ea580c' }}
+                  />
+                  <span>🚀 {uiText("Send Rich Push Notification to Customers on upload")}</span>
+                </label>
+                <div style={{ fontSize: '11px', color: '#64748b', marginLeft: '26px', marginTop: '3px' }}>
+                  {uiText("Normal device push notification (pushOnly) — appears on customers' phone screens, but is NOT saved into their in-app inbox.")}
+                </div>
+
+                {sendPushOnUpload && (
+                  <div style={{ marginTop: '10px', marginLeft: '26px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>{uiText("Template:")}</span>
+                      <select
+                        value={chosenTemplateId}
+                        onChange={(e) => setChosenTemplateId(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600 }}
+                      >
+                        {RICH_PUSH_TEMPLATES.map((tmpl) => (
+                          <option key={tmpl.id} value={tmpl.id}>
+                            {tmpl.number}: {tmpl.title} ({tmpl.bannerText})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#0369a1', background: '#e0f2fe', padding: '6px 10px', borderRadius: '6px' }}>
+                      📢 {RICH_PUSH_TEMPLATES.find((t) => t.id === chosenTemplateId)?.body}
+                    </div>
+                  </div>
+                )}
+              </div>
+
 
               {/* Actions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>

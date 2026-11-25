@@ -390,7 +390,36 @@ function registerAdBanners(app, { auth, adminRole, customerAuth, supabase, uploa
 
       newBanner.imageUrl = await resolveBannerImageUrl(newBanner, supabase, bucket, signedUrlHelper);
 
-      res.status(201).json({ success: true, banner: newBanner });
+      // Automatic Rich Push Notification on Ad/Offer Banner upload
+      const sendPush = req.body.sendPush === 'true' || req.body.sendPush === true;
+      let pushDispatched = false;
+      if (sendPush) {
+        try {
+          const { getTemplateForCategory, getTemplateById } = require('./rich-push-templates.cjs');
+          const { dispatchPushNotification } = require('./admin-notifications.cjs');
+          const chosenTemplate = (req.body.templateId && getTemplateById(req.body.templateId)) || getTemplateForCategory(category);
+          const pushTitle = (req.body.pushTitle || '').trim() || chosenTemplate?.title || title || 'ഓഫറുകൾ കണ്ടോ?';
+          const pushBody = (req.body.pushBody || '').trim() || chosenTemplate?.body || subtitle || 'നമ്മുടെ നാട്ടിലെ കിടിലൻ ഓഫറുകൾ അറിയാൻ ഇപ്പോൾ തന്നെ AE തുറക്കൂ.';
+          const pushUrl = (req.body.pushUrl || '').trim() || (chosenTemplate?.url || (offerId ? '/offers' : '/home'));
+          const pushTarget = (req.body.pushTarget || chosenTemplate?.defaultTarget || 'customers').trim();
+          const bannerFinalImg = newBanner.imageUrl || imageUrl || offerImageUrl || '';
+
+          const pushRes = await dispatchPushNotification({
+            title: pushTitle,
+            body: pushBody,
+            url: pushUrl,
+            imageUrl: bannerFinalImg,
+            target: pushTarget,
+            pushOnly: true, // STRICTLY pure phone push alert! Never saved in in-app inbox
+          });
+          pushDispatched = Boolean(pushRes?.delivered || pushRes?.success);
+          console.log('[ad-banners] Dispatched pure push notification on upload:', { pushTitle, pushTarget, pushDispatched });
+        } catch (pushErr) {
+          console.warn('[ad-banners] Error dispatching push on upload:', pushErr.message);
+        }
+      }
+
+      res.status(201).json({ success: true, banner: newBanner, pushDispatched });
     } catch (err) {
       console.error('[ad-banners] Error creating banner:', err);
       res.status(500).json({ error: err.message || 'Failed to create banner' });
