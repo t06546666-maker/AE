@@ -55,6 +55,8 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       if (refresh) return claims.kind === 'refresh' ? res.json(tokens(account)) : res.status(401).json({ error: 'Invalid refresh session.' });
       if (claims.kind !== 'access') return res.status(401).json({ error: 'Invalid test session.' });
       if (req.path === '/api/auth/me' && req.method === 'GET') return res.json({ success: true, user: publicUser(account) });
+      // Synthetic identities do not accept or record real merchant contracts.
+      if (req.path === '/api/profile/legal' && req.method === 'GET') return res.json({ enabled: false, accepted: false, termsVersion: 'private-test-only', privacyVersion: 'private-test-only', testAccount: true });
       if (req.path === '/api/merchant/puc/config' && req.method === 'GET') { const config = await rewards(); return res.json({ eligible: true, shopName: account.name, earnOptions: config.earnOptions, testAccount: true }); }
       const records = accountRef(db, account.id).collection('registrations');
       if (req.path === '/api/merchant/puc/records' && req.method === 'POST') {

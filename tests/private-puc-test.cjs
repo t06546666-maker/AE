@@ -19,6 +19,7 @@ const test=privatePucTest({database:async()=>db,signingKey:'unit-test-only-key',
   assert.equal((await call('/api/auth/login','POST',{email:created.body.loginEmail,password:'wrong'})).status,401);
   const login=await call('/api/auth/login','POST',{email:created.body.merchantCode,password:created.body.temporaryPassword});assert.equal(login.status,200);const token=login.body.accessToken;
   assert.equal((await call('/api/auth/me','GET',null,token)).body.user.testAccount,true);
+  assert.equal((await call('/api/profile/legal','GET',null,token)).body.enabled,false);
   assert.equal((await call('/api/merchant/puc/config','GET',null,token)).body.eligible,true);
   const value={name:'Test User',phone:'9000000000',plate:'KL01TEST',model:'Test vehicle',amount:200,rate:20,testDate:'2026-11-25',expiryDate:'2027-05-25',consent:true},key=crypto.randomUUID();
   assert.equal((await call('/api/merchant/puc/records','POST',{...value,rate:99},token,key)).status,400);
