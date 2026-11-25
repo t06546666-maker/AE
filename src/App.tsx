@@ -54,6 +54,7 @@ const CustomerShopScan = lazy(() => import('./components/ShopCheckout').then(m =
 const MerchantShopCheckout = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.MerchantShopCheckout })));
 const MerchantExpiryManager = lazy(() => import('./pages/PucRegister').then(m => ({ default: m.PucRegister })));
 const PucCustomerEntry = lazy(() => import('./pages/PucRegister').then(m => ({default:m.PucCustomerEntry})));
+const PucCustomerDirectory = lazy(() => import('./pages/PucRegister').then(m => ({default:m.PucCustomerDirectory})));
 const ShopRequestAlert = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.ShopRequestAlert })));
 const Merchants = lazy(() => import('./pages/Merchants').then(m => ({ default: m.Merchants })));
 const MerchantCategories = lazy(() => import('./pages/MerchantCategories').then(m => ({ default: m.MerchantCategories })));
@@ -449,7 +450,7 @@ export function App() {
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager /></RoleRoute>} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
-          <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
+          <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <PucCustomerDirectory fallback={<MerchantOverview user={user} />} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />

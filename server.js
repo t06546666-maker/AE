@@ -5965,7 +5965,19 @@ async function onboardShopCustomer(req, res) {
   });
 }
 app.post('/api/customers', requireAuth, onboardShopCustomer);
-require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate});
+let pucTemplateCache=null;
+async function resolvePucReminderTemplate(shop){
+ if(!WA_TOKEN)return null;
+ if(!pucTemplateCache||Date.now()-pucTemplateCache.checkedAt>60000){
+  const response=await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/1704111374252634/message_templates`,{params:{name:'ae_puc_partner_expiry_reminder_v1',fields:'name,status,language,components'},headers:{Authorization:`Bearer ${WA_TOKEN}`},timeout:WA_REQUEST_TIMEOUT_MS});
+  const approved=(response.data?.data||[]).find(t=>t.name==='ae_puc_partner_expiry_reminder_v1'&&t.status==='APPROVED'&&t.language==='en'&&t.components?.some(c=>c.type==='BODY'&&c.text?.includes('AE PUC Partner')&&!c.text?.includes('PITSTOP')));
+  pucTemplateCache={checkedAt:Date.now(),template:approved?{name:approved.name,language:approved.language}:null};
+ }
+ if(pucTemplateCache.template)return pucTemplateCache.template;
+ // The existing approved PITSTOP template stays available only to that brand.
+ return /pitstop/i.test(shop.name)?{name:'ae_vehicle_pollution_expiry_reminder',language:'en'}:null;
+}
+require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate,resolveTemplate:resolvePucReminderTemplate});
 require('./backend/puc-register.cjs').registerPuc(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),rewards:getAdminRewardConfig,onboard:async(req,value,key)=>{let status=200,body;await onboardShopCustomer({...req,body:{name:value.name,phone:value.phone,amount:value.amount,rewardPercentage:value.rate,location:'PUC vehicle test'},get:header=>header.toLowerCase()==='idempotency-key'?key:req.get(header)},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
 
 app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async (req, res) => {

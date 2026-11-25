@@ -59,7 +59,7 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       if (req.path === '/api/profile/legal' && req.method === 'GET') return res.json({ enabled: false, accepted: false, termsVersion: 'private-test-only', privacyVersion: 'private-test-only', testAccount: true });
       if (req.path === '/api/merchant/puc/config' && req.method === 'GET') { const config = await rewards(); return res.json({ eligible: true, shopName: account.name, earnOptions: config.earnOptions, testAccount: true }); }
       const records = accountRef(db, account.id).collection('registrations');
-      if (/^\/api\/merchant\/puc\/records\/[a-f0-9]{64}\/reminder$/.test(req.path) && req.method === 'POST') return res.json({success:true,testAccount:true,message:'Test preview only: ae_vehicle_pollution_expiry_reminder (en). No WhatsApp message was sent.'});
+      if (/^\/api\/merchant\/puc\/records\/[a-f0-9]{64}\/reminder$/.test(req.path) && req.method === 'POST') return res.json({success:true,testAccount:true,message:'Test preview only: PUC shop renewal reminder. Customer, vehicle, expiry, shop name and location will be filled from the saved record. No WhatsApp message was sent.'});
       if (req.path === '/api/merchant/puc/records' && req.method === 'POST') {
         let value; try { value = registration(req.body); } catch (e) { return res.status(400).json({ error: e.message }); }
         const config = await rewards();
