@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const {expiryFilter}=require('../backend/puc-expiry-filter.cjs');
+const now=new Date('2026-11-25T10:00:00Z');
+assert.deepEqual(expiryFilter('due10','',now),{from:'2026-11-25',to:'2026-12-05',empty:false,sortByExpiry:true});
+assert.equal(expiryFilter('expired','',now).to,'2026-11-24');
+assert.equal(expiryFilter('due10','2026-12',now).from,'2026-12-01');
+assert.equal(expiryFilter('due10','2027-01',now).empty,true);
+assert.equal(expiryFilter('all','2028-02',now).to,'2028-02-29');
+assert.equal(expiryFilter('due10','',new Date('2026-11-25T18:31:00Z')).from,'2026-11-26');
+assert.throws(()=>expiryFilter('invalid','',now));assert.throws(()=>expiryFilter('all','2026-13',now));
+const {registerPuc}=require('../backend/puc-register.cjs');
+let handler;const rows=Array.from({length:105},(_,i)=>({id:i.toString(16).padStart(64,'0'),expiryDate:i<100?'2030-01-01':new Date(Date.now()+330*60000).toISOString().slice(0,10),createdAt:105-i}));
+const query=()=>{let result=[...rows],take=101;const q={where(field,op,value){result=result.filter(r=>op==='>='?r[field]>=value:r[field]<=value);return q;},orderBy(field,direction){result.sort((a,b)=>String(a[field]).localeCompare(String(b[field]))*(direction==='desc'?-1:1));return q;},limit(n){take=n;return q;},async get(){return {docs:result.slice(0,take).map(r=>({id:r.id,data:()=>r}))}}};return q;};
+registerPuc({get(path,...args){if(path.endsWith('/records'))handler=args.at(-1)},post(){}},{db:{from:()=>({select(){return this},eq(){return this},async maybeSingle(){return {data:{id:'shop',merchant_categories:{name:'PUC'}}}}})},database:async()=>({collection:()=>({doc:()=>({collection:query})})}),auth:()=>{},merchantRole:()=>{},rewards:()=>{},onboard:()=>{}});
+const reply=()=>({statusCode:200,status(n){this.statusCode=n;return this},json(body){this.body=body;return this}});
+(async()=>{let res=reply();await handler({query:{filter:'due10'},auth:{profile:{merchant_id:'shop'}}},res);assert.equal(res.statusCode,200);assert.equal(res.body.records.length,5,'Expiry search must find records beyond the first 100 created rows');assert.equal(res.body.nextCursor,null);res=reply();await handler({query:{filter:'bad'},auth:{profile:{merchant_id:'shop'}}},res);assert.equal(res.statusCode,400);console.log('PASS: India date boundaries, 10-day inclusion, month overlap, leap year and expiry filtering before pagination.');})().catch(e=>{console.error(e);process.exitCode=1});

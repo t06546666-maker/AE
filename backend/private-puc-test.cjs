@@ -79,8 +79,11 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       }
       const readPaths = ['/api/merchant/puc/records', '/api/customers', '/api/orders', '/api/dashboard'];
       if (req.method === 'GET' && readPaths.includes(req.path)) {
-        const rows = (await records.orderBy('createdAt', 'desc').limit(501).get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let rows = (await records.orderBy('createdAt', 'desc').limit(501).get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (req.path === '/api/merchant/puc/records') {
+          let range;try{range=require('./puc-expiry-filter.cjs').expiryFilter(String(req.query.filter||'all'),String(req.query.month||''));}catch(e){return res.status(400).json({error:e.message});}
+          rows=range.empty?[]:rows.filter(row=>(!range.from||row.expiryDate>=range.from)&&(!range.to||row.expiryDate<=range.to));
+          if(range.sortByExpiry)rows.sort((a,b)=>a.expiryDate.localeCompare(b.expiryDate));
           const after = String(req.query.after || ''), index = after ? rows.findIndex(row => row.id === after) : -1;
           if (after && index < 0) return res.status(400).json({ error: 'Page is unavailable.' });
           const page = rows.slice(index + 1, index + 101);
