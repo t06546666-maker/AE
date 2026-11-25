@@ -40,6 +40,9 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+            <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="ae_notifications" />
     </application>
 
     <!-- Permissions -->

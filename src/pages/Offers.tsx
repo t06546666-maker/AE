@@ -45,7 +45,7 @@ export function Offers({ user }: { user: UserProfile }) {
   const [downloadingOfferId, setDownloadingOfferId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search.trim());
   const [adminMerchantId, setAdminMerchantId] = useState('');
-  const [sendPushOnUpload, setSendPushOnUpload] = useState(false);
+  const [sendPushOnUpload, setSendPushOnUpload] = useState(true);
   const [chosenTemplateId, setChosenTemplateId] = useState('01_offer_alert');
   const merchantsQuery = useQuery({
     queryKey: ['admin-merchants-selection'],

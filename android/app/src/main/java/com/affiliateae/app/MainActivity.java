@@ -23,6 +23,27 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(UpiAppsPlugin.class);
         super.onCreate(savedInstanceState);
 
+        // Ensure high-priority notification channel exists natively on Android 8.0+ (Oreo+) immediately on app launch
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                android.app.NotificationManager notificationManager = getSystemService(android.app.NotificationManager.class);
+                if (notificationManager != null && notificationManager.getNotificationChannel("ae_notifications") == null) {
+                    android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                        "ae_notifications",
+                        "AE Notifications",
+                        android.app.NotificationManager.IMPORTANCE_HIGH
+                    );
+                    channel.setDescription("Notifications for AE rewards, orders, and payments");
+                    channel.enableLights(true);
+                    channel.enableVibration(true);
+                    notificationManager.createNotificationChannel(channel);
+                    Log.i("MainActivity", "Native AE Notifications channel created successfully");
+                }
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error creating native notification channel", e);
+        }
+
         // Prevent Android system navigation bar (Back/Home/Recents buttons) from overlaying bottom checkout buttons & nav bars
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {

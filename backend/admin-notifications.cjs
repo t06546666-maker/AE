@@ -413,12 +413,15 @@ function registerAdminNotifications(app, {
     }
 
     // 3. Prepare FCM message batch
+    const baseUrl = process.env.APP_BASE_URL || 'https://www.affiliateae.com';
+    const fcmImageUrl = imageUrl ? (imageUrl.startsWith('/') ? `${baseUrl}${imageUrl}` : imageUrl) : '';
+
     const messages = uniqueTokens.map((token) => ({
       token,
       notification: {
         title,
         body,
-        ...(imageUrl ? { imageUrl } : {}),
+        ...(fcmImageUrl ? { imageUrl: fcmImageUrl } : {}),
       },
       data: Object.fromEntries(
         Object.entries({
@@ -433,7 +436,7 @@ function registerAdminNotifications(app, {
         notification: {
           channelId: 'ae_notifications',
           sound: 'default',
-          ...(imageUrl ? { imageUrl } : {}),
+          ...(fcmImageUrl ? { imageUrl: fcmImageUrl } : {}),
         },
       },
       ...(imageUrl
@@ -1088,6 +1091,12 @@ function registerAdminNotifications(app, {
         const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
         const cloudPath = `announcements/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
         imageUrl = await uploadFileToCloudStorage(cloudPath, req.file.buffer, mimeType);
+      } else if (!imageUrl && req.body.templateId) {
+        const { getTemplateById } = require('./rich-push-templates.cjs');
+        const tmpl = getTemplateById(req.body.templateId);
+        if (tmpl && tmpl.defaultImageUrl) {
+          imageUrl = tmpl.defaultImageUrl;
+        }
       }
 
       // Check if scheduled

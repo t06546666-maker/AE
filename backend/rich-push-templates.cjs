@@ -7,6 +7,7 @@
 const RICH_PUSH_TEMPLATES = [
   {
     id: '01_offer_alert',
+    defaultImageUrl: '/banners/01_offer_alert.png',
     number: '01 / OFFER ALERT',
     bannerText: 'AE OFFERS',
     color: '#ea580c',

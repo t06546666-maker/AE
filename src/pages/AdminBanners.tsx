@@ -63,7 +63,7 @@ export function AdminBanners({ user }: { user?: UserProfile }) {
   const [optimizingImage, setOptimizingImage] = useState(false);
   const [active, setActive] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sendPushOnUpload, setSendPushOnUpload] = useState(false);
+  const [sendPushOnUpload, setSendPushOnUpload] = useState(true);
   const [chosenTemplateId, setChosenTemplateId] = useState('01_offer_alert');
 
   // 1. Fetch current ad banners

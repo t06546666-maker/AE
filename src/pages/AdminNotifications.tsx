@@ -494,6 +494,8 @@ export function AdminNotifications() {
 
       if (imageFile) {
         form.append('image', imageFile);
+      } else if (selectedTemplateId) {
+        form.append('templateId', selectedTemplateId);
       }
 
       return apiFetch<{ success: boolean; scheduled?: boolean; delivered?: number; message?: string }>('/api/admin/broadcast-notification', {
@@ -1428,6 +1430,9 @@ export function AdminNotifications() {
                         setUrl(tmpl.url);
                         setPushOnly(true);
                         setPreviewTab('push');
+                        if (tmpl.defaultImageUrl) {
+                          setImagePreview(tmpl.defaultImageUrl);
+                        }
                         if (tmpl.defaultTarget === 'all') {
                           setTarget('all');
                         } else {

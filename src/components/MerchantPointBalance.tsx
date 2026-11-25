@@ -14,10 +14,74 @@ export function MerchantPointBalance({ merchantId, compact = false,readOnly=fals
 
 export function AllocateMerchantPoints({ merchantId, name, onClose }: { merchantId: string; name: string; onClose: () => void }) {
   const client = useQueryClient();
-  const [points, setPoints] = useState('');
+  const [points, setPoints] = useState('1000');
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const amount = Number(points);
   const valid = Number.isInteger(amount) && amount > 0 && amount <= 1000000;
-  const save = useMutation({ mutationFn: () => apiFetch(`/api/merchants/${merchantId}/point-allocation`, { method: 'POST', body: JSON.stringify({ points: amount, requestId }) }), onSuccess: () => { void client.invalidateQueries({ queryKey: ['merchant-points'] }); void client.invalidateQueries({ queryKey: ['merchants'] }); onClose(); } });
-  return <div className="modal-backdrop"><form className="modal" onSubmit={event => { event.preventDefault(); if (valid && window.confirm(`Allocate ${amount.toLocaleString('en-IN')} points to ${name}?`)) save.mutate(); }}><h2>{uiText("Allocate merchant points")}</h2><p>{name}</p><MerchantPointBalance merchantId={merchantId}/><label>{uiText("Points to add")}<input type="number" min="1" max="1000000" step="1" value={points} disabled={save.isPending} onChange={event => { setPoints(event.target.value); setRequestId(crypto.randomUUID()); save.reset(); }} required/></label><p>{uiText("These points are added to the merchant’s existing balance.")}</p>{save.isError && <p className="form-error" role="alert">{save.error.message}</p>}<div className="form-actions"><button type="button" className="button secondary" disabled={save.isPending} onClick={onClose}>{uiText("Cancel")}</button><button className="button primary" disabled={!valid || save.isPending}>{save.isPending ? uiText("Allocating…") : uiText("Allocate points")}</button></div></form></div>;
+  const save = useMutation({
+    mutationFn: () => apiFetch(`/api/merchants/${merchantId}/point-allocation`, { method: 'POST', body: JSON.stringify({ points: amount, requestId }) }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['merchant-points'] });
+      void client.invalidateQueries({ queryKey: ['merchants'] });
+      void client.invalidateQueries({ queryKey: ['admin-merchant-details'] });
+      void client.invalidateQueries({ queryKey: ['notifications'] });
+      onClose();
+    }
+  });
+
+  const presets = [500, 1000, 2000, 5000];
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <form className="modal" onClick={event => event.stopPropagation()} onSubmit={event => {
+        event.preventDefault();
+        if (valid && window.confirm(`Allocate ${amount.toLocaleString('en-IN')} points to ${name}?`)) save.mutate();
+      }}>
+        <h2>{uiText("Allocate merchant points")}</h2>
+        <p style={{ fontWeight: 700, margin: '4px 0 12px' }}>{name}</p>
+        <MerchantPointBalance merchantId={merchantId} />
+
+        <div style={{ marginTop: 14 }}>
+          <label style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>{uiText("Quick presets")}</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {presets.map(p => (
+              <button
+                key={p}
+                type="button"
+                className={`button ${amount === p ? 'primary' : 'secondary'}`}
+                style={{ padding: '6px 12px', fontSize: 13, fontWeight: 700 }}
+                onClick={() => { setPoints(String(p)); setRequestId(crypto.randomUUID()); save.reset(); }}
+              >
+                +{p.toLocaleString('en-IN')} Pts
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label>{uiText("Points to add")}
+          <input
+            type="number"
+            min="1"
+            max="1000000"
+            step="1"
+            value={points}
+            disabled={save.isPending}
+            onChange={event => { setPoints(event.target.value); setRequestId(crypto.randomUUID()); save.reset(); }}
+            required
+            autoFocus
+          />
+        </label>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+          {uiText("These points are added to the merchant’s existing balance immediately.")}
+        </p>
+        {save.isError && <p className="form-error" role="alert">{save.error.message}</p>}
+        <div className="form-actions" style={{ marginTop: 16 }}>
+          <button type="button" className="button secondary" disabled={save.isPending} onClick={onClose}>{uiText("Cancel")}</button>
+          <button className="button primary" disabled={!valid || save.isPending}>
+            {save.isPending ? uiText("Allocating…") : uiText(`Confirm & Add ${valid ? amount.toLocaleString('en-IN') : ''} Points`)}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }

@@ -1,3 +1,4 @@
+import { useToast } from './toast';
 import {uiText} from "./uiText";
 import {AdminShopCoupons,MerchantShopCoupons} from './components/ShopCoupons';
 import {CustomerCoupons} from './pages/customer/Coupons';
@@ -121,6 +122,7 @@ function RouteFallback() {
 }
 
 export function App() {
+  const { showToast } = useToast();
   useTranslation(undefined, { bindI18n: 'languageChanged loaded' });
   const [user, setUser] = useState<UserProfile | null>(null);
   useUsageTracking(user);
@@ -186,6 +188,22 @@ export function App() {
       window.removeEventListener('ae:password-change-required', passwordRequired);
     };
   });
+
+  // Ensure high-priority notification channel is created natively on Android on startup
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+      PushNotifications.createChannel({
+        id: 'ae_notifications',
+        name: 'AE Notifications',
+        description: 'Notifications for AE rewards, orders, and payments',
+        importance: 5,
+        visibility: 1,
+        vibration: true,
+        lights: true,
+      }).catch((e) => console.warn('Could not create notification channel on startup:', e));
+    }).catch(() => {});
+  }, []);
 
   // Register push notification tap / action handler IMMEDIATELY on native platform
   // so cold-start and background taps from notification drawer or lockscreen are caught instantly without delay.
@@ -277,13 +295,18 @@ export function App() {
 
         // Install delivery and tap handlers before register() so a fast token
         // registration or a notification that opens a cold app is not missed.
-        listeners.push(await PushNotifications.addListener('pushNotificationReceived', () => {
+        listeners.push(await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           void queryClient.invalidateQueries({ queryKey: ['customer'] });
           void queryClient.invalidateQueries({ queryKey: ['notifications'] });
           void queryClient.invalidateQueries({ queryKey: ['shop-requests'] });
           void queryClient.invalidateQueries({ queryKey: ['customer-product-lists'] });
           void queryClient.invalidateQueries({ queryKey: ['merchant-product-lists'] });
           reportPush('A notification was received on this phone.');
+          const notifTitle = (notification as any)?.title || (notification as any)?.notification?.title || 'AE Notification';
+          const notifBody = (notification as any)?.body || (notification as any)?.notification?.body || '';
+          if (notifTitle || notifBody) {
+            showToast(`🔔 ${notifTitle}: ${notifBody}`);
+          }
         }));
 
         listeners.push(await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
