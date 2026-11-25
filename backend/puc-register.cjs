@@ -1,5 +1,5 @@
 const crypto=require('node:crypto');
-const eligibleCategory=name=>/\b(puc|pollution|emission)\b/i.test(String(name||''));
+const eligibleCategory=name=>/\b(puc|pol{1,2}ution|emission)\b/i.test(String(name||''));
 function registration(body){
  const name=String(body.name||'').trim(),phone=String(body.phone||'').trim(),plate=String(body.plate||'').toUpperCase().replace(/\s+/g,''),model=String(body.model||'').trim();
  const amount=Number(body.amount),rate=Number(body.rate),testDate=String(body.testDate||''),expiryDate=String(body.expiryDate||'');

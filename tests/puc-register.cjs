@@ -3,6 +3,7 @@ const {registerPuc,eligibleCategory,registration}=require('../backend/puc-regist
 assert.equal(eligibleCategory('Vehicle Pollution Testing Centre'),true);assert.equal(eligibleCategory('PUC'),true);for(const name of ['Supermarket','Used cars','Vehicle showroom','Bakery'])assert.equal(eligibleCategory(name),false);
 const value={name:'Test Customer',phone:'9800000000',plate:'KL09AB1234',model:'Test car',amount:400,rate:10,testDate:'2026-11-25',expiryDate:'2027-05-25',consent:true};
 assert.equal(registration(value).amount,400);assert.throws(()=>registration({...value,consent:false}));assert.throws(()=>registration({...value,expiryDate:'2026-02-30'}));
+assert.equal(eligibleCategory('Polution Testing centre'),true);
 let category='PUC',awards=0;const docs=new Map(),handlers={},auth=()=>{},role=()=>{};
 const reference=id=>({id,async get(){return {exists:docs.has(id),data:()=>docs.get(id)}},async update(data){docs.set(id,{...docs.get(id),...data})}});
 const store={collection(){return {doc(){return {collection(){return {doc:reference}}}}}},async runTransaction(fn){return fn({get:ref=>ref.get(),set(ref,data){docs.set(ref.id,data)}})}};
