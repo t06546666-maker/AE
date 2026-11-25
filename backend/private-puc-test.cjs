@@ -35,7 +35,7 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
     if (!req.path.startsWith('/api/')) return next();
     const login = req.path === '/api/auth/login' && req.method === 'POST';
     const identifier = String(req.body?.email || '').trim().toLowerCase();
-    const testLogin = login && (/^testpuc[a-f0-9]{8}$/i.test(identifier) || /^puc-[a-f0-9]{32}@ae\.invalid$/.test(identifier));
+    const testLogin = login && (identifier === 'puctest@gmail.com' || /^testpuc[a-f0-9]{8}$/i.test(identifier) || /^puc-[a-f0-9]{32}@ae\.invalid$/.test(identifier));
     const refresh = req.path === '/api/auth/refresh' && req.method === 'POST' && decodeSandbox(req.body?.refreshToken);
     const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
     if (!testLogin && !refresh && !decodeSandbox(bearer)) return next();
