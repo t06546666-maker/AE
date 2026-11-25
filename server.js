@@ -1169,7 +1169,7 @@ async function sendWhatsAppTemplate({
   languageCode = WA_TEMPLATE_LANGUAGE,
   logId,
 }) {
-  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials', 'milestone', 'announcement'].includes(messageType)) {
+  if (WA_REGISTRATION_ONLY && !['registration', 'registration_password', 'merchant_credentials', 'milestone', 'announcement', 'puc_reminder'].includes(messageType)) {
     return { sent: false, skipped: true, error: 'WhatsApp is limited to registration messages' };
   }
   if (!WA_TOKEN || !WA_PHONE_ID) {
@@ -1190,7 +1190,7 @@ async function sendWhatsAppTemplate({
         offer_recipient_id: offerRecipientId,
         // Registration templates share the existing database onboarding type.
         // `registration_password` is a delivery label, not the Meta template name.
-        message_type: ['registration', 'registration_password'].includes(messageType) ? 'qr' : messageType,
+        message_type: ['registration', 'registration_password'].includes(messageType) ? 'qr' : messageType === 'puc_reminder' ? 'order' : messageType,
         template_name: templateName,
         recipient,
         status: 'queued',
@@ -5965,6 +5965,7 @@ async function onboardShopCustomer(req, res) {
   });
 }
 app.post('/api/customers', requireAuth, onboardShopCustomer);
+require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate});
 require('./backend/puc-register.cjs').registerPuc(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),rewards:getAdminRewardConfig,onboard:async(req,value,key)=>{let status=200,body;await onboardShopCustomer({...req,body:{name:value.name,phone:value.phone,amount:value.amount,rewardPercentage:value.rate,location:'PUC vehicle test'},get:header=>header.toLowerCase()==='idempotency-key'?key:req.get(header)},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
 
 app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async (req, res) => {

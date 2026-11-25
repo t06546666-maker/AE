@@ -5,7 +5,7 @@ function registration(body){
  const amount=Number(body.amount),rate=Number(body.rate),testDate=String(body.testDate||''),expiryDate=String(body.expiryDate||'');
  const date=value=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
  if(name.length<2||name.length>100||!/^\+?\d{10,12}$/.test(phone)||!/^[A-Z0-9-]{6,20}$/.test(plate)||!model||model.length>100||!Number.isFinite(amount)||amount<1||amount>1000000||Math.abs(amount*100-Math.round(amount*100))>0.000001||!Number.isInteger(rate)||rate<1||rate>100||!date(testDate)||!date(expiryDate)||expiryDate<=testDate||body.consent!==true)throw Error('Enter customer, vehicle, fee, valid dates, reward rate and customer consent.');
- return {name,phone,plate,model,amount,rate,testDate,expiryDate};
+ return {name,phone,plate,model,amount,rate,testDate,expiryDate,consent:true};
 }
 function registerPuc(app,{db,database,auth,merchantRole,rewards,onboard}){
  const access=async req=>{const result=await db.from('active_merchants').select('id,name,merchant_categories(name)').eq('id',req.auth.profile.merchant_id).maybeSingle();if(result.error)throw Error('Shop access is unavailable.');return result.data&&eligibleCategory(result.data.merchant_categories?.name)?result.data:null;};

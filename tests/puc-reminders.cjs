@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {parameters,templateName}=require('../backend/puc-reminders.cjs');
+const row={name:'Customer',phone:'9876543210',model:'Swift',plate:'KL70B5363',expiryDate:'2026-11-30',status:'completed',consent:true};
+assert.equal(templateName,'ae_vehicle_pollution_expiry_reminder');
+assert.deepEqual(parameters(row,{name:'Pitstop',address:'Chittur'}),{recipient:'919876543210',values:['Customer','Swift','KL70B5363','30-11-2026','Pitstop','Chittur']});
+assert.throws(()=>parameters({...row,consent:false},{name:'Pitstop',address:'Chittur'}));
+assert.throws(()=>parameters({...row,phone:'0000000000'},{name:'Pitstop',address:'Chittur'}));
+assert.throws(()=>parameters(row,{name:'Pitstop',address:''}));
+assert.throws(()=>parameters({...row,status:'processing'},{name:'Pitstop',address:'Chittur'}));
+console.log('PUC template parameter and consent checks passed. No messages sent.');
