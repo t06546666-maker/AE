@@ -52,7 +52,8 @@ const AdminCustomerDetails = lazy(() => import('./pages/AdminCustomers').then(m 
 const LegalNavigation = lazy(() => import('./components/LegalNavigation').then(m => ({ default: m.LegalNavigation })));
 const CustomerShopScan = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.CustomerShopScan })));
 const MerchantShopCheckout = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.MerchantShopCheckout })));
-const MerchantExpiryManager = lazy(() => import('./pages/MerchantExpiryManager').then(m => ({ default: m.MerchantExpiryManager })));
+const MerchantExpiryManager = lazy(() => import('./pages/PucRegister').then(m => ({ default: m.PucRegister })));
+const PucCustomerEntry = lazy(() => import('./pages/PucRegister').then(m => ({default:m.PucCustomerEntry})));
 const ShopRequestAlert = lazy(() => import('./components/ShopCheckout').then(m => ({ default: m.ShopRequestAlert })));
 const Merchants = lazy(() => import('./pages/Merchants').then(m => ({ default: m.Merchants })));
 const MerchantCategories = lazy(() => import('./pages/MerchantCategories').then(m => ({ default: m.MerchantCategories })));
@@ -440,13 +441,13 @@ export function App() {
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
           <Route path="/shop-coupons" element={user.role==='admin'?<AdminShopCoupons/>:user.role==='merchant'?<MerchantShopCoupons/>:<Navigate to="/dashboard" replace/>}/>
           <Route path="/expense-staff" element={<RoleRoute user={user} role="admin"><ExpenseStaff/></RoleRoute>}/>
-          <Route path="/add-customer" element={<AddCustomer user={user} />} />
+          <Route path="/add-customer" element={user.role==='merchant'?<PucCustomerEntry user={user}/>:<AddCustomer user={user}/>} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
           <Route path="/shop-checkout" element={<RoleRoute user={user} role="merchant"><MerchantShopCheckout /></RoleRoute>} />
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
-          <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager user={user} /></RoleRoute>} />
+          <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager /></RoleRoute>} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
           <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />

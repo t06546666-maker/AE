@@ -167,6 +167,7 @@ export function MerchantOverview({ user,readOnly=false }: { user: UserProfile;re
   const [insight, setInsight] = useState('Visits');
   const [customerPage, setCustomerPage] = useState(1);
   const [downloaded, setDownloaded] = useState('');
+  const pucAccess=useQuery({queryKey:['puc-config'],enabled:!readOnly,queryFn:({signal})=>apiFetch<{eligible:boolean}>('/api/merchant/puc/config',{signal})});
   const query = useQuery({ queryKey: ['merchant-overview', user.id, user.merchant_id, readOnly], queryFn: async ({ signal }) => {
     if(readOnly)return loadAdminMerchantOverview(user.merchant_id!,signal);
     const [orders, customers] = await Promise.all([loadPages<Order>('orders', signal), loadPages<Customer>('customers', signal)]);
@@ -264,7 +265,7 @@ export function MerchantOverview({ user,readOnly=false }: { user: UserProfile;re
       ].map(({ title, value, before, text, icon: Icon, color }) => <div className={`mo-health-row ${color}`} key={title}><span className={`mo-icon ${color}`}><Icon size={22} /></span><div><h3>{uiText(title)}</h3><p>{text}</p><Change value={value} previous={before} label={model.comparisonLabel} /></div></div>)}</div></section>
       </div>
       {/* Expiry & Renewal Reminders Banner (For Fixed Government Tariff & Pollution Centers) */}
-      <section className="mo-panel" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '1.5px solid #a7f3d0', borderRadius: '20px' }}>
+      {pucAccess.data?.eligible&&<section className="mo-panel" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '1.5px solid #a7f3d0', borderRadius: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#059669', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -280,7 +281,7 @@ export function MerchantOverview({ user,readOnly=false }: { user: UserProfile;re
                 </span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#065f46' }}>
-                {uiText("Fixed-rate services cannot redeem coins. Track customer vehicle certificates, filter by month of expiry, export Excel sheets, and send instant WhatsApp renewal reminders.")}
+                {uiText("Manage pollution-test customers, vehicle certificates and reward points.")}
               </p>
             </div>
           </div>
@@ -293,9 +294,9 @@ export function MerchantOverview({ user,readOnly=false }: { user: UserProfile;re
             <ChevronRight size={16} />
           </Link>}
         </div>
-      </section>
+      </section>}
 
-      <section className="mo-panel mo-tools"><div><h2>{uiText("Keep your business moving")}</h2><p>{uiText("All your everyday tools, one tap away.")}</p></div><div className="mo-tool-grid">{[{ to: '/offers?create=1', title: 'Create offers', icon: Gift, color: 'pink' }, { to: href('customers'), title: 'Know customers', icon: Users, color: 'violet' }, { to: '/expiry-reminders', title: 'Renewal & Expiry', icon: CalendarClock, color: 'emerald' }, { to: href('reports'), title: 'Get reports', icon: BarChart3, color: 'blue' }].filter(item=>!readOnly||item.to.startsWith(`/merchants/${user.merchant_id}/dashboard`)).map(({ to, title, icon: Icon, color }) => <Link to={to} key={title}><span className={`mo-icon ${color}`}><Icon size={24} /></span><strong>{uiText(title)}</strong><ChevronRight size={16} /></Link>)}</div></section>
+      <section className="mo-panel mo-tools"><div><h2>{uiText("Keep your business moving")}</h2><p>{uiText("All your everyday tools, one tap away.")}</p></div><div className="mo-tool-grid">{[{ to: '/offers?create=1', title: 'Create offers', icon: Gift, color: 'pink' }, { to: href('customers'), title: 'Know customers', icon: Users, color: 'violet' }, { to: '/expiry-reminders', title: 'Renewal & Expiry', icon: CalendarClock, color: 'emerald' }, { to: href('reports'), title: 'Get reports', icon: BarChart3, color: 'blue' }].filter(item=>(item.to!=='/expiry-reminders'||pucAccess.data?.eligible)&&(!readOnly||item.to.startsWith(`/merchants/${user.merchant_id}/dashboard`))).map(({ to, title, icon: Icon, color }) => <Link to={to} key={title}><span className={`mo-icon ${color}`}><Icon size={24} /></span><strong>{uiText(title)}</strong><ChevronRight size={16} /></Link>)}</div></section>
     </>}
     {view === 'customers' && <CustomerFrequency key={month} model={model} month={month} />}
     {!readOnly&&(view === 'customers' || view === 'purchase-group') && <PurchaseAmountGroups key={`${month}-${params.get('group') || 'graph'}`} model={model} month={month} />}

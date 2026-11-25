@@ -99,7 +99,8 @@ export function Layout({ user, onLogout, children }: { user: UserProfile; onLogo
     );
   };
 
-  const nav = user.role === 'admin' ? adminNav : user.role === 'field_manager' ? fieldNav : merchantNav;
+  const pucAccess=useQuery({queryKey:['puc-config',user.merchant_id],enabled:user.role==='merchant',queryFn:({signal})=>apiFetch<{eligible:boolean}>('/api/merchant/puc/config',{signal})});
+  const nav = user.role === 'admin' ? adminNav : user.role === 'field_manager' ? fieldNav : merchantNav.filter(item=>item[0]!=='/expiry-reminders'||pucAccess.data?.eligible);
   const signOut = async () => {
     if (user.role === 'field_manager') {
       try { await apiFetch('/api/field/sessions/end', { method: 'POST' }); }
