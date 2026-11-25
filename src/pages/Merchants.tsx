@@ -1,4 +1,5 @@
 import { uiText } from '../uiText';
+import {PrivatePucTest} from '../components/PrivatePucTest';
 import {MerchantTimeRanges,emptyTradingTimes,type TradingTimes} from '../components/MerchantTimeRanges';
 import { TimeInput } from '../components/TimeInput';
 import { formatClockTime, optimizeImageForUpload } from '../utils';
@@ -236,6 +237,7 @@ export function Merchants({onboardingOnly=false}:{onboardingOnly?:boolean}) {
     <div className={`admin-directory-page ${onboardingOnly?'admin-onboarding-only':''}`}>
       <PageHeader title={onboardingOnly?uiText('Add merchant'):t('merchants.title')} subtitle={onboardingOnly?t('merchants.createSecure'):uiText('Stores and linked customers across your network')} actions={onboardingOnly?<Link className="button secondary" to="/merchants">{uiText('Back to merchants')}</Link>:<><button type="button" className="button secondary" onClick={() => setExportFormat('xlsx')}><Download size={16} />{t('dashboard.excel')}</button><button type="button" className="button secondary" onClick={() => setExportFormat('pdf')}><Download size={16} />{t('dashboard.pdf')}</button><button type="button" className="button secondary" disabled={syncPhones.isPending} onClick={()=>syncPhones.mutate()}>{uiText(syncPhones.isPending?"Syncing phone registrations…":"Sync phone registrations")}</button><button type="button" className="button primary" aria-expanded={showOnboarding} onClick={()=>setShowOnboarding(!showOnboarding)}><Plus size={16}/>{uiText(showOnboarding?'Close onboarding':'Add merchant')}</button></>} />
       <div className="admin-directory-metrics"><article><span>{uiText('Matching merchants')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.pagination.total.toLocaleString('en-IN')}</strong></article><article><span>{uiText('Categories')}</span><strong>{categoriesQuery.isPending?'…':categoriesQuery.isError?'—':categoriesQuery.data?.categories.length}</strong></article><article><span>{uiText('Showing on this page')}</span><strong>{merchants.isPending?'…':merchants.isError?'—':merchants.data?.merchants.length}</strong></article></div>
+      {!onboardingOnly&&<PrivatePucTest/>}
       {(onboardingOnly || showOnboarding) && <form className="panel merchant-form" onSubmit={submit}>
         <div className="panel-heading">
           <div><h2>{t('merchants.add')}</h2><p>{t('merchants.createSecure')}</p></div>

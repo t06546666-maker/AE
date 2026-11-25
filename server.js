@@ -270,6 +270,13 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     })
   : null;
 
+const privatePucTests = require('./backend/private-puc-test.cjs').privatePucTest({
+  database: checkoutBillDatabase, signingKey: SUPABASE_SERVICE_ROLE_KEY,
+  rewards: getAdminRewardConfig, adminAuth: requireAuth, adminRole: requireRole('admin'),
+});
+app.use(privatePucTests.middleware);
+privatePucTests.register(app);
+
 function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
