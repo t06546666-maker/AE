@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {LIVE_PUC_TEST_ID,isHiddenLiveMerchant,excludeHiddenLiveMerchant}=require('../backend/live-puc-test.cjs');
+assert.equal(isHiddenLiveMerchant(LIVE_PUC_TEST_ID),true);
+assert.equal(isHiddenLiveMerchant('ordinary-shop'),false);
+let filter;const query={neq:(column,id)=>{filter={column,id};return query;}};
+assert.equal(excludeHiddenLiveMerchant(query),query);assert.deepEqual(filter,{column:'id',id:LIVE_PUC_TEST_ID});
+excludeHiddenLiveMerchant(query,'merchant_id');assert.deepEqual(filter,{column:'merchant_id',id:LIVE_PUC_TEST_ID});
+const server=fs.readFileSync(require.resolve('../server.js'),'utf8');
+const directory=server.slice(server.indexOf("app.get('/api/customer/merchants'"),server.indexOf("app.get('/api/customer/merchant-reviews"));
+assert(directory.indexOf('excludeHiddenLiveMerchant(query)')<directory.indexOf('query.range('),'Hide before pagination and distance sorting');
+assert(server.includes("else if(req.auth.profile.role!=='admin')query=excludeHiddenLiveMerchant(query)"));
+assert(server.includes("filter(shop=>!isHiddenLiveMerchant(shop.id))"),'Pinned offers must also exclude the test shop');
+console.log('PASS: live test merchant excluded from discovery before paging, admin/owner visibility preserved, pinned offers filtered.');

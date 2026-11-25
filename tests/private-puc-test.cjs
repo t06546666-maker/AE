@@ -41,6 +41,9 @@ const test=privatePucTest({database:async()=>db,signingKey:'unit-test-only-key',
   assert.equal((await call('/api/merchants/'+login.body.user.id,'GET',null,other.body.accessToken)).status,403);
   map.get('ae_private_puc_tests/'+login.body.user.id).email='puctest@gmail.com';
   assert.equal((await call('/api/auth/login','POST',{email:'puctest@gmail.com',password:created.body.temporaryPassword})).status,200);
+  map.get('ae_private_puc_tests/'+login.body.user.id).liveMerchantId='live-shop';
+  assert.equal((await call('/api/auth/login','POST',{email:'puctest@gmail.com',password:'live-password'})).body.live,true,'Converted account must use normal authentication');
+  assert.equal((await call('/api/auth/me','GET',null,token)).status,401,'Old sandbox sessions must be revoked on conversion');
   map.get('ae_private_puc_tests/'+login.body.user.id).disabled=true;assert.equal((await call('/api/auth/me','GET',null,token)).status,401);
   assert.equal(pointsFor(1,20),1);assert.equal(pointsFor(10,20),2);assert.equal(pointsFor(50,20),5);assert.equal(pointsFor(1000,20),100);
   console.log('Private PUC account authentication, isolation, persistence, duplicate protection, points and blocked live writes: PASS');

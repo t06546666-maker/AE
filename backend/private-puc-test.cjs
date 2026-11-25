@@ -18,7 +18,7 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
   const readAccount = async token => {
     const claims = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: ISSUER, audience: ISSUER });
     const db = await database(), doc = await accountRef(db, claims.sub).get(), account = doc.data();
-    if (!doc.exists || account.disabled || account.expiresAt <= Date.now()) throw Error('Expired test account');
+    if (!doc.exists || account.disabled || account.liveMerchantId || account.expiresAt <= Date.now()) throw Error('Expired test account');
     return { claims, account, db };
   };
   const create = async (req, res) => {
@@ -46,6 +46,7 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
         const db = await database(), field = identifier.includes('@') ? 'email' : 'code', value = field === 'code' ? identifier.toUpperCase() : identifier;
         const docs = await db.collection('ae_private_puc_tests').where(field, '==', value).limit(1).get();
         const account = docs.docs[0]?.data();
+        if(account?.liveMerchantId){req.body.email=account.email;return next();}
         if (!account || account.disabled || account.expiresAt <= Date.now() || !equal(hash(String(req.body.password || '')), account.passwordHash)) return res.status(401).json({ error: 'Invalid email or password' });
         return res.json({ success: true, ...tokens(account), user: publicUser(account) });
       }

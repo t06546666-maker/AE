@@ -270,6 +270,7 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     })
   : null;
 
+const {LIVE_PUC_TEST_ID,isHiddenLiveMerchant,excludeHiddenLiveMerchant}=require('./backend/live-puc-test.cjs');
 const privatePucTests = require('./backend/private-puc-test.cjs').privatePucTest({
   database: checkoutBillDatabase, signingKey: SUPABASE_SERVICE_ROLE_KEY,
   rewards: getAdminRewardConfig, adminAuth: requireAuth, adminRole: requireRole('admin'),
@@ -1945,15 +1946,15 @@ app.post('/api/profile/legal', requireAuth, acceptLegal);
 
 app.get('/api/field/merchants', requireAuth, fieldManagerRole, async (_req, res) => {
   let selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,image_url,images,route_name,merchant_categories(name)';
-  let { data, error } = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
+  let { data, error } = await supabaseAdmin.from('active_merchants').select(selectQuery).neq('id',LIVE_PUC_TEST_ID).order('name');
   if (error?.message?.includes('route_name')) {
     selectQuery = selectQuery.replace(',route_name', '');
-    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
+    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).neq('id',LIVE_PUC_TEST_ID).order('name');
     data = retry.data; error = retry.error;
   }
   if (error && (error.message?.includes('image') || error.code === '42703')) {
     selectQuery = 'id,merchant_code,name,email,phone,address,latitude,longitude,category_id,created_at,merchant_categories(name)';
-    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).order('name');
+    const retry = await supabaseAdmin.from('active_merchants').select(selectQuery).neq('id',LIVE_PUC_TEST_ID).order('name');
     data = retry.data;
     error = retry.error;
   }
@@ -2048,6 +2049,7 @@ app.post('/api/field/visits/:id/update', requireAuth, requireRole('field_manager
 });
 
 app.get('/api/field/merchants/:id/profile', requireAuth, requireRole('field_manager'), async (req, res) => {
+  if(isHiddenLiveMerchant(req.params.id))return res.status(404).json({error:'Merchant not found'});
   const { data: merchant, error } = await supabaseAdmin.from('active_merchants').select('id,name,merchant_code,phone,email,address,latitude,longitude,category_id,image_url,opening_time,closing_time,merchant_categories(name)').eq('id', req.params.id).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
@@ -2968,6 +2970,7 @@ app.get('/api/customer/ads', requireCustomerAuth, async (req, res) => {
     const { data: offers } = await supabaseAdmin
       .from('offers')
       .select('id, title, description, image_path, category, expires_at, merchant_id, merchants(id, name, merchant_code, phone, email, address, latitude, longitude)')
+      .neq('merchant_id',LIVE_PUC_TEST_ID)
       .eq('status', 'approved')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
@@ -3061,6 +3064,7 @@ app.get('/api/customer/merchants', requireCustomerAuth, async (req, res) => {
   const longitude = req.query.longitude == null ? NaN : Number(req.query.longitude);
   const nearby = Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180;
   let query = supabaseAdmin.from('active_merchants').select('id, name, address, latitude, longitude, image_url, images, created_at, route_name, opening_time, closing_time, merchant_categories(name)', { count: 'exact' });
+  query=excludeHiddenLiveMerchant(query);
   if (routeGroup && routeGroup !== 'all') query = query.in('route_name', customerRouteGroups[routeGroup]);
   if (req.query.categoryId && req.query.categoryId !== 'all') {
     query = query.eq('category_id', req.query.categoryId);
@@ -3335,6 +3339,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   let { data: offers, error } = await supabaseAdmin
     .from('offers')
     .select('*, merchants(id, name, merchant_code, phone, email, address, latitude, longitude)')
+    .neq('merchant_id',LIVE_PUC_TEST_ID)
     .eq('status', 'approved')
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
@@ -3355,7 +3360,7 @@ app.get('/api/customer/offers', requireCustomerAuth, async (req, res) => {
   if(offers?.length){
     const shops=await supabaseAdmin.from('active_merchants').select('id').in('id',[...new Set(offers.map(offer=>offer.merchant_id))]);
     if(shops.error)return res.status(503).json({error:'Unable to verify shop availability.'});
-    const available=new Set((shops.data||[]).map(shop=>shop.id));
+    const available=new Set((shops.data||[]).filter(shop=>!isHiddenLiveMerchant(shop.id)).map(shop=>shop.id));
     offers=offers.filter(offer=>available.has(offer.merchant_id));
   }
   const eligibleMerchants = new Set();
@@ -4246,6 +4251,7 @@ app.get('/api/merchants', requireAuth, async (req, res) => {
     .select('id, merchant_code, name, email, phone, created_at, category_id, merchant_categories(name)', paging.enabled ? { count: 'exact' } : undefined)
     .order('name');
   if (req.auth.profile.role === 'merchant') query = query.eq('id', req.auth.profile.merchant_id);
+  else if(req.auth.profile.role!=='admin')query=excludeHiddenLiveMerchant(query);
   if (req.query.networkId) query = query.eq('network_id', req.query.networkId);
   if (paging.search) {
     const pattern = `%${paging.search}%`;
