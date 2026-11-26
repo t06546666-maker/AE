@@ -36,18 +36,15 @@ export const configQuery = () => ({
   staleTime: 60_000,
 });
 
-export function PucCustomerEntry({ user }: { user: UserProfile }) {
+export function PucCustomerEntry({ user, fallback }: { user: UserProfile; fallback?: ReactNode }) {
   const config = useQuery(configQuery());
   if (config.isPending) return <LoadingState />;
   if (config.isError) return <ErrorState error={config.error} retry={() => config.refetch()} />;
-  return config.data.eligible ? <PucRegister initialOpen /> : <AddCustomer user={user} />;
+  return config.data.eligible ? (fallback || <PucRegister initialOpen />) : <AddCustomer user={user} />;
 }
 
 export function PucCustomerDirectory({ fallback }: { fallback: ReactNode }) {
-  const config = useQuery(configQuery());
-  if (config.isPending) return <LoadingState />;
-  if (config.isError) return <ErrorState error={config.error} retry={() => config.refetch()} />;
-  return config.data.eligible ? <PucRegister customersView /> : fallback;
+  return fallback;
 }
 
 export function PucRegister({ initialOpen = false, customersView = false, embedded = false }: { initialOpen?: boolean; customersView?: boolean; embedded?: boolean }) {
@@ -201,21 +198,41 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
   return (
     <main className={embedded ? "puc-embedded-workspace" : "puc-unified-workspace"}>
       {/* Header & Primary Action */}
-      <header className="puc-page-header">
-        <div className="puc-title-group">
-          {!embedded && (
+      {embedded ? (
+        <div className="puc-embedded-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--mo-blue, #3158f5)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Vehicle Pollution Centre
+              </span>
+              {config.data.testAccount && <span className="puc-test-badge">Private Test Account</span>}
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: '2px 0 0', color: 'var(--text)' }}>
+              Vehicle Certificates & Renewals <span className="mo-count">{completed.length}</span>
+            </h2>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+              Certificates, expiry tracking & automated WhatsApp renewal reminders
+            </p>
+          </div>
+          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#18a873', borderColor: '#18a873' }}>
+            <Plus size={16} /> Add Customer
+          </button>
+        </div>
+      ) : (
+        <header className="puc-page-header">
+          <div className="puc-title-group">
             <div className="puc-eyebrow-line">
               <span className="puc-eyebrow-text">AE · Vehicle Pollution Centre</span>
               {config.data.testAccount && <span className="puc-test-badge">Private Test Account</span>}
             </div>
-          )}
-          <h1 className="puc-page-title">Customer Vehicles</h1>
-          <p className="puc-page-subtitle">Certificates, expiry tracking & WhatsApp renewal</p>
-        </div>
-        <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)}>
-          <Plus size={16} /> Add Customer
-        </button>
-      </header>
+            <h1 className="puc-page-title">Customer Vehicles</h1>
+            <p className="puc-page-subtitle">Certificates, expiry tracking & WhatsApp renewal</p>
+          </div>
+          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#18a873', borderColor: '#18a873' }}>
+            <Plus size={16} /> Add Customer
+          </button>
+        </header>
+      )}
 
       {/* Standard AE Metric KPI Cards */}
       <section className="puc-kpi-grid">

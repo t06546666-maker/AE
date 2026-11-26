@@ -465,7 +465,7 @@ export function App() {
           <Route path="/dashboard" element={user.role === 'merchant' ? <MerchantOverview user={user} /> : user.role === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />} />
           <Route path="/shop-coupons" element={user.role==='admin'?<AdminShopCoupons/>:user.role==='merchant'?<MerchantShopCoupons/>:<Navigate to="/dashboard" replace/>}/>
           <Route path="/expense-staff" element={<RoleRoute user={user} role="admin"><ExpenseStaff/></RoleRoute>}/>
-          <Route path="/add-customer" element={user.role==='merchant'?<PucCustomerEntry user={user}/>:<AddCustomer user={user}/>} />
+          <Route path="/add-customer" element={user.role==='merchant'?<PucCustomerEntry user={user} fallback={<MerchantOverview user={user} initialAddCustomer />}/>:<AddCustomer user={user}/>} />
           <Route path="/merchant-points" element={<RoleRoute user={user} role="merchant"><MerchantPoints user={user} /></RoleRoute>} />
           <Route path="/orders" element={<Orders user={user} />} />
           <Route path="/counter-staff" element={<RoleRoute user={user} role="merchant"><CounterStaffManager/></RoleRoute>}/>
@@ -473,7 +473,7 @@ export function App() {
           <Route path="/customer-orders" element={<CustomerOrders user={user} />} />
           <Route path="/expiry-reminders" element={<RoleRoute user={user} role="merchant"><MerchantExpiryManager /></RoleRoute>} />
           <Route path="/customer-product-lists" element={<RoleRoute user={user} role="admin"><ProductLists /></RoleRoute>} />
-          <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <PucCustomerDirectory fallback={<MerchantOverview user={user} />} /> : <Customers user={user} />} />
+          <Route path="/customers" element={user.role === 'admin' ? <AdminCustomers /> : user.role === 'merchant' && new URLSearchParams(location.search).get('view') !== 'qr' ? <MerchantOverview user={user} /> : <Customers user={user} />} />
           <Route path="/customers/:id" element={<RoleRoute user={user} role="admin"><AdminCustomerDetails /></RoleRoute>} />
           <Route path="/products" element={<Products user={user} />} />
           <Route path="/offers" element={<Offers user={user} />} />

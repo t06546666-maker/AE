@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AE Merchant App: Authentic Dashboard Theme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0b1120;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      color: #162235;
+      min-height: 100vh;
+    }
+    .page-title {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 850;
+      margin-bottom: 16px;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .demo-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .demo-btn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .demo-btn.active, .demo-btn:hover {
+      background: #3158f5;
+      color: #ffffff;
+      border-color: #3158f5;
+      box-shadow: 0 4px 14px rgba(49, 88, 245, 0.35);
+    }
+
+    /* Mobile Device Frame */
+    .phone {
+      width: 390px;
+      max-width: 100%;
+      height: 820px;
+      background: #f4f7fb;
+      border-radius: 40px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45), 0 0 0 10px #1e293b;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* EXACT AE Merchant Top App Bar */
+    .ae-topbar {
+      background: #101934;
+      padding: 14px 20px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #fff;
+    }
+    .ae-brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ae-brand-logo {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ae-top-actions {
+      display: flex;
+      gap: 12px;
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+
+    /* EXACT Signature AE Merchant Curved Hero Heading */
+    .mo-heading {
+      position: relative;
+      z-index: 1;
+      padding: 16px 20px 24px;
+      color: #fff;
+      border-radius: 0 0 28px 28px;
+      background: radial-gradient(circle at 84% 18%, #6e5cff 0, transparent 32%), linear-gradient(120deg, #101934 0%, #243b84 48%, #4269f5 100%);
+      box-shadow: 0 14px 34px rgba(27, 45, 107, 0.22);
+    }
+    .mo-eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      color: #9fe8ff;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .mo-heading h1 {
+      font-size: 24px;
+      font-weight: 850;
+      color: #ffffff;
+      letter-spacing: -.03em;
+      margin: 4px 0 6px;
+    }
+    .mo-heading p {
+      font-size: 12px;
+      color: #dbe5ff;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .mo-hero-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .mo-points-badge {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .mo-add-btn {
+      background: #18a873;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 12px rgba(24, 168, 115, 0.35);
+    }
+
+    /* EXACT Signature AE Merchant Rounded Pill Tabs */
+    .mo-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      background: transparent;
+      overflow-x: auto;
+    }
+    .mo-tabs button {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 750;
+      font-size: 12px;
+      color: #64748b;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+    }
+    .mo-tabs button.active {
+      background: #3158f5;
+      color: #ffffff;
+      border-color: #3158f5;
+      box-shadow: 0 4px 12px rgba(49, 88, 245, 0.25);
+    }
+
+    /* Phone Scrollable Body */
+    .phone-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* KPI Metric Cards matching .mo-stat */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px 10px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(27, 45, 107, 0.04);
+    }
+    .kpi-card.active {
+      border-color: #3158f5;
+      box-shadow: 0 0 0 2px rgba(49, 88, 245, 0.2);
+    }
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .kpi-val {
+      font-size: 20px;
+      font-weight: 850;
+      color: #0f172a;
+    }
+    .kpi-card.warn .kpi-val { color: #d97706; }
+    .kpi-card.danger .kpi-val { color: #dc2626; }
+
+    /* Search & Filter Toolbar inside .mo-panel */
+    .filter-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(27, 45, 107, 0.04);
+    }
+    .search-box {
+      width: 100%;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid #cfdaea;
+      background: #f8fafc;
+      padding: 0 12px 0 34px;
+      font-size: 12px;
+      color: #0f172a;
+      outline: none;
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 11px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .dropdown-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+    .dropdown-select {
+      flex: 1;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid #cfdaea;
+      background: #fff;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 750;
+      color: #0f172a;
+      outline: none;
+      cursor: pointer;
+    }
+    .custom-days-input-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .custom-days-input-box input {
+      width: 75px;
+      height: 38px;
+      border: 1px solid #cfdaea;
+      border-radius: 10px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 750;
+      outline: none;
+    }
+    .apply-btn {
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #3158f5;
+      color: #fff;
+      border: none;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    /* Insights-Style Customer Vehicle List */
+    .insights-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .insight-row {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(27, 45, 107, 0.04);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .insight-row:hover {
+      border-color: #3158f5;
+    }
+    .row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .row-cust-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #e9edff;
+      color: #3158f5;
+      font-weight: 850;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cust-meta h3 {
+      font-size: 14px;
+      font-weight: 850;
+      color: #0f172a;
+    }
+    .cust-meta small {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .plate-badge {
+      display: inline-flex;
+      align-items: center;
+      background: #fff;
+      color: #0f172a;
+      border: 1.5px solid #0f172a;
+      border-radius: 6px;
+      font-family: monospace;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 2px 6px;
+    }
+    .plate-badge::before {
+      content: 'IND';
+      font-size: 8px;
+      font-weight: 900;
+      color: #1d4ed8;
+      margin-right: 4px;
+      padding-right: 4px;
+      border-right: 1px solid #cbd5e1;
+    }
+    .row-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 8px;
+    }
+    .status-badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .status-badge.warn {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .status-badge.danger {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .status-badge.valid {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .action-icons {
+      display: flex;
+      gap: 6px;
+    }
+    .action-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #0f172a;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .action-circle.wa {
+      background: #25d366;
+      color: #fff;
+      border-color: #25d366;
+    }
+
+    /* Reports Panel */
+    .reports-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .report-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      box-shadow: 0 2px 8px rgba(27, 45, 107, 0.04);
+    }
+    .report-card:hover {
+      border-color: #3158f5;
+    }
+    .report-meta strong {
+      font-size: 13px;
+      font-weight: 850;
+      color: #0f172a;
+      display: block;
+    }
+    .report-meta small {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .dl-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #e9edff;
+      color: #3158f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 750;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .nav-item.active {
+      color: #3158f5;
+    }
+    .nav-icon {
+      font-size: 18px;
+    }
+
+    /* Compact Modal Popup */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      width: 100%;
+      max-height: 90%;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .modal-header h2 {
+      font-size: 15px;
+      font-weight: 850;
+      color: #0f172a;
+    }
+    .modal-header small {
+      font-size: 11px;
+      color: #64748b;
+      display: block;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .modal-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .input-group {
+      display: grid;
+      gap: 4px;
+    }
+    .input-group span {
+      font-size: 10px;
+      font-weight: 750;
+      color: #64748b;
+    }
+    .input-group input, .input-group select {
+      height: 36px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0 8px;
+      font-size: 11px;
+      color: #0f172a;
+      outline: none;
+    }
+    .points-card {
+      background: #eeedff;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 2px;
+      margin-top: 2px;
+    }
+    .points-card strong {
+      font-size: 16px;
+      font-weight: 850;
+      color: #3158f5;
+    }
+    .points-card small {
+      font-size: 9px;
+      color: #64748b;
+    }
+    .consent-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.3;
+      margin-top: 2px;
+    }
+    .modal-footer {
+      padding: 10px 16px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-cancel {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      font-size: 12px;
+      font-weight: 750;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .btn-confirm {
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 8px;
+      background: #3158f5;
+      border: none;
+      font-size: 12px;
+      font-weight: 750;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-title">AE Merchant: Authentic Dashboard Theme</div>
+
+  <div class="demo-controls">
+    <button class="demo-btn active" id="btn-cust-view" onclick="switchView('customers')">👥 Customers View</button>
+    <button class="demo-btn" id="btn-rep-view" onclick="switchView('reports')">📊 Reports View</button>
+    <button class="demo-btn" onclick="openModal()">➕ Add Customer Modal</button>
+  </div>
+
+  <div class="phone">
+    <!-- Top App Bar -->
+    <header class="ae-topbar">
+      <div class="ae-brand-badge">
+        <span class="ae-brand-logo">AE</span>
+        <span style="font-size:12px; font-weight:750; color:#94a3b8;">· Pollution Centre</span>
+      </div>
+      <div class="ae-top-actions">
+        <span>🌐</span>
+        <span>🔔</span>
+      </div>
+    </header>
+
+    <!-- EXACT Signature AE Merchant Curved Hero Heading -->
+    <header class="mo-heading" id="hero-heading">
+      <span class="mo-eyebrow">WHERE CUSTOMERS MEET BUSINESSES AND BEYOND</span>
+      <h1 id="hero-title">Your customers</h1>
+      <p id="hero-subtitle">Every relationship starts with knowing your customer.</p>
+      
+      <div class="mo-hero-bar">
+        <div class="mo-points-badge">
+          <span>🪙</span>
+          <span>4,250 Available pts</span>
+        </div>
+        <button class="mo-add-btn" onclick="openModal()">
+          <span>+</span>
+          <span>Add Customer</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- EXACT Signature AE Merchant Rounded Pill Tabs -->
+    <nav class="mo-tabs">
+      <button class="mo-tab" onclick="switchView('overview')">Overview</button>
+      <button id="tab-cust" class="mo-tab active" onclick="switchView('customers')">Customers</button>
+      <button class="mo-tab" onclick="switchView('insights')">Insights</button>
+      <button id="tab-rep" class="mo-tab" onclick="switchView('reports')">Reports</button>
+    </nav>
+
+    <!-- Phone Scrollable Body -->
+    <main class="phone-body" id="phone-content">
+      <!-- Injected dynamically by JS -->
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <div class="nav-item" onclick="switchView('overview')">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </div>
+      <div class="nav-item active" id="bnav-cust" onclick="switchView('customers')">
+        <span class="nav-icon">👥</span>
+        <span>Customers</span>
+      </div>
+      <div class="nav-item" onclick="switchView('offers')">
+        <span class="nav-icon">🎁</span>
+        <span>Offers</span>
+      </div>
+      <div class="nav-item" id="bnav-rep" onclick="switchView('reports')">
+        <span class="nav-icon">📊</span>
+        <span>Reports</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">⚙️</span>
+        <span>More</span>
+      </div>
+    </nav>
+
+    <!-- Compact Modal Popup -->
+    <div class="modal-overlay" id="add-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <h2>Add Customer & Vehicle</h2>
+            <small>Register certificate and award reward points</small>
+          </div>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <form class="modal-body" onsubmit="handleFormSubmit(event)">
+          <div class="input-grid">
+            <label class="input-group">
+              <span>Customer Name</span>
+              <input required placeholder="e.g. Rahul Sharma" value="Rahul Sharma" />
+            </label>
+            <label class="input-group">
+              <span>Mobile Number</span>
+              <input required type="tel" placeholder="10-digit mobile" value="9876543210" />
+            </label>
+            <label class="input-group">
+              <span>Vehicle Plate</span>
+              <input required placeholder="e.g. KL09AB1234" value="KL09AB1234" />
+            </label>
+            <label class="input-group">
+              <span>Vehicle Model</span>
+              <input required placeholder="e.g. Maruti Swift" value="Maruti Swift" />
+            </label>
+            <label class="input-group">
+              <span>Test Date</span>
+              <input required type="date" value="2026-11-26" />
+            </label>
+            <label class="input-group">
+              <span>Certificate Expiry</span>
+              <input required type="date" value="2027-05-25" />
+            </label>
+            <label class="input-group">
+              <span>Service Fee (₹)</span>
+              <input required type="number" placeholder="₹ Amount" value="150" />
+            </label>
+            <label class="input-group">
+              <span>Reward Rate</span>
+              <select>
+                <option>10 pts per ₹100</option>
+                <option selected>20 pts per ₹100</option>
+                <option>30 pts per ₹100</option>
+              </select>
+            </label>
+          </div>
+          <div class="points-card">
+            <span style="font-size:10px; font-weight:750; color:#3158f5;">POINTS PREVIEW</span>
+            <strong>30 points awarded</strong>
+            <small>₹100+ tests receive official rate (Max 100 pts)</small>
+          </div>
+          <label class="consent-label">
+            <input type="checkbox" checked required style="margin-top:2px;" />
+            <span>Customer agrees to certificate registration and service renewal reminders.</span>
+          </label>
+        </form>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+          <button type="button" class="btn-confirm" onclick="handleFormSubmit(event)">Confirm & Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sampleVehicles = [
+      { id: 1, name: 'Anas K.', phone: '+91 98471 23456', plate: 'KL 09 AB 1234', model: 'Honda City i-VTEC', expiry: '2026-11-29', days: 3, status: 'due10' },
+      { id: 2, name: 'Sujith Kumar', phone: '+91 97450 87654', plate: 'KL 11 AZ 7788', model: 'Maruti Suzuki Swift', expiry: '2026-11-22', days: -4, status: 'expired' },
+      { id: 3, name: 'Fahad Mohammed', phone: '+91 94473 11223', plate: 'KL 08 BD 9001', model: 'Toyota Innova Crysta', expiry: '2026-12-04', days: 8, status: 'due10' },
+      { id: 4, name: 'Deepak Varghese', phone: '+91 99955 66778', plate: 'KL 07 CA 4433', model: 'Hyundai Creta SX', expiry: '2026-12-15', days: 19, status: 'due30' },
+      { id: 5, name: 'Ashraf Ali', phone: '+91 98950 33445', plate: 'KL 10 BE 5566', model: 'Royal Enfield Classic 350', expiry: '2027-05-18', days: 173, status: 'valid' }
+    ];
+
+    let currentFilter = 'all';
+    let customDaysValue = 14;
+
+    function renderCustomersView() {
+      const activeFilter = currentFilter;
+      const filtered = sampleVehicles.filter(v => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'expired') return v.days < 0;
+        if (activeFilter === 'due7') return v.days >= 0 && v.days <= 7;
+        if (activeFilter === 'due10') return v.days >= 0 && v.days <= 10;
+        if (activeFilter === 'due15') return v.days >= 0 && v.days <= 15;
+        if (activeFilter === 'due30') return v.days >= 0 && v.days <= 30;
+        if (activeFilter === 'custom') return v.days >= 0 && v.days <= customDaysValue;
+        return true;
+      });
+
+      const totalCount = sampleVehicles.length;
+      const due10Count = sampleVehicles.filter(v => v.days >= 0 && v.days <= 10).length;
+      const expiredCount = sampleVehicles.filter(v => v.days < 0).length;
+
+      return `
+        <div class="kpi-grid">
+          <div class="kpi-card ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+            <span class="kpi-label">Total Vehicles</span>
+            <div class="kpi-val">${totalCount}</div>
+          </div>
+          <div class="kpi-card warn ${activeFilter === 'due10' ? 'active' : ''}" onclick="setFilter('due10')">
+            <span class="kpi-label">Due in 10 Days</span>
+            <div class="kpi-val">${due10Count}</div>
+          </div>
+          <div class="kpi-card danger ${activeFilter === 'expired' ? 'active' : ''}" onclick="setFilter('expired')">
+            <span class="kpi-label">Overdue</span>
+            <div class="kpi-val">${expiredCount}</div>
+          </div>
+        </div>
+
+        <div class="filter-panel">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input placeholder="Search customer, phone or plate..." />
+          </div>
+          <div class="dropdown-row">
+            <select class="dropdown-select" onchange="handleDropdown(this.value)">
+              <option value="all" ${activeFilter === 'all' ? 'selected' : ''}>🚗 All Vehicles</option>
+              <option value="expired" ${activeFilter === 'expired' ? 'selected' : ''}>🔴 Overdue (Expired)</option>
+              <option value="due7" ${activeFilter === 'due7' ? 'selected' : ''}>⏳ Due in 7 Days</option>
+              <option value="due10" ${activeFilter === 'due10' ? 'selected' : ''}>⏳ Due in 10 Days</option>
+              <option value="due15" ${activeFilter === 'due15' ? 'selected' : ''}>⏳ Due in 15 Days</option>
+              <option value="due30" ${activeFilter === 'due30' ? 'selected' : ''}>⏳ Due in 30 Days</option>
+              <option value="custom" ${activeFilter === 'custom' ? 'selected' : ''}>⚙️ Custom Days Horizon...</option>
+            </select>
+            ${activeFilter === 'custom' ? `
+              <div class="custom-days-input-box">
+                <input type="number" id="custom-days-input" value="${customDaysValue}" min="1" max="365" placeholder="Days" />
+                <button class="apply-btn" onclick="applyCustomDays()">Apply</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="insights-list">
+          ${filtered.map(v => {
+            const isExp = v.days < 0;
+            const isDue = v.days >= 0 && v.days <= 10;
+            const badgeClass = isExp ? 'danger' : isDue ? 'warn' : 'valid';
+            const badgeText = isExp ? `Expired ${Math.abs(v.days)}d ago` : v.days === 0 ? 'Expires today' : `Due in ${v.days} days`;
+            return `
+              <article class="insight-row" onclick="alert('Viewing: ' + '${v.name}' + ' (${v.plate})')">
+                <div class="row-top">
+                  <div class="row-cust-wrap">
+                    <div class="avatar">${v.name.slice(0, 2).toUpperCase()}</div>
+                    <div class="cust-meta">
+                      <h3>${v.name}</h3>
+                      <small>${v.phone}</small>
+                    </div>
+                  </div>
+                  <div class="plate-badge">${v.plate}</div>
+                </div>
+                <div class="row-bottom">
+                  <div>
+                    <span class="status-badge ${badgeClass}">${badgeText}</span>
+                    <small style="font-size:10px; color:#64748b; margin-left:6px;">Expiry: ${v.expiry}</small>
+                  </div>
+                  <div class="action-icons" onclick="event.stopPropagation()">
+                    <a href="#" class="action-circle wa" title="WhatsApp reminder" onclick="alert('WhatsApp renewal message sent to ${v.phone}!')">💬</a>
+                    <a href="tel:${v.phone}" class="action-circle" title="Call">📞</a>
+                  </div>
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderReportsView() {
+      return `
+        <div class="reports-panel">
+          <div class="report-card" onclick="alert('Downloading: AE-PUC-All-Vehicles-Register.csv')">
+            <div class="report-meta">
+              <strong>Complete Vehicle Pollution Register</strong>
+              <small>All registered customer vehicles, certificates, fees & points (Lifetime)</small>
+            </div>
+            <button class="dl-btn">📥</button>
+          </div>
+
+          <div class="report-card" onclick="alert('Downloading: AE-PUC-Upcoming-Renewals-Outreach.csv')">
+            <div class="report-meta">
+              <strong>Upcoming Expiry & Overdue Renewals</strong>
+              <small>Vehicles due within 30 days or overdue (includes mobile numbers for outreach)</small>
+            </div>
+            <button class="dl-btn">📥</button>
+          </div>
+
+          <div class="report-card" onclick="alert('Downloading: AE-PUC-Monthly-Summary-2026-11.csv')">
+            <div class="report-meta">
+              <strong>Monthly PUC Summary & Fee Audit (2026-11)</strong>
+              <small>Total tests conducted, service revenue & reward points issued</small>
+            </div>
+            <button class="dl-btn">📥</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function switchView(view) {
+      const container = document.getElementById('phone-content');
+      document.querySelectorAll('.mo-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+
+      const title = document.getElementById('hero-title');
+      const subtitle = document.getElementById('hero-subtitle');
+
+      if (view === 'reports') {
+        title.innerText = "Business reports";
+        subtitle.innerText = "Export your data as CSV for Excel or Google Sheets.";
+        container.innerHTML = renderReportsView();
+        document.getElementById('tab-rep')?.classList.add('active');
+        document.getElementById('bnav-rep')?.classList.add('active');
+        document.getElementById('btn-rep-view')?.classList.add('active');
+      } else {
+        title.innerText = "Your customers";
+        subtitle.innerText = "Every relationship starts with knowing your customer.";
+        container.innerHTML = renderCustomersView();
+        document.getElementById('tab-cust')?.classList.add('active');
+        document.getElementById('bnav-cust')?.classList.add('active');
+        document.getElementById('btn-cust-view')?.classList.add('active');
+      }
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      document.getElementById('phone-content').innerHTML = renderCustomersView();
+    }
+
+    function handleDropdown(val) {
+      currentFilter = val;
+      document.getElementById('phone-content').innerHTML = renderCustomersView();
+    }
+
+    function applyCustomDays() {
+      const val = parseInt(document.getElementById('custom-days-input').value, 10);
+      if (val > 0) {
+        customDaysValue = val;
+        currentFilter = 'custom';
+        document.getElementById('phone-content').innerHTML = renderCustomersView();
+      }
+    }
+
+    function openModal() {
+      document.getElementById('add-modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('add-modal').classList.remove('open');
+    }
+
+    function handleFormSubmit(e) {
+      if (e) e.preventDefault();
+      alert('Vehicle successfully registered! 30 points awarded to customer.');
+      closeModal();
+    }
+
+    // Initialize in Customers View
+    switchView('customers');
+  </script>
+</body>
+</html>
