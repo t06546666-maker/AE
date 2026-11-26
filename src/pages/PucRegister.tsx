@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, Phone, MessageCircle, User, Download, Plus, X,
-  AlertTriangle, CheckCircle2, Clock
+  AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { AddCustomer } from './AddCustomer';
@@ -13,7 +13,7 @@ import { formatCurrency, formatDate, formatPhone, formatPoints, initials } from 
 import './puc-register.css';
 
 type Config = { eligible: boolean; shopName?: string; earnOptions?: number[]; testAccount?: boolean };
-type RecordRow = {
+export type RecordRow = {
   id: string;
   name: string;
   phone: string;
@@ -29,11 +29,11 @@ type RecordRow = {
   consent?: boolean;
 };
 
-const today = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
-const configQuery = () => ({
+export const today = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+export const configQuery = () => ({
   queryKey: ['puc-config'],
   queryFn: ({ signal }: { signal: AbortSignal }) => apiFetch<Config>('/api/merchant/puc/config', { signal }),
-  staleTime: 0,
+  staleTime: 60_000,
 });
 
 export function PucCustomerEntry({ user }: { user: UserProfile }) {
@@ -50,27 +50,40 @@ export function PucCustomerDirectory({ fallback }: { fallback: ReactNode }) {
   return config.data.eligible ? <PucRegister customersView /> : fallback;
 }
 
-export function PucRegister({ initialOpen = false, customersView = false }: { initialOpen?: boolean; customersView?: boolean }) {
+export function PucRegister({ initialOpen = false, customersView = false, embedded = false }: { initialOpen?: boolean; customersView?: boolean; embedded?: boolean }) {
   const config = useQuery(configQuery()), client = useQueryClient(), navigate = useNavigate(), [params, setParams] = useSearchParams();
   const requested = params.get('filter') || 'all';
-  const filter = ['all', 'expiry', 'expired', 'due10'].includes(requested) ? requested : 'all';
+  const filter = ['all', 'expiry', 'expired', 'due7', 'due10', 'due15', 'due30', 'due_custom'].includes(requested) ? requested : 'all';
+  
   const [open, setOpen] = useState(initialOpen);
   const [search, setSearch] = useState('');
-  const [month, setMonth] = useState('');
+  const [month, setMonth] = useState(params.get('month') || '');
+  const [customDays, setCustomDays] = useState(params.get('days') || '14');
+  const [appliedDays, setAppliedDays] = useState<number | null>(params.get('days') ? parseInt(params.get('days')!, 10) : null);
+  const [dropdownMode, setDropdownMode] = useState<string>(
+    filter === 'due_custom' ? 'custom' : month ? 'month' : filter
+  );
   const [notice, setNotice] = useState('');
   const [page, setPage] = useState({ key: '', cursor: '' });
   const [sending, setSending] = useState<string | null>(null);
   const [profile, setProfile] = useState<RecordRow | null>(null);
 
-  const filterKey = filter + '|' + month;
+  const filterKey = filter + '|' + month + '|' + (appliedDays || '');
   const after = page.key === filterKey ? page.cursor : '';
   const setAfter = (cursor: string) => setPage({ key: filterKey, cursor });
 
+  const queryParams = new URLSearchParams({
+    filter,
+    ...(month ? { month } : {}),
+    ...(filter === 'due_custom' && appliedDays ? { days: String(appliedDays) } : {}),
+    ...(after ? { after } : {})
+  });
+
   const records = useQuery({
-    queryKey: ['puc-records', filter, month, after],
+    queryKey: ['puc-records', filter, month, appliedDays, after],
     enabled: config.data?.eligible === true,
     queryFn: ({ signal }) => apiFetch<{ records: RecordRow[]; nextCursor: string | null }>(
-      '/api/merchant/puc/records?' + new URLSearchParams({ filter, ...(month ? { month } : {}), ...(after ? { after } : {}) }).toString(),
+      '/api/merchant/puc/records?' + queryParams.toString(),
       { signal }
     )
   });
@@ -97,10 +110,60 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
     return diffDays <= 10;
   }).length;
 
-  const filtered = all.filter(row => !search || `${row.name} ${row.phone} ${row.plate} ${row.model}`.toLowerCase().includes(search.toLowerCase()));
+  // Filter client-side by search query and custom days if active
+  const filtered = all.filter(row => {
+    if (search) {
+      const q = search.toLowerCase();
+      const match = `${row.name} ${row.phone} ${row.plate} ${row.model}`.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (filter === 'due_custom' && appliedDays) {
+      if (row.expiryDate < todayStr) return false;
+      const diff = (Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000;
+      if (diff > appliedDays) return false;
+    }
+    return true;
+  });
 
-  const selectFilter = (value: string) => {
-    setParams({ filter: value });
+  const selectFilter = (val: string, days?: number) => {
+    const next = new URLSearchParams(params);
+    next.set('filter', val);
+    if (days) {
+      next.set('days', String(days));
+      setAppliedDays(days);
+    } else {
+      next.delete('days');
+      setAppliedDays(null);
+    }
+    setDropdownMode(val === 'due_custom' ? 'custom' : val);
+    setParams(next, { replace: true });
+  };
+
+  const handleDropdownSelect = (mode: string) => {
+    setDropdownMode(mode);
+    if (mode === 'custom') {
+      const days = parseInt(customDays, 10) || 14;
+      selectFilter('due_custom', days);
+    } else if (mode === 'month') {
+      const currentMonth = todayStr.slice(0, 7);
+      setMonth(currentMonth);
+      const next = new URLSearchParams(params);
+      next.set('month', currentMonth);
+      setParams(next, { replace: true });
+    } else {
+      setMonth('');
+      const next = new URLSearchParams(params);
+      next.delete('month');
+      next.delete('days');
+      next.set('filter', mode);
+      setParams(next, { replace: true });
+    }
+  };
+
+  const applyCustomDays = () => {
+    const days = parseInt(customDays, 10);
+    if (!Number.isFinite(days) || days < 1) return;
+    selectFilter('due_custom', days);
   };
 
   const close = () => {
@@ -121,29 +184,31 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
     }
   }
 
-  function download() {
+  function downloadCsv() {
     const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
     const rows = [
-      ['Customer', 'Phone', 'Vehicle', 'Model', 'Fee', 'Points', 'Test date', 'Expiry', 'Order', 'Status'],
-      ...filtered.map(row => [row.name, row.phone, row.plate, row.model, row.amount, row.points, row.testDate, row.expiryDate, row.orderNo, row.status])
+      ['Customer', 'Phone', 'Vehicle', 'Model', 'Fee (INR)', 'Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
+      ...filtered.map(row => [row.name, row.phone, row.plate, row.model, row.amount, row.points || 0, row.testDate, row.expiryDate, row.orderNo || '', row.status])
     ];
-    const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(row => row.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PUC-register-${todayStr}.csv`;
+    link.download = `AE-PUC-Vehicles-${filter}-${todayStr}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
   return (
-    <main className="puc-unified-workspace">
-      {/* Unified Standard AE Header */}
+    <main className={embedded ? "puc-embedded-workspace" : "puc-unified-workspace"}>
+      {/* Header & Primary Action */}
       <header className="puc-page-header">
         <div className="puc-title-group">
-          <div className="puc-eyebrow-line">
-            <span className="puc-eyebrow-text">AE · Vehicle Pollution Centre</span>
-            {config.data.testAccount && <span className="puc-test-badge">Private Test Account</span>}
-          </div>
+          {!embedded && (
+            <div className="puc-eyebrow-line">
+              <span className="puc-eyebrow-text">AE · Vehicle Pollution Centre</span>
+              {config.data.testAccount && <span className="puc-test-badge">Private Test Account</span>}
+            </div>
+          )}
           <h1 className="puc-page-title">Customer Vehicles</h1>
           <p className="puc-page-subtitle">Certificates, expiry tracking & WhatsApp renewal</p>
         </div>
@@ -156,8 +221,8 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
       <section className="puc-kpi-grid">
         <button
           type="button"
-          className={`puc-kpi-card ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => selectFilter('all')}
+          className={`puc-kpi-card ${filter === 'all' && !month ? 'active' : ''}`}
+          onClick={() => handleDropdownSelect('all')}
         >
           <span className="puc-kpi-label">Total Vehicles</span>
           <strong className="puc-kpi-value">{completed.length}</strong>
@@ -166,7 +231,7 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
         <button
           type="button"
           className={`puc-kpi-card warning ${filter === 'due10' ? 'active' : ''}`}
-          onClick={() => selectFilter(filter === 'due10' ? 'all' : 'due10')}
+          onClick={() => handleDropdownSelect(filter === 'due10' ? 'all' : 'due10')}
         >
           <span className="puc-kpi-label">Due in 10 Days</span>
           <strong className="puc-kpi-value">{due10Count}</strong>
@@ -175,7 +240,7 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
         <button
           type="button"
           className={`puc-kpi-card danger ${filter === 'expired' ? 'active' : ''}`}
-          onClick={() => selectFilter(filter === 'expired' ? 'all' : 'expired')}
+          onClick={() => handleDropdownSelect(filter === 'expired' ? 'all' : 'expired')}
         >
           <span className="puc-kpi-label">Overdue</span>
           <strong className="puc-kpi-value">{expiredCount}</strong>
@@ -190,10 +255,10 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
         </div>
       )}
 
-      {/* Toolbar: Search, Month, Filter chips & Export */}
+      {/* Toolbar: Search, Renewals Dropdown, Custom Days & Export */}
       <div className="puc-toolbar-wrap">
         <div className="puc-search-box">
-          <Search size={16} className="puc-search-icon" />
+          <Search size={15} className="puc-search-icon" />
           <input
             aria-label="Search vehicles"
             placeholder="Search customer, phone or vehicle plate..."
@@ -204,151 +269,184 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
             <button type="button" className="puc-search-clear" onClick={() => setSearch('')}>×</button>
           )}
         </div>
-        <label className="puc-month-field">
-          <span>Expiry Month</span>
-          <input
-            aria-label="Expiry month"
-            type="month"
-            value={month}
-            onChange={e => setMonth(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          className="button secondary puc-export-btn"
-          onClick={download}
-          disabled={!filtered.length}
-        >
-          <Download size={15} /> Export CSV
-        </button>
+
+        {/* Renewals Dropdown Filter Group */}
+        <div className="puc-filter-dropdown-group">
+          <label className="puc-dropdown-field">
+            <span>Renewals:</span>
+            <select
+              aria-label="Renewal filter window"
+              className="puc-filter-select"
+              value={dropdownMode}
+              onChange={e => handleDropdownSelect(e.target.value)}
+            >
+              <option value="all">🚗 All Vehicles</option>
+              <option value="expired">🔴 Overdue (Expired)</option>
+              <option value="due7">⏳ Due in 7 Days</option>
+              <option value="due10">⏳ Due in 10 Days</option>
+              <option value="due15">⏳ Due in 15 Days</option>
+              <option value="due30">⏳ Due in 30 Days</option>
+              <option value="custom">⚙️ Custom Days Horizon...</option>
+              <option value="month">📅 By Expiry Month...</option>
+            </select>
+          </label>
+
+          {dropdownMode === 'custom' && (
+            <div className="puc-custom-days-box">
+              <input
+                aria-label="Custom days horizon"
+                type="number"
+                min="1"
+                max="365"
+                placeholder="Days (e.g. 14)"
+                value={customDays}
+                onChange={e => setCustomDays(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') applyCustomDays(); }}
+              />
+              <button type="button" className="button primary" onClick={applyCustomDays}>
+                Apply
+              </button>
+            </div>
+          )}
+
+          {dropdownMode === 'month' && (
+            <input
+              aria-label="Expiry month selector"
+              type="month"
+              className="puc-month-input"
+              value={month}
+              onChange={e => {
+                setMonth(e.target.value);
+                const next = new URLSearchParams(params);
+                next.set('month', e.target.value);
+                setParams(next, { replace: true });
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            className="button secondary puc-export-btn"
+            onClick={downloadCsv}
+            disabled={!filtered.length}
+            title="Download CSV report"
+          >
+            <Download size={15} /> Export
+          </button>
+        </div>
       </div>
 
-      <nav className="puc-filter-bar" aria-label="Filter customer vehicles">
-        <button
-          type="button"
-          className={`puc-filter-chip ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => selectFilter('all')}
-        >
-          All Records ({completed.length})
-        </button>
-        <button
-          type="button"
-          className={`puc-filter-chip warning ${filter === 'due10' ? 'active' : ''}`}
-          onClick={() => selectFilter('due10')}
-        >
-          Due in 10 Days ({due10Count})
-        </button>
-        <button
-          type="button"
-          className={`puc-filter-chip danger ${filter === 'expired' ? 'active' : ''}`}
-          onClick={() => selectFilter('expired')}
-        >
-          Overdue ({expiredCount})
-        </button>
-      </nav>
-
-      {/* Main Records List */}
+      {/* Main Records List Styled Like AE Insights */}
       {records.isPending ? (
-        <LoadingState />
+        <LoadingState label="Loading customer vehicles…" />
       ) : records.isError ? (
         <ErrorState error={records.error} retry={() => records.refetch()} />
+      ) : !filtered.length ? (
+        <div className="puc-empty-state">
+          <Clock size={36} className="puc-empty-icon" />
+          <h3 className="puc-empty-title">
+            {search ? 'No matching vehicles found' : 'No customer vehicles in this view'}
+          </h3>
+          <p className="puc-empty-desc">
+            {search
+              ? 'Try another name, phone number or vehicle registration plate.'
+              : 'Add customer vehicles using the button above to start tracking certificates and automated renewals.'}
+          </p>
+        </div>
       ) : (
         <>
-          <div className="puc-card-grid">
+          <div className="puc-insights-list">
             {filtered.map(row => {
-              const isOverdue = row.status === 'completed' && row.expiryDate < todayStr;
-              const daysDiff = Math.round((Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000);
-              const isDueSoon = !isOverdue && daysDiff <= 10 && daysDiff >= 0;
-              const cleanPhone = row.phone.replace(/\D/g, '');
-              const telLink = `tel:+${cleanPhone.length === 10 ? '91' : ''}${cleanPhone}`;
+              const isExpired = row.expiryDate < todayStr;
+              const diffDays = Math.ceil((Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000);
+              const isDueSoon = !isExpired && diffDays <= 10;
+              const statusTag = isExpired ? 'danger' : isDueSoon ? 'warning' : 'valid';
+              const statusText = isExpired
+                ? `Expired ${Math.abs(diffDays)}d ago`
+                : diffDays === 0
+                ? 'Expires today'
+                : diffDays <= 30
+                ? `Due in ${diffDays} days`
+                : `Valid till ${formatDate(row.expiryDate)}`;
 
               return (
-                <article
-                  key={row.id}
-                  className={`puc-card ${isOverdue ? 'overdue' : isDueSoon ? 'due-soon' : ''}`}
-                >
-                  <div className="puc-card-top">
-                    <div className="puc-user-meta">
-                      <span className="puc-avatar">{initials(row.name)}</span>
-                      <div>
-                        <h2 className="puc-name">{row.name}</h2>
-                        <a href={telLink} className="puc-phone">{formatPhone(row.phone)}</a>
-                      </div>
-                    </div>
-                    <div className="puc-plate-wrap">
-                      <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
+                <article className="puc-insight-row" key={row.id}>
+                  {/* Left: Avatar + Customer */}
+                  <div
+                    className="puc-insight-left"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setProfile(row)}
+                  >
+                    <span className="puc-avatar">{initials(row.name)}</span>
+                    <div className="puc-customer-info">
+                      <h3 className="puc-customer-name">{row.name}</h3>
+                      <p className="puc-customer-phone">{formatPhone(row.phone)}</p>
                     </div>
                   </div>
 
-                  <div className="puc-vehicle-info-bar">
+                  {/* Center: Vehicle Plate & Model */}
+                  <div
+                    className="puc-insight-vehicle"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setProfile(row)}
+                  >
+                    <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
                     <span className="puc-model-name">{row.model}</span>
-                    {isOverdue ? (
-                      <span className="puc-status-tag danger">
-                        <AlertTriangle size={12} /> Expired {formatDate(row.expiryDate)} · Overdue by {Math.abs(daysDiff)}d
-                      </span>
-                    ) : isDueSoon ? (
-                      <span className="puc-status-tag warning">
-                        <Clock size={12} /> Due in {daysDiff}d · {formatDate(row.expiryDate)}
-                      </span>
-                    ) : (
-                      <span className="puc-status-tag success">
-                        <CheckCircle2 size={12} /> Valid till {formatDate(row.expiryDate)}
-                      </span>
-                    )}
                   </div>
 
-                  <div className="puc-record-summary">
-                    <span>Service Fee: <strong>{formatCurrency(row.amount)}</strong></span>
-                    <span className="puc-sep">·</span>
-                    <span>Rewards: <strong className="puc-points-val">{row.status === 'completed' ? `${formatPoints(row.points || 0)} pts` : 'Pending'}</strong></span>
-                    {row.orderNo && <small className="puc-order-no">{row.orderNo}</small>}
-                  </div>
+                  {/* Bottom Row on Mobile / Right Row on Desktop */}
+                  <div className="puc-insight-bottom-row">
+                    <div className="puc-insight-status">
+                      <span className={`puc-tag ${statusTag}`}>{statusText}</span>
+                      <span className="puc-expiry-sub">Expiry: {row.expiryDate}</span>
+                    </div>
 
-                  <div className="puc-action-bar">
-                    <a className="button puc-btn-call" href={telLink}>
-                      <Phone size={14} /> Call
-                    </a>
-                    <button
-                      type="button"
-                      className="button puc-btn-wa"
-                      disabled={sending !== null || row.status !== 'completed'}
-                      onClick={() => void remind(row.id)}
-                    >
-                      <MessageCircle size={14} /> {sending === row.id ? 'Sending…' : 'WhatsApp'}
-                    </button>
-                    <button
-                      type="button"
-                      className="button secondary puc-btn-profile"
-                      onClick={() => setProfile(row)}
-                    >
-                      <User size={14} /> Profile
-                    </button>
+                    <div className="puc-insight-actions">
+                      <a
+                        href={`https://wa.me/${row.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                          `Hello ${row.name}, your vehicle (${row.plate}) pollution certificate renewal is due (${row.expiryDate}). Visit our center to renew and earn reward points.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="puc-action-btn whatsapp"
+                        title="Send WhatsApp renewal message"
+                        onClick={e => {
+                          e.stopPropagation();
+                          void remind(row.id);
+                        }}
+                      >
+                        <MessageCircle size={15} />
+                      </a>
+                      <a
+                        href={`tel:${row.phone}`}
+                        className="puc-action-btn call"
+                        title={`Call ${row.name}`}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <Phone size={15} />
+                      </a>
+                      <button
+                        type="button"
+                        className="puc-action-btn"
+                        title="View certificate details"
+                        onClick={() => setProfile(row)}
+                      >
+                        <User size={15} />
+                      </button>
+                    </div>
                   </div>
                 </article>
               );
             })}
           </div>
 
-          {!filtered.length && (
-            <div className="puc-empty-state">
-              <p>
-                {filter === 'due10'
-                  ? 'No vehicles expire in the next 10 days.'
-                  : filter === 'expired'
-                  ? 'No overdue vehicle certificates found.'
-                  : 'No customer vehicle records found.'}
-              </p>
-            </div>
-          )}
-
-          <div className="puc-pagination-toolbar">
-            {after && (
-              <button type="button" className="button secondary" onClick={() => setAfter('')}>
-                First page
-              </button>
-            )}
+          <div className="puc-pagination-wrap">
             {records.data?.nextCursor && (
-              <button type="button" className="button secondary" onClick={() => setAfter(records.data!.nextCursor!)}>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setAfter(records.data!.nextCursor!)}
+              >
                 Next page
               </button>
             )}
@@ -356,25 +454,36 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
         </>
       )}
 
-      {/* Customer Profile Dialog */}
+      {/* Customer Profile Details Dialog */}
       {profile && (
-        <div className="puc-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) setProfile(null); }}>
+        <div
+          className="puc-overlay"
+          role="presentation"
+          onClick={e => {
+            if (e.target === e.currentTarget) setProfile(null);
+          }}
+        >
           <section className="puc-dialog" role="dialog" aria-modal="true" aria-labelledby="puc-customer-profile">
             <header className="puc-dialog-header">
               <div className="puc-dialog-title-meta">
                 <span className="puc-avatar">{initials(profile.name)}</span>
                 <div>
                   <h2 id="puc-customer-profile">{profile.name}</h2>
-                  <small>{formatPhone(profile.phone)}</small>
+                  <small className="puc-dialog-sub">{formatPhone(profile.phone)}</small>
                 </div>
               </div>
-              <button type="button" className="icon-button modal-close" aria-label="Close" onClick={() => setProfile(null)}>
+              <button
+                type="button"
+                className="icon-button modal-close"
+                aria-label="Close"
+                onClick={() => setProfile(null)}
+              >
                 <X size={18} />
               </button>
             </header>
             <div className="puc-dialog-content">
               <div className="puc-dialog-plate-box">
-                <span className="puc-plate-badge large">{profile.plate.replace(/-/g, ' ')}</span>
+                <span className="puc-plate-badge">{profile.plate.replace(/-/g, ' ')}</span>
                 <strong>{profile.model}</strong>
               </div>
               <dl className="puc-dialog-details">
@@ -411,13 +520,13 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
         </div>
       )}
 
-      {/* Add Customer Form Modal */}
+      {/* Compact Add Customer & Vehicle Modal */}
       {open && (
         <PucForm
           rates={config.data.earnOptions || []}
           onClose={close}
           onSaved={row => {
-            setNotice(`${row.name}: ${formatPoints(row.points || 0)} points added. Order ${row.orderNo}.`);
+            setNotice(`${row.name}: ${formatPoints(row.points || 0)} points added. Order ${row.orderNo || ''}.`);
             void client.invalidateQueries({ queryKey: ['puc-records'] });
             void client.invalidateQueries({ queryKey: ['orders'] });
             void client.invalidateQueries({ queryKey: ['merchant-overview'] });
@@ -429,7 +538,16 @@ export function PucRegister({ initialOpen = false, customersView = false }: { in
   );
 }
 
-function PucForm({ rates, onClose, onSaved }: { rates: number[]; onClose: () => void; onSaved: (row: RecordRow) => void }) {
+// Compact, Mobile-Optimized Add Customer Form
+function PucForm({
+  rates,
+  onClose,
+  onSaved
+}: {
+  rates: number[];
+  onClose: () => void;
+  onSaved: (row: RecordRow) => void;
+}) {
   const [key] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -445,7 +563,16 @@ function PucForm({ rates, onClose, onSaved }: { rates: number[]; onClose: () => 
   const [consent, setConsent] = useState(false);
 
   const fee = Number(amount);
-  const points = !rate || !Number.isFinite(fee) || fee < 1 ? 0 : fee < 10 ? 1 : fee < 50 ? 2 : fee < 100 ? 5 : Math.min(100, Math.round(fee * Number(rate)) / 100);
+  const points =
+    !rate || !Number.isFinite(fee) || fee < 1
+      ? 0
+      : fee < 10
+      ? 1
+      : fee < 50
+      ? 2
+      : fee < 100
+      ? 5
+      : Math.min(100, Math.round(fee * Number(rate)) / 100);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -490,7 +617,7 @@ function PucForm({ rates, onClose, onSaved }: { rates: number[]; onClose: () => 
               <input required type="tel" pattern="[6-9][0-9]{9}" maxLength={10} placeholder="10-digit mobile" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} />
             </label>
             <label>
-              <span>Vehicle Registration</span>
+              <span>Vehicle Plate</span>
               <input required minLength={6} maxLength={20} placeholder="e.g. KL09AB1234" value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} />
             </label>
             <label>
@@ -512,16 +639,16 @@ function PucForm({ rates, onClose, onSaved }: { rates: number[]; onClose: () => 
             <label>
               <span>Reward Rate</span>
               <select required value={rate} onChange={e => setRate(e.target.value)}>
-                <option value="">Select reward rate</option>
+                <option value="">Select rate</option>
                 {rates.map(value => (
-                  <option key={value} value={value}>{value} points per ₹100</option>
+                  <option key={value} value={value}>{value} pts per ₹100</option>
                 ))}
               </select>
             </label>
             <div className="puc-points-card">
               <span>Points Preview</span>
               <strong>{formatPoints(points)} points</strong>
-              <small>₹1–9.99: 1 · ₹10–49.99: 2 · ₹50–99.99: 5 · ₹100+: selected rate (max 100 pts)</small>
+              <small>₹1–9.99: 1 · ₹10–49.99: 2 · ₹50–99.99: 5 · ₹100+: selected rate (max 100)</small>
             </div>
             <label className="puc-consent-box">
               <input required type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
@@ -544,5 +671,108 @@ function PucForm({ rates, onClose, onSaved }: { rates: number[]; onClose: () => 
         </footer>
       </section>
     </div>
+  );
+}
+
+// Dedicated PUC Reports Component for the Reports Tab in MerchantOverview
+export function PucReportsView({ month }: { month: string }) {
+  const records = useQuery({
+    queryKey: ['puc-records', 'all', '', null, ''],
+    queryFn: ({ signal }) => apiFetch<{ records: RecordRow[] }>('/api/merchant/puc/records?filter=all', { signal })
+  });
+
+  const all = records.data?.records || [];
+  const todayStr = today();
+
+  function exportRegister() {
+    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
+    const rows = [
+      ['Customer Name', 'Mobile Number', 'Vehicle Plate', 'Vehicle Model', 'Service Fee (INR)', 'Reward Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
+      ...all.map(r => [r.name, r.phone, r.plate, r.model, r.amount, r.points || 0, r.testDate, r.expiryDate, r.orderNo || '', r.status])
+    ];
+    downloadCsvBlob(rows, `AE-PUC-All-Vehicles-${todayStr}.csv`);
+  }
+
+  function exportRenewals() {
+    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
+    const expiring = all.filter(r => {
+      const diff = (Date.parse(r.expiryDate) - Date.parse(todayStr)) / 86400000;
+      return diff <= 30; // overdue or due within 30 days
+    });
+    const rows = [
+      ['Customer Name', 'Mobile Number', 'Vehicle Plate', 'Vehicle Model', 'Expiry Date', 'Status', 'Days Relative'],
+      ...expiring.map(r => {
+        const diff = Math.ceil((Date.parse(r.expiryDate) - Date.parse(todayStr)) / 86400000);
+        const status = diff < 0 ? 'OVERDUE' : diff <= 10 ? 'DUE SOON' : 'UPCOMING';
+        return [r.name, r.phone, r.plate, r.model, r.expiryDate, status, diff < 0 ? `${Math.abs(diff)} days ago` : `in ${diff} days`];
+      })
+    ];
+    downloadCsvBlob(rows, `AE-PUC-Renewals-Outreach-${todayStr}.csv`);
+  }
+
+  function exportMonthlySummary() {
+    const monthlyRecords = all.filter(r => r.testDate.startsWith(month));
+    const totalFees = monthlyRecords.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+    const totalPoints = monthlyRecords.reduce((acc, r) => acc + (Number(r.points) || 0), 0);
+    const rows = [
+      ['Reporting Month', 'Total Vehicle Tests', 'Total Service Revenue (INR)', 'Total Reward Points Issued'],
+      [month, monthlyRecords.length, totalFees, totalPoints]
+    ];
+    downloadCsvBlob(rows, `AE-PUC-Monthly-Summary-${month}.csv`);
+  }
+
+  function downloadCsvBlob(rows: (string | number)[][], filename: string) {
+    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
+    const csv = '\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <section className="mo-panel puc-reports-panel">
+      <div>
+        <h2>PUC Vehicle Reports & Registers</h2>
+        <p className="mo-subtitle">Download official CSV registers for vehicle pollution tests, expiry tracking, and monthly audits.</p>
+      </div>
+
+      <div className="mo-report-list">
+        <button type="button" onClick={exportRegister}>
+          <span className="mo-icon blue">
+            <FileSpreadsheet size={22} />
+          </span>
+          <span>
+            <strong>Complete Vehicle Pollution Register</strong>
+            <small>All registered customer vehicles, test records, fees, and points (Lifetime)</small>
+          </span>
+          <Download size={19} />
+        </button>
+
+        <button type="button" onClick={exportRenewals}>
+          <span className="mo-icon amber">
+            <ShieldAlert size={22} />
+          </span>
+          <span>
+            <strong>Upcoming Expiry & Overdue Renewals</strong>
+            <small>Customers due for certificate renewal within 30 days or overdue (includes mobile numbers)</small>
+          </span>
+          <Download size={19} />
+        </button>
+
+        <button type="button" onClick={exportMonthlySummary}>
+          <span className="mo-icon green">
+            <CalendarDays size={22} />
+          </span>
+          <span>
+            <strong>Monthly PUC Summary & Fee Audit ({month})</strong>
+            <small>Total tests conducted, service fee revenue, and reward points issued for {month}</small>
+          </span>
+          <Download size={19} />
+        </button>
+      </div>
+    </section>
   );
 }
