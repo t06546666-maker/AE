@@ -1,6 +1,9 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, useEffect, type FormEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import {
   Search, Phone, MessageCircle, User, Download, Plus, X,
   AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert
@@ -30,6 +33,78 @@ export type RecordRow = {
 };
 
 export const today = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+
+export function computePucExpiry(baseDateStr: string, option: string, yearsNum = 1, directCustomDate = ''): string {
+  if (option === 'custom_date') {
+    return directCustomDate || baseDateStr || today();
+  }
+  const [y, m, d] = (baseDateStr || today()).split('-').map(Number);
+  if (!y || !m || !d) return baseDateStr || today();
+
+  let totalMonths = 6;
+  if (option.endsWith('_months')) {
+    totalMonths = parseInt(option, 10);
+  } else if (option === '2_years') {
+    totalMonths = 24;
+  } else if (option === '3_years') {
+    totalMonths = 36;
+  } else if (option === 'custom_years') {
+    totalMonths = Math.max(1, Math.min(20, Math.floor(Number(yearsNum) || 1))) * 12;
+  }
+
+  const targetDate = new Date(Date.UTC(y, m - 1 + totalMonths, d));
+  return targetDate.toISOString().slice(0, 10);
+}
+
+async function downloadPucCsv(filename: string, rows: (string | number)[][], onStatus?: (msg: string) => void) {
+  const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
+  const csv = '\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const saved = await Filesystem.writeFile({
+        path: filename,
+        data: csv,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+        recursive: true
+      });
+      await Share.share({
+        title: 'PUC Report',
+        text: 'PUC Vehicle Report',
+        url: saved.uri,
+        dialogTitle: 'Save or share PUC report'
+      });
+      onStatus?.('Report saved to Documents and ready to share.');
+      return;
+    } catch {
+      onStatus?.('Unable to open share sheet. Please try again.');
+      return;
+    }
+  }
+
+  try {
+    const file = new File([blob], filename, { type: 'text/csv' });
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      await navigator.share({ title: 'PUC Report', text: 'PUC Vehicle Report', files: [file] });
+      onStatus?.('Report ready to share or save.');
+      return;
+    }
+  } catch {
+    // Fall back to web download
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  onStatus?.('Report download started.');
+}
 export const configQuery = () => ({
   queryKey: ['puc-config'],
   queryFn: ({ signal }: { signal: AbortSignal }) => apiFetch<Config>('/api/merchant/puc/config', { signal }),
@@ -182,17 +257,11 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
   }
 
   function downloadCsv() {
-    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
     const rows = [
       ['Customer', 'Phone', 'Vehicle', 'Model', 'Fee (INR)', 'Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
       ...filtered.map(row => [row.name, row.phone, row.plate, row.model, row.amount, row.points || 0, row.testDate, row.expiryDate, row.orderNo || '', row.status])
     ];
-    const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `AE-PUC-Vehicles-${filter}-${todayStr}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    void downloadPucCsv(`AE-PUC-Vehicles-${filter}-${todayStr}.csv`, rows, setNotice);
   }
 
   return (
@@ -387,35 +456,19 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                 : `Valid till ${formatDate(row.expiryDate)}`;
 
               return (
-                <article className="puc-insight-row" key={row.id}>
-                  {/* Left: Avatar + Customer */}
-                  <div
-                    className="puc-insight-left"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setProfile(row)}
-                  >
-                    <span className="puc-avatar">{initials(row.name)}</span>
-                    <div className="puc-customer-info">
-                      <h3 className="puc-customer-name">{row.name}</h3>
-                      <p className="puc-customer-phone">{formatPhone(row.phone)}</p>
-                    </div>
-                  </div>
-
-                  {/* Center: Vehicle Plate & Model */}
-                  <div
-                    className="puc-insight-vehicle"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setProfile(row)}
-                  >
-                    <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
-                    <span className="puc-model-name">{row.model}</span>
-                  </div>
-
-                  {/* Bottom Row on Mobile / Right Row on Desktop */}
-                  <div className="puc-insight-bottom-row">
-                    <div className="puc-insight-status">
-                      <span className={`puc-tag ${statusTag}`}>{statusText}</span>
-                      <span className="puc-expiry-sub">Expiry: {row.expiryDate}</span>
+                <article className="puc-insight-row puc-card-clustered" key={row.id}>
+                  {/* Top Row: Customer info on left, Action buttons on right */}
+                  <div className="puc-card-top-row">
+                    <div
+                      className="puc-insight-left"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setProfile(row)}
+                    >
+                      <span className="puc-avatar">{initials(row.name)}</span>
+                      <div className="puc-customer-info">
+                        <h3 className="puc-customer-name">{row.name}</h3>
+                        <p className="puc-customer-phone">{formatPhone(row.phone)}</p>
+                      </div>
                     </div>
 
                     <div className="puc-insight-actions">
@@ -450,6 +503,26 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                       >
                         <User size={15} />
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Card divider */}
+                  <div className="puc-card-divider" />
+
+                  {/* Bottom Row: Vehicle Plate + Model on left, Status Tag + Expiry Date on right */}
+                  <div
+                    className="puc-card-bottom-row"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setProfile(row)}
+                  >
+                    <div className="puc-insight-vehicle">
+                      <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
+                      <span className="puc-model-name">{row.model}</span>
+                    </div>
+
+                    <div className="puc-insight-status">
+                      <span className={`puc-tag ${statusTag}`}>{statusText}</span>
+                      <span className="puc-expiry-sub">Expiry: {row.expiryDate}</span>
                     </div>
                   </div>
                 </article>
@@ -576,8 +649,16 @@ function PucForm({
   const [amount, setAmount] = useState('');
   const [rate, setRate] = useState('');
   const [testDate, setTestDate] = useState(today);
-  const [expiryDate, setExpiryDate] = useState('');
+  const [validityOption, setValidityOption] = useState('6_months');
+  const [customYears, setCustomYears] = useState('1');
+  const [customDate, setCustomDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState(() => computePucExpiry(today(), '6_months'));
   const [consent, setConsent] = useState(false);
+
+  useEffect(() => {
+    const nextExpiry = computePucExpiry(testDate, validityOption, Number(customYears), customDate);
+    setExpiryDate(nextExpiry);
+  }, [testDate, validityOption, customYears, customDate]);
 
   const fee = Number(amount);
   const points =
@@ -646,9 +727,60 @@ function PucForm({
               <input required type="date" max={today()} value={testDate} onChange={e => setTestDate(e.target.value)} />
             </label>
             <label>
-              <span>Certificate Expiry</span>
-              <input required type="date" min={testDate} value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
+              <span>Certificate Validity</span>
+              <select value={validityOption} onChange={e => setValidityOption(e.target.value)}>
+                <option value="1_months">1 Month</option>
+                <option value="2_months">2 Months</option>
+                <option value="3_months">3 Months</option>
+                <option value="4_months">4 Months</option>
+                <option value="5_months">5 Months</option>
+                <option value="6_months">6 Months (Standard)</option>
+                <option value="7_months">7 Months</option>
+                <option value="8_months">8 Months</option>
+                <option value="9_months">9 Months</option>
+                <option value="10_months">10 Months</option>
+                <option value="11_months">11 Months</option>
+                <option value="12_months">12 Months (1 Year)</option>
+                <option value="2_years">2 Years</option>
+                <option value="3_years">3 Years</option>
+                <option value="custom_years">Custom Years...</option>
+                <option value="custom_date">Custom Specific Date...</option>
+              </select>
             </label>
+
+            {validityOption === 'custom_years' && (
+              <label>
+                <span>Validity Duration (Years)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="15"
+                  step="1"
+                  required
+                  placeholder="e.g. 4 or 5"
+                  value={customYears}
+                  onChange={e => setCustomYears(e.target.value)}
+                />
+              </label>
+            )}
+
+            {validityOption === 'custom_date' && (
+              <label>
+                <span>Specific Expiry Date</span>
+                <input
+                  type="date"
+                  min={testDate}
+                  required
+                  value={customDate}
+                  onChange={e => setCustomDate(e.target.value)}
+                />
+              </label>
+            )}
+
+            <div className="puc-expiry-preview-badge">
+              <span>Calculated Expiry Date:</span>
+              <strong>{expiryDate ? formatDate(expiryDate) : 'Select duration'} ({expiryDate})</strong>
+            </div>
             <label>
               <span>Service Fee (₹)</span>
               <input required type="number" min="1" max="1000000" step="0.01" placeholder="₹ Amount" value={amount} onChange={e => setAmount(e.target.value)} />
@@ -698,20 +830,19 @@ export function PucReportsView({ month }: { month: string }) {
     queryFn: ({ signal }) => apiFetch<{ records: RecordRow[] }>('/api/merchant/puc/records?filter=all', { signal })
   });
 
+  const [reportNotice, setReportNotice] = useState('');
   const all = records.data?.records || [];
   const todayStr = today();
 
   function exportRegister() {
-    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
     const rows = [
       ['Customer Name', 'Mobile Number', 'Vehicle Plate', 'Vehicle Model', 'Service Fee (INR)', 'Reward Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
       ...all.map(r => [r.name, r.phone, r.plate, r.model, r.amount, r.points || 0, r.testDate, r.expiryDate, r.orderNo || '', r.status])
     ];
-    downloadCsvBlob(rows, `AE-PUC-All-Vehicles-${todayStr}.csv`);
+    void downloadPucCsv(`AE-PUC-All-Vehicles-${todayStr}.csv`, rows, setReportNotice);
   }
 
   function exportRenewals() {
-    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
     const expiring = all.filter(r => {
       const diff = (Date.parse(r.expiryDate) - Date.parse(todayStr)) / 86400000;
       return diff <= 30; // overdue or due within 30 days
@@ -724,7 +855,7 @@ export function PucReportsView({ month }: { month: string }) {
         return [r.name, r.phone, r.plate, r.model, r.expiryDate, status, diff < 0 ? `${Math.abs(diff)} days ago` : `in ${diff} days`];
       })
     ];
-    downloadCsvBlob(rows, `AE-PUC-Renewals-Outreach-${todayStr}.csv`);
+    void downloadPucCsv(`AE-PUC-Renewals-Outreach-${todayStr}.csv`, rows, setReportNotice);
   }
 
   function exportMonthlySummary() {
@@ -735,18 +866,7 @@ export function PucReportsView({ month }: { month: string }) {
       ['Reporting Month', 'Total Vehicle Tests', 'Total Service Revenue (INR)', 'Total Reward Points Issued'],
       [month, monthlyRecords.length, totalFees, totalPoints]
     ];
-    downloadCsvBlob(rows, `AE-PUC-Monthly-Summary-${month}.csv`);
-  }
-
-  function downloadCsvBlob(rows: (string | number)[][], filename: string) {
-    const quote = (s: unknown) => '"' + String(s ?? '').replace(/^[=+@-]/, "'").replaceAll('"', '""') + '"';
-    const csv = '\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    void downloadPucCsv(`AE-PUC-Monthly-Summary-${month}.csv`, rows, setReportNotice);
   }
 
   return (
@@ -754,6 +874,7 @@ export function PucReportsView({ month }: { month: string }) {
       <div>
         <h2>PUC Vehicle Reports & Registers</h2>
         <p className="mo-subtitle">Download official CSV registers for vehicle pollution tests, expiry tracking, and monthly audits.</p>
+        {reportNotice && <p className="form-info" style={{ marginTop: 8 }}>{reportNotice}</p>}
       </div>
 
       <div className="mo-report-list">
