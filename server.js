@@ -6016,21 +6016,9 @@ async function onboardShopCustomer(req, res) {
   });
 }
 app.post('/api/customers', requireAuth, onboardShopCustomer);
-let pucTemplateCache=null;
 async function resolvePucReminderTemplate(shop){
  if(!WA_TOKEN)return null;
- if(!pucTemplateCache||Date.now()-pucTemplateCache.checkedAt>60000){
-  try {
-   const response=await axios.get(`https://graph.facebook.com/${WA_API_VERSION}/1704111374252634/message_templates`,{params:{name:'ae_puc_partner_expiry_reminder_v1',fields:'name,status,language,components'},headers:{Authorization:`Bearer ${WA_TOKEN}`},timeout:WA_REQUEST_TIMEOUT_MS});
-   const approved=(response.data?.data||[]).find(t=>t.name==='ae_puc_partner_expiry_reminder_v1'&&t.status==='APPROVED'&&t.language==='en'&&t.components?.some(c=>c.type==='BODY'&&c.text?.includes('AE PUC Partner')&&!c.text?.includes('PITSTOP')));
-   pucTemplateCache={checkedAt:Date.now(),template:approved?{name:approved.name,language:approved.language}:null};
-  }catch(e){
-   pucTemplateCache={checkedAt:Date.now(),template:null};
-  }
- }
- if(pucTemplateCache&&pucTemplateCache.template)return pucTemplateCache.template;
- // Fall back to the existing already-approved template that was already sent previously
- return {name:'ae_vehicle_pollution_expiry_reminder',language:'en'};
+ return {name:'ae_puc_partner_expiry_reminder_v1',language:'en'};
 }
 require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate,resolveTemplate:resolvePucReminderTemplate});
 require('./backend/puc-register.cjs').registerPuc(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),rewards:getAdminRewardConfig,onboard:async(req,value,key)=>{let status=200,body;await onboardShopCustomer({...req,body:{name:value.name,phone:value.phone,amount:value.amount,rewardPercentage:value.rate,location:'PUC vehicle test'},get:header=>header.toLowerCase()==='idempotency-key'?key:req.get(header)},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
