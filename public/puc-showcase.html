@@ -324,18 +324,38 @@
     }
     .insight-row {
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
+      border: 1px solid #cfdaea;
+      border-radius: 14px;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       box-shadow: 0 2px 8px rgba(27, 45, 107, 0.04);
       cursor: pointer;
       transition: all 0.15s ease;
     }
-    .insight-row:hover {
-      border-color: #3158f5;
+    /* Red Left Bar & Border for Expired Accounts */
+    .insight-row.puc-card-expired {
+      border: 1.5px solid #fca5a5;
+      border-left: 5px solid #ef4444;
+      background: #ffffff;
+    }
+    .insight-row.puc-card-expired:hover {
+      border-color: #ef4444;
+    }
+    /* Yellow / Amber Outline & Left Bar for Due Soon / Days Ago */
+    .insight-row.puc-card-due-soon {
+      border: 1.5px solid #fde68a;
+      border-left: 5px solid #f59e0b;
+      background: #ffffff;
+    }
+    .insight-row.puc-card-due-soon:hover {
+      border-color: #f59e0b;
+    }
+    /* Green Left Bar for Valid Certificates */
+    .insight-row.puc-card-valid {
+      border: 1px solid #cfdaea;
+      border-left: 5px solid #10b981;
     }
     .row-top {
       display: flex;
@@ -349,8 +369,8 @@
       gap: 10px;
     }
     .avatar {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: #e9edff;
       color: #3158f5;
@@ -379,48 +399,78 @@
       border-radius: 6px;
       font-family: monospace;
       font-weight: 900;
-      font-size: 12px;
-      padding: 2px 6px;
+      font-size: 11.5px;
+      letter-spacing: 0.04em;
+      padding: 2.5px 7px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      white-space: nowrap;
     }
     .plate-badge::before {
       content: 'IND';
       font-size: 8px;
       font-weight: 900;
       color: #1d4ed8;
-      margin-right: 4px;
-      padding-right: 4px;
+      margin-right: 5px;
+      padding-right: 5px;
       border-right: 1px solid #cbd5e1;
     }
     .row-bottom {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
       border-top: 1px solid #f1f5f9;
       padding-top: 8px;
     }
+    .bottom-plate-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .model-name {
+      font-size: 12px;
+      font-weight: 650;
+      color: #64748b;
+    }
+    .bottom-status-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .status-badge {
+      display: inline-flex;
+      align-items: center;
       padding: 3px 8px;
       border-radius: 6px;
       font-size: 11px;
       font-weight: 800;
+      white-space: nowrap;
     }
     .status-badge.warn {
       background: #fffbeb;
       color: #b45309;
-      border: 1px solid #fde68a;
+      border: 1.5px solid #f59e0b;
+      box-shadow: 0 0 0 1px #fef08a inset;
     }
     .status-badge.danger {
       background: #fef2f2;
       color: #b91c1c;
-      border: 1px solid #fecaca;
+      border: 1.5px solid #ef4444;
     }
     .status-badge.valid {
-      background: #f0fdf4;
-      color: #15803d;
-      border: 1px solid #bbf7d0;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1.5px solid #10b981;
+    }
+    .expiry-text {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      white-space: nowrap;
     }
     .action-icons {
       display: flex;
+      align-items: center;
       gap: 6px;
     }
     .action-circle {
@@ -557,12 +607,44 @@
       color: #64748b;
       display: block;
     }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 20px;
-      color: #64748b;
-      cursor: pointer;
+    .modal-close-btn {
+      position: static !important;
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 8px !important;
+      border: 1px solid #cfdaea !important;
+      background: #ffffff !important;
+      color: #162235 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      padding: 0 !important;
+      flex-shrink: 0 !important;
+      transition: all 0.15s ease !important;
+    }
+    .modal-close-btn:hover {
+      background: #f1f5f9 !important;
+      border-color: #3158f5 !important;
+      color: #3158f5 !important;
+    }
+    .calculated-expiry-box {
+      background: #eff6ff;
+      border: 1px dashed #93c5fd;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #1e40af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .calculated-expiry-box strong {
+      font-size: 11.5px;
+      color: #1d4ed8;
     }
     .modal-body {
       padding: 14px 16px;
@@ -741,7 +823,7 @@
             <h2>Add Customer & Vehicle</h2>
             <small>Register certificate and award reward points</small>
           </div>
-          <button class="modal-close" onclick="closeModal()">×</button>
+          <button class="modal-close-btn" onclick="closeModal()" title="Close">✕</button>
         </div>
         <form class="modal-body" onsubmit="handleFormSubmit(event)">
           <div class="input-grid">
@@ -759,16 +841,32 @@
             </label>
             <label class="input-group">
               <span>Vehicle Model</span>
-              <input required placeholder="e.g. Maruti Swift" value="Maruti Swift" />
+              <input required placeholder="e.g. Maruti Swift" value="Maruti Suzuki Swift" />
             </label>
             <label class="input-group">
               <span>Test Date</span>
               <input required type="date" value="2026-11-26" />
             </label>
             <label class="input-group">
-              <span>Certificate Expiry</span>
-              <input required type="date" value="2027-05-25" />
+              <span>Certificate Validity</span>
+              <select>
+                <option>1 Month</option>
+                <option>2 Months</option>
+                <option>3 Months</option>
+                <option selected>6 Months (Standard)</option>
+                <option>12 Months (1 Year)</option>
+                <option>2 Years</option>
+                <option>Custom Years...</option>
+              </select>
             </label>
+          </div>
+
+          <div class="calculated-expiry-box">
+            <span>Calculated Expiry Date:</span>
+            <strong>26 May 2027 (2027-05-26)</strong>
+          </div>
+
+          <div class="input-grid">
             <label class="input-group">
               <span>Service Fee (₹)</span>
               <input required type="number" placeholder="₹ Amount" value="150" />
@@ -784,7 +882,7 @@
           </div>
           <div class="points-card">
             <span style="font-size:10px; font-weight:750; color:#3158f5;">POINTS PREVIEW</span>
-            <strong>30 points awarded</strong>
+            <strong>30.00 points awarded</strong>
             <small>₹100+ tests receive official rate (Max 100 pts)</small>
           </div>
           <label class="consent-label">
@@ -794,7 +892,7 @@
         </form>
         <div class="modal-footer">
           <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
-          <button type="button" class="btn-confirm" onclick="handleFormSubmit(event)">Confirm & Add</button>
+          <button type="button" class="btn-confirm" onclick="handleFormSubmit(event)">Confirm & Add Customer</button>
         </div>
       </div>
     </div>
@@ -865,7 +963,11 @@
                 <input type="number" id="custom-days-input" value="${customDaysValue}" min="1" max="365" placeholder="Days" />
                 <button class="apply-btn" onclick="applyCustomDays()">Apply</button>
               </div>
-            ` : ''}
+            ` : `
+              <button class="apply-btn" style="background:#fff; color:#0f172a; border:1px solid #cfdaea; display:inline-flex; align-items:center; gap:5px;" onclick="alert('Exporting PUC data...')">
+                <span>⬇</span> Export
+              </button>
+            `}
           </div>
         </div>
 
@@ -873,10 +975,11 @@
           ${filtered.map(v => {
             const isExp = v.days < 0;
             const isDue = v.days >= 0 && v.days <= 10;
+            const cardClass = isExp ? 'puc-card-expired' : isDue ? 'puc-card-due-soon' : 'puc-card-valid';
             const badgeClass = isExp ? 'danger' : isDue ? 'warn' : 'valid';
             const badgeText = isExp ? `Expired ${Math.abs(v.days)}d ago` : v.days === 0 ? 'Expires today' : `Due in ${v.days} days`;
             return `
-              <article class="insight-row" onclick="alert('Viewing: ' + '${v.name}' + ' (${v.plate})')">
+              <article class="insight-row ${cardClass}" onclick="alert('Viewing: ' + '${v.name}' + ' (${v.plate})')">
                 <div class="row-top">
                   <div class="row-cust-wrap">
                     <div class="avatar">${v.name.slice(0, 2).toUpperCase()}</div>
@@ -885,16 +988,20 @@
                       <small>${v.phone}</small>
                     </div>
                   </div>
-                  <div class="plate-badge">${v.plate}</div>
-                </div>
-                <div class="row-bottom">
-                  <div>
-                    <span class="status-badge ${badgeClass}">${badgeText}</span>
-                    <small style="font-size:10px; color:#64748b; margin-left:6px;">Expiry: ${v.expiry}</small>
-                  </div>
                   <div class="action-icons" onclick="event.stopPropagation()">
                     <a href="#" class="action-circle wa" title="WhatsApp reminder" onclick="alert('WhatsApp renewal message sent to ${v.phone}!')">💬</a>
                     <a href="tel:${v.phone}" class="action-circle" title="Call">📞</a>
+                    <button class="action-circle" title="View Profile">👤</button>
+                  </div>
+                </div>
+                <div class="row-bottom">
+                  <div class="bottom-plate-side">
+                    <div class="plate-badge">${v.plate}</div>
+                    <span class="model-name">${v.model}</span>
+                  </div>
+                  <div class="bottom-status-side">
+                    <span class="status-badge ${badgeClass}">${badgeText}</span>
+                    <span class="expiry-text">Expiry: ${v.expiry}</span>
                   </div>
                 </div>
               </article>

@@ -700,6 +700,11 @@
   background: #1ebd5a;
 }
 
+@keyframes puc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .puc-action-btn.call {
   background: var(--surface, #fff);
   color: var(--primary, #5145d7);

@@ -6,7 +6,7 @@ import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import {
   Search, Phone, MessageCircle, User, Download, Plus, X,
-  AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert
+  AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert, Loader2
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { AddCustomer } from './AddCustomer';
@@ -469,12 +469,9 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                     </div>
 
                     <div className="puc-insight-actions">
-                      <a
-                        href={`https://wa.me/${row.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                          `Hello ${row.name}, your vehicle (${row.plate}) pollution certificate renewal is due (${row.expiryDate}). Visit our center to renew and earn reward points.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        disabled={sending === row.id}
                         className="puc-action-btn whatsapp"
                         title="Send WhatsApp renewal message"
                         onClick={e => {
@@ -482,8 +479,12 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                           void remind(row.id);
                         }}
                       >
-                        <MessageCircle size={15} />
-                      </a>
+                        {sending === row.id ? (
+                          <Loader2 size={15} style={{ animation: 'puc-spin 1s linear infinite' }} />
+                        ) : (
+                          <MessageCircle size={15} />
+                        )}
+                      </button>
                       <a
                         href={`tel:${row.phone}`}
                         className="puc-action-btn call"
@@ -599,6 +600,19 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
               </dl>
             </div>
             <footer className="puc-dialog-footer">
+              <button
+                type="button"
+                disabled={sending === profile.id}
+                className="button primary"
+                style={{ background: '#25d366', borderColor: '#25d366', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => {
+                  void remind(profile.id);
+                  setProfile(null);
+                }}
+              >
+                {sending === profile.id ? <Loader2 size={16} style={{ animation: 'puc-spin 1s linear infinite' }} /> : <MessageCircle size={16} />}
+                Send WhatsApp Reminder
+              </button>
               <button type="button" className="button secondary" onClick={() => setProfile(null)}>
                 Close
               </button>
