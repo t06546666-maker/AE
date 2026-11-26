@@ -126,7 +126,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
   const config = useQuery(configQuery()), client = useQueryClient(), navigate = useNavigate(), [params, setParams] = useSearchParams();
   const requested = params.get('filter') || 'all';
   const filter = ['all', 'expiry', 'expired', 'due7', 'due10', 'due15', 'due30', 'due_custom'].includes(requested) ? requested : 'all';
-  
+
   const [open, setOpen] = useState(initialOpen);
   const [search, setSearch] = useState('');
   const [month, setMonth] = useState(params.get('month') || '');
@@ -240,7 +240,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 
   const close = () => {
     setOpen(false);
-    if (initialOpen) navigate('/customers', { replace: true });
+    if (initialOpen) navigate(-1);
   };
 
   async function remind(id: string) {
@@ -268,23 +268,23 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     <main className={embedded ? "puc-embedded-workspace" : "puc-unified-workspace"}>
       {/* Header & Primary Action */}
       {embedded ? (
-        <div className="puc-embedded-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-          <div>
+        <div className="puc-embedded-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ flex: '1 1 200px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--mo-blue, #3158f5)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 Vehicle Pollution Centre
               </span>
               {config.data.testAccount && <span className="puc-test-badge">Private Test Account</span>}
             </div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, margin: '2px 0 0', color: 'var(--text)' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 850, margin: '1px 0 0', color: 'var(--text)' }}>
               Vehicle Certificates & Renewals <span className="mo-count">{completed.length}</span>
             </h2>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+            <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--muted)' }}>
               Certificates, expiry tracking & automated WhatsApp renewal reminders
             </p>
           </div>
-          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#18a873', borderColor: '#18a873' }}>
-            <Plus size={16} /> Add Customer
+          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#059669', borderColor: '#059669' }}>
+            <Plus size={15} /> Add Customer
           </button>
         </div>
       ) : (
@@ -297,8 +297,8 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
             <h1 className="puc-page-title">Customer Vehicles</h1>
             <p className="puc-page-subtitle">Certificates, expiry tracking & WhatsApp renewal</p>
           </div>
-          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#18a873', borderColor: '#18a873' }}>
-            <Plus size={16} /> Add Customer
+          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#059669', borderColor: '#059669' }}>
+            <Plus size={15} /> Add Customer
           </button>
         </header>
       )}
@@ -341,7 +341,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
         </div>
       )}
 
-      {/* Toolbar: Search, Renewals Dropdown, Custom Days & Export */}
+      {/* Toolbar: Search (Line 1) + Single Aligned Filter Row (Line 2) */}
       <div className="puc-toolbar-wrap">
         <div className="puc-search-box">
           <Search size={15} className="puc-search-icon" />
@@ -356,44 +356,22 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
           )}
         </div>
 
-        {/* Renewals Dropdown Filter Group */}
-        <div className="puc-filter-dropdown-group">
-          <label className="puc-dropdown-field">
-            <span>Renewals:</span>
-            <select
-              aria-label="Renewal filter window"
-              className="puc-filter-select"
-              value={dropdownMode}
-              onChange={e => handleDropdownSelect(e.target.value)}
-            >
-              <option value="all">🚗 All Vehicles</option>
-              <option value="expired">🔴 Overdue (Expired)</option>
-              <option value="due7">⏳ Due in 7 Days</option>
-              <option value="due10">⏳ Due in 10 Days</option>
-              <option value="due15">⏳ Due in 15 Days</option>
-              <option value="due30">⏳ Due in 30 Days</option>
-              <option value="custom">⚙️ Custom Days Horizon...</option>
-              <option value="month">📅 By Expiry Month...</option>
-            </select>
-          </label>
-
-          {dropdownMode === 'custom' && (
-            <div className="puc-custom-days-box">
-              <input
-                aria-label="Custom days horizon"
-                type="number"
-                min="1"
-                max="365"
-                placeholder="Days (e.g. 14)"
-                value={customDays}
-                onChange={e => setCustomDays(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') applyCustomDays(); }}
-              />
-              <button type="button" className="button primary" onClick={applyCustomDays}>
-                Apply
-              </button>
-            </div>
-          )}
+        <div className="puc-filter-row">
+          <select
+            aria-label="Renewal filter window"
+            className="puc-filter-select"
+            value={dropdownMode}
+            onChange={e => handleDropdownSelect(e.target.value)}
+          >
+            <option value="all">🚗 All Vehicles</option>
+            <option value="expired">🔴 Overdue (Expired)</option>
+            <option value="due7">⏳ Due in 7 Days</option>
+            <option value="due10">⏳ Due in 10 Days</option>
+            <option value="due15">⏳ Due in 15 Days</option>
+            <option value="due30">⏳ Due in 30 Days</option>
+            <option value="month">📅 By Expiry Month...</option>
+            <option value="custom">⚙️ Custom Days Horizon...</option>
+          </select>
 
           {dropdownMode === 'month' && (
             <input
@@ -410,6 +388,24 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
             />
           )}
 
+          {dropdownMode === 'custom' && (
+            <div className="puc-custom-days-box">
+              <input
+                aria-label="Custom days horizon"
+                type="number"
+                min="1"
+                max="365"
+                placeholder="Days"
+                value={customDays}
+                onChange={e => setCustomDays(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') applyCustomDays(); }}
+              />
+              <button type="button" className="button primary" onClick={applyCustomDays}>
+                Apply
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             className="button secondary puc-export-btn"
@@ -417,7 +413,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
             disabled={!filtered.length}
             title="Download CSV report"
           >
-            <Download size={15} /> Export
+            <Download size={14} /> <span>Export</span>
           </button>
         </div>
       </div>
@@ -447,16 +443,17 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
               const diffDays = Math.ceil((Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000);
               const isDueSoon = !isExpired && diffDays <= 10;
               const statusTag = isExpired ? 'danger' : isDueSoon ? 'warning' : 'valid';
+              const cardStatusClass = isExpired ? 'puc-card-expired' : isDueSoon ? 'puc-card-due-soon' : 'puc-card-valid';
               const statusText = isExpired
                 ? `Expired ${Math.abs(diffDays)}d ago`
                 : diffDays === 0
-                ? 'Expires today'
-                : diffDays <= 30
-                ? `Due in ${diffDays} days`
-                : `Valid till ${formatDate(row.expiryDate)}`;
+                  ? 'Expires today'
+                  : diffDays <= 30
+                    ? `Due in ${diffDays} days`
+                    : `Valid till ${formatDate(row.expiryDate)}`;
 
               return (
-                <article className="puc-insight-row puc-card-clustered" key={row.id}>
+                <article className={`puc-insight-row puc-card-clustered ${cardStatusClass}`} key={row.id}>
                   {/* Top Row: Customer info on left, Action buttons on right */}
                   <div className="puc-card-top-row">
                     <div
@@ -517,7 +514,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                   >
                     <div className="puc-insight-vehicle">
                       <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
-                      <span className="puc-model-name">{row.model}</span>
+                      {row.model ? <span className="puc-model-name">{row.model}</span> : null}
                     </div>
 
                     <div className="puc-insight-status">
@@ -564,7 +561,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
               </div>
               <button
                 type="button"
-                className="icon-button modal-close"
+                className="puc-modal-close-btn"
                 aria-label="Close"
                 onClick={() => setProfile(null)}
               >
@@ -629,7 +626,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 }
 
 // Compact, Mobile-Optimized Add Customer Form
-function PucForm({
+export function PucForm({
   rates,
   onClose,
   onSaved
@@ -665,12 +662,12 @@ function PucForm({
     !rate || !Number.isFinite(fee) || fee < 1
       ? 0
       : fee < 10
-      ? 1
-      : fee < 50
-      ? 2
-      : fee < 100
-      ? 5
-      : Math.min(100, Math.round(fee * Number(rate)) / 100);
+        ? 1
+        : fee < 50
+          ? 2
+          : fee < 100
+            ? 5
+            : Math.min(100, Math.round(fee * Number(rate)) / 100);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -700,7 +697,7 @@ function PucForm({
             <h2 id="puc-form-title">Add Customer & Vehicle</h2>
             <small className="puc-dialog-sub">Register vehicle certificate and award reward points</small>
           </div>
-          <button type="button" className="icon-button modal-close" aria-label="Close" disabled={busy} onClick={onClose}>
+          <button type="button" className="puc-modal-close-btn" aria-label="Close" disabled={busy} onClick={onClose}>
             <X size={18} />
           </button>
         </header>

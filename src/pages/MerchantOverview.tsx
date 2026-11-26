@@ -1,4 +1,4 @@
-import { PucRegister, PucReportsView } from './PucRegister';
+import { PucForm, PucRegister, PucReportsView } from './PucRegister';
 import {loadAdminMerchantOverview} from './adminMerchantOverviewData';
 import { ReportingMonth } from '../components/ReportingMonth';
 import { SalesTarget } from '../components/SalesTarget';
@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import { SIX_HOUR_LABELS } from '../utils';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
@@ -168,7 +168,9 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
   const [insight, setInsight] = useState('Visits');
   const [customerPage, setCustomerPage] = useState(1);
   const [downloaded, setDownloaded] = useState('');
-  const pucAccess=useQuery({queryKey:['puc-config'],enabled:!readOnly,queryFn:({signal})=>apiFetch<{eligible:boolean}>('/api/merchant/puc/config',{signal})});
+  const queryClient = useQueryClient();
+  const [homeAddOpen, setHomeAddOpen] = useState(false);
+  const pucAccess=useQuery({queryKey:['puc-config'],enabled:!readOnly,queryFn:({signal})=>apiFetch<{eligible:boolean; earnOptions?: number[]}>('/api/merchant/puc/config',{signal})});
   const query = useQuery({ queryKey: ['merchant-overview', user.id, user.merchant_id, readOnly], queryFn: async ({ signal }) => {
     if(readOnly)return loadAdminMerchantOverview(user.merchant_id!,signal);
     const [orders, customers] = await Promise.all([loadPages<Order>('orders', signal), loadPages<Customer>('customers', signal)]);
@@ -216,7 +218,7 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
   if (query.isPending) return <div className="merchant-overview" aria-busy="true">
     <header className="mo-heading">
       <div><span className="mo-eyebrow">{uiText("Where customers meet businesses and beyond")}</span><h1>{view === 'overview' ? uiText('Hello, {{name}}', { name: user.full_name || uiText('there') }) : view === 'customers' || view === 'purchase-group' ? uiText("Your customers") : view === 'insights' ? uiText("Customer insights") : uiText("Business reports")}</h1><p>{uiText(dailyGreeting)}</p></div>
-      <div className="mo-hero-controls">{!readOnly&&<Link to="/shop-checkout" className="mo-my-qr"><ScanLine size={26}/><span>{uiText('My QR')}</span></Link>}<div className="mo-header-actions">{!readOnly&&<Link to="/add-customer" className="mo-header-action add"><Plus size={16}/><span>{uiText("Add customer")}</span></Link>}{!readOnly&&<Link to="/shop-checkout?scan=1" className="mo-header-action scan"><ScanLine size={16}/><span>{uiText("Scan QR")}</span></Link>}</div></div>
+      <div className="mo-hero-controls">{!readOnly&&<Link to="/shop-checkout" className="mo-my-qr"><ScanLine size={26}/><span>{uiText('My QR')}</span></Link>}<div className="mo-header-actions">{!readOnly&&(pucAccess.data?.eligible&&view==='overview'?<button type="button" className="mo-header-action add" style={{border:'none',cursor:'pointer'}} onClick={()=>setHomeAddOpen(true)}><Plus size={16}/><span>{uiText("Add customer")}</span></button>:<Link to="/add-customer" className="mo-header-action add"><Plus size={16}/><span>{uiText("Add customer")}</span></Link>)}{!readOnly&&<Link to="/shop-checkout?scan=1" className="mo-header-action scan"><ScanLine size={16}/><span>{uiText("Scan QR")}</span></Link>}</div></div>
     </header>
     <nav className="mo-tabs" aria-label={uiText("Business dashboard sections")}>{[['overview', 'Overview'], ['customers', 'Customers'], ['insights', 'Insights'], ['reports', 'Reports']].map(([id, label]) => <Link key={id} to={href(id)} aria-current={view === id ? 'page' : undefined}>{uiText(label)}</Link>)}</nav>
     <div className="mo-content mo-startup-content">
@@ -243,7 +245,7 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
     { label: 'Total sales', value: current.sales, before: previous.sales, icon: IndianRupee, color: 'amber', hint: 'Recorded purchase value' },
   ];
   return <div className="merchant-overview">
-<header className="mo-heading"><div><span className="mo-eyebrow">{uiText("Where customers meet businesses and beyond")}</span><h1>{view === 'overview' ? uiText('Hello, {{name}}', { name: user.full_name || uiText('there') }) : (view === 'customers' || view === 'purchase-group') ? uiText("Your customers") : view === 'insights' ? uiText("Customer insights") : uiText("Business reports")}</h1><p>{view === 'customers' ? uiText("Every relationship starts with knowing your customer.") : uiText(dailyGreeting)}</p></div><div className="mo-hero-controls">{view === 'overview' && user.merchant_id && <div style={{display:'flex',gap:10,alignItems:'stretch',flexWrap:'wrap'}}><MerchantPointBalance merchantId={user.merchant_id} compact readOnly={readOnly}/>{!readOnly&&<Link to="/shop-checkout" className="mo-my-qr"><ScanLine size={26}/><span>{uiText('My QR')}</span></Link>}</div>}<div className="mo-heading-actions">{view !== 'customers' && <ReportingMonth value={month} maximum={currentMonth} onChange={value => { const next = new URLSearchParams(params); next.set("month", value); setParams(next, { replace:true }); }} />}{(view === 'overview' || (view === 'customers' && pucAccess.data?.eligible)) && <div className="mo-header-actions">{!readOnly&&<Link to="/add-customer" className="mo-header-action add"><Plus size={16}/><span>{uiText("Add customer")}</span></Link>}{view === 'overview' && !readOnly&&<Link to="/shop-checkout?scan=1" className="mo-header-action scan"><ScanLine size={16}/><span>{uiText("Scan QR")}</span></Link>}</div>}</div></div></header>
+<header className="mo-heading"><div><span className="mo-eyebrow">{uiText("Where customers meet businesses and beyond")}</span><h1>{view === 'overview' ? uiText('Hello, {{name}}', { name: user.full_name || uiText('there') }) : (view === 'customers' || view === 'purchase-group') ? uiText("Your customers") : view === 'insights' ? uiText("Customer insights") : uiText("Business reports")}</h1><p>{view === 'customers' ? uiText("Every relationship starts with knowing your customer.") : uiText(dailyGreeting)}</p></div><div className="mo-hero-controls">{view === 'overview' && user.merchant_id && <div style={{display:'flex',gap:10,alignItems:'stretch',flexWrap:'wrap'}}><MerchantPointBalance merchantId={user.merchant_id} compact readOnly={readOnly}/>{!readOnly&&<Link to="/shop-checkout" className="mo-my-qr"><ScanLine size={26}/><span>{uiText('My QR')}</span></Link>}</div>}<div className="mo-heading-actions">{view !== 'customers' && <ReportingMonth value={month} maximum={currentMonth} onChange={value => { const next = new URLSearchParams(params); next.set("month", value); setParams(next, { replace:true }); }} />}{(view === 'overview' || (view === 'customers' && pucAccess.data?.eligible)) && <div className="mo-header-actions">{!readOnly&&(pucAccess.data?.eligible&&view==='overview'?<button type="button" className="mo-header-action add" style={{border:'none',cursor:'pointer'}} onClick={()=>setHomeAddOpen(true)}><Plus size={16}/><span>{uiText("Add customer")}</span></button>:<Link to="/add-customer" className="mo-header-action add"><Plus size={16}/><span>{uiText("Add customer")}</span></Link>)}{view === 'overview' && !readOnly&&<Link to="/shop-checkout?scan=1" className="mo-header-action scan"><ScanLine size={16}/><span>{uiText("Scan QR")}</span></Link>}</div>}</div></div></header>
     <nav className="mo-tabs" aria-label={uiText("Business dashboard sections")}>{[['overview', 'Overview'], ['customers', 'Customers'], ['insights', 'Insights'], ['reports', 'Reports']].map(([id, label]) => <Link key={id} to={href(id)} aria-current={view === id ? 'page' : undefined}>{uiText(label)}</Link>)}{!readOnly&&<Link className="mo-create-link" to="/offers?create=1"><Plus size={16} />{uiText("Create offer")}</Link>}</nav>
     <div className="mo-content" key={view}>
     {view === 'overview' && <>
@@ -330,6 +332,17 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
     </div>
     {view === 'customers' && !readOnly&&<Link className="mo-qr-link" to="/customers?view=qr">{uiText("Open customer QR codes and existing tools ")}<ChevronRight size={16} /></Link>}
     {view === 'customers' && !readOnly&&<Link to="/feedback" className="mo-panel mo-review-link"><span className="mo-icon violet"><Heart size={24}/></span><span><strong>{uiText("Customer Reviews &amp; Feedback")}</strong><small>{uiText("Read anonymous customer messages about your store")}</small></span><ChevronRight size={20}/></Link>}
+    {homeAddOpen && (
+      <PucForm
+        rates={pucAccess.data?.earnOptions || [5]}
+        onClose={() => setHomeAddOpen(false)}
+        onSaved={() => {
+          setHomeAddOpen(false);
+          void queryClient.invalidateQueries({ queryKey: ['puc-records'] });
+          void queryClient.invalidateQueries({ queryKey: ['merchant-overview-summary'] });
+        }}
+      />
+    )}
     {profile && <CustomerProfile readOnly={readOnly} key={profile.id} customer={profile} onClose={() => selectCustomer(null)} />}
   </div>;
 }

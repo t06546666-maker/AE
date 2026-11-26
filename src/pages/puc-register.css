@@ -159,13 +159,13 @@
   border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--primary, #5145d7);
   border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 16px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -179,18 +179,17 @@
   padding: 0 4px;
 }
 
-/* Toolbar & Filters */
+/* Toolbar & Filters — Compact & Aligned */
 .puc-toolbar-wrap {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .puc-search-box {
   position: relative;
-  flex: 1 1 240px;
+  width: 100%;
   display: flex;
   align-items: center;
 }
@@ -208,7 +207,7 @@
   height: 38px;
   padding: 0 32px 0 34px;
   border: 1px solid var(--border, #cfdaea);
-  border-radius: 9999px;
+  border-radius: 10px;
   background: var(--surface, #fff);
   color: var(--text, #162235);
   font-size: 12px;
@@ -232,21 +231,92 @@
   padding: 2px 4px;
 }
 
-/* Renewals Dropdown Filter Group */
-.puc-filter-dropdown-group {
+/* Single Aligned Filter Row */
+.puc-filter-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
-.puc-dropdown-field {
+.puc-filter-select {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border, #cfdaea);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: var(--text, #162235);
+  font-size: 12px;
+  font-weight: 750;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+}
+
+.puc-filter-select:focus {
+  border-color: var(--primary, #5145d7);
+}
+
+.puc-month-input {
+  width: 130px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border, #cfdaea);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: var(--text, #162235);
+  font-size: 12px;
+  font-weight: 750;
+  box-sizing: border-box;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.puc-custom-days-box {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.puc-custom-days-box input {
+  width: 65px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid var(--border, #cfdaea);
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--muted, #617086);
+  text-align: center;
+  box-sizing: border-box;
+  background: var(--surface, #fff);
+  color: var(--text, #162235);
+}
+
+.puc-custom-days-box button {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 750;
+  border-radius: 8px;
+}
+
+.puc-export-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .puc-filter-select {
@@ -377,10 +447,10 @@
   background: var(--surface, #fff);
   border: 1px solid var(--border, #cfdaea);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   box-shadow: var(--shadow, 0 2px 8px rgba(43, 72, 112, 0.04));
   transition: transform 0.14s ease, border-color 0.14s ease;
   min-height: 0;
@@ -391,11 +461,39 @@
   border-color: var(--primary, #5145d7);
 }
 
+/* Expired Accounts Show RED */
+.puc-insight-row.puc-card-expired {
+  border: 1.5px solid #fca5a5;
+  border-left: 5px solid #ef4444;
+  background: #ffffff;
+}
+
+.puc-insight-row.puc-card-expired:hover {
+  border-color: #ef4444;
+}
+
+/* Due Soon / Days ago in YELLOW OUTLINE */
+.puc-insight-row.puc-card-due-soon {
+  border: 1.5px solid #fde68a;
+  border-left: 5px solid #f59e0b;
+  background: #ffffff;
+}
+
+.puc-insight-row.puc-card-due-soon:hover {
+  border-color: #f59e0b;
+}
+
+/* Valid Certificates */
+.puc-insight-row.puc-card-valid {
+  border: 1px solid var(--border, #cfdaea);
+  border-left: 5px solid #10b981;
+}
+
 .puc-card-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -458,7 +556,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -511,13 +609,14 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .puc-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2.5px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 800;
@@ -525,21 +624,24 @@
 }
 
 .puc-tag.valid {
-  background: var(--success-soft, #e6f9f0);
-  color: var(--success, #0a8f5a);
-  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1.5px solid #10b981;
 }
 
+/* Yellow / Amber Outline for Due soon / Days Ago */
 .puc-tag.warning {
-  background: var(--amber-soft, #fff5dc);
-  color: var(--amber, #a86100);
-  border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
+  background: #fffbeb;
+  color: #b45309;
+  border: 1.5px solid #f59e0b;
+  box-shadow: 0 0 0 1px #fef08a inset;
 }
 
+/* Red Tag for Expired Accounts */
 .puc-tag.danger {
-  background: var(--danger-soft, #fdebee);
-  color: var(--danger, #c43745);
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1.5px solid #ef4444;
 }
 
 .puc-expiry-sub {
@@ -652,6 +754,7 @@
 }
 
 .puc-dialog {
+  position: relative;
   width: min(520px, 100%);
   max-height: min(90dvh, 600px);
   display: flex;
@@ -665,6 +768,7 @@
 }
 
 .puc-dialog-header {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -673,6 +777,32 @@
   background: var(--surface-alt, #f7faff);
   border-bottom: 1px solid var(--border, #cfdaea);
   flex-shrink: 0;
+}
+
+.puc-modal-close-btn {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border, #cfdaea) !important;
+  background: var(--surface, #fff) !important;
+  color: var(--text, #162235) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+.puc-modal-close-btn:hover {
+  background: var(--surface-alt, #f1f5f9) !important;
+  border-color: var(--primary, #5145d7) !important;
+  color: var(--primary, #5145d7) !important;
 }
 
 .puc-dialog-header h2 {
@@ -949,21 +1079,26 @@
     display: none;
   }
   .puc-toolbar-wrap {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 10px;
   }
   .puc-search-box {
     width: 100%;
   }
-  .puc-filter-dropdown-group {
+  .puc-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     width: 100%;
-    justify-content: space-between;
   }
   .puc-filter-select {
     flex: 1;
+    min-width: 0;
   }
   .puc-insight-row {
-    padding: 8px 12px;
+    padding: 10px 12px;
     gap: 6px;
   }
   .puc-card-top-row,
