@@ -6020,7 +6020,7 @@ async function resolvePucReminderTemplate(shop){
  if(!WA_TOKEN)return null;
  return {name:'ae_puc_partner_expiry_reminder_v1',language:'en'};
 }
-require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate,resolveTemplate:resolvePucReminderTemplate});
+require('./backend/puc-reminders.cjs').registerPucReminders(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),send:sendWhatsAppTemplate,resolveTemplate:resolvePucReminderTemplate,pushCustomer:pushToCustomer});
 require('./backend/puc-register.cjs').registerPuc(app,{db:supabaseAdmin,database:checkoutBillDatabase,auth:requireAuth,merchantRole:requireRole('merchant'),rewards:getAdminRewardConfig,onboard:async(req,value,key)=>{let status=200,body;await onboardShopCustomer({...req,body:{name:value.name,phone:value.phone,amount:value.amount,rewardPercentage:value.rate,location:'PUC vehicle test'},get:header=>header.toLowerCase()==='idempotency-key'?key:req.get(header)},{status(code){status=code;return this;},json(data){body=data;return this;}});return {status,body};}});
 
 app.get('/api/customers/scan/:code', requireAuth, requireRole('merchant'), async (req, res) => {

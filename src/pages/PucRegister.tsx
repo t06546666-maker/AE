@@ -139,6 +139,8 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
   const [page, setPage] = useState({ key: '', cursor: '' });
   const [sending, setSending] = useState<string | null>(null);
   const [profile, setProfile] = useState<RecordRow | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchSending, setBatchSending] = useState(false);
 
   const filterKey = filter + '|' + month + '|' + (appliedDays || '');
   const after = page.key === filterKey ? page.cursor : '';
@@ -256,6 +258,43 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (filtered.length > 0 && selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(r => r.id)));
+    }
+  }
+
+  async function sendBatchReminders() {
+    if (batchSending || selectedIds.size === 0) return;
+    setBatchSending(true);
+    try {
+      const result = await apiFetch<{ message: string; processed: number; whatsappAccepted: number; pushAccepted: number }>(
+        '/api/merchant/puc/records/batch-reminders',
+        {
+          method: 'POST',
+          body: JSON.stringify({ ids: Array.from(selectedIds) })
+        }
+      );
+      setNotice(result.message || `Sent reminders to ${result.processed} customer(s).`);
+      setSelectedIds(new Set());
+    } catch (e) {
+      setNotice((e as Error).message);
+    } finally {
+      setBatchSending(false);
+    }
+  }
+
   function downloadCsv() {
     const rows = [
       ['Customer', 'Phone', 'Vehicle', 'Model', 'Fee (INR)', 'Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
@@ -283,9 +322,6 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
               Certificates, expiry tracking & automated WhatsApp renewal reminders
             </p>
           </div>
-          <button type="button" className="button primary puc-add-btn" onClick={() => setOpen(true)} style={{ background: '#059669', borderColor: '#059669' }}>
-            <Plus size={15} /> Add Customer
-          </button>
         </div>
       ) : (
         <header className="puc-page-header">
@@ -437,6 +473,36 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
         </div>
       ) : (
         <>
+          {/* Batch Selection Toolbar */}
+          <div className="puc-selection-bar">
+            <label className="puc-select-all-label">
+              <input
+                type="checkbox"
+                checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                onChange={toggleSelectAll}
+              />
+              <span>Select All ({filtered.length})</span>
+            </label>
+            {selectedIds.size > 0 && (
+              <div className="puc-selection-actions">
+                <span className="puc-selected-count">{selectedIds.size} selected</span>
+                <button
+                  type="button"
+                  disabled={batchSending}
+                  className="puc-batch-send-btn"
+                  onClick={sendBatchReminders}
+                >
+                  {batchSending ? (
+                    <Loader2 size={13} style={{ animation: 'puc-spin 1s linear infinite' }} />
+                  ) : (
+                    <MessageCircle size={13} />
+                  )}
+                  <span>Send WhatsApp & Push ({selectedIds.size})</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="puc-insights-list">
             {filtered.map(row => {
               const isExpired = row.expiryDate < todayStr;
@@ -450,21 +516,33 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                   ? 'Expires today'
                   : diffDays <= 30
                     ? `Due in ${diffDays} days`
-                    : `Valid till ${formatDate(row.expiryDate)}`;
+                    : 'Valid';
 
               return (
                 <article className={`puc-insight-row puc-card-clustered ${cardStatusClass}`} key={row.id}>
-                  {/* Top Row: Customer info on left, Action buttons on right */}
+                  {/* Top Row: Checkbox + Customer info on left, Action buttons on right */}
                   <div className="puc-card-top-row">
-                    <div
-                      className="puc-insight-left"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setProfile(row)}
-                    >
-                      <span className="puc-avatar">{initials(row.name)}</span>
-                      <div className="puc-customer-info">
-                        <h3 className="puc-customer-name">{row.name}</h3>
-                        <p className="puc-customer-phone">{formatPhone(row.phone)}</p>
+                    <div className="puc-insight-left">
+                      <label className="puc-card-checkbox" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={() => toggleSelect(row.id)}
+                          aria-label={`Select ${row.name}`}
+                        />
+                      </label>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, cursor: 'pointer' }}
+                        onClick={() => setProfile(row)}
+                      >
+                        <span className="puc-avatar">{initials(row.name)}</span>
+                        <div className="puc-customer-info">
+                          <h3 className="puc-customer-name">{row.name}</h3>
+                          <p className="puc-customer-phone">
+                            {formatPhone(row.phone)}
+                            {row.model ? ` · ${row.model}` : ''}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -507,7 +585,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                   {/* Card divider */}
                   <div className="puc-card-divider" />
 
-                  {/* Bottom Row: Vehicle Plate + Model on left, Status Tag + Expiry Date on right */}
+                  {/* Bottom Row: Vehicle Plate on left, Status Tag + Expiry Date on right with generous gap */}
                   <div
                     className="puc-card-bottom-row"
                     style={{ cursor: 'pointer' }}
@@ -515,12 +593,11 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                   >
                     <div className="puc-insight-vehicle">
                       <span className="puc-plate-badge">{row.plate.replace(/-/g, ' ')}</span>
-                      {row.model ? <span className="puc-model-name">{row.model}</span> : null}
                     </div>
 
                     <div className="puc-insight-status">
                       <span className={`puc-tag ${statusTag}`}>{statusText}</span>
-                      <span className="puc-expiry-sub">Expiry: {row.expiryDate}</span>
+                      <span className="puc-expiry-sub">{formatDate(row.expiryDate)}</span>
                     </div>
                   </div>
                 </article>

@@ -13,7 +13,7 @@ const store={collection:()=>({doc:id=>{assert.equal(id,'shop');return {collectio
 const query={select(){return this},eq(key,value){assert.equal(key,'id');assert.equal(value,'shop');return this},async maybeSingle(){return {data:{...shop,merchant_categories:{name:category}}}}};
 let handler;
 const auth=()=>{},role=()=>{};
-registerPucReminders({post:(_,...args)=>{assert.equal(args[0],auth);assert.equal(args[1],role);handler=args.at(-1)}},{db:{from:()=>query},database:async()=>store,auth,merchantRole:role,resolveTemplate:async()=>approved?{name:templateName,language:'en'}:null,send:async payload=>{sends++;assert.equal(payload.recipient,'919876543210');assert.equal(payload.templateName,templateName);assert.equal(payload.components[0].parameters[4].text,shop.name);return {sent:!fail,messageId:fail?null:'mock'}}});
+registerPucReminders({post:(path,...args)=>{assert.equal(args[0],auth);assert.equal(args[1],role);if(!path.includes('batch'))handler=args.at(-1)}},{db:{from:()=>query},database:async()=>store,auth,merchantRole:role,resolveTemplate:async()=>approved?{name:templateName,language:'en'}:null,send:async payload=>{sends++;assert.equal(payload.recipient,'919876543210');assert.equal(payload.templateName,templateName);assert.equal(payload.components[0].parameters[4].text,shop.name);return {sent:!fail,messageId:fail?null:'mock'}}});
 const req={params:{id:'a'.repeat(64)},body:{phone:'9999999999'},auth:{profile:{merchant_id:'shop'}}};
 const reply=()=>({code:200,status(n){this.code=n;return this},json(body){this.body=body;return this}});
 (async()=>{
