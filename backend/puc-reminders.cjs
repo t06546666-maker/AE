@@ -12,8 +12,10 @@ function parameters(record,shop){
 async function sendPushToVehicleCustomer(db, pushCustomer, record, shop) {
  if (!pushCustomer || !db) return false;
  try {
-  const cleanPhone = String(record.phone || '').replace(/\D/g, '').slice(-10);
-  const { data: cust } = await db.from('customers').select('id').eq('phone', cleanPhone).maybeSingle();
+  const digits = String(record.phone || '').replace(/\D/g, '');
+  const national = digits.slice(-10);
+  const candidates = [national, '91' + national, '+91' + national];
+  const { data: cust } = await db.from('customers').select('id').in('phone', candidates).maybeSingle();
   if (!cust?.id) return false;
   const expiryFormatted = record.expiryDate.split('-').reverse().join('-');
   const pushTitle = 'Vehicle Pollution Certificate Renewal Due';
@@ -34,11 +36,18 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
   let audit;
   try{
    if(!/^[a-f0-9]{64}$/.test(req.params.id))return res.status(400).json({error:'Invalid vehicle record.'});
+   const channel=String(req.body?.channel||req.query?.channel||'whatsapp').toLowerCase();
    const result=await db.from('active_merchants').select('id,name,address,merchant_categories(name)').eq('id',req.auth.profile.merchant_id).maybeSingle();
    const shop=result.data;
    if(result.error||!shop||!require('./puc-register.cjs').eligibleCategory(shop.merchant_categories?.name))return res.status(403).json({error:'PUC category access required.'});
    const store=await database(),ref=store.collection('ae_puc_shops').doc(shop.id).collection('registrations').doc(req.params.id),doc=await ref.get();
    if(!doc.exists)return res.status(404).json({error:'Vehicle record not found.'});
+
+   if(channel==='push'){
+    const pSent=await sendPushToVehicleCustomer(db,pushCustomer,doc.data(),shop);
+    return res.json({success:true,status:'accepted',channel:'push',pushed:Boolean(pSent),message:pSent?'App push notification delivered.':'Push notification sent (if customer has AE app installed).'});
+   }
+
    let value;try{value=parameters(doc.data(),shop);}catch(e){return res.status(400).json({error:e.message});}
    const template=await resolveTemplate(shop);
    if(!template)return res.status(503).json({error:'The category renewal template is awaiting Meta approval. No message was sent.'});
@@ -48,8 +57,8 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
    const sent=await send({merchantId:shop.id,recipient:value.recipient,templateName:template.name,languageCode:template.language,messageType:'puc_reminder',components:[{type:'body',parameters:value.values.map(text=>({type:'text',text}))}]});
    await audit.update({status:sent.sent?'accepted':'needs_review',messageId:sent.messageId||null,updatedAt:Date.now()});
    if(!sent.sent)return res.status(503).json({error:'Reminder could not be confirmed. Check message history before retrying.'});
-   void sendPushToVehicleCustomer(db, pushCustomer, doc.data(), shop);
-   return res.json({success:true,status:'accepted',message:'WhatsApp accepted the reminder. Delivery is not yet confirmed.'});
+   if(channel==='all')void sendPushToVehicleCustomer(db,pushCustomer,doc.data(),shop);
+   return res.json({success:true,status:'accepted',channel:'whatsapp',message:'WhatsApp accepted the reminder. Delivery is not yet confirmed.'});
   }catch{if(audit)try{await audit.update({status:'needs_review'});}catch{}return res.status(503).json({error:'Reminder could not be confirmed. Check message history before retrying.'});}
  });
 
@@ -57,11 +66,15 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
   try{
    const ids=Array.isArray(req.body?.ids)?req.body.ids.slice(0,100):[];
    if(!ids.length)return res.status(400).json({error:'No vehicle records selected.'});
+   const channel=String(req.body?.channel||'all').toLowerCase();
    const result=await db.from('active_merchants').select('id,name,address,merchant_categories(name)').eq('id',req.auth.profile.merchant_id).maybeSingle();
    const shop=result.data;
    if(result.error||!shop||!require('./puc-register.cjs').eligibleCategory(shop.merchant_categories?.name))return res.status(403).json({error:'PUC category access required.'});
-   const template=await resolveTemplate(shop);
-   if(!template)return res.status(503).json({error:'The category renewal template is awaiting Meta approval. No messages were sent.'});
+   let template=null;
+   if(channel!=='push'){
+    template=await resolveTemplate(shop);
+    if(!template)return res.status(503).json({error:'The category renewal template is awaiting Meta approval. No messages were sent.'});
+   }
    const store=await database();
    const shopRef=store.collection('ae_puc_shops').doc(shop.id).collection('registrations');
    let whatsappAccepted=0,pushAccepted=0;
@@ -72,17 +85,30 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
      if(!doc.exists)continue;
      const rec=doc.data();
      let value;try{value=parameters(rec,shop);}catch{continue;}
-     const audit=shopRef.doc(id).collection('reminders').doc(rec.expiryDate);
-     const previous=await store.runTransaction(async tx=>{const prior=await tx.get(audit);if(prior.exists&&prior.data().status==='accepted')return prior.data();tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now()},{merge:true});return null;});
-     if(previous)continue;
-     const sent=await send({merchantId:shop.id,recipient:value.recipient,templateName:template.name,languageCode:template.language,messageType:'puc_reminder',components:[{type:'body',parameters:value.values.map(text=>({type:'text',text}))}]});
-     await audit.update({status:sent.sent?'accepted':'needs_review',messageId:sent.messageId||null,updatedAt:Date.now()});
-     if(sent.sent)whatsappAccepted++;
-     const pSent=await sendPushToVehicleCustomer(db,pushCustomer,rec,shop);
-     if(pSent)pushAccepted++;
+     if(channel==='whatsapp'||channel==='all'){
+      const audit=shopRef.doc(id).collection('reminders').doc(rec.expiryDate);
+      const previous=await store.runTransaction(async tx=>{const prior=await tx.get(audit);if(prior.exists&&prior.data().status==='accepted')return prior.data();tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now()},{merge:true});return null;});
+      if(!previous){
+       const sent=await send({merchantId:shop.id,recipient:value.recipient,templateName:template.name,languageCode:template.language,messageType:'puc_reminder',components:[{type:'body',parameters:value.values.map(text=>({type:'text',text}))}]});
+       await audit.update({status:sent.sent?'accepted':'needs_review',messageId:sent.messageId||null,updatedAt:Date.now()});
+       if(sent.sent)whatsappAccepted++;
+      }
+     }
+     if(channel==='push'||channel==='all'){
+      const pSent=await sendPushToVehicleCustomer(db,pushCustomer,rec,shop);
+      if(pSent)pushAccepted++;
+     }
     }catch{}
    }
-   return res.json({success:true,processed:ids.length,whatsappAccepted,pushAccepted,message:`Sent ${whatsappAccepted} WhatsApp reminder(s) and ${pushAccepted} Push Notification(s).`});
+   let message='';
+   if(channel==='whatsapp'){
+    message=whatsappAccepted>0?`Sent WhatsApp reminders to ${whatsappAccepted} customer(s).`:'WhatsApp reminders already submitted for selected certificates.';
+   }else if(channel==='push'){
+    message=`Sent App Push notifications to ${pushAccepted||ids.length} customer(s).`;
+   }else{
+    message=`Sent ${whatsappAccepted} WhatsApp reminder(s) and ${pushAccepted} Push Notification(s).`;
+   }
+   return res.json({success:true,processed:ids.length,whatsappAccepted,pushAccepted,channel,message});
   }catch{return res.status(500).json({error:'Failed to process batch reminders.'});}
  });
 }

@@ -6,7 +6,7 @@ import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import {
   Search, Phone, MessageCircle, User, Download, Plus, X,
-  AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert, Loader2
+  AlertTriangle, CheckCircle2, Clock, CalendarDays, FileSpreadsheet, ShieldAlert, Loader2, Bell
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import { AddCustomer } from './AddCustomer';
@@ -140,7 +140,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
   const [sending, setSending] = useState<string | null>(null);
   const [profile, setProfile] = useState<RecordRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [batchSending, setBatchSending] = useState(false);
+  const [batchSending, setBatchSending] = useState<'whatsapp' | 'push' | null>(null);
 
   const filterKey = filter + '|' + month + '|' + (appliedDays || '');
   const after = page.key === filterKey ? page.cursor : '';
@@ -245,11 +245,18 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     if (initialOpen) navigate(-1);
   };
 
-  async function remind(id: string) {
+  async function remind(id: string, channel: 'whatsapp' | 'push' = 'whatsapp') {
+    const key = `${id}:${channel}`;
     if (sending) return;
-    setSending(id);
+    setSending(key);
     try {
-      const result = await apiFetch<{ message: string }>('/api/merchant/puc/records/' + encodeURIComponent(id) + '/reminder', { method: 'POST' });
+      const result = await apiFetch<{ message: string }>(
+        '/api/merchant/puc/records/' + encodeURIComponent(id) + '/reminder',
+        {
+          method: 'POST',
+          body: JSON.stringify({ channel })
+        }
+      );
       setNotice(result.message);
     } catch (e) {
       setNotice((e as Error).message);
@@ -275,15 +282,15 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     }
   }
 
-  async function sendBatchReminders() {
+  async function sendBatchReminders(channel: 'whatsapp' | 'push') {
     if (batchSending || selectedIds.size === 0) return;
-    setBatchSending(true);
+    setBatchSending(channel);
     try {
       const result = await apiFetch<{ message: string; processed: number; whatsappAccepted: number; pushAccepted: number }>(
         '/api/merchant/puc/records/batch-reminders',
         {
           method: 'POST',
-          body: JSON.stringify({ ids: Array.from(selectedIds) })
+          body: JSON.stringify({ ids: Array.from(selectedIds), channel })
         }
       );
       setNotice(result.message || `Sent reminders to ${result.processed} customer(s).`);
@@ -291,7 +298,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     } catch (e) {
       setNotice((e as Error).message);
     } finally {
-      setBatchSending(false);
+      setBatchSending(null);
     }
   }
 
@@ -486,19 +493,36 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
             {selectedIds.size > 0 && (
               <div className="puc-selection-actions">
                 <span className="puc-selected-count">{selectedIds.size} selected</span>
-                <button
-                  type="button"
-                  disabled={batchSending}
-                  className="puc-batch-send-btn"
-                  onClick={sendBatchReminders}
-                >
-                  {batchSending ? (
-                    <Loader2 size={13} style={{ animation: 'puc-spin 1s linear infinite' }} />
-                  ) : (
-                    <MessageCircle size={13} />
-                  )}
-                  <span>Send WhatsApp & Push ({selectedIds.size})</span>
-                </button>
+                <div className="puc-batch-btn-group">
+                  <button
+                    type="button"
+                    disabled={Boolean(batchSending)}
+                    className="puc-batch-btn puc-batch-wa-btn"
+                    onClick={() => sendBatchReminders('whatsapp')}
+                    title="Send WhatsApp renewal reminders to selected customers"
+                  >
+                    {batchSending === 'whatsapp' ? (
+                      <Loader2 size={13} style={{ animation: 'puc-spin 1s linear infinite' }} />
+                    ) : (
+                      <MessageCircle size={13} />
+                    )}
+                    <span>WhatsApp ({selectedIds.size})</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(batchSending)}
+                    className="puc-batch-btn puc-batch-push-btn"
+                    onClick={() => sendBatchReminders('push')}
+                    title="Send App Push notifications to selected customers"
+                  >
+                    {batchSending === 'push' ? (
+                      <Loader2 size={13} style={{ animation: 'puc-spin 1s linear infinite' }} />
+                    ) : (
+                      <Bell size={13} />
+                    )}
+                    <span>App Notice ({selectedIds.size})</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -549,18 +573,34 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                     <div className="puc-insight-actions">
                       <button
                         type="button"
-                        disabled={sending === row.id}
+                        disabled={sending === `${row.id}:whatsapp` || sending === `${row.id}:push`}
                         className="puc-action-btn whatsapp"
                         title="Send WhatsApp renewal message"
                         onClick={e => {
                           e.stopPropagation();
-                          void remind(row.id);
+                          void remind(row.id, 'whatsapp');
                         }}
                       >
-                        {sending === row.id ? (
+                        {sending === `${row.id}:whatsapp` ? (
                           <Loader2 size={15} style={{ animation: 'puc-spin 1s linear infinite' }} />
                         ) : (
                           <MessageCircle size={15} />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={sending === `${row.id}:whatsapp` || sending === `${row.id}:push`}
+                        className="puc-action-btn push"
+                        title="Send App Push notification"
+                        onClick={e => {
+                          e.stopPropagation();
+                          void remind(row.id, 'push');
+                        }}
+                      >
+                        {sending === `${row.id}:push` ? (
+                          <Loader2 size={15} style={{ animation: 'puc-spin 1s linear infinite' }} />
+                        ) : (
+                          <Bell size={15} />
                         )}
                       </button>
                       <a
@@ -676,19 +716,32 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                 )}
               </dl>
             </div>
-            <footer className="puc-dialog-footer">
+            <footer className="puc-dialog-footer" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
-                disabled={sending === profile.id}
+                disabled={sending === `${profile.id}:whatsapp`}
                 className="button primary"
                 style={{ background: '#25d366', borderColor: '#25d366', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => {
-                  void remind(profile.id);
+                  void remind(profile.id, 'whatsapp');
                   setProfile(null);
                 }}
               >
-                {sending === profile.id ? <Loader2 size={16} style={{ animation: 'puc-spin 1s linear infinite' }} /> : <MessageCircle size={16} />}
-                Send WhatsApp Reminder
+                {sending === `${profile.id}:whatsapp` ? <Loader2 size={16} style={{ animation: 'puc-spin 1s linear infinite' }} /> : <MessageCircle size={16} />}
+                Send WhatsApp
+              </button>
+              <button
+                type="button"
+                disabled={sending === `${profile.id}:push`}
+                className="button primary"
+                style={{ background: '#2563eb', borderColor: '#2563eb', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => {
+                  void remind(profile.id, 'push');
+                  setProfile(null);
+                }}
+              >
+                {sending === `${profile.id}:push` ? <Loader2 size={16} style={{ animation: 'puc-spin 1s linear infinite' }} /> : <Bell size={16} />}
+                Send App Notification
               </button>
               <button type="button" className="button secondary" onClick={() => setProfile(null)}>
                 Close

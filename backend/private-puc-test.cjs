@@ -60,10 +60,33 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       if (req.path === '/api/profile/legal' && req.method === 'GET') return res.json({ enabled: false, accepted: false, termsVersion: 'private-test-only', privacyVersion: 'private-test-only', testAccount: true });
       if (req.path === '/api/merchant/puc/config' && req.method === 'GET') { const config = await rewards(); return res.json({ eligible: true, shopName: account.name, earnOptions: config.earnOptions, testAccount: true }); }
       const records = accountRef(db, account.id).collection('registrations');
-      if (/^\/api\/merchant\/puc\/records\/[a-f0-9]{64}\/reminder$/.test(req.path) && req.method === 'POST') return res.json({success:true,testAccount:true,message:'Test preview only: PUC shop renewal reminder. Customer, vehicle, expiry, shop name and location will be filled from the saved record. No WhatsApp message was sent.'});
+      if (/^\/api\/merchant\/puc\/records\/[a-f0-9]{64}\/reminder$/.test(req.path) && req.method === 'POST') {
+        const channel = String(req.body?.channel || req.query?.channel || 'whatsapp').toLowerCase();
+        if (channel === 'push') {
+          return res.json({ success: true, testAccount: true, status: 'accepted', channel: 'push', message: 'Test preview: Sent App Push notification to customer device.' });
+        }
+        return res.json({ success: true, testAccount: true, status: 'accepted', channel: 'whatsapp', message: 'Test preview only: PUC shop renewal reminder. Customer, vehicle, expiry, shop name and location will be filled from the saved record. No WhatsApp message was sent.' });
+      }
       if (req.path === '/api/merchant/puc/records/batch-reminders' && req.method === 'POST') {
         const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
-        return res.json({ success: true, testAccount: true, processed: ids.length, whatsappAccepted: ids.length, pushAccepted: ids.length, message: `Test preview: Sent ${ids.length} WhatsApp & Push reminder(s).` });
+        const channel = String(req.body?.channel || 'all').toLowerCase();
+        let message = '';
+        if (channel === 'whatsapp') {
+          message = `Test preview: Sent WhatsApp reminders to ${ids.length} customer(s).`;
+        } else if (channel === 'push') {
+          message = `Test preview: Sent App Push notifications to ${ids.length} customer(s).`;
+        } else {
+          message = `Test preview: Sent ${ids.length} WhatsApp & Push reminder(s).`;
+        }
+        return res.json({
+          success: true,
+          testAccount: true,
+          processed: ids.length,
+          whatsappAccepted: channel === 'push' ? 0 : ids.length,
+          pushAccepted: channel === 'whatsapp' ? 0 : ids.length,
+          channel,
+          message
+        });
       }
       if (req.path === '/api/merchant/puc/records' && req.method === 'POST') {
         let value; try { value = registration(req.body); } catch (e) { return res.status(400).json({ error: e.message }); }
