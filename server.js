@@ -2081,6 +2081,9 @@ app.get('/api/admin/customers', requireAuth, requireRole('admin'), async (req,re
   const from=String(req.query.from||''),to=String(req.query.to||'');
   if((from&&!/^\d{4}-\d{2}-\d{2}$/.test(from))||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to))||(from&&to&&from>to))return res.status(400).json({error:'Invalid registration date range'});
   let query=supabaseAdmin.from('customers').select('id,customer_code,name,phone,email,created_at,registration_source,merchant_id,reward_points',{count:'exact'}).order('created_at',{ascending:false});
+  const onboardingMerchantId=String(req.query.onboardingMerchantId||'');
+  if(onboardingMerchantId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(onboardingMerchantId))return res.status(400).json({error:'Invalid merchant'});
+  if(onboardingMerchantId)query=query.eq('merchant_id',onboardingMerchantId).or('registration_source.is.null,registration_source.neq.self');
   if(source==='unknown')query=query.is('registration_source',null);
   else if(source!=='all')query=query.eq('registration_source',source);
   if(from)query=query.gte('created_at',`${from}T00:00:00+05:30`);
