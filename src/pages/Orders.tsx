@@ -1,3 +1,4 @@
+import {AdminCustomerGrowth} from './AdminCustomerGrowth';
 import { AdminTransactionReports } from './AdminTransactionReports';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +13,8 @@ import type { Order, Pagination, UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPoints, formatTime, initials } from '../utils';
 
 export function Orders({ user }: { user: UserProfile }) {
-  return user.role === 'admin' ? <AdminTransactionReports/> : <PurchaseOrders user={user}/>;
+  const [report,setReport]=useState('transactions');
+  return user.role === 'admin' ? <><div className="report-tabs" style={{marginBottom:20}}><button className={'button '+(report==='transactions'?'primary':'secondary')} aria-pressed={report==='transactions'} onClick={()=>setReport('transactions')}>Transactions</button><button className={'button '+(report==='customers'?'primary':'secondary')} aria-pressed={report==='customers'} onClick={()=>setReport('customers')}>Customer growth</button></div>{report==='customers'?<AdminCustomerGrowth/>:<AdminTransactionReports/>}</> : <PurchaseOrders user={user}/>;
 }
 
 function PurchaseOrders({ user }: { user: UserProfile }) {
