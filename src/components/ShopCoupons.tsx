@@ -1,236 +1,33 @@
+import './shop-coupons.css';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Ticket, Search, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Ticket, Search, CheckCircle2, AlertCircle, Loader2, Gift, Plus, Minus, Store, Check, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import { PageHeader, LoadingState, EmptyState } from './Common';
 import { formatCurrency } from '../utils';
 
 type Shop = { merchantId: string; name?: string; limit: number; issued?: number };
 
-export function AdminShopCoupons() {
-  const q = useQuery({
-    queryKey: ['shop-coupon-settings'],
-    queryFn: () =>
-      apiFetch<{
-        settings: { active: boolean; shops: Shop[] };
-        merchants: { id: string; name: string }[];
-      }>('/api/admin/shop-coupons')
-  });
+export function AdminShopCoupons(){
+ const query=useQuery({queryKey:['shop-coupon-settings'],queryFn:({signal})=>apiFetch<{settings:{active:boolean;shops:Shop[]};merchants:{id:string;name:string}[]}>('/api/admin/shop-coupons',{signal}),refetchOnWindowFocus:false});
+ const [shops,setShops]=useState<Shop[]>([]),[active,setActive]=useState(false),[message,setMessage]=useState(''),[search,setSearch]=useState(''),[selectedOnly,setSelectedOnly]=useState(false);
+ useEffect(()=>{if(query.data){setShops(query.data.settings.shops);setActive(query.data.settings.active);}},[query.data]);
+ const save=useMutation({mutationFn:()=>apiFetch('/api/admin/shop-coupons',{method:'PUT',body:JSON.stringify({shops:shops.map(({merchantId,limit})=>({merchantId,limit})),active})}),onSuccess:()=>{setMessage('Coupon campaign saved.');void query.refetch();}});
+ const total=shops.reduce((n,s)=>n+s.limit,0),issued=shops.reduce((n,s)=>n+(s.issued||0),0);
+ const merchants=query.data?.merchants||[];
+ const visible=merchants.filter(m=>m.name.toLowerCase().includes(search.trim().toLowerCase())&&(!selectedOnly||shops.some(s=>s.merchantId===m.id)));
+ const changeQuantity=(id:string,value:number)=>{setMessage('');setShops(old=>old.map(s=>s.merchantId===id?{...s,limit:value}:s));};
+ const toggle=(m:{id:string;name:string})=>{setMessage('');setShops(old=>old.some(s=>s.merchantId===m.id)?old.filter(s=>s.merchantId!==m.id):[...old,{merchantId:m.id,name:m.name,limit:10,issued:0}]);};
+ const invalid=shops.some(s=>!Number.isInteger(s.limit)||s.limit<Math.max(1,s.issued||0)||s.limit>10000);
+ return <main className="ac-coupons ac-admin">
+ <header className="ac-title"><span className="ac-icon"><Gift/></span><div><h1>Coupon campaign</h1><p>Choose your partner shops. Set their coupon allocation.</p></div><span className={'ac-status '+(query.data?.settings.active?'ac-live':'')}>{query.data?.settings.active?'Active':'Inactive'}</span></header>
+ <div className="ac-rules"><span>₹100 per coupon</span><span>1 per customer</span><span>Valid for 7 days</span></div>
+ <div className="ac-campaign-layout"><section className="panel ac-picker"><div className="ac-section-heading"><div><span className="ac-eyebrow">01 · PARTNER SHOPS</span><h2>Select shops</h2></div><span className="ac-count">{shops.length} selected</span></div>
+ <label className="ac-find"><Search size={19}/><input aria-label="Search shops" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by shop name"/>{search&&<button type="button" aria-label="Clear search" onClick={()=>setSearch('')}><X size={17}/></button>}</label>
+ <div className="ac-filter-tabs" role="group" aria-label="Shop filter"><button aria-pressed={!selectedOnly} onClick={()=>setSelectedOnly(false)}>All shops <span>{merchants.length}</span></button><button aria-pressed={selectedOnly} onClick={()=>setSelectedOnly(true)}>Selected <span>{shops.length}</span></button></div>
+ {query.isPending?<p role="status">Loading shops…</p>:query.isError?<p role="alert">{query.error.message}</p>:<fieldset disabled={save.isPending} className="ac-shop-cards">{visible.map(m=>{const row=shops.find(s=>s.merchantId===m.id);return <article className={'ac-shop-card '+(row?'is-selected':'')} key={m.id}><button type="button" className="ac-card-select" aria-pressed={!!row} disabled={!!row?.issued} onClick={()=>toggle(m)}><span className="ac-store-avatar"><Store size={21}/></span><span className="ac-card-name">{m.name}<small>{row?'Included in this campaign':'Add to campaign'}</small></span><span className="ac-checkmark">{row?<Check size={16}/>:<Plus size={16}/>}</span></button>{row&&<div className="ac-card-allocation"><label htmlFor={'qty-'+m.id}>Coupons<small>{row.issued||0} issued · {Math.max(0,row.limit-(row.issued||0))||0} available</small></label><div className="ac-stepper"><button type="button" aria-label={'Fewer coupons for '+m.name} disabled={row.limit<=Math.max(1,row.issued||0)} onClick={()=>changeQuantity(m.id,row.limit-1)}><Minus size={15}/></button><input id={'qty-'+m.id} aria-label={'Coupon quantity for '+m.name} type="number" min={Math.max(1,row.issued||0)} max={10000} step={1} value={row.limit} onChange={e=>changeQuantity(m.id,Number(e.target.value))}/><button type="button" aria-label={'More coupons for '+m.name} disabled={row.limit>=10000} onClick={()=>changeQuantity(m.id,row.limit+1)}><Plus size={15}/></button></div></div>}</article>;})}{!visible.length&&<div className="ac-no-shops"><Store size={32}/><h3>{selectedOnly?'No selected shops':'No shops found'}</h3><p>{selectedOnly?'Choose shops from the All shops tab.':'Try another shop name.'}</p></div>}</fieldset>}
+ </section><aside className="ac-campaign-side"><section className="panel ac-allocation"><span className="ac-eyebrow">02 · CAMPAIGN SUMMARY</span><h2>Your allocation</h2><div className="ac-allocation-total"><strong>{Number.isFinite(total)?total:0}</strong><span>total coupons</span></div><div className="ac-totals-row"><span>Partner shops</span><strong>{shops.length}</strong></div><div className="ac-totals-row"><span>Already issued</span><strong>{issued}</strong></div><div className="ac-totals-row"><span>Available to issue</span><strong>{Math.max(0,total-issued)||0}</strong></div><div className="ac-selected-summary">{shops.map(s=><div key={s.merchantId}><span>{s.name||merchants.find(m=>m.id===s.merchantId)?.name||'Shop'}</span><strong>{s.limit}</strong></div>)}</div><label className="ac-activation"><span><strong>Campaign active</strong><small>Issue coupons after completed purchases</small></span><input type="checkbox" role="switch" checked={active} onChange={e=>{setActive(e.target.checked);setMessage('');}} disabled={save.isPending||query.isPending||query.isError}/></label><button className="button primary ac-save-button" disabled={save.isPending||query.isPending||query.isError||invalid||(active&&!shops.length)} onClick={()=>save.mutate()}>{save.isPending?'Saving…':'Save campaign'}</button>{invalid&&<p role="alert" className="form-error">Enter a whole quantity between the issued count (at least 1) and 10,000.</p>}{save.isError&&<p role="alert" className="form-error">{save.error.message}</p>}{message&&<p role="status" className="ac-saved"><CheckCircle2 size={17}/>{message}</p>}</section></aside></div></main>;
 
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [active, setActive] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    if (q.data) {
-      setShops(q.data.settings.shops || []);
-      setActive(Boolean(q.data.settings.active));
-    }
-  }, [q.data]);
-
-  const save = useMutation({
-    mutationFn: () =>
-      apiFetch('/api/admin/shop-coupons', {
-        method: 'PUT',
-        body: JSON.stringify({ shops, active })
-      }),
-    onSuccess: () => {
-      setMessage('Coupon campaign saved successfully.');
-      void q.refetch();
-    }
-  });
-
-  const merchants = q.data?.merchants || [];
-  const filteredMerchants = merchants.filter(m =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalAllocated = shops.reduce((sum, s) => sum + (s.limit || 0), 0);
-  const totalIssued = shops.reduce((sum, s) => sum + (s.issued || 0), 0);
-
-  return (
-    <>
-      <PageHeader
-        title="₹100 shop coupons"
-        subtitle="One coupon per customer after a recorded purchase at a selected shop. Each coupon works only at that shop."
-      />
-
-      <section className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {q.isPending ? (
-          <LoadingState label="Loading coupon campaign settings..." />
-        ) : q.error ? (
-          <div className="state-panel error-state" role="alert">
-            <AlertCircle size={20} />
-            <span>{(q.error as Error).message}</span>
-          </div>
-        ) : (
-          <>
-            {/* Top Campaign Control Bar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12,
-                padding: '12px 16px',
-                background: 'var(--surface-alt, #f8fafc)',
-                border: '1px solid var(--border, #e2e8f0)',
-                borderRadius: 12
-              }}
-            >
-              <label
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  userSelect: 'none'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={e => setActive(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: '#10b981', cursor: 'pointer' }}
-                />
-                <span className={`tag ${active ? 'success' : ''}`}>
-                  {active ? '● Campaign Active' : '○ Campaign Paused'}
-                </span>
-              </label>
-
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, color: 'var(--muted, #64748b)' }}>
-                <span>Participating Shops: <strong>{shops.length}</strong></span>
-                <span>Total Coupons: <strong>{totalAllocated}</strong></span>
-                <span>Issued: <strong style={{ color: '#059669' }}>{totalIssued}</strong></span>
-              </div>
-            </div>
-
-            {/* Search Filter */}
-            <div style={{ position: 'relative', maxWidth: 360 }}>
-              <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--muted, #94a3b8)' }} />
-              <input
-                type="text"
-                placeholder="Search shops by name..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                style={{ paddingLeft: 36, width: '100%', height: 38 }}
-              />
-            </div>
-
-            {/* Merchant Allocation Table */}
-            <div className="table-scroll" style={{ maxHeight: 480 }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: 44, textAlign: 'center' }}>Active</th>
-                    <th>Shop Name</th>
-                    <th style={{ width: 160 }}>Allocated Coupons</th>
-                    <th style={{ width: 100, textAlign: 'right' }}>Issued</th>
-                    <th style={{ width: 100, textAlign: 'right' }}>Remaining</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMerchants.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--muted, #94a3b8)' }}>
-                        No matching shops found.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredMerchants.map(m => {
-                      const row = shops.find(s => s.merchantId === m.id);
-                      const isSelected = Boolean(row);
-                      const limit = row?.limit || 10;
-                      const issued = row?.issued || 0;
-                      const remaining = Math.max(0, limit - issued);
-
-                      return (
-                        <tr key={m.id} style={isSelected ? { background: 'rgba(49, 88, 245, 0.03)' } : undefined}>
-                          <td style={{ textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              disabled={Boolean(row?.issued)}
-                              onChange={e => {
-                                if (e.target.checked) {
-                                  setShops([...shops, { merchantId: m.id, limit: 10, issued: 0 }]);
-                                } else {
-                                  setShops(shops.filter(s => s.merchantId !== m.id));
-                                }
-                              }}
-                              style={{ width: 16, height: 16, accentColor: '#3158f5', cursor: 'pointer' }}
-                            />
-                          </td>
-                          <td>
-                            <strong>{m.name}</strong>
-                          </td>
-                          <td>
-                            {row ? (
-                              <input
-                                type="number"
-                                min={Math.max(1, row.issued || 0)}
-                                max={10000}
-                                value={row.limit}
-                                onChange={e => {
-                                  const val = parseInt(e.target.value, 10);
-                                  setShops(
-                                    shops.map(s =>
-                                      s.merchantId === m.id ? { ...s, limit: Number.isFinite(val) ? val : 0 } : s
-                                    )
-                                  );
-                                }}
-                                style={{ width: 120, height: 32, padding: '2px 8px' }}
-                              />
-                            ) : (
-                              <span style={{ color: 'var(--muted, #94a3b8)', fontSize: 12 }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'right', fontWeight: 700, color: issued > 0 ? '#059669' : 'inherit' }}>
-                            {issued}
-                          </td>
-                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                            {isSelected ? remaining : '—'}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Save Action */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-              <button
-                type="button"
-                className="button primary"
-                disabled={save.isPending || q.isPending}
-                onClick={() => save.mutate()}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-              >
-                {save.isPending ? <Loader2 size={16} className="spin" /> : <Ticket size={16} />}
-                Save Campaign Configuration
-              </button>
-              {message && (
-                <span className="tag success" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <CheckCircle2 size={14} /> {message}
-                </span>
-              )}
-              {save.error && (
-                <span className="tag danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <AlertCircle size={14} /> {(save.error as Error).message}
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-    </>
-  );
 }
 
 export function CustomerShopCoupon() {
