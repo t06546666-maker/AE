@@ -52,8 +52,17 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
    const template=await resolveTemplate(shop);
    if(!template)return res.status(503).json({error:'The category renewal template is awaiting Meta approval. No message was sent.'});
    audit=ref.collection('reminders').doc(doc.data().expiryDate);
-   const previous=await store.runTransaction(async tx=>{const prior=await tx.get(audit);if(prior.exists)return prior.data();tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now()});return null;});
-   if(previous)return res.status(409).json({error:previous.status==='accepted'?'Reminder already submitted for this certificate.':'Reminder needs review before another attempt.'});
+   const previous=await store.runTransaction(async tx=>{
+    const prior=await tx.get(audit);
+    if(prior.exists){
+     const data=prior.data();
+     const elapsed=Date.now()-(data.updatedAt||data.createdAt||0);
+     if(data.status==='sending'||elapsed<60000)return data;
+    }
+    tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now(),updatedAt:Date.now()},{merge:true});
+    return null;
+   });
+   if(previous)return res.status(409).json({error:previous.status==='sending'?'Reminder is currently sending. Please wait.':'Reminder was submitted just now. Please wait a minute before sending another.'});
    const sent=await send({merchantId:shop.id,recipient:value.recipient,templateName:template.name,languageCode:template.language,messageType:'puc_reminder',components:[{type:'body',parameters:value.values.map(text=>({type:'text',text}))}]});
    await audit.update({status:sent.sent?'accepted':'needs_review',messageId:sent.messageId||null,updatedAt:Date.now()});
    if(!sent.sent)return res.status(503).json({error:'Reminder could not be confirmed. Check message history before retrying.'});
@@ -87,7 +96,16 @@ function registerPucReminders(app,{db,database,auth,merchantRole,send,resolveTem
      let value;try{value=parameters(rec,shop);}catch{continue;}
      if(channel==='whatsapp'||channel==='all'){
       const audit=shopRef.doc(id).collection('reminders').doc(rec.expiryDate);
-      const previous=await store.runTransaction(async tx=>{const prior=await tx.get(audit);if(prior.exists&&prior.data().status==='accepted')return prior.data();tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now()},{merge:true});return null;});
+      const previous=await store.runTransaction(async tx=>{
+        const prior=await tx.get(audit);
+        if(prior.exists){
+          const data=prior.data();
+          const elapsed=Date.now()-(data.updatedAt||data.createdAt||0);
+          if(data.status==='accepted'&&elapsed<24*3600*1000)return data;
+        }
+        tx.set(audit,{status:'sending',templateName:template.name,createdAt:Date.now(),updatedAt:Date.now()},{merge:true});
+        return null;
+      });
       if(!previous){
        const sent=await send({merchantId:shop.id,recipient:value.recipient,templateName:template.name,languageCode:template.language,messageType:'puc_reminder',components:[{type:'body',parameters:value.values.map(text=>({type:'text',text}))}]});
        await audit.update({status:sent.sent?'accepted':'needs_review',messageId:sent.messageId||null,updatedAt:Date.now()});

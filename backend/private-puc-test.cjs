@@ -58,7 +58,7 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       if (req.path === '/api/auth/me' && req.method === 'GET') return res.json({ success: true, user: publicUser(account) });
       // Synthetic identities do not accept or record real merchant contracts.
       if (req.path === '/api/profile/legal' && req.method === 'GET') return res.json({ enabled: false, accepted: false, termsVersion: 'private-test-only', privacyVersion: 'private-test-only', testAccount: true });
-      if (req.path === '/api/merchant/puc/config' && req.method === 'GET') { const config = await rewards(); return res.json({ eligible: true, shopName: account.name, earnOptions: config.earnOptions, testAccount: true }); }
+      if (req.path === '/api/merchant/puc/config' && req.method === 'GET') { const config = await rewards(); return res.json({ eligible: true, shopName: account.name, fixedEarnPoints: account.earn_points_per_100 || 20, earnOptions: config.earnOptions, testAccount: true }); }
       const records = accountRef(db, account.id).collection('registrations');
       if (/^\/api\/merchant\/puc\/records\/[a-f0-9]{64}\/reminder$/.test(req.path) && req.method === 'POST') {
         const channel = String(req.body?.channel || req.query?.channel || 'whatsapp').toLowerCase();
@@ -91,7 +91,8 @@ function privatePucTest({ database, signingKey, rewards, adminAuth, adminRole })
       if (req.path === '/api/merchant/puc/records' && req.method === 'POST') {
         let value; try { value = registration(req.body); } catch (e) { return res.status(400).json({ error: e.message }); }
         const config = await rewards();
-        if (!config.earnOptions.includes(value.rate)) return res.status(400).json({ error: 'Choose a current official reward rate.' });
+        const allowedRates = new Set([...config.earnOptions, account.earn_points_per_100 || 20].filter(Boolean));
+        if (!allowedRates.has(value.rate)) return res.status(400).json({ error: 'Choose a current official reward rate.' });
         const key = req.get('Idempotency-Key');
         if (!/^[a-zA-Z0-9-]{16,80}$/.test(key || '')) return res.status(400).json({ error: 'Reopen the registration form before saving.' });
         const id = hash(account.id + ':' + key), fingerprint = hash(JSON.stringify(value)), ref = records.doc(id);

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PUC Fixed Reward Rate (Store Settings Fixed) Visualization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0b1120;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 10px;
+      color: #162235;
+      min-height: 100vh;
+    }
+    .page-title {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 850;
+      margin-bottom: 4px;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .page-subtitle {
+      color: #94a3b8;
+      font-size: 12.5px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .phone-container {
+      width: 100%;
+      max-width: 410px;
+      background: #f8fafc;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7), 0 0 0 10px #1e293b;
+      position: relative;
+    }
+    .phone-notch {
+      background: #1e293b;
+      height: 24px;
+      width: 140px;
+      margin: 0 auto;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .phone-camera { width: 8px; height: 8px; border-radius: 50%; background: #0f172a; }
+    .phone-speaker { width: 40px; height: 4px; border-radius: 4px; background: #334155; }
+    .phone-body { padding: 14px 16px 24px; position: relative; }
+
+    /* Modal Backdrop simulation */
+    .puc-overlay {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .puc-dialog {
+      background: #fff;
+      border-radius: 20px;
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .puc-dialog-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+    }
+    .puc-dialog-header h2 {
+      font-size: 16px;
+      font-weight: 850;
+      color: #0f172a;
+    }
+    .puc-dialog-sub {
+      font-size: 11px;
+      color: #64748b;
+      display: block;
+      margin-top: 1px;
+    }
+    .puc-modal-close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #64748b;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .puc-form {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .puc-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .puc-form-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .puc-form-full-width {
+      grid-column: 1 / -1;
+    }
+    .puc-form-grid input, .puc-form-grid select {
+      height: 38px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 12.5px;
+      font-family: inherit;
+      background: #fff;
+      color: #0f172a;
+      outline: none;
+    }
+    .puc-form-grid input:focus, .puc-form-grid select:focus {
+      border-color: #5145d7;
+      box-shadow: 0 0 0 3px rgba(81,69,215,0.12);
+    }
+
+    /* Fixed Store Reward Rate Box */
+    .puc-fixed-rate-box {
+      grid-column: 1 / -1;
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 0 2px 8px -2px rgba(22, 163, 74, 0.12);
+    }
+    .puc-fixed-rate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .puc-fixed-rate-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #166534;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .puc-fixed-rate-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #15803d;
+      background: #dcfce7;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid #86efac;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .puc-fixed-rate-val strong {
+      font-size: 15px;
+      font-weight: 850;
+      color: #14532d;
+    }
+    .puc-fixed-rate-hint {
+      font-size: 10.5px;
+      color: #15803d;
+      line-height: 1.35;
+    }
+
+    .puc-points-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .puc-points-card span {
+      font-size: 10.5px;
+      font-weight: 750;
+      color: #3b82f6;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .puc-points-card strong {
+      font-size: 16px;
+      font-weight: 850;
+      color: #1e40af;
+    }
+    .puc-points-card small {
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    .puc-consent-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .puc-consent-box input {
+      margin-top: 2px;
+      accent-color: #059669;
+    }
+
+    .puc-dialog-footer {
+      padding: 12px 18px 16px;
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #f1f5f9;
+      background: #f8fafc;
+    }
+    .btn-secondary {
+      flex: 1;
+      height: 40px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 750;
+      color: #475569;
+      cursor: pointer;
+    }
+    .btn-primary {
+      flex: 2;
+      height: 40px;
+      background: #059669;
+      border: 1px solid #059669;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Store Fixed Reward Rate Verification</h1>
+  <p class="page-subtitle">Add Customer & Vehicle Modal with Pre-Configured Store Fixed Rate</p>
+
+  <div class="phone-container">
+    <div class="phone-notch">
+      <div class="phone-camera"></div>
+      <div class="phone-speaker"></div>
+    </div>
+    <div class="phone-body">
+      <div class="puc-overlay">
+        <section class="puc-dialog">
+          <header class="puc-dialog-header">
+            <div>
+              <h2>Add Customer & Vehicle</h2>
+              <small class="puc-dialog-sub">Register vehicle certificate and award reward points</small>
+            </div>
+            <button type="button" class="puc-modal-close-btn">×</button>
+          </header>
+          <form class="puc-form">
+            <div class="puc-form-grid">
+              <label>
+                <span>Customer Name</span>
+                <input type="text" value="Rahul Sharma" readonly>
+              </label>
+              <label>
+                <span>Mobile Number</span>
+                <input type="tel" value="9876543210" readonly>
+              </label>
+              <label>
+                <span>Vehicle Category</span>
+                <select>
+                  <option selected>🏍️ Bike / Two Wheeler</option>
+                  <option>🚗 Car / Four Wheeler</option>
+                  <option>🚚 Others...</option>
+                </select>
+              </label>
+              <label>
+                <span>Vehicle Plate</span>
+                <input type="text" value="KL07BQ4512" readonly>
+              </label>
+              <label>
+                <span>Vehicle Model</span>
+                <input type="text" value="Royal Enfield Classic 350" readonly>
+              </label>
+              <label>
+                <span>Test Date</span>
+                <input type="text" value="28-11-2026" readonly>
+              </label>
+              <label class="puc-form-full-width">
+                <span>Certificate Validity</span>
+                <select>
+                  <option selected>6 Months (Standard Validity)</option>
+                  <option>12 Months (1 Year)</option>
+                </select>
+              </label>
+              <label class="puc-form-full-width">
+                <span>Service Fee (₹)</span>
+                <input type="number" value="150" id="feeInput">
+              </label>
+
+              <!-- Fixed Reward Rate Component -->
+              <div class="puc-fixed-rate-box">
+                <div class="puc-fixed-rate-header">
+                  <span class="puc-fixed-rate-title">Reward Rate</span>
+                  <span class="puc-fixed-rate-badge">Fixed by Store Settings 🔒</span>
+                </div>
+                <div class="puc-fixed-rate-val">
+                  <strong>20 points per ₹100</strong>
+                </div>
+                <small class="puc-fixed-rate-hint">
+                  Configured in Store Reward Settings. Automatically applied to all vehicle registrations.
+                </small>
+              </div>
+
+              <!-- Points Preview Card -->
+              <div class="puc-points-card puc-form-full-width">
+                <span>Points Preview</span>
+                <strong id="pointsDisplay">30 points</strong>
+                <small>₹1–9.99: 1 · ₹10–49.99: 2 · ₹50–99.99: 5 · ₹100+: 20 pts per ₹100 (₹150 = 30 pts)</small>
+              </div>
+
+              <label class="puc-consent-box puc-form-full-width">
+                <input type="checkbox" checked readonly>
+                <span>Customer agrees to vehicle registration and service reminder messages.</span>
+              </label>
+            </div>
+          </form>
+          <footer class="puc-dialog-footer">
+            <button type="button" class="btn-secondary">Cancel</button>
+            <button type="button" class="btn-primary">Confirm & Add Customer</button>
+          </footer>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const feeInput = document.getElementById('feeInput');
+    const pointsDisplay = document.getElementById('pointsDisplay');
+    feeInput.addEventListener('input', () => {
+      const fee = Number(feeInput.value) || 0;
+      let pts = 0;
+      if (fee >= 100) {
+        pts = Math.min(100, Math.round(fee * 20) / 100);
+      } else if (fee >= 50) {
+        pts = 5;
+      } else if (fee >= 10) {
+        pts = 2;
+      } else if (fee >= 1) {
+        pts = 1;
+      }
+      pointsDisplay.innerText = pts + ' points';
+    });
+  </script>
+</body>
+</html>

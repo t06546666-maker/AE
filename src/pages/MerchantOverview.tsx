@@ -170,7 +170,7 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
   const [downloaded, setDownloaded] = useState('');
   const queryClient = useQueryClient();
   const [homeAddOpen, setHomeAddOpen] = useState(false);
-  const pucAccess=useQuery({queryKey:['puc-config'],enabled:!readOnly,queryFn:({signal})=>apiFetch<{eligible:boolean; earnOptions?: number[]}>('/api/merchant/puc/config',{signal})});
+  const pucAccess=useQuery({queryKey:['puc-config'],enabled:!readOnly,queryFn:({signal})=>apiFetch<{eligible:boolean; earnOptions?: number[]; fixedEarnPoints?: number}>('/api/merchant/puc/config',{signal})});
   const query = useQuery({ queryKey: ['merchant-overview', user.id, user.merchant_id, readOnly], queryFn: async ({ signal }) => {
     if(readOnly)return loadAdminMerchantOverview(user.merchant_id!,signal);
     const [orders, customers] = await Promise.all([loadPages<Order>('orders', signal), loadPages<Customer>('customers', signal)]);
@@ -335,6 +335,7 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
     {homeAddOpen && (
       <PucForm
         rates={pucAccess.data?.earnOptions || [5]}
+        fixedRate={pucAccess.data?.fixedEarnPoints}
         onClose={() => setHomeAddOpen(false)}
         onSaved={() => {
           setHomeAddOpen(false);

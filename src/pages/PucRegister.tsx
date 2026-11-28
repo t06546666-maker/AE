@@ -15,7 +15,7 @@ import type { UserProfile } from '../types';
 import { formatCurrency, formatDate, formatPhone, formatPoints, initials } from '../utils';
 import './puc-register.css';
 
-type Config = { eligible: boolean; shopName?: string; earnOptions?: number[]; testAccount?: boolean };
+type Config = { eligible: boolean; shopName?: string; earnOptions?: number[]; fixedEarnPoints?: number; testAccount?: boolean };
 export type RecordRow = {
   id: string;
   name: string;
@@ -811,6 +811,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
       {open && (
         <PucForm
           rates={config.data.earnOptions || []}
+          fixedRate={config.data.fixedEarnPoints}
           onClose={close}
           onSaved={row => {
             setNotice(`${row.name}: ${formatPoints(row.points || 0)} points added. Order ${row.orderNo || ''}.`);
@@ -828,10 +829,12 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 // Compact, Mobile-Optimized Add Customer Form
 export function PucForm({
   rates,
+  fixedRate,
   onClose,
   onSaved
 }: {
   rates: number[];
+  fixedRate?: number;
   onClose: () => void;
   onSaved: (row: RecordRow) => void;
 }) {
@@ -846,7 +849,8 @@ export function PucForm({
   const [plate, setPlate] = useState('');
   const [model, setModel] = useState('');
   const [amount, setAmount] = useState('');
-  const [rate, setRate] = useState('');
+  const defaultRate = fixedRate ? String(fixedRate) : rates.length === 1 ? String(rates[0]) : (rates[0] ? String(rates[0]) : '10');
+  const [rate, setRate] = useState(defaultRate);
   const [testDate, setTestDate] = useState(today);
   const [validityOption, setValidityOption] = useState('6_months');
   const [customYears, setCustomYears] = useState('1');
@@ -1007,15 +1011,30 @@ export function PucForm({
               <span>Service Fee (₹)</span>
               <input required type="number" min="1" max="1000000" step="0.01" placeholder="₹ Amount" value={amount} onChange={e => setAmount(e.target.value)} />
             </label>
-            <label>
-              <span>Reward Rate</span>
-              <select required value={rate} onChange={e => setRate(e.target.value)}>
-                <option value="">Select rate</option>
-                {rates.map(value => (
-                  <option key={value} value={value}>{value} pts per ₹100</option>
-                ))}
-              </select>
-            </label>
+            {fixedRate ? (
+              <div className="puc-fixed-rate-box">
+                <div className="puc-fixed-rate-header">
+                  <span className="puc-fixed-rate-title">Reward Rate</span>
+                  <span className="puc-fixed-rate-badge">Fixed by Store Settings 🔒</span>
+                </div>
+                <div className="puc-fixed-rate-val">
+                  <strong>{fixedRate} points per ₹100</strong>
+                </div>
+                <small className="puc-fixed-rate-hint">
+                  Configured in Store Reward Settings. Automatically applied to all vehicle registrations.
+                </small>
+              </div>
+            ) : (
+              <label>
+                <span>Reward Rate</span>
+                <select required value={rate} onChange={e => setRate(e.target.value)}>
+                  <option value="">Select rate</option>
+                  {rates.map(value => (
+                    <option key={value} value={value}>{value} pts per ₹100</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="puc-points-card">
               <span>Points Preview</span>
               <strong>{formatPoints(points)} points</strong>

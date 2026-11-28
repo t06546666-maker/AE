@@ -7,14 +7,16 @@ assert.equal(eligibleCategory('Polution Testing centre'),true);
 let category='PUC',awards=0;const docs=new Map(),handlers={},auth=()=>{},role=()=>{};
 const reference=id=>({id,async get(){return {exists:docs.has(id),data:()=>docs.get(id)}},async update(data){docs.set(id,{...docs.get(id),...data})}});
 const store={collection(){return {doc(){return {collection(){return {doc:reference}}}}}},async runTransaction(fn){return fn({get:ref=>ref.get(),set(ref,data){docs.set(ref.id,data)}})}};
-const db={from(){return {select(){return this},eq(){return this},async maybeSingle(){return {data:{id:'shop',name:'PUC Shop',merchant_categories:{name:category}},error:null}}}}};
+const db={from(){return {select(){return this},eq(){return this},async maybeSingle(){return {data:{id:'shop',name:'PUC Shop',merchant_categories:{name:category},earn_points_per_100:20},error:null}}}}};
 registerPuc({get(path,...h){assert.equal(h[0],auth);assert.equal(h[1],role);handlers[path]=h.at(-1)},post(path,...h){assert.equal(h[0],auth);assert.equal(h[1],role);handlers[path]=h.at(-1)}},{db,database:async()=>store,auth,merchantRole:role,rewards:async()=>({earnOptions:[5,10]}),onboard:async()=>{awards++;return {status:201,body:{success:true,customer:{id:'C1'},order:{order_id:'order',order_no:'O1',points_earned:40}}}}});
 const reply=()=>({code:200,status(code){this.code=code;return this},json(body){this.body=body;return this}}),request=(key='11111111-1111-4111-8111-111111111111',body=value)=>({body,auth:{profile:{merchant_id:'shop'}},get:()=>key});
 (async()=>{
+ const configHandler=handlers['/api/merchant/puc/config'];let cfgRes=reply();await configHandler(request(),cfgRes);assert.equal(cfgRes.body.fixedEarnPoints,20);
  const save=handlers['/api/merchant/puc/records'];let res=reply();category='Grocery';await save(request(),res);assert.equal(res.code,403);assert.equal(awards,0);
  category='PUC';res=reply();await save(request(undefined,{...value,rate:50}),res);assert.equal(res.code,400);assert.equal(awards,0);
  res=reply();await save(request(),res);assert.equal(res.code,201);assert.equal(res.body.record.points,40);assert.equal(awards,1);
  res=reply();await save(request(),res);assert.equal(res.body.success,true);assert.equal(awards,1);
  res=reply();await save(request(undefined,{...value,amount:500}),res);assert.equal(res.code,409);assert.equal(awards,1);
- console.log('PASS: PUC-only authorization, official rates, confirmation, persisted records and duplicate purchase protection');
+ res=reply();await save(request('22222222-2222-4222-8222-222222222222',{...value,plate:'KL09CD5678',rate:20}),res);assert.equal(res.code,201);assert.equal(awards,2);
+ console.log('PASS: PUC-only authorization, fixed reward rates, confirmation, persisted records and duplicate purchase protection');
 })().catch(e=>{console.error(e);process.exitCode=1});
