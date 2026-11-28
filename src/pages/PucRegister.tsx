@@ -22,6 +22,7 @@ export type RecordRow = {
   phone: string;
   plate: string;
   model: string;
+  category?: string;
   amount: number;
   rate: number;
   testDate: string;
@@ -31,6 +32,30 @@ export type RecordRow = {
   orderNo?: string;
   consent?: boolean;
 };
+
+export function normalizeCategory(cat?: string, model?: string): 'bike' | 'car' | 'others' {
+  const c = String(cat || '').toLowerCase().trim();
+  if (c === 'bike' || c === 'two_wheeler' || c === 'two wheeler' || c === 'scooter' || c === 'motorcycle') return 'bike';
+  if (c === 'car' || c === 'four_wheeler' || c === 'four wheeler') return 'car';
+  if (c && c !== 'others') return 'others';
+  const m = String(model || '').toLowerCase();
+  if (/\b(bike|activa|access|scooter|bullet|enfield|pulsar|splendor|jupiter|dio|glamour|passion|fz|r15|ktm|apache|shine|hero|tvs|yamaha)\b/i.test(m)) {
+    return 'bike';
+  }
+  if (/\b(auto|rickshaw|truck|lorry|bus|tractor|tempo|van|pickup|ace|dost)\b/i.test(m)) {
+    return 'others';
+  }
+  return 'car';
+}
+
+export function formatCategoryLabel(cat?: string, model?: string): { icon: string; label: string; key: 'bike' | 'car' | 'others' } {
+  const key = normalizeCategory(cat, model);
+  if (key === 'bike') return { icon: '🏍️', label: 'Bike', key: 'bike' };
+  if (key === 'car') return { icon: '🚗', label: 'Car', key: 'car' };
+  const custom = String(cat || '').trim();
+  const label = (custom && custom.toLowerCase() !== 'others') ? custom : 'Others';
+  return { icon: '🚚', label, key: 'others' };
+}
 
 export const today = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
 
@@ -129,6 +154,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 
   const [open, setOpen] = useState(initialOpen);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [month, setMonth] = useState(params.get('month') || '');
   const [customDays, setCustomDays] = useState(params.get('days') || '14');
   const [appliedDays, setAppliedDays] = useState<number | null>(params.get('days') ? parseInt(params.get('days')!, 10) : null);
@@ -183,12 +209,19 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
     const diffDays = (Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000;
     return diffDays <= 10;
   }).length;
+  const bikeCount = completed.filter(row => normalizeCategory(row.category, row.model) === 'bike').length;
+  const carCount = completed.filter(row => normalizeCategory(row.category, row.model) === 'car').length;
+  const othersCount = completed.filter(row => normalizeCategory(row.category, row.model) === 'others').length;
 
-  // Filter client-side by search query and custom days if active
+  // Filter client-side by vehicle category, search query and custom days if active
   const filtered = all.filter(row => {
+    if (categoryFilter !== 'all') {
+      const catKey = normalizeCategory(row.category, row.model);
+      if (catKey !== categoryFilter) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
-      const match = `${row.name} ${row.phone} ${row.plate} ${row.model}`.toLowerCase().includes(q);
+      const match = `${row.name} ${row.phone} ${row.plate} ${row.model} ${row.category || ''}`.toLowerCase().includes(q);
       if (!match) return false;
     }
     if (filter === 'due_custom' && appliedDays) {
@@ -304,8 +337,8 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 
   function downloadCsv() {
     const rows = [
-      ['Customer', 'Phone', 'Vehicle', 'Model', 'Fee (INR)', 'Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
-      ...filtered.map(row => [row.name, row.phone, row.plate, row.model, row.amount, row.points || 0, row.testDate, row.expiryDate, row.orderNo || '', row.status])
+      ['Customer', 'Phone', 'Category', 'Vehicle', 'Model', 'Fee (INR)', 'Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
+      ...filtered.map(row => [row.name, row.phone, formatCategoryLabel(row.category, row.model).label, row.plate, row.model, row.amount, row.points || 0, row.testDate, row.expiryDate, row.orderNo || '', row.status])
     ];
     void downloadPucCsv(`AE-PUC-Vehicles-${filter}-${todayStr}.csv`, rows, setNotice);
   }
@@ -400,6 +433,18 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
         </div>
 
         <div className="puc-filter-row">
+          <select
+            aria-label="Filter by vehicle category"
+            className="puc-filter-select puc-category-filter-select"
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">🚗 All Categories ({completed.length})</option>
+            <option value="bike">🏍️ Bikes ({bikeCount})</option>
+            <option value="car">🚗 Cars ({carCount})</option>
+            <option value="others">🚚 Others ({othersCount})</option>
+          </select>
+
           <select
             aria-label="Renewal filter window"
             className="puc-filter-select"
@@ -529,6 +574,7 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
 
           <div className="puc-insights-list">
             {filtered.map(row => {
+              const catMeta = formatCategoryLabel(row.category, row.model);
               const isExpired = row.expiryDate < todayStr;
               const diffDays = Math.ceil((Date.parse(row.expiryDate) - Date.parse(todayStr)) / 86400000);
               const isDueSoon = !isExpired && diffDays <= 10;
@@ -565,6 +611,9 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
                           <p className="puc-customer-phone">
                             {formatPhone(row.phone)}
                             {row.model ? ` · ${row.model}` : ''}
+                            <span className={`puc-cat-badge ${catMeta.key}`} title={`Vehicle Category: ${catMeta.label}`}>
+                              {catMeta.icon} {catMeta.label}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -690,8 +739,15 @@ export function PucRegister({ initialOpen = false, customersView = false, embedd
               <div className="puc-dialog-plate-box">
                 <span className="puc-plate-badge">{profile.plate.replace(/-/g, ' ')}</span>
                 <strong>{profile.model}</strong>
+                <span className={`puc-cat-badge ${formatCategoryLabel(profile.category, profile.model).key}`}>
+                  {formatCategoryLabel(profile.category, profile.model).icon} {formatCategoryLabel(profile.category, profile.model).label}
+                </span>
               </div>
               <dl className="puc-dialog-details">
+                <div>
+                  <dt>Vehicle Category</dt>
+                  <dd>{formatCategoryLabel(profile.category, profile.model).icon} {formatCategoryLabel(profile.category, profile.model).label}</dd>
+                </div>
                 <div>
                   <dt>Last Test Date</dt>
                   <dd>{formatDate(profile.testDate)}</dd>
@@ -785,6 +841,8 @@ export function PucForm({
   const [uncertain, setUncertain] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [category, setCategory] = useState<'bike' | 'car' | 'others'>('bike');
+  const [customCategory, setCustomCategory] = useState('');
   const [plate, setPlate] = useState('');
   const [model, setModel] = useState('');
   const [amount, setAmount] = useState('');
@@ -819,10 +877,11 @@ export function PucForm({
     setBusy(true);
     setError('');
     try {
+      const finalCategory = category === 'others' ? (customCategory.trim() || 'Others') : category;
       const result = await apiFetch<{ record: RecordRow }>('/api/merchant/puc/records', {
         method: 'POST',
         headers: { 'Idempotency-Key': key },
-        body: JSON.stringify({ name, phone, plate, model, amount: fee, rate: Number(rate), testDate, expiryDate, consent })
+        body: JSON.stringify({ name, phone, plate, model, category: finalCategory, amount: fee, rate: Number(rate), testDate, expiryDate, consent })
       });
       onSaved(result.record);
     } catch (e) {
@@ -856,9 +915,31 @@ export function PucForm({
               <input required type="tel" pattern="[6-9][0-9]{9}" maxLength={10} placeholder="10-digit mobile" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} />
             </label>
             <label>
+              <span>Vehicle Category</span>
+              <select value={category} onChange={e => setCategory(e.target.value as 'bike' | 'car' | 'others')}>
+                <option value="bike">🏍️ Bike / Two Wheeler</option>
+                <option value="car">🚗 Car / Four Wheeler</option>
+                <option value="others">🚚 Others (Auto, Truck, etc.)...</option>
+              </select>
+            </label>
+            <label>
               <span>Vehicle Plate</span>
               <input required minLength={6} maxLength={20} placeholder="e.g. KL09AB1234" value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} />
             </label>
+
+            {category === 'others' && (
+              <label className="puc-form-full-width">
+                <span>Specify Custom Vehicle Type</span>
+                <input
+                  required
+                  maxLength={50}
+                  placeholder="Type vehicle type (e.g. Auto, Truck, Tractor, Bus...)"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                />
+              </label>
+            )}
+
             <label>
               <span>Vehicle Model</span>
               <input required maxLength={100} placeholder="e.g. Maruti Suzuki Swift" value={model} onChange={e => setModel(e.target.value)} />
@@ -977,8 +1058,8 @@ export function PucReportsView({ month }: { month: string }) {
 
   function exportRegister() {
     const rows = [
-      ['Customer Name', 'Mobile Number', 'Vehicle Plate', 'Vehicle Model', 'Service Fee (INR)', 'Reward Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
-      ...all.map(r => [r.name, r.phone, r.plate, r.model, r.amount, r.points || 0, r.testDate, r.expiryDate, r.orderNo || '', r.status])
+      ['Customer Name', 'Mobile Number', 'Vehicle Category', 'Vehicle Plate', 'Vehicle Model', 'Service Fee (INR)', 'Reward Points', 'Test Date', 'Expiry Date', 'Order No', 'Status'],
+      ...all.map(r => [r.name, r.phone, formatCategoryLabel(r.category, r.model).label, r.plate, r.model, r.amount, r.points || 0, r.testDate, r.expiryDate, r.orderNo || '', r.status])
     ];
     void downloadPucCsv(`AE-PUC-All-Vehicles-${todayStr}.csv`, rows, setReportNotice);
   }
@@ -989,11 +1070,11 @@ export function PucReportsView({ month }: { month: string }) {
       return diff <= 30; // overdue or due within 30 days
     });
     const rows = [
-      ['Customer Name', 'Mobile Number', 'Vehicle Plate', 'Vehicle Model', 'Expiry Date', 'Status', 'Days Relative'],
+      ['Customer Name', 'Mobile Number', 'Vehicle Category', 'Vehicle Plate', 'Vehicle Model', 'Expiry Date', 'Status', 'Days Relative'],
       ...expiring.map(r => {
         const diff = Math.ceil((Date.parse(r.expiryDate) - Date.parse(todayStr)) / 86400000);
         const status = diff < 0 ? 'OVERDUE' : diff <= 10 ? 'DUE SOON' : 'UPCOMING';
-        return [r.name, r.phone, r.plate, r.model, r.expiryDate, status, diff < 0 ? `${Math.abs(diff)} days ago` : `in ${diff} days`];
+        return [r.name, r.phone, formatCategoryLabel(r.category, r.model).label, r.plate, r.model, r.expiryDate, status, diff < 0 ? `${Math.abs(diff)} days ago` : `in ${diff} days`];
       })
     ];
     void downloadPucCsv(`AE-PUC-Renewals-Outreach-${todayStr}.csv`, rows, setReportNotice);

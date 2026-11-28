@@ -260,6 +260,58 @@
   border-color: var(--primary, #5145d7);
 }
 
+.puc-category-filter-select {
+  flex: 1;
+  min-width: 140px;
+}
+
+.puc-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.puc-cat-badge.bike {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.puc-cat-badge.car {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.puc-cat-badge.others {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.puc-form-full-width {
+  grid-column: 1 / -1;
+}
+
+.puc-form-full-width input {
+  background: #f0f9ff !important;
+  border: 1.5px solid #38bdf8 !important;
+  color: #0369a1 !important;
+}
+
+.puc-form-full-width input:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+}
+
 .puc-month-input {
   width: 130px;
   height: 36px;
