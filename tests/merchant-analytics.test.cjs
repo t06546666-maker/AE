@@ -16,9 +16,9 @@ const customer = id => ({ id, name: id, phone: '', registeredAt: '2026-08-01T00:
 const orders = [order('a3', 'a', '2026-09-15T10:00:00Z'), order('b1', 'b', '2026-09-05T10:00:00Z', 200), order('a1', 'a', '2026-08-02T10:00:00Z'), order('a2', 'a', '2026-09-01T10:00:00Z'), order('b2', 'b', '2026-09-08T10:00:00Z', 300), order('late', 'a', '2026-10-01T10:00:00Z')];
 test('monthly cohorts are unique and add up to total even with repeat purchases', () => {
   const m = buildMerchantAnalytics(orders, [customer('a'), customer('b'), customer('zero')], '2026-09', now);
-  assert.equal(m.current.active.length, 2); assert.equal(m.current.fresh.length, 1); assert.equal(m.current.returning.length, 1);
+  assert.equal(m.current.active.length, 2); assert.equal(m.current.fresh.length, 0); assert.equal(m.current.returning.length, 2);
   assert.equal(m.current.orders.length, 4); assert.equal(m.current.sales, 700); assert.equal(m.current.average, 175);
-  assert.equal(m.current.repeat.length, 2); assert.equal(m.current.loyal.length, 1);
+  assert.equal(m.current.repeat.length, 2); assert.equal(m.current.loyal.length, 0);
   assert.equal(m.newSpend + m.returningSpend, m.current.sales);
 });
 test('customer list includes zero-purchase registrations and sorts visit history', () => {
@@ -59,4 +59,10 @@ test('month boundaries include leap years and prior December', () => {
 test('invalid and future-dated orders are ignored', () => {
   const m = buildMerchantAnalytics([order('invalid', 'a', 'invalid'), order('future', 'a', '2026-10-01T00:00:00Z')], [], '2026-09', now);
   assert.equal(m.current.sales, 0); assert.equal(m.customers.length, 0);
+});
+
+test('same-month repeats become returning without double-counting customers', () => {
+ const m=buildMerchantAnalytics([order('first','same','2026-09-02T10:00:00Z'),order('second','same','2026-09-03T10:00:00Z'),order('third','same','2026-09-04T10:00:00Z'),order('single','other','2026-09-02T12:00:00Z')],[],'2026-09',now);
+ assert.equal(m.current.active.length,2);assert.equal(m.current.returning.length,1);assert.equal(m.current.fresh.length,1);assert.equal(m.current.orders.length,4);
+ assert.equal(m.growth[1].fresh,2);assert.equal(m.growth[2].fresh,1);assert.equal(m.growth[2].returning,1);
 });

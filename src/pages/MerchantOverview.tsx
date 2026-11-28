@@ -73,7 +73,7 @@ function GrowthChart({ model }: { model: MerchantAnalytics }) {
       {points.filter((p, i) => i === 0 || i === points.length - 1 || p.day % 5 === 0 && i < points.length - 2).map(p => <text key={p.day} x={x(p.day - 1)} y="197" textAnchor="middle">{p.day}</text>)}
     </svg>
     <label className="mo-chart-slider">{uiText("Explore a day")}<input aria-label={uiText("Customer growth day")} type="range" min="1" max={points.length} value={selected.day} onChange={e => setDay(Number(e.target.value) - 1)} /></label>
-    <details className="mo-definitions"><summary>{uiText("How are customers counted?")}</summary><p>{uiText("Each customer is counted once in the selected month. New means their first recorded purchase was this month; returning means they purchased before this month. The lines accumulate through each day. Total = new + returning. A recorded purchase is used as a visit.")}</p></details>
+    <details className="mo-definitions"><summary>{uiText("How are customers counted?")}</summary><p>{uiText("Each purchasing customer is counted once. New means one recorded purchase through the selected date; returning means at least two, including repeat purchases within the same month. Total = new + returning. A customer moves to returning after their second purchase.")}</p></details>
   </section>;
 }
 
@@ -89,7 +89,7 @@ function SalesSnapshot({ model, month }: { model: MerchantAnalytics; month: stri
     const time = Date.parse(order.timestamp);
     return time >= mixStart && time < mixEnd && time <= Date.now();
   }));
-  const freshCount = activeCustomers.filter(customer => customer.first && Date.parse(customer.first) >= mixStart).length;
+  const freshCount = activeCustomers.filter(customer => customer.visits.filter(order => Date.parse(order.timestamp) < mixEnd && Date.parse(order.timestamp) <= Date.now()).length === 1).length;
   const returningCount = activeCustomers.length - freshCount;
   const weeks = salesOverviewBuckets(model.customers.flatMap(customer => customer.visits), salesPeriod === 'date' ? "today" : salesPeriod, (salesPeriod === 'date' ? rangeForChartPeriod('custom', salesDate, salesDate) : rangeForChartPeriod(salesPeriod,undefined,undefined,month))!);
   const max = Math.max(1, ...weeks.map(week => week.sales));
@@ -240,8 +240,8 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
   const percent = (n: number) => current.active.length ? Math.round(n / current.active.length * 100) : 0;
   const metrics = [
     { label: 'Total customers', value: current.active.length, before: previous.active.length, icon: Users, color: 'blue', hint: 'Purchased this month' },
-    { label: 'Returning customers', value: current.returning.length, before: previous.returning.length, icon: RefreshCw, color: 'green', hint: 'Purchased in an earlier month' },
-    { label: 'New customers', value: current.fresh.length, before: previous.fresh.length, icon: UserPlus, color: 'pink', hint: 'First purchase this month' },
+    { label: 'Returning customers', value: current.returning.length, before: previous.returning.length, icon: RefreshCw, color: 'green', hint: 'Purchased at least twice by period end' },
+    { label: 'New customers', value: current.fresh.length, before: previous.fresh.length, icon: UserPlus, color: 'pink', hint: 'One recorded purchase by period end' },
     { label: 'Total sales', value: current.sales, before: previous.sales, icon: IndianRupee, color: 'amber', hint: 'Recorded purchase value' },
   ];
   return <div className="merchant-overview">
@@ -254,7 +254,7 @@ export function MerchantOverview({ user,readOnly=false,initialAddCustomer=false 
       <SalesSnapshot key={`sales-${month}`} model={model} month={month} />
       <ActivitySnapshot key={`activity-${month}`} model={model} month={month} />
       <div className="mo-columns"><GrowthChart key={month} model={model} /><section className="mo-panel"><div className="mo-panel-heading"><div><h2>{uiText("Quick insights")}</h2><p>{uiText("Small insights. Better decisions.")}</p></div><Lightbulb size={21} /></div><div className="mo-quick-list">
-        <div><span className="mo-icon green"><RefreshCw size={20} /></span><p><strong>{percent(current.returning.length)}{uiText("% returned")}</strong><small>{uiText("Had purchased before this month")}</small></p></div>
+        <div><span className="mo-icon green"><RefreshCw size={20} /></span><p><strong>{percent(current.returning.length)}{uiText("% returned")}</strong><small>{uiText("Have made at least two recorded purchases")}</small></p></div>
         <div><span className="mo-icon violet"><IndianRupee size={20} /></span><p><strong>{formatCurrency(current.average)}</strong><small>{uiText("Average spend per recorded visit")}</small></p></div>
         <div><span className="mo-icon pink"><CalendarDays size={20} /></span><p><strong>{model.busiestDay >= 0 ? uiText(weekdays[model.busiestDay]) : uiText("No visits yet")}</strong><small>{model.busiestDay >= 0 ? uiText("Your busiest day this month") : uiText("Record a purchase to get started")}</small></p></div>
         <div><span className="mo-icon blue"><BarChart3 size={20} /></span><p><strong>{current.orders.length.toLocaleString('en-IN')}{uiText(" visits")}</strong><small>{uiText("Based on recorded purchases")}</small></p></div>

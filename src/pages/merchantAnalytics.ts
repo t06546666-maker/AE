@@ -36,10 +36,10 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
     const current = validOrders.filter(o => { const date = indiaDate(o.timestamp); return date.startsWith(periodMonth) && date <= end; });
     const activeIds = new Set(current.map(o => o.cid || o.phone || o.id));
     const active = customers.filter(c => activeIds.has(c.id));
-    // New and returning are disjoint cohorts, so they always add up to total.
-    const fresh = active.filter(c => c.first && indiaDate(c.first).startsWith(periodMonth));
-    const returning = active.filter(c => c.first && indiaDate(c.first) < `${periodMonth}-01`);
+    // Classify once per customer through this period's end, including same-month repeats.
     const countThroughEnd = (c: typeof customers[number]) => c.visits.filter(o => indiaDate(o.timestamp) <= end).length;
+    const returning = active.filter(c => countThroughEnd(c) >= 2);
+    const fresh = active.filter(c => countThroughEnd(c) === 1);
     const repeat = active.filter(c => countThroughEnd(c) >= 2);
     const loyal = active.filter(c => countThroughEnd(c) >= 5);
     const sales = Math.round(current.reduce((sum, o) => sum + Math.round((o.salesAmount ?? o.amount)*100), 0))/100;
@@ -52,14 +52,11 @@ export function buildMerchantAnalytics(orders: Order[], registered: Customer[], 
   const seen = new Set<string>();
   const daily = new Map<string, Order[]>();
   current.orders.forEach(o => { const day = indiaDate(o.timestamp); daily.set(day, [...(daily.get(day) || []), o]); });
-  let newCount = 0;
   const growth = Array.from({ length: days }, (_, i) => {
     const date = `${month}-${String(i + 1).padStart(2, '0')}`;
-    for (const o of daily.get(date) || []) {
-      const id = o.cid || o.phone || o.id;
-      if (!seen.has(id)) { seen.add(id); if (freshIds.has(id)) newCount++; }
-    }
-    return { day: i + 1, total: seen.size, fresh: newCount, returning: seen.size - newCount };
+    for (const o of daily.get(date) || []) seen.add(o.cid || o.phone || o.id);
+    const returning = customers.filter(c => seen.has(c.id) && c.visits.filter(o => indiaDate(o.timestamp) <= date).length >= 2).length;
+    return { day: i + 1, total: seen.size, fresh: seen.size - returning, returning };
   });
   const heat = Array.from({ length: 7 }, () => Array<number>(4).fill(0));
   current.orders.forEach(o => {
