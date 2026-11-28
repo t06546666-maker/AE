@@ -2964,6 +2964,7 @@
   "ui.Manage network locations and codes.": "Manage network locations and codes.",
   "ui.Manage categories for shops and merchants to help customers find them.": "Manage categories for shops and merchants to help customers find them.",
   "ui.Review customer product requests before sending them to merchants.": "Review customer product requests before sending them to merchants.",
+  "ui.Customer product requests sent directly to merchants.": "Customer product requests sent directly to merchants.",
   "ui.Bold": "Bold",
   "ui.Extra bold": "Extra bold",
   "ui.Enter a valid INR amount with up to two decimal places.": "Enter a valid INR amount with up to two decimal places.",

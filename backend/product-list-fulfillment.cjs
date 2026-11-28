@@ -15,14 +15,14 @@ function registerProductListFulfillment(app, { requireAuth, requireRole, db, pus
     if (result.error) return res.status(503).json({ success: false, error: 'Unable to load this product list. Please retry.' });
     const existing = result.data;
     if (!existing) return res.status(404).json({ success: false, error: 'Product list not found' });
-    if (existing.status !== 'approved') return res.status(409).json({ success: false, error: 'This product list is not approved for merchant review.' });
+    if (existing.status !== 'approved' && existing.status !== 'pending') return res.status(409).json({ success: false, error: 'This product list is not available for merchant review.' });
     if (existing.merchant_status === status) return res.json({ success: true, request: { id, status, merchant_status: status } });
     if (['ready', 'rejected'].includes(existing.merchant_status)) return res.status(409).json({ success: false, error: 'This product list is already finished. Refresh to see its current status.' });
     if (existing.merchant_status === 'in_progress' && status === 'confirmed') return res.status(409).json({ success: false, error: 'An order in progress cannot return to Confirmed.' });
     let audit;
     try { if (beforeUpdate) audit = await beforeUpdate(req, { id, status, existing }); }
     catch { return res.status(503).json({success:false,error:'Unable to record staff activity. Please retry.'}); }
-    let update = db.from('customer_product_list_requests').update({ merchant_status: status }).eq('id', id).eq('merchant_id', merchantId).eq('status', 'approved');
+    let update = db.from('customer_product_list_requests').update({ merchant_status: status, status: 'approved' }).eq('id', id).eq('merchant_id', merchantId);
     update = existing.merchant_status == null ? update.is('merchant_status', null) : update.eq('merchant_status', existing.merchant_status);
     const { data, error } = await update.select('id,merchant_status').maybeSingle();
     if (error) return res.status(503).json({ success: false, error: 'Unable to update product list status. Please retry.' });

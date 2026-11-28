@@ -458,7 +458,6 @@ export function App() {
 
   return (
     <LegalGate user={user} onLogout={logout}><Layout user={user} onLogout={logout}>
-      {user.role === 'admin' && <Link className="button secondary" to="/shop-coupons">₹100 shop coupons</Link>}
       {user.role === 'merchant' && <Suspense fallback={null}><ShopRequestAlert /></Suspense>}
       <PageErrorBoundary key={location.pathname}>
         <Suspense fallback={<RouteFallback />}><Routes>

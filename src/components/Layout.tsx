@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BadgeIndianRupee, BarChart3 as BarChartIcon, Bell, Building2, CalendarClock, Gift, Home, Languages, LayoutDashboard, LogOut, MapPin, Menu, Moon, MoreHorizontal,
-  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search, QrCode, ImagePlus,
+  PieChart, Plus, ReceiptText, Settings2, ShoppingBag, Sun, UserCog, Users, X, MessageSquare, Search, QrCode, ImagePlus, Ticket,
 } from 'lucide-react';
 import { apiFetch } from '../api';
 import type { UserProfile } from '../types';
@@ -18,6 +18,7 @@ import '../merchant-shell-fixes.css';
 const adminNav = [
   ['/dashboard', 'nav.dashboard', LayoutDashboard],
   ['/merchants', 'nav.merchants', Building2],
+  ['/shop-coupons', 'Shop Coupons', Ticket],
   ['/admin/banners', 'Ad Banners', ImagePlus],
   ['/admin/customer-ui', 'Customer UI Editor', Settings2],
   ['/admin/notifications', 'Push Notifications', Bell],
@@ -37,6 +38,7 @@ const merchantNav = [
   ['/add-customer', 'nav.addBuyer', Plus],
   ['/orders', 'nav.orders', ReceiptText],
   ['/customer-orders', 'Customer orders', ShoppingBag],
+  ['/shop-coupons', 'Redeem Coupon', Ticket],
   ['/customers', 'nav.customers', Users],
   ['/rewards', 'nav.rewards', Gift],
   ['/offers', 'nav.offers', BadgeIndianRupee],
